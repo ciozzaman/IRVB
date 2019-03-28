@@ -1,0 +1,4 @@
+/tmp/tmpeuoey_sn/dolfin_expression_a69c876f52418a1f5ca4107cba14140e.cpp: In member function ‘virtual void dolfin::dolfin_expression_a69c876f52418a1f5ca4107cba14140e::eval(Eigen::Ref<Eigen::Matrix<double, -1, 1> >, Eigen::Ref<const Eigen::Matrix<double, -1, 1> >) const’:
+/tmp/tmpeuoey_sn/dolfin_expression_a69c876f52418a1f5ca4107cba14140e.cpp:63:58: error: ‘laser_spot_location’ was not declared in this scope
+           values[0] = max_laser_intensity*exp(-(pow(x[0]-laser_spot_location[0],2)+pow(x[1]-laser_spot_location[1],2))/(2*pow(laser_spot_sigma,2)));
+                                                          ^

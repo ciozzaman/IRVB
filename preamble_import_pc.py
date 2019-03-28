@@ -19,7 +19,7 @@ import scipy.stats
 import os,sys
 import xarray as xr	# added 2018-11-05 to allow importing data from SOLPS
 
-os.chdir("/home/ffederic/work/python_library/collect_and_eval")
+os.chdir("/home/ffederic/work/analysis_scripts/scripts/python_library/collect_and_eval")
 import matplotlib.animation as animation
 import warnings
 from scipy.interpolate import RectBivariateSpline,interp2d

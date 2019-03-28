@@ -1,0 +1,3 @@
+sudo -H pip3 install .
+sudo -H pip install .
+

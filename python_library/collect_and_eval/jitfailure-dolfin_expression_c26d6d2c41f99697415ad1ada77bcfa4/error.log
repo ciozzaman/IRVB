@@ -1,0 +1,4 @@
+/tmp/tmp9mx4detn/dolfin_expression_c26d6d2c41f99697415ad1ada77bcfa4.cpp: In member function ‘virtual void dolfin::dolfin_expression_c26d6d2c41f99697415ad1ada77bcfa4::eval(Eigen::Ref<Eigen::Matrix<double, -1, 1> >, Eigen::Ref<const Eigen::Matrix<double, -1, 1> >) const’:
+/tmp/tmp9mx4detn/dolfin_expression_c26d6d2c41f99697415ad1ada77bcfa4.cpp:61:93: error: expected ‘)’ before ‘;’ token
+           values[0] = -1000*2*(x[0]-0.035)*50*exp(-1000*(pow(x[0]-0.035,2)+pow(x[1]-0.02,2));
+                                                                                             ^

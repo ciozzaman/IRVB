@@ -1,0 +1,5 @@
+/tmp/tmp9muy8_77/dolfin_expression_b9b21d0681444cc7cda7301e20b94b2e.cpp:61:49: error: too many decimal points in number
+           values[0] = pow(x[1]-0.035,2)+pow(x[0].0.035,2);
+                                                 ^
+/tmp/tmp9muy8_77/dolfin_expression_b9b21d0681444cc7cda7301e20b94b2e.cpp: In member function ‘virtual void dolfin::dolfin_expression_b9b21d0681444cc7cda7301e20b94b2e::eval(Eigen::Ref<Eigen::Matrix<double, -1, 1> >, Eigen::Ref<const Eigen::Matrix<double, -1, 1> >) const’:
+/tmp/tmp9muy8_77/dolfin_expression_b9b21d0681444cc7cda7301e20b94b2e.cpp:61:49: error: expected ‘)’ before numeric constant

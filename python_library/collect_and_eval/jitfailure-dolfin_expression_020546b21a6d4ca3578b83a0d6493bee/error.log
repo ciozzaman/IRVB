@@ -1,0 +1,4 @@
+/tmp/tmps_6dm1by/dolfin_expression_020546b21a6d4ca3578b83a0d6493bee.cpp: In member function ‘virtual void dolfin::dolfin_expression_020546b21a6d4ca3578b83a0d6493bee::eval(Eigen::Ref<Eigen::Matrix<double, -1, 1> >, Eigen::Ref<const Eigen::Matrix<double, -1, 1> >) const’:
+/tmp/tmps_6dm1by/dolfin_expression_020546b21a6d4ca3578b83a0d6493bee.cpp:68:23: error: ‘phi’ was not declared in this scope
+           values[0] = phi*(x[0]/foilhoriz-pow(x[0]/foilhoriz,2))+T2*x[0]/foilhoriz+T1*(1-x[0]/foilhoriz);
+                       ^

@@ -3,14 +3,14 @@
 
 
 # #this is if working on a pc, use pc printer
-# exec(open("/home/ffederic/work/analysis_scripts/preamble_import_pc.py").read())
+# exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_import_pc.py").read())
 
 #this is if working in batch, use predefined NOT visual printer
-exec(open("/home/ffederic/work/analysis_scripts/preamble_import_batch.py").read())
+exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_import_batch.py").read())
 
 
 #this is for importing all the variables names and which are the files
-exec(open("/home/ffederic/work/analysis_scripts/preamble_indexing.py").read())
+exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_indexing.py").read())
 
 
 
@@ -174,7 +174,7 @@ radiation_function = make_solps_power_function(cr_r, cr_z, radiated_power)
 
 
 
-is_this_extra = True
+is_this_extra = False
 # foil_resolution = 47
 grid_resolution = 2  # in cm
 with_noise = True
@@ -183,12 +183,12 @@ weigthed_best_search = True
 eigenvalue_cut_vertical = False
 enable_mask2 = True
 treshold_method_try_to_search = True
-residuals_on_power_on_voxels = True
+residuals_on_power_on_voxels = False
 
 
 
 # foil_resolution_all = [37, 31, 26, 19]
-foil_resolution_all = [187, 93, 62, 47, 37, 31, 26, 19]
+foil_resolution_all = [47, 37, 31, 26, 19]
 # foil_resolution_all = [93]
 for foil_resolution in foil_resolution_all:
 	if (is_this_extra and foil_resolution==187):
@@ -250,7 +250,7 @@ for foil_resolution in foil_resolution_all:
 					grid_type =row[1]
 				# print(row)
 
-		grid_type_not_masked = grid_type
+		grid_type_not_masked = copy.deepcopy(grid_type)
 		if flag_mask2_present:
 			grid_type = grid_type+'_masked1'
 		# with open(path_sensitivity+'/svd_decomposition.pickle', 'rb') as f:

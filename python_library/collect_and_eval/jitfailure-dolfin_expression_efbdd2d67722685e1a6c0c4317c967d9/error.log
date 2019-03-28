@@ -1,0 +1,4 @@
+/tmp/tmpp9nytdjn/dolfin_expression_efbdd2d67722685e1a6c0c4317c967d9.cpp: In member function ‘virtual void dolfin::dolfin_expression_efbdd2d67722685e1a6c0c4317c967d9::eval(Eigen::Ref<Eigen::Matrix<double, -1, 1> >, Eigen::Ref<const Eigen::Matrix<double, -1, 1> >) const’:
+/tmp/tmpp9nytdjn/dolfin_expression_efbdd2d67722685e1a6c0c4317c967d9.cpp:61:28: error: ‘foilhoriz’ was not declared in this scope
+           values[0] = x[0]<foilhoriz ? 300 : 320 ;
+                            ^

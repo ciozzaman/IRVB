@@ -1,0 +1,4 @@
+/tmp/tmpy2u_igvx/dolfin_expression_e2d92ba0a70f19267d9dac3b462c5645.cpp: In member function ‘virtual void dolfin::dolfin_expression_e2d92ba0a70f19267d9dac3b462c5645::eval(Eigen::Ref<Eigen::Matrix<double, -1, 1> >, Eigen::Ref<const Eigen::Matrix<double, -1, 1> >) const’:
+/tmp/tmpy2u_igvx/dolfin_expression_e2d92ba0a70f19267d9dac3b462c5645.cpp:61:27: error: ‘T’ was not declared in this scope
+           values[0] = pow(T,4);
+                           ^
