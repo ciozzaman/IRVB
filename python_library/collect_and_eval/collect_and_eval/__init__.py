@@ -2413,13 +2413,15 @@ def abs_angle(angle,deg=False):
 
 
 def split_fixed_length(A,length):
+	A=np.array(A)
+	length = int(length)
 	B=[]
 	while len(A)>length:
-		B.append(A[:length])
+		B.append(A[:length].tolist())
 		A=A[length:]
 	if len(A)>0:
-		B.append(A)
-	return B
+		B.append(A.tolist())
+	return np.array(B)
 
 
 
@@ -2797,13 +2799,11 @@ def sensitivities_matrix_averaging_foil_pixels_loseless(sensitivities,h_pixels,p
 
 	v_pixels=npixels//h_pixels
 
-	h_end_pixels = np.ceil(h_pixels/pixelmean_h)
-	v_end_pixels = np.ceil(v_pixels/pixelmean_v)
+	h_end_pixels = np.ceil(h_pixels/pixelmean_h).astype('int')
+	v_end_pixels = np.ceil(v_pixels/pixelmean_v).astype('int')
+	pixels_averaged = pixelmean_h*pixelmean_v
 
 	print('the final number of pixels is (vertical,horizontal)'+str([v_end_pixels,h_end_pixels]))
-
-	h_shift = (h_pixels-h_end_pixels*pixelmean_h)//2
-	v_shift = (v_pixels-v_end_pixels*pixelmean_v)//2
 
 	sensitivities_averaged=[]
 	for voxel in range(nvoxels):
@@ -2811,11 +2811,174 @@ def sensitivities_matrix_averaging_foil_pixels_loseless(sensitivities,h_pixels,p
 		foil_image=np.array(split_fixed_length(sensitivities[:,voxel],h_pixels))
 		for i in range(v_end_pixels):
 			for j in range(h_end_pixels):
-				voxel_sensitivity.append(np.mean(foil_image[v_shift+i*pixelmean_v:v_shift+(i+1)*pixelmean_v,h_shift+j*pixelmean_h:h_shift+(j+1)*pixelmean_h]))
+				voxel_sensitivity.append(np.sum(foil_image[i*pixelmean_v:(i+1)*pixelmean_v,j*pixelmean_h:(j+1)*pixelmean_h])/pixels_averaged)
 		sensitivities_averaged.append(voxel_sensitivity)
 
 	sensitivities_averaged=np.array(sensitivities_averaged)
 
+
 	return sensitivities_averaged.T
+
+
+#####################################################################################################
+
+def foil_measurement_averaging_foil_pixels_loseless(d,h_pixels,pixelmean_h,pixelmean_v):
+
+	# Created 01/04/2019
+	# Does the average of a regular sensitivity matrix on foil pixels
+	#
+
+
+	shapeorig=np.shape(d)
+	npixels=shapeorig[0]
+
+	v_pixels=npixels//h_pixels
+
+	h_end_pixels = np.ceil(h_pixels/pixelmean_h).astype('int')
+	v_end_pixels = np.ceil(v_pixels/pixelmean_v).astype('int')
+	pixels_averaged = pixelmean_h*pixelmean_v
+
+	print('the final number of pixels is (vertical,horizontal)'+str([v_end_pixels,h_end_pixels]))
+
+	foil_image = np.array(split_fixed_length(d, h_pixels))
+
+	averaged_foil_reading=[]
+	for i in range(v_end_pixels):
+		for j in range(h_end_pixels):
+			averaged_foil_reading.append(np.sum(foil_image[i*pixelmean_v:(i+1)*pixelmean_v,j*pixelmean_h:(j+1)*pixelmean_h])/pixels_averaged)
+
+
+	averaged_foil_reading=np.array(averaged_foil_reading)
+
+	print('power on the foil array size is '+str(np.shape(averaged_foil_reading)))
+
+	return averaged_foil_reading
+
+
+#####################################################################################################
+
+def sensitivities_matrix_averaging_foil_pixels_extra_loseless(sensitivities,h_pixels,pixelmean_h,pixelmean_v):
+
+	# Created 30/03/2019
+	# Does the average of a regular sensitivity matrix on foil pixels
+	# Additionally from sensitivities_matrix_averaging_foil_pixels this function calculate also the pixels obtained from shifting the area of the average, one by one
+	#
+	# Different from sensitivities_matrix_averaging_foil_pixels_extra because I do it loseless. I do not discard the last pixels
+	#
+	#
+
+
+	shapeorig=np.shape(sensitivities)
+	npixels=shapeorig[0]
+	nvoxels=shapeorig[1]
+
+	v_pixels=npixels//h_pixels
+
+	h_end_pixels = np.ceil(h_pixels/pixelmean_h).astype('int')
+	v_end_pixels = np.ceil(v_pixels/pixelmean_v).astype('int')
+	pixels_averaged = pixelmean_h*pixelmean_v
+
+	print('the final number of pixels is (vertical,horizontal)'+str([v_end_pixels,h_end_pixels]))
+	print('but the sensityvity matrix generated will be sized '+str([nvoxels,v_end_pixels*h_end_pixels+(v_end_pixels-1)*(h_end_pixels-1)*(pixelmean_h-1)*(pixelmean_v-1)]))
+	print('instead of (vertical,horizontal)'+str([nvoxels,v_end_pixels*h_end_pixels]))
+
+
+	sensitivities_averaged=[]
+	for voxel in range(nvoxels):
+		voxel_sensitivity=[]
+		foil_image=np.array(split_fixed_length(sensitivities[:,voxel],h_pixels))
+		for i in range(v_end_pixels):
+			for j in range(h_end_pixels):
+				voxel_sensitivity.append(np.sum(foil_image[i*pixelmean_v:(i+1)*pixelmean_v,j*pixelmean_h:(j+1)*pixelmean_h])/pixels_averaged)
+		sensitivities_averaged.append(voxel_sensitivity)
+	intermediate=(np.array(sensitivities_averaged).T).tolist()
+
+	print('check 1')
+	print('intermediate matrix size is ' + str(np.shape(intermediate)))
+
+	for extra_v_shift in range(0, pixelmean_v, 1):
+		for extra_h_shift in range(0,pixelmean_h,1):
+			if (extra_v_shift+extra_v_shift)==0:
+				continue
+			sensitivities_averaged = []
+			for voxel in range(nvoxels):
+				voxel_sensitivity=[]
+				foil_image=np.array(split_fixed_length(sensitivities[:,voxel],h_pixels))
+				if extra_v_shift==0:
+					for i in range(v_end_pixels):
+						for j in range(h_end_pixels-1):
+							voxel_sensitivity.append(np.sum(foil_image[extra_v_shift+i*pixelmean_v:extra_v_shift+(i+1)*pixelmean_v,extra_h_shift+j*pixelmean_h:extra_h_shift+(j+1)*pixelmean_h])/pixels_averaged)
+				elif extra_h_shift == 0:
+					for i in range(v_end_pixels-1):
+						for j in range(h_end_pixels):
+							voxel_sensitivity.append(np.sum(foil_image[extra_v_shift+i*pixelmean_v:extra_v_shift+(i+1)*pixelmean_v,extra_h_shift+j*pixelmean_h:extra_h_shift+(j+1)*pixelmean_h])/pixels_averaged)
+				else:
+					for i in range(v_end_pixels-1):
+						for j in range(h_end_pixels-1):
+							voxel_sensitivity.append(np.sum(foil_image[extra_v_shift+i*pixelmean_v:extra_v_shift+(i+1)*pixelmean_v,extra_h_shift+j*pixelmean_h:extra_h_shift+(j+1)*pixelmean_h])/pixels_averaged)
+				sensitivities_averaged.append(voxel_sensitivity)
+			print('check ' + str(extra_v_shift + extra_h_shift + 1))
+			print('sensitivities_averaged matrix size is ' + str(np.shape(sensitivities_averaged)))
+			intermediate.extend((np.array(sensitivities_averaged).T).tolist())
+
+	intermediate=np.array(intermediate)
+
+	print('sensitivity matrix size is '+str(np.shape(intermediate)))
+
+	return intermediate
+
+#####################################################################################################
+
+def foil_measurement_averaging_foil_pixels_extra_loseless(d,h_pixels,pixelmean_h,pixelmean_v):
+
+	# Created 30/03/2019
+	# Does the average of a rgular sensitivity matrix on foil pixels
+	#
+	# Additionally, this function calculate also the pixels obtained from shifting the area of the average, one by one
+
+
+
+	shapeorig=np.shape(d)
+	npixels=shapeorig[0]
+
+	v_pixels=npixels//h_pixels
+
+	h_end_pixels = np.ceil(h_pixels/pixelmean_h).astype('int')
+	v_end_pixels = np.ceil(v_pixels/pixelmean_v).astype('int')
+	pixels_averaged = pixelmean_h*pixelmean_v
+
+	print('the final number of pixels is (vertical,horizontal)'+str([v_end_pixels,h_end_pixels]))
+	print('but the foil reading matrix generated will be sized '+str([1,v_end_pixels*h_end_pixels+(v_end_pixels-1)*(h_end_pixels-1)*(pixelmean_h-1)*(pixelmean_v-1)]))
+
+	foil_image = np.array(split_fixed_length(d, h_pixels))
+
+	averaged_foil_reading=[]
+	for i in range(v_end_pixels):
+		for j in range(h_end_pixels):
+			averaged_foil_reading.append(np.sum(foil_image[i*pixelmean_v:(i+1)*pixelmean_v,j*pixelmean_h:(j+1)*pixelmean_h])/pixels_averaged)
+
+	for extra_v_shift in range(0, pixelmean_v, 1):
+		for extra_h_shift in range(0,pixelmean_h,1):
+			if (extra_v_shift+extra_v_shift)==0:
+				continue
+			if extra_v_shift == 0:
+				for i in range(v_end_pixels):
+					for j in range(h_end_pixels-1):
+						averaged_foil_reading.append(np.sum(foil_image[extra_v_shift+i*pixelmean_v:extra_v_shift+(i+1)*pixelmean_v,extra_h_shift+j*pixelmean_h:extra_h_shift+(j+1)*pixelmean_h])/pixels_averaged)
+			elif extra_h_shift == 0:
+				for i in range(v_end_pixels-1):
+					for j in range(h_end_pixels):
+						averaged_foil_reading.append(np.sum(foil_image[extra_v_shift+i*pixelmean_v:extra_v_shift+(i+1)*pixelmean_v,extra_h_shift+j*pixelmean_h:extra_h_shift+(j+1)*pixelmean_h])/pixels_averaged)
+			else:
+				for i in range(v_end_pixels-1):
+					for j in range(h_end_pixels-1):
+						averaged_foil_reading.append(np.sum(foil_image[extra_v_shift+i*pixelmean_v:extra_v_shift+(i+1)*pixelmean_v,extra_h_shift+j*pixelmean_h:extra_h_shift+(j+1)*pixelmean_h])/pixels_averaged)
+
+	averaged_foil_reading=np.array(averaged_foil_reading)
+
+	print('power on the foil array size is '+str(np.shape(averaged_foil_reading)))
+
+	return averaged_foil_reading
+
 
 

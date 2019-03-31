@@ -32,11 +32,16 @@ import cherab.mastu.bolometry.grid_construction
 #
 
 is_this_extra = True
-foil_resolution = 47
+averaging = 4
 grid_resolution = 2  # in cm
 with_noise = True
 foil_resolution_max = 187
 weigthed_best_search = True
+
+if averaging>1:
+	foil_resolution = str(averaging)+'x'+str(averaging)
+else:
+	foil_resolution = '187'
 
 if is_this_extra:
 	foil_res = '_foil_pixel_h_' + str(foil_resolution) + '_extra'
@@ -1130,10 +1135,12 @@ ccd_normal = Vector3D(-CCD_radius*np.cos(CCD_angle), -CCD_radius*np.sin(CCD_angl
 ccd_y_axis = Vector3D(0,0,1).normalise()
 ccd_x_axis = ccd_y_axis.cross(ccd_normal)
 
-if is_this_extra:
-	pixel_h = foil_resolution_max
-else:
-	pixel_h = foil_resolution
+# if is_this_extra:
+# 	pixel_h = foil_resolution_max
+# else:
+# 	pixel_h = np.ceil(foil_resolution_max/averaging).astype('int')
+
+pixel_h = foil_resolution_max
 pixel_v=(pixel_h*9)//7
 
 plt.ion()
@@ -1153,7 +1160,9 @@ detector.observe()
 
 detection = coleval.flatten_full( np.flip(np.transpose(power.frame.mean),axis=0))
 if is_this_extra:
-	detection = coleval.foil_measurement_averaging_foil_pixels_extra(detection,foil_resolution_max,int(np.around(foil_resolution_max/foil_resolution)))
+	detection = coleval.foil_measurement_averaging_foil_pixels_extra_loseless(detection,foil_resolution_max,averaging,averaging)
+else:
+	detection = coleval.foil_measurement_averaging_foil_pixels_loseless(detection,foil_resolution_max,averaging,averaging)
 
 mask2 = np.ones(np.shape(detection))
 for index,value in enumerate(detection):
@@ -1172,36 +1181,36 @@ scipy.sparse.save_npz(path_sensitivity + '/sensitivity_masked2.npz', scipy.spars
 
 
 
-	# I might go even further and define a treshold for the minimum reading that I consider valid.
-	# this anyway makes unclear what I mean by that signal leve, and this will also change for different plasma configurations
-
-power_treshold = 1e-5
-
-detector = TargettedCCDArray(targets=[pinhole_target], width=0.07, pixels=(pixel_h, pixel_v), targetted_path_prob=1.0,
-							 parent=world, pipelines=[power],
-							 transform=translate(*ccd_centre)*rotate_basis(ccd_normal, ccd_y_axis))
-detector.max_wavelength = 601
-detector.min_wavelength = 600
-detector.pixel_samples = 5000
-detector.observe()
-detection = coleval.flatten_full( np.flip(np.transpose(power.frame.mean),axis=0))
-if is_this_extra:
-	detection = coleval.foil_measurement_averaging_foil_pixels_extra(detection,foil_resolution_max,int(np.around(foil_resolution_max/foil_resolution)))
-
-mask3 = np.ones(np.shape(detection))
-for index,value in enumerate(detection):
-	if value<power_treshold:
-		mask3[index]=0
-
-scipy.sparse.save_npz(path_sensitivity + '/mask3_on_camera_pixels.npz', scipy.sparse.csr_matrix(mask2))
-
-
-sensitivities_masked3 = []
-for index,masked in enumerate(mask3):
-	if not masked:
-		sensitivities_masked3.append(sensitivities_masked1[index])
-sensitivities_masked3=np.array(sensitivities_masked3)
-
-scipy.sparse.save_npz(path_sensitivity + '/sensitivity_masked3.npz', scipy.sparse.csr_matrix(sensitivities_masked3))
-
+# 	# I might go even further and define a treshold for the minimum reading that I consider valid.
+# 	# this anyway makes unclear what I mean by that signal leve, and this will also change for different plasma configurations
+#
+# power_treshold = 1e-5
+#
+# detector = TargettedCCDArray(targets=[pinhole_target], width=0.07, pixels=(pixel_h, pixel_v), targetted_path_prob=1.0,
+# 							 parent=world, pipelines=[power],
+# 							 transform=translate(*ccd_centre)*rotate_basis(ccd_normal, ccd_y_axis))
+# detector.max_wavelength = 601
+# detector.min_wavelength = 600
+# detector.pixel_samples = 5000
+# detector.observe()
+# detection = coleval.flatten_full( np.flip(np.transpose(power.frame.mean),axis=0))
+# if is_this_extra:
+# 	detection = coleval.foil_measurement_averaging_foil_pixels_extra_loseless(detection,foil_resolution_max,averaging,averaging)
+#
+# mask3 = np.ones(np.shape(detection))
+# for index,value in enumerate(detection):
+# 	if value<power_treshold:
+# 		mask3[index]=0
+#
+# scipy.sparse.save_npz(path_sensitivity + '/mask3_on_camera_pixels.npz', scipy.sparse.csr_matrix(mask2))
+#
+#
+# sensitivities_masked3 = []
+# for index,masked in enumerate(mask3):
+# 	if not masked:
+# 		sensitivities_masked3.append(sensitivities_masked1[index])
+# sensitivities_masked3=np.array(sensitivities_masked3)
+#
+# scipy.sparse.save_npz(path_sensitivity + '/sensitivity_masked3.npz', scipy.sparse.csr_matrix(sensitivities_masked3))
+#
 

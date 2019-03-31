@@ -3,14 +3,14 @@
 
 
 #this is if working on a pc, use pc printer
-exec(open("/home/ffederic/work/analysis_scripts/preamble_import_pc.py").read())
+exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_import_pc.py").read())
 
 # #this is if working in batch, use predefined NOT visual printer
-# exec(open("/home/ffederic/work/analysis_scripts/preamble_import_batch.py").read())
+# exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_import_batch.py").read())
 
 
 #this is for importing all the variables names and which are the files
-exec(open("/home/ffederic/work/analysis_scripts/preamble_indexing.py").read())
+exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_indexing.py").read())
 
 
 # Load emission profile
@@ -227,7 +227,7 @@ num_voxels = core_voxel_grid.count
 # plt.pause(0.0001)
 #
 # plt.figure()
-# plt.imshow(np.array(coleval.split_fixed_length(sensitivities[:,1000],pixel_h)),origin='lower')
+# plt.imshow(coleval.split_fixed_length(sensitivities[:,1000],pixel_h),origin='lower')
 # plt.pause(0.0001)
 #
 # sensitivities_averaged=sensitivities_matrix_averaging_foil_pixels(sensitivities,pixel_h,2,2)
@@ -237,92 +237,105 @@ num_voxels = core_voxel_grid.count
 
 
 
+averaging_all = [2,3,4,5,6,7,8,9,10,15]
+for averaging_h in averaging_all:
 
+	# averaging_h=2
+	averaging_v=averaging_h
+	shapeorig = np.shape(sensitivities)
+	npixels = shapeorig[0]
+	h_pixels = pixel_h
+	v_pixels = npixels // h_pixels
+	h_end_pixels = np.ceil(h_pixels / averaging_h).astype('int')
+	v_end_pixels = np.ceil(v_pixels / averaging_v).astype('int')
+	foil_res = '_foil_pixel_h_'+str(averaging_h)+'x'+str(averaging_v)+'_extra'
+	grid_type = 'core_res_2cm'
 
-foil_res = '_foil_pixel_h_31_extra'
-grid_type = 'core_res_2cm'
-averaging=6
-sensitivities_averaged=coleval.sensitivities_matrix_averaging_foil_pixels_extra(sensitivities,pixel_h,averaging)
+	print(coleval.sensitivities_matrix_averaging_foil_pixels_extra_loseless)
 
-
-
-
-path_sensitivity = '/home/ffederic/work/analysis_scripts/sensitivity_matrix_'+grid_type[5:]+foil_res+'_power'
-if not os.path.exists(path_sensitivity):
-	os.makedirs(path_sensitivity)
-scipy.sparse.save_npz(path_sensitivity + '/sensitivity.npz', scipy.sparse.csr_matrix(sensitivities_averaged))
-
-import csv
-header = ['# Sensitivity matrix generated with:','# ']
-to_write=[['foil horizontal pixels ',str(31)],['foil vertical pixels ',str(40)],['type of volume grid ',grid_type],['number of voxels ',num_voxels],['pipeline type ','pipeline'],['detector.pixel_samples',averaging*averaging*1000]]
-# to_write='1, 1, '+str(foil_fake_corner1)[8:-1]+', '+str(foil_fake_corner2)[8:-1]+', '+str(foil_fake_corner3)[8:-1]+', '+str(foil_fake_corner4)[8:-1]
-
-with open(path_sensitivity+'/sensitivity_matrix_info.csv', mode='w') as f:
-	writer = csv.writer(f)
-	writer.writerow(header[0].split(','))
-	writer.writerow([header[1]])
-	for row in to_write:
-		writer.writerow(row)
-f.close()
+	sensitivities_averaged=coleval.sensitivities_matrix_averaging_foil_pixels_extra_loseless(sensitivities,pixel_h,averaging_h,averaging_v)
 
 
 
 
+	path_sensitivity = '/home/ffederic/work/analysis_scripts/sensitivity_matrix_'+grid_type[5:]+foil_res+'_power'
+	if not os.path.exists(path_sensitivity):
+		os.makedirs(path_sensitivity)
+	scipy.sparse.save_npz(path_sensitivity + '/sensitivity.npz', scipy.sparse.csr_matrix(sensitivities_averaged))
 
+	import csv
+	header = ['# Sensitivity matrix generated with:','# ']
+	to_write=[['foil horizontal pixels ',str(h_end_pixels)],['foil vertical pixels ',str(v_end_pixels)],['type of volume grid ',grid_type],['number of voxels ',num_voxels],['pipeline type ','pipeline'],['detector.pixel_samples',averaging_v*averaging_h*1000],['this sensitivity matrix was generated loseless from the full frame sensitivity']]
+	# to_write='1, 1, '+str(foil_fake_corner1)[8:-1]+', '+str(foil_fake_corner2)[8:-1]+', '+str(foil_fake_corner3)[8:-1]+', '+str(foil_fake_corner4)[8:-1]
 
-
-
-
-
-
-if False:
-	test_voxel=43
-	power_on_voxels = np.zeros((core_voxel_grid.count))
-	power_on_voxels[test_voxel] = 2
-elif False:
-	power_on_voxels=np.linspace(1E+08,1,np.shape( sensitivities)[1])
-elif True:
-	power_on_voxels = np.zeros((core_voxel_grid.count))
-	num_voxels = core_voxel_grid.count
-
-	i = np.linspace(0, num_voxels - 1, num_voxels, dtype=int)
-	for index in i:
-		p1, p2, p3, p4 = core_voxel_grid._voxels[index].vertices
-		voxel_centre = Point2D((p1.x + p2.x + p3.x + p4.x) / 4, (p1.y + p2.y + p3.y + p4.y) / 4)
-		power_on_voxels[index] = radiation_function(voxel_centre.x, 0, voxel_centre.y)
-
-
-
-d = np.dot(sensitivities, power_on_voxels)
-d = coleval.foil_measurement_averaging_foil_pixels_extra(d,pixel_h,averaging)
-
-# foil_res = '_foil_pixel_h_93_extra'
-# grid_type = 'core_res_2cm'
-# path_sensitivity = '/home/ffederic/work/analysis_scripts/sensitivity_matrix_'+grid_type[5:]+foil_res+'_power'
-np.save(path_sensitivity+'/foil_power',d)
+	with open(path_sensitivity+'/sensitivity_matrix_info.csv', mode='w') as f:
+		writer = csv.writer(f)
+		writer.writerow(header[0].split(','))
+		writer.writerow([header[1]])
+		for row in to_write:
+			writer.writerow(row)
+	f.close()
 
 
 
 
 
-foil_res = foil_res[:-6]
 
 
-sensitivities_averaged=coleval.sensitivities_matrix_averaging_foil_pixels(sensitivities,pixel_h,averaging,averaging)
-
-path_sensitivity = '/home/ffederic/work/analysis_scripts/sensitivity_matrix_'+grid_type[5:]+foil_res+'_power'
-if not os.path.exists(path_sensitivity):
-	os.makedirs(path_sensitivity)
-scipy.sparse.save_npz(path_sensitivity + '/sensitivity.npz', scipy.sparse.csr_matrix(sensitivities_averaged))
 
 
-with open(path_sensitivity+'/sensitivity_matrix_info.csv', mode='w') as f:
-	writer = csv.writer(f)
-	writer.writerow(header[0].split(','))
-	writer.writerow([header[1]])
-	for row in to_write:
-		writer.writerow(row)
-f.close()
+
+
+	if False:
+		test_voxel=43
+		power_on_voxels = np.zeros((core_voxel_grid.count))
+		power_on_voxels[test_voxel] = 2
+	elif False:
+		power_on_voxels=np.linspace(1E+08,1,np.shape( sensitivities)[1])
+	elif True:
+		power_on_voxels = np.zeros((core_voxel_grid.count))
+		num_voxels = core_voxel_grid.count
+
+		i = np.linspace(0, num_voxels - 1, num_voxels, dtype=int)
+		for index in i:
+			p1, p2, p3, p4 = core_voxel_grid._voxels[index].vertices
+			voxel_centre = Point2D((p1.x + p2.x + p3.x + p4.x) / 4, (p1.y + p2.y + p3.y + p4.y) / 4)
+			power_on_voxels[index] = radiation_function(voxel_centre.x, 0, voxel_centre.y)
+
+
+
+	d = np.dot(sensitivities, power_on_voxels)
+	d = coleval.foil_measurement_averaging_foil_pixels_extra_loseless(d,pixel_h,averaging_h,averaging_v)
+
+	# foil_res = '_foil_pixel_h_93_extra'
+	# grid_type = 'core_res_2cm'
+	# path_sensitivity = '/home/ffederic/work/analysis_scripts/sensitivity_matrix_'+grid_type[5:]+foil_res+'_power'
+	np.save(path_sensitivity+'/foil_power',d)
+
+
+
+
+
+	foil_res = foil_res[:-6]
+
+
+	# sensitivities_averaged=coleval.sensitivities_matrix_averaging_foil_pixels(sensitivities,pixel_h,averaging_h,averaging_v)
+	sensitivities_averaged=coleval.sensitivities_matrix_averaging_foil_pixels_loseless(sensitivities,pixel_h,averaging_h,averaging_v)
+
+
+	path_sensitivity = '/home/ffederic/work/analysis_scripts/sensitivity_matrix_'+grid_type[5:]+foil_res+'_power'
+	if not os.path.exists(path_sensitivity):
+		os.makedirs(path_sensitivity)
+	scipy.sparse.save_npz(path_sensitivity + '/sensitivity.npz', scipy.sparse.csr_matrix(sensitivities_averaged))
+
+
+	with open(path_sensitivity+'/sensitivity_matrix_info.csv', mode='w') as f:
+		writer = csv.writer(f)
+		writer.writerow(header[0].split(','))
+		writer.writerow([header[1]])
+		for row in to_write:
+			writer.writerow(row)
+	f.close()
 
 
 
