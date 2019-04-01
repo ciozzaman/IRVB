@@ -181,18 +181,29 @@ with_noise = True
 foil_resolution_max = 187
 weigthed_best_search = True
 eigenvalue_cut_vertical = False
-enable_mask2 = True
+enable_mask2 = False
 treshold_method_try_to_search = True
 residuals_on_power_on_voxels = False
 
 
 
-# foil_resolution_all = [37, 31, 26, 19]
-foil_resolution_all = [47, 37, 31, 26, 19]
-# foil_resolution_all = [93]
-for foil_resolution in foil_resolution_all:
-	if (is_this_extra and foil_resolution==187):
+# # foil_resolution_all = [37, 31, 26, 19]
+# foil_resolution_all = [47, 37, 31, 26, 19]
+# # foil_resolution_all = [93]
+# for foil_resolution in foil_resolution_all:
+# 	if (is_this_extra and foil_resolution==187):
+# 		continue
+
+spatial_averaging_all = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15]
+for spatial_averaging in spatial_averaging_all:
+	if (is_this_extra and spatial_averaging == 1):
 		continue
+
+	if spatial_averaging > 1:
+		foil_resolution = str(spatial_averaging) + 'x' + str(spatial_averaging)
+	else:
+		foil_resolution = '187'
+
 
 	# data analysis
 
@@ -209,7 +220,8 @@ for foil_resolution in foil_resolution_all:
 	for time_averaging in time_averaging_tries:
 		if not is_this_extra:
 			# noise_on_power = np.sqrt( (noise_on_temporal_comp/(np.sqrt(time_averaging)))**2 + (noise_on_laplacian_comp/int(np.around(foil_resolution_max/foil_resolution)))**2 + noise_on_bb_comp**2 )
-			noise_on_power = return_power_noise_level(int(np.around(foil_resolution_max/foil_resolution)),time_averaging)
+			# noise_on_power = return_power_noise_level(int(np.around(foil_resolution_max/foil_resolution)),time_averaging)
+			noise_on_power = return_power_noise_level(spatial_averaging,time_averaging)
 		else:
 			# noise_on_power = np.sqrt((noise_on_temporal_comp / (np.sqrt(time_averaging))) ** 2 + (noise_on_laplacian_comp) ** 2 + noise_on_bb_comp ** 2)
 			noise_on_power = return_power_noise_level(1,time_averaging)
@@ -244,6 +256,8 @@ for foil_resolution in foil_resolution_all:
 			for row in csv_reader:
 				if row[0]=='foil horizontal pixels ':
 					pixel_h=int(row[1])
+				if row[0] == 'foil vertical pixels ':
+					pixel_v = int(row[1])
 				if row[0]=='pipeline type ':
 					pipeline =row[1]
 				if row[0]=='type of volume grid ':
@@ -341,8 +355,8 @@ for foil_resolution in foil_resolution_all:
 			power_on_voxels = np.zeros((core_voxel_grid.count))
 			num_voxels = core_voxel_grid.count
 
-			i = np.linspace(0, num_voxels - 1, num_voxels, dtype=int)
-			for index in i:
+			# i = np.linspace(0, num_voxels - 1, num_voxels, dtype=int)
+			for index in range(num_voxels):
 				p1, p2, p3, p4 = core_voxel_grid._voxels[index].vertices
 				voxel_centre = Point2D((p1.x + p2.x + p3.x + p4.x) / 4, (p1.y + p2.y + p3.y + p4.y) / 4)
 				power_on_voxels[index] = radiation_function(voxel_centre.x, 0, voxel_centre.y)
@@ -350,8 +364,8 @@ for foil_resolution in foil_resolution_all:
 				power_on_voxels_no_mask = np.zeros((core_voxel_grid_not_masked.count))
 				num_voxels = core_voxel_grid_not_masked.count
 
-				i = np.linspace(0, num_voxels - 1, num_voxels, dtype=int)
-				for index in i:
+				# i = np.linspace(0, num_voxels - 1, num_voxels, dtype=int)
+				for index in range(num_voxels):
 					p1, p2, p3, p4 = core_voxel_grid_not_masked._voxels[index].vertices
 					voxel_centre = Point2D((p1.x + p2.x + p3.x + p4.x) / 4, (p1.y + p2.y + p3.y + p4.y) / 4)
 					power_on_voxels_no_mask[index] = radiation_function(voxel_centre.x, 0, voxel_centre.y)
@@ -427,9 +441,9 @@ for foil_resolution in foil_resolution_all:
 						if row[0] == 'foil horizontal pixels ':
 							pixel_h_max_res = int(row[1])
 				d_high_res = np.dot(sensitivities_max_res, power_on_voxels_no_mask)
-				d_original = coleval.foil_measurement_averaging_foil_pixels_extra(d_high_res,pixel_h_max_res,int(np.around(foil_resolution_max/foil_resolution)))
+				d_original = coleval.foil_measurement_averaging_foil_pixels_extra_loseless(d_high_res,pixel_h_max_res,spatial_averaging,spatial_averaging)
 				d_high_res = d_high_res + np.random.normal(0, noise_on_power, len(d_high_res))
-				d = coleval.foil_measurement_averaging_foil_pixels_extra(d_high_res, pixel_h_max_res, int(np.around(foil_resolution_max / foil_resolution)))
+				d = coleval.foil_measurement_averaging_foil_pixels_extra_loseless(d_high_res, pixel_h_max_res, spatial_averaging,spatial_averaging)
 
 				if flag_mask2_present:
 					d_temp = []
@@ -733,7 +747,7 @@ for foil_resolution in foil_resolution_all:
 
 			# print('conditioning=' + str(np.linalg.cond(test_matrix)))
 
-			plt.title('Eigenvalues for foil averaged on '+str(int(np.around(foil_resolution_max/foil_resolution))**2)+' pixels, alpha=' + str(alpha) + '\neigenvalue treshold=' + str(treshold))
+			plt.title('Eigenvalues for foil averaged on '+str(spatial_averaging**2)+' pixels, alpha=' + str(alpha) + '\neigenvalue treshold=' + str(treshold))
 			plt.plot(s, 'o')
 			plt.plot(s, label='eigenvalues')
 			if not treshold_method_try_to_search:
@@ -845,9 +859,15 @@ for foil_resolution in foil_resolution_all:
 		# print((np.dot(a1,np.linspace(0,155-1,155)) - np.dot(test_matrix,np.linspace(0,155-1,155))).max())
 		# print((np.dot(a1,np.linspace(0,155-1,155)) - np.dot(test_matrix,np.linspace(0,155-1,155))).min())
 
-		core_voxel_grid.plot(voxel_values=power_on_voxels, colorbar=['rainbow', 'Emissivity [W/m3]', 'log'])
+		to_print =  copy.deepcopy(power_on_voxels)
+		maximum_original = max(power_on_voxels)
+		minimum_original = min([x for x in power_on_voxels if x != 0])
+		if (int(maximum_original)==int(minimum_original)):
+			to_print[-1] = 1
+		core_voxel_grid.plot(voxel_values=to_print, colorbar=['rainbow', 'Emissivity [W/m3]', 'log'])
 		# print(path_sensitivity+'/gnappo.eps')
 		plt.title('Emission prifle form SOLPS simulation')
+		plt.plot(_MASTU_CORE_GRID_POLYGON[:, 0], _MASTU_CORE_GRID_POLYGON[:, 1], 'k')
 		plt.savefig(path_sensitivity + '/input_emission_profile.eps')
 		plt.close()
 
@@ -874,6 +894,7 @@ for foil_resolution in foil_resolution_all:
 					plt.colorbar().set_label('Power density on the foil [W/m^2]')
 					plt.xlabel('Horizontal axis [pixles]')
 					plt.ylabel('Vertical axis [pixles]')
+					plt.plot(_MASTU_CORE_GRID_POLYGON[:, 0], _MASTU_CORE_GRID_POLYGON[:, 1], 'k')
 					plt.savefig(path_sensitivity + '/power_distribution_on_foil.eps')
 					plt.close()
 				else:
@@ -888,6 +909,7 @@ for foil_resolution in foil_resolution_all:
 					plt.colorbar().set_label('Power density on the foil [W/m^2]')
 					plt.xlabel('Horizontal axis [pixles]')
 					plt.ylabel('Vertical axis [pixles]')
+					plt.plot(_MASTU_CORE_GRID_POLYGON[:, 0], _MASTU_CORE_GRID_POLYGON[:, 1], 'k')
 					plt.savefig(path_sensitivity + '/power_distribution_on_foil.eps')
 					plt.close()
 
@@ -904,6 +926,7 @@ for foil_resolution in foil_resolution_all:
 					plt.colorbar().set_label('Power density on the foil [W/m^2]')
 					plt.xlabel('Horizontal axis [pixles]')
 					plt.ylabel('Vertical axis [pixles]')
+					plt.plot(_MASTU_CORE_GRID_POLYGON[:, 0], _MASTU_CORE_GRID_POLYGON[:, 1], 'k')
 					plt.savefig(path_sensitivity + '/power_distribution_on_foil.eps')
 					plt.close()
 				else:
@@ -918,6 +941,7 @@ for foil_resolution in foil_resolution_all:
 					plt.colorbar().set_label('Power density on the foil [W/m^2]')
 					plt.xlabel('Horizontal axis [pixles]')
 					plt.ylabel('Vertical axis [pixles]')
+					plt.plot(_MASTU_CORE_GRID_POLYGON[:, 0], _MASTU_CORE_GRID_POLYGON[:, 1], 'k')
 					plt.savefig(path_sensitivity + '/power_distribution_on_foil.eps')
 					plt.close()
 
@@ -975,6 +999,8 @@ for foil_resolution in foil_resolution_all:
 
 		maximum_original = max(power_on_voxels)
 		minimum_original = min([x for x in power_on_voxels if x != 0])
+		if (int(maximum_original)==int(minimum_original)):
+			minimum_original = 1
 		to_print = np.zeros(np.shape(m))
 		maximum_new_record = 0
 		for index, value in enumerate(m):
@@ -993,12 +1019,14 @@ for foil_resolution in foil_resolution_all:
 				maximum_new_record) + '\n instead of ' + str(maximum_original))
 		else:
 			plt.title('Estimated emissivity\n')
+		plt.plot(_MASTU_CORE_GRID_POLYGON[:, 0], _MASTU_CORE_GRID_POLYGON[:, 1], 'k')
 		plt.savefig(path_sensitivity + '/estimated_emission.eps')
 		plt.close()
 
 		difference = m - power_on_voxels
 		core_voxel_grid.plot(voxel_values=difference, colorbar=['rainbow', 'Emissivity [W/m3]'])
 		plt.title('Difference of emission profile')
+		plt.plot(_MASTU_CORE_GRID_POLYGON[:, 0], _MASTU_CORE_GRID_POLYGON[:, 1], 'k')
 		plt.savefig(path_sensitivity + '/emission_difference.eps')
 		plt.close()
 
@@ -1019,6 +1047,7 @@ for foil_resolution in foil_resolution_all:
 		core_voxel_grid.plot(voxel_values=to_print, colorbar=['rainbow',
 															  'Logaritm of the difference with sign scaled on ' + str(
 																  reference_min) + 'W/m3'])
+		plt.plot(_MASTU_CORE_GRID_POLYGON[:, 0], _MASTU_CORE_GRID_POLYGON[:, 1], 'k')
 		plt.savefig(path_sensitivity + '/logaritmic_estimated_difference.eps')
 		plt.close()
 
@@ -1052,6 +1081,7 @@ for foil_resolution in foil_resolution_all:
 			core_voxel_grid.plot(voxel_values=m_std, colorbar=['rainbow', 'Emissivity std [W/m3]'])
 			plt.title('std of the inverted emissivity\nwith noise on foil power of ' + str(
 				noise_on_power) + '\n mean of the voxel power std of ' + str(np.mean(m_std)))
+			plt.plot(_MASTU_CORE_GRID_POLYGON[:, 0], _MASTU_CORE_GRID_POLYGON[:, 1], 'k')
 			plt.savefig(path_sensitivity + '/noise.eps')
 			plt.close()
 
@@ -1060,6 +1090,7 @@ for foil_resolution in foil_resolution_all:
 		header = ['# Record of what was found in this simulation of inversion']
 		to_write = [['grid resolution in cm', str(grid_resolution)],
 					['foil horizontal resolution in pixels', str(pixel_h)],
+					['foil vertical resolution in pixels', str(pixel_v)],
 					['shape of sensitivity matrix ', str(np.shape(sensitivities))],
 					['with noise, std of noise on power, time averaging ',
 					 str([with_noise, noise_on_power, time_averaging])],
