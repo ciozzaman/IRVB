@@ -19,28 +19,6 @@ exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_indexing.py").r
 
 
 
-
-
-
-
-# def _run_(foil_resolution):
-
-# Load emission profile
-
-mastu_path = "/home/ffederic/work/SOLPS/seeding/seed_10"
-if not mastu_path in sys.path:
-	sys.path.append(mastu_path)
-ds_puff8 = xr.open_dataset('/home/ffederic/work/SOLPS/seeding/seed_10/balance.nc', autoclose=True).load()
-
-grid_x = ds_puff8.crx.mean(dim='4')
-grid_y = ds_puff8.cry.mean(dim='4')
-impurity_radiation = ds_puff8.b2stel_she_bal.sum('ns')
-hydrogen_radiation = ds_puff8.eirene_mc_eael_she_bal.sum('nstra') - ds_puff8.eirene_mc_papl_sna_bal.isel(ns=1).sum('nstra') * 13.6 * 1.6e-19   # ds_puff8.eirene_mc_eael_she_bal.sum('nstra') is the total electron energy sink due to plasma / atoms interactions, including ionisation/excitation (dominant) and charge exchange (negligible). Here we assume all not used for ionisation goes to radiation, including the CX bit.
-total_radiation = -hydrogen_radiation + impurity_radiation
-total_radiation_density = -np.divide(hydrogen_radiation + impurity_radiation,ds_puff8.vol)
-
-
-
 # CHERAB section
 
 
@@ -82,70 +60,19 @@ irvb_cad = import_stl("IRVB_camera_no_backplate_4mm.stl", parent=world, material
 # create radiator
 
 
-cr_r = np.transpose(ds_puff8.crx.values)
-cr_z = np.transpose(ds_puff8.cry.values)
-radiated_power=np.transpose(total_radiation_density.values)
-
-def make_solps_power_function(cr_r, cr_z, radiated_power):
+def import_radiator_from_solps_sim_on_triangular_mesh(sim):
 
 	import numpy as np
 	from cherab.core.math.mappers import AxisymmetricMapper
 	from raysect.core.math.interpolators import Discrete2DMesh
 
-	nx = cr_r.shape[0]
-	ny = cr_r.shape[1]
-
-	# Iterate through the arrays from MDS plus to pull out unique vertices
-	unique_vertices = {}
-	vertex_id = 0
-	for i in range(nx):
-		for j in range(ny):
-			for k in range(4):
-				vertex = (cr_r[i, j, k], cr_z[i, j, k])
-				try:
-					unique_vertices[vertex]
-				except KeyError:
-					unique_vertices[vertex] = vertex_id
-					vertex_id += 1
-
-	# Load these unique vertices into a numpy array for later use in Raysect's mesh interpolator object.
-	num_vertices = len(unique_vertices)
-	vertex_coords = np.zeros((num_vertices, 2), dtype=np.float64)
-	for vertex, vertex_id in unique_vertices.items():
-		vertex_coords[vertex_id, :] = vertex
-
-	# Number of triangles must be equal to number of rectangle centre points times 2.
-	num_tris = nx * ny * 2
-	triangles = np.zeros((num_tris, 3), dtype=np.int32)
-
-	_triangle_to_grid_map = np.zeros((nx * ny * 2, 2), dtype=np.int32)
-	tri_index = 0
-	for i in range(nx):
-		for j in range(ny):
-			# Pull out the index number for each unique vertex in this rectangular cell.
-			# Unusual vertex indexing is based on SOLPS output, see Matlab code extract from David Moulton.
-			# cell_r = [r(i,j,1),r(i,j,3),r(i,j,4),r(i,j,2)];
-			v1_id = unique_vertices[(cr_r[i, j, 0], cr_z[i, j, 0])]
-			v2_id = unique_vertices[(cr_r[i, j, 2], cr_z[i, j, 2])]
-			v3_id = unique_vertices[(cr_r[i, j, 3], cr_z[i, j, 3])]
-			v4_id = unique_vertices[(cr_r[i, j, 1], cr_z[i, j, 1])]
-
-			# Split the quad cell into two triangular cells.
-			# Each triangle cell is mapped to the tuple ID (ix, iy) of its parent mesh cell.
-			triangles[tri_index, :] = (v1_id, v2_id, v3_id)
-			_triangle_to_grid_map[tri_index, :] = (i, j)
-			tri_index += 1
-			triangles[tri_index, :] = (v3_id, v4_id, v1_id)
-			_triangle_to_grid_map[tri_index, :] = (i, j)
-			tri_index += 1
-
-	radiated_power=radiated_power.flatten()
+	radiated_power=sim.total_radiation.flatten()
 	rad_power = np.zeros(radiated_power.shape[0]*2)
 	for i in range(radiated_power.shape[0]):
 		rad_power[i*2] = radiated_power[i]
 		rad_power[i*2 + 1] = radiated_power[i]
 
-	return AxisymmetricMapper(Discrete2DMesh(vertex_coords, triangles, rad_power,limit=False))
+	return AxisymmetricMapper(Discrete2DMesh(sim.mesh.vertex_coords, sim.mesh.triangles, rad_power,limit=False))
 
 
 
@@ -164,7 +91,87 @@ class RadiatedPower(InhomogeneousVolumeEmitter):
 		return spectrum
 
 
-radiation_function = make_solps_power_function(cr_r, cr_z, radiated_power)
+
+
+
+# def _run_(foil_resolution):
+
+# Load emission profile
+
+# mastu_path = "/home/ffederic/work/SOLPS/seeding/seed_10"
+# if not mastu_path in sys.path:
+# 	sys.path.append(mastu_path)
+# ds_puff8 = xr.open_dataset('/home/ffederic/work/SOLPS/seeding/seed_10/balance.nc', autoclose=True).load()
+
+os.chdir("/home/ffederic/work/cherab/cherab_solps/cherab/solps/formats")
+from mdsplus import load_solps_from_mdsplus,load_mesh_from_mdsplus
+
+
+# ref_number = 69592	#from mdsnos_cd2H
+# # ref_number = 69570	#from mdsnos_cd15H
+# # ref_number = 69566	#from mdsnos_cd1H
+# sim = load_solps_from_mdsplus(mds_server, ref_number)
+
+for ref_number in mdsnos_cd2H:
+sim = load_solps_from_mdsplus(mds_server, ref_number)
+tot_pow = 0
+for i,vol in enumerate(sim.mesh.vol.flatten()):
+	tot_pow+=vol*(sim.total_radiation.flatten())[i]
+
+fig, ax = plt.subplots()
+grid_x = sim.mesh.cr
+grid_y = sim.mesh.cz
+total_radiation_density = sim.total_radiation
+plt.pcolor(grid_x, grid_y, total_radiation_density, norm=LogNorm(vmin=1000, vmax=total_radiation_density.max()),cmap='rainbow')
+plt.title('SOLPS simulation '+str(ref_number)+'\n total emitted power '+str(tot_pow)+'W')
+plt.colorbar().set_label('Emissivity [W/m^3]')
+plt.plot(_MASTU_CORE_GRID_POLYGON[:, 0], _MASTU_CORE_GRID_POLYGON[:, 1], 'k')
+plt.xlabel('R [m]')
+plt.ylabel('Z [m]')
+plt.axis('equal')
+ax.set_ylim(top=-0.5)
+ax.set_xlim(left=0.)
+plt.pause(0.01)
+
+
+
+radiation_function = import_radiator_from_solps_sim_on_triangular_mesh(sim)
+
+
+
+# fig, ax = plt.subplots()
+# X = np.arange(0, grid_x.max(), 0.01)
+# Y = np.arange(grid_y.min(), grid_y.max(), 0.01)
+# rad_test = np.zeros((len(X), len(Y)))
+# grid_x2 = np.zeros((len(X), len(Y)))
+# grid_y2 = np.zeros((len(X), len(Y)))
+# tot_power = 0
+# for ix, x in enumerate(X):
+# 	for jy, y in enumerate(Y):
+# 		rad_test[ix, jy] = radiation_function(x, 0, y)
+# 		grid_x2[ix, jy] = x
+# 		grid_y2[ix, jy] = y
+# 		# if y<-1.42:
+# 		tot_power+=radiation_function(x, 0, y)*0.001*0.001*2*np.pi*x
+#
+#
+# plt.pcolor(grid_x2, grid_y2, rad_test, norm=LogNorm(vmin=100),cmap='rainbow')
+# # plt.pcolor(grid_x.values, grid_y.values, np.abs(total_radiation_density.values),cmap='rainbow')
+# plt.title('Emissivity profile as imported from SOLPS using CHERAB utilities')
+# plt.colorbar().set_label('Emissivity [W/m^3]')
+# plt.xlabel('R [m]')
+# plt.ylabel('Z [m]')
+# plt.plot(_MASTU_CORE_GRID_POLYGON[:, 0], _MASTU_CORE_GRID_POLYGON[:, 1], 'k')
+#
+# x=np.linspace(0.55-0.075,0.55+0.075,10)
+# y=-1.2+np.sqrt(0.08**2-(x-0.55)**2)
+# y_=-1.2-np.sqrt(0.08**2-(x-0.55)**2)
+# plt.plot(x,y,'k')
+# plt.plot(x,y_,'k')
+# plt.axis('equal')
+# ax.set_ylim(top=-0.5)
+# ax.set_xlim(left=0.)
+# plt.pause(0.0001)
 
 
 
@@ -174,15 +181,15 @@ radiation_function = make_solps_power_function(cr_r, cr_z, radiated_power)
 
 
 
-is_this_extra = True
+is_this_extra = False
 # foil_resolution = 47
 grid_resolution = 2  # in cm
 with_noise = True
 foil_resolution_max = 187
 weigthed_best_search = False
 eigenvalue_cut_vertical = False
-enable_mask2 = True
-enable_mask1 = True
+enable_mask2 = False
+enable_mask1 = False
 treshold_method_try_to_search = True
 residuals_on_power_on_voxels = True
 
@@ -190,10 +197,12 @@ residuals_on_power_on_voxels = True
 
 # # foil_resolution_all = [37, 31, 26, 19]
 # foil_resolution_all = [47, 37, 31, 26, 19]
-spatial_averaging_all = [1, 2]
+# # foil_resolution_all = [93]
 # for foil_resolution in foil_resolution_all:
 # 	if (is_this_extra and foil_resolution==187):
 # 		continue
+spatial_averaging_all = [1, 2]
+
 
 # spatial_averaging_all = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 for spatial_averaging in np.flip(spatial_averaging_all,0):
@@ -210,8 +219,8 @@ for spatial_averaging in np.flip(spatial_averaging_all,0):
 
 
 	if with_noise:
+		# time_averaging_tries = [3,4,5,6]
 		time_averaging_tries=[1,2,3,4,5,6]
-		# time_averaging_tries = [5,6]
 	else:
 		time_averaging_tries=[1]
 
@@ -236,7 +245,8 @@ for spatial_averaging in np.flip(spatial_averaging_all,0):
 		grid_type = 'core_res_'+str(grid_resolution)+'cm'
 		path_sensitivity = '/home/ffederic/work/analysis_scripts/sensitivity_matrix_'+grid_type[5:]+foil_res+'_power'
 		path_sensitivity_original = copy.deepcopy(path_sensitivity)
-		path_for_plots = copy.deepcopy(path_sensitivity)
+		# path_for_plots = copy.deepcopy(path_sensitivity)
+		path_for_plots = '/home/ffederic/work/analysis_scripts'+'/SOLPS'+str(ref_number)+'/sensitivity_matrix_'+grid_type[5:]+foil_res+'_power'
 		if not os.path.exists(path_sensitivity + '/sensitivity.npz'):
 			sensitivities = np.load(path_sensitivity + '/sensitivity.npy')
 			scipy.sparse.save_npz(path_sensitivity + '/sensitivity.npz', scipy.sparse.csr_matrix(sensitivities))
@@ -899,11 +909,6 @@ for spatial_averaging in np.flip(spatial_averaging_all,0):
 					plt.imshow(coleval.split_fixed_length(d_for_the_plot, pixel_h), origin='lower', cmap=cmap)
 					plt.title('Power density on the foil via sensitivity matrix\nnoise std of ' + str(noise_on_power))
 					# plt.colorbar().set_label('Power density on the foil [W/m^2], cut-off ' + str(vmin) + 'W/m^2')
-					# plt.colorbar().set_label('Power density on the foil [W/m^2]')
-					# plt.xlabel('Horizontal axis [pixles]')
-					# plt.ylabel('Vertical axis [pixles]')
-					# plt.savefig(path_for_plots + '/power_distribution_on_foil.eps')
-					# plt.close()
 				else:
 					fig, ax = plt.subplots()
 					cmap = plt.cm.rainbow
@@ -913,12 +918,6 @@ for spatial_averaging in np.flip(spatial_averaging_all,0):
 					plt.imshow(coleval.split_fixed_length(d_for_the_plot, pixel_h), origin='lower', cmap=cmap)
 					plt.title('Power density on the foil via sensitivity matrix')
 					# plt.colorbar().set_label('Power density on the foil [W/m^2], cut-off ' + str(vmin) + 'W/m^2')
-					# plt.colorbar().set_label('Power density on the foil [W/m^2]')
-					# plt.xlabel('Horizontal axis [pixles]')
-					# plt.ylabel('Vertical axis [pixles]')
-					# plt.savefig(path_for_plots + '/power_distribution_on_foil.eps')
-					# plt.close()
-
 			else:
 				if with_noise:
 					fig, ax = plt.subplots()
@@ -929,11 +928,6 @@ for spatial_averaging in np.flip(spatial_averaging_all,0):
 					plt.imshow(coleval.split_fixed_length(d, pixel_h), origin='lower', cmap=cmap)
 					plt.title('Power density on the foil via sensitivity matrix\nnoise std of ' + str(noise_on_power))
 					# plt.colorbar().set_label('Power density on the foil [W/m^2], cut-off ' + str(vmin) + 'W/m^2')
-					# plt.colorbar().set_label('Power density on the foil [W/m^2]')
-					# plt.xlabel('Horizontal axis [pixles]')
-					# plt.ylabel('Vertical axis [pixles]')
-					# plt.savefig(path_for_plots + '/power_distribution_on_foil.eps')
-					# plt.close()
 				else:
 					fig, ax = plt.subplots()
 					cmap = plt.cm.rainbow
@@ -943,11 +937,6 @@ for spatial_averaging in np.flip(spatial_averaging_all,0):
 					plt.imshow(coleval.split_fixed_length(d, pixel_h), origin='lower', cmap=cmap)
 					plt.title('Power density on the foil via sensitivity matrix')
 					# plt.colorbar().set_label('Power density on the foil [W/m^2], cut-off ' + str(vmin) + 'W/m^2')
-					# plt.colorbar().set_label('Power density on the foil [W/m^2]')
-					# plt.xlabel('Horizontal axis [pixles]')
-					# plt.ylabel('Vertical axis [pixles]')
-					# plt.savefig(path_for_plots + '/power_distribution_on_foil.eps')
-					# plt.close()
 		else:
 			if with_noise:
 				fig, ax = plt.subplots()
@@ -1173,6 +1162,7 @@ for spatial_averaging in np.flip(spatial_averaging_all,0):
 
 
 print('J O B   D O N E !')
+
 
 #
 # foil_resolution_all = [187, 93, 62, 47, 37, 31, 26, 19]

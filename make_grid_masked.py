@@ -2,11 +2,11 @@
 # Fabio Federici
 
 
-#this is if working on a pc, use pc printer
-exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_import_pc.py").read())
+# #this is if working on a pc, use pc printer
+# exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_import_pc.py").read())
 
-# #this is if working in batch, use predefined NOT visual printer
-# exec(open("/home/ffederic/work/analysis scripts/scripts/preamble_import_batch.py").read())
+#this is if working in batch, use predefined NOT visual printer
+exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_import_batch.py").read())
 
 
 #this is for importing all the variables names and which are the files

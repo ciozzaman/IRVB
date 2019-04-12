@@ -930,12 +930,13 @@ def laser_shot_location_library(pathfiles,full_pathfile_index=full_pathfile_inde
 
 
 
+###################################################################################################
+
 noise_space_x = [1,2,3,4,5,6,10]
 noise_space_y = [152,65,45.7,35.4,29.8,25.8,17.7]
 noise_time_x = [1,2,3,4,5,6,8,10]
 noise_time_y = [152,86,67,57,51,46.7,40.8,36.8]
 
-###################################################################################################
 
 def return_power_noise_level(spatial_averaging,time_averaging,noise_space_x=noise_space_x,noise_space_y=noise_space_y,noise_time_x=noise_time_x,noise_time_y=noise_time_y):
 
@@ -1017,3 +1018,38 @@ _MASTU_CORE_GRID_POLYGON = np.array([
     # (1.49, 0.8)     # point added just to cut the unnecessary voxels	# Replaced 04/02/2018
 	(1.49, 0.75)  # point added just to cut the unnecessary voxels the 04/02/2018
 ])
+
+
+################################################################################################################
+
+
+
+
+# SOLPS simulations for MAST-U
+
+mds_server = 'solps-mdsplus.aug.ipp.mpg.de:8001'
+mdsnos_cd1H = [69548, 69549, 69485, 69550, 69551, 69552, 69553, 69554, 69555, 69556, 69557, 69558, 69559, 69560, 69561,69562, 69563, 69564, 69565, 69566]
+mdsnos_cd15H = [69567, 69568, 69569, 69570, 69571, 69572, 69573, 69574, 69575, 69576, 69577, 69578, 69579, 69580,69581]
+mdsnos_cd2H = [69582, 69583, 69584, 69585, 69586, 69587, 69588, 69589, 69590, 69591, 69592, 69593, 69594, 69595, 69596,69597, 69598, 69599, 69600, 69601]
+
+mdsnos_sxd1L = [69602, 69603, 69604, 69605, 69606, 69607, 69608, 69609, 69610, 69611]
+mdsnos_sxd2L = [69612, 69613, 69614, 69615, 69616, 69617, 69618, 69619, 69620, 69621, 69622, 69623, 69624, 69625, 69626,69627, 69628, 69629]
+mdsnos_sxd1H = [69637, 69638, 69639, 69640, 69641, 69642, 69643, 69644, 69630, 69631, 69632, 69633, 69634, 69635,69636]
+mdsnos_sxd15H = [69645, 69646, 69647, 69648, 69649, 69650, 69651, 69652, 69653, 69654, 69655, 69656, 69657, 69658,69659, 69660, 69661, 69662, 69663, 69664]
+mdsnos_sxd2H = [69665, 69666, 69667, 69668, 69669, 69670, 69671, 69672, 69673, 69674, 69675, 69676, 69677, 69678, 69679,69680, 69681, 69682, 69683, 69684]
+
+
+# LEGEND
+#
+# cd = conventional divertor
+# sxd = super x
+#
+# 1 = core scope(initial power)
+# 15 = core scope + extra nbi(1 and a half times power)
+# 2 = core scope + extra nbi + cryo(predicted max power)
+#
+# H = h - mode
+# L = l - mode
+#
+# MAST simulation that compared best against experimental data
+# 39625
