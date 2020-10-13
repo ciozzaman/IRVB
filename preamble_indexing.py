@@ -329,7 +329,7 @@ vacuumtest1=['/home/ffederic/work/irvb/vacuum_chamber_testing/Jul18_2018/irvb_sa
 full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'vacuumtest1':vacuumtest1}))
 
 
-# Laser experiments 08/08/2018 1ms 383Hz focused laser right in the pinhole
+# Laser experiments 08/08/2018 1ms 994Hz (width=320, height=64, xoffset=0, yoffset=64, invert (V flip) selected) focused laser right in the pinhole
 # NOTE THAT LASER VOLTAGE / POWER CORRELATION IS DIFFERENT FROM 03/2018 ONE ! ! !
 # Use     reflaserpower1    and   reflaserfvoltage1
 laser15=['/home/ffederic/work/irvb/laser/Aug08_2018/irvb_full-000001','/home/ffederic/work/irvb/laser/Aug08_2018/irvb_full-000002','/home/ffederic/work/irvb/laser/Aug08_2018/irvb_full-000003','/home/ffederic/work/irvb/laser/Aug08_2018/irvb_full-000004','/home/ffederic/work/irvb/laser/Aug08_2018/irvb_full-000005','/home/ffederic/work/irvb/laser/Aug08_2018/irvb_full-000006','/home/ffederic/work/irvb/laser/Aug08_2018/irvb_full-000007','/home/ffederic/work/irvb/laser/Aug08_2018/irvb_full-000008','/home/ffederic/work/irvb/laser/Aug08_2018/irvb_full-000009','/home/ffederic/work/irvb/laser/Aug08_2018/irvb_full-000010','/home/ffederic/work/irvb/laser/Aug08_2018/irvb_full-000011','/home/ffederic/work/irvb/laser/Aug08_2018/irvb_full-000012','/home/ffederic/work/irvb/laser/Aug08_2018/irvb_full-000013','/home/ffederic/work/irvb/laser/Aug08_2018/irvb_full-000014','/home/ffederic/work/irvb/laser/Aug08_2018/irvb_full-000015']
@@ -556,9 +556,9 @@ full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'vacuum5':vacuum5}))
 # NOTE THAT LASER VOLTAGE / POWER CORRELATION IS DIFFERENT FROM 03/2018 ONE ! ! !
 # Use     reflaserpower1    and   reflaserfvoltage1
 laser34=['/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000001','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000002','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000003','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000004','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000005','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000006','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000007','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000008','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000009','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000010','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000011','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000012','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000013']
-voltlaser34=[0.05,0.1,0.25,0.35,0.5,0.6,0.5,0.5,0.5,0.5,0.5,0.5,0.5]
-freqlaser34=[0.2,0.2,0.2,0.2,0.2,0.2,0.2,1,3,10,30,60,90]
-dutylaser34=[0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5]
+voltlaser34=[0.05,0.1,0.25,0.35,0.5,0.6,0.5,0.5,0.5,0.5,0.5,0.5,0.5]	# [V]
+freqlaser34=[0.2,0.2,0.2,0.2,0.2,0.2,0.2,1,3,10,30,60,90]	# [Hz]
+dutylaser34=[0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5]	# [#]
 full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'laser34':laser34}))
 
 
@@ -604,7 +604,7 @@ dutylaser38=[0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5]
 full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'laser38':laser38}))
 
 
-# Laser experiments 25/10/2018 0.5ms 1976Hz  (width=96, height=96, xoffset=160, yoffset=80, invert (V flip) selected) fully defocused laser
+# Laser experiments 25/10/2018 0.5ms 1976Hz  (width=96, height=96, xoffset=160, yoffset=80, invert (V flip) selected) focused laser
 # NOTE THAT LASER VOLTAGE / POWER CORRELATION IS DIFFERENT FROM 03/2018 ONE ! ! !
 # Use     reflaserpower1    and   reflaserfvoltage1
 laser39=['/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000051','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000052','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000053','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000054','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000055','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000057','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000058','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000059','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000060','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000061','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000063','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000064','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000065','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000066']
@@ -616,8 +616,8 @@ full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'laser39':laser39}))
 
 # Laser experiments 25/10/2018 1ms+0.5ms samples with no power on foil and IR camera shielded from any possible stray radiation to test background stability
 vacuum6=['/home/ffederic/work/irvb/vacuum_chamber_testing/Oct25_2018/irvb_sample-000001','/home/ffederic/work/irvb/vacuum_chamber_testing/Oct25_2018/irvb_sample-000002','/home/ffederic/work/irvb/vacuum_chamber_testing/Oct25_2018/irvb_sample-000003','/home/ffederic/work/irvb/vacuum_chamber_testing/Oct25_2018/irvb_sample-000004','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000014','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000020','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000025','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000026','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000032','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000037','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000038','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000044','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000049','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000050','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000056','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000062','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000066','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000067','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000073','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000079','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000085','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000091','/home/ffederic/work/irvb/laser/Oct25_2018/irvb_full-000097']
-vacuumframerate6=[383,383,383,383,383,383,383,994,994,994,1976,1976,1976,994,994,994,994,1976,1976,1976,1976,1976,1976]
-vacuuminttime6=[1,1,1,1,1,1,1,1,1,1,0.5,0.5,0.5,1,1,1,1,0.5,0.5,0.5,0.5,0.5,0.5]
+vacuumframerate6=[383,383,383,383,383,383,383,994,994,994,1976,1976,1976,994,994,994,994,1976,1976,1976,1976,1976,1976]	# [Hz]
+vacuuminttime6=[1,1,1,1,1,1,1,1,1,1,0.5,0.5,0.5,1,1,1,1,0.5,0.5,0.5,0.5,0.5,0.5]	# [ms]
 full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'vacuum6':vacuum6}))
 
 
@@ -760,8 +760,14 @@ sigmaSB=5.6704e-08 #[W/(m2 K4)]
 zeroC=273.15 #K
 
 
-
-
+J_to_eV = 6.242e18	#1J = 1/J_to_eV eV
+eV_to_K = 8.617333262145e-5	# eV/K
+boltzmann_constant_J = 1.380649e-23	# J/K
+hydrogen_mass = 1.008*1.660*1e-27	# kg
+electron_mass = 9.10938356* 1e-31	# kg
+plank_constant_eV = 4.135667696e-15	# eV s
+plank_constant_J = 6.62607015e-34	# J s
+light_speed = 299792458	# m/s
 
 
 # Library of laser experiments characteristics

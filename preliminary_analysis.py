@@ -7572,7 +7572,14 @@ elif False:
 
 
 
-	# 2019/02/06 I check what happens after you shitch on the camera
+
+
+elif False:
+
+
+	# 2018/02/06 I check what happens after you shitch on the camera
+
+
 
 	data_all=[]
 	for path in vacuum8:
@@ -7581,16 +7588,42 @@ elif False:
 		data_all.append(data[0])
 	data_all = np.array(data_all)
 
-	plt.plot(vacuumtime8,np.mean(data_all[:,0],axis=(1,2,3)))
+	plt.plot(vacuumtime8,np.mean(data_all[:],axis=(1,2,3)))
+
+	plt.figure()
+	from scipy import interpolate
+
+	poscentred = [[250, 80], [100, 70], [70, 200], [160, 128], [250, 200]]
+	color = ['m', 'c', 'g', 'b', 'r', 'k', 'pink', 'm', 'y']
+	# poscentred = [[160, 70],[80,70], [80, 128], [80, 200],[160,200], [250, 200],[250, 128],[250, 70],[160, 128]]
+	index = np.linspace(0, len(data_all) - 1, len(data_all), dtype=int)
+	for i, pos in enumerate(poscentred):
+		mean = []
+		std = []
+		for data in data_all:
+			mean.append(np.mean(data[:, pos[1], pos[0]], axis=(0)))
+			std.append(2 * np.std(data[:, pos[1], pos[0]], axis=0))
+		plt.plot((np.array(vacuumtime8) - vacuumtime8[0] + 5), mean, color[i], marker='+', label='pixel ' + str(pos),
+				 linewidth=1)
+		# plt.plot((np.array(vacuumtime8) - vacuumtime8[0] + 5), mean, '+',color=color[i], label='pixel ' + str(pos))
+		# plt.plot((np.array(vacuumtime8)-vacuumtime8[0]+5)[:-1],mean[:-1],color[i],marker='+',label='pixel '+str(pos),linewidth=1)
+		# plt.plot((np.array(vacuumtime8)-vacuumtime8[0]+5)[:-1],mean[:-1],color[i],marker='+')
+		f = interpolate.interp1d(vacuumtime8[-2:], mean[-2:], fill_value='extrapolate')
+		plt.plot((np.array(vacuumtime8) - vacuumtime8[0] + 5), f(vacuumtime8), color=color[i], linestyle='--',
+				 linewidth=0.8)
+		# plt.plot((np.array(vacuumtime8) - vacuumtime8[0] + 5)[:-1], f(vacuumtime8[:-1]), color=color[i], linestyle='--',linewidth=0.5)
+		# plt.errorbar(vacuumtime8,mean,yerr=std,label='pixel '+str(pos))
+		print(mean[-1] - mean[-2])
+
+	plt.legend(loc='best')
+	plt.xlabel('Time from camera switch on [min]')
+	plt.ylabel('Counts [au]')
+	plt.pause(0.001)
 
 
 
 
-
-
-
-
-
+	# THIS DOES NOT WORK, I WAITED TOO MUCH TO START TO RECORD.
 	data_all = []
 	for path in vacuum7:
 		filenames = coleval.all_file_names(path, 'npy')[0]
@@ -7605,18 +7638,10 @@ elif False:
 
 	plt.plot(vacuumtime7, mean)
 
-
-
-
-
-
-
-
-
-
+	plt.figure()
 	from scipy import interpolate
 	poscentred=[[250,80],[100,70],[70,200],[160,128],[250,200]]
-	color = ['m', 'c', 'y', 'b', 'r', 'k', 'g', 'm','pink']
+	color = ['m', 'c', 'g', 'b', 'r', 'k', 'pink', 'm','y']
 	# poscentred = [[160, 70],[80,70], [80, 128], [80, 200],[160,200], [250, 200],[250, 128],[250, 70],[160, 128]]
 	index=np.linspace(0,len(data_all)-1,len(data_all),dtype=int)
 	for i,pos in enumerate(poscentred):
@@ -7625,12 +7650,12 @@ elif False:
 		for data in data_all:
 			mean.append(np.mean(data[:,pos[1],pos[0]], axis=(0)))
 			std.append(2*np.std(data[:,pos[1],pos[0]],axis=0))
-		plt.plot((np.array(vacuumtime8)-vacuumtime8[0]+5),mean,color[i],marker='+',label='pixel '+str(pos),linewidth=0.3)
+		plt.plot((np.array(vacuumtime7)-vacuumtime7[0]+60),mean,color[i],marker='+',label='pixel '+str(pos),linewidth=1)
 		# plt.plot((np.array(vacuumtime8) - vacuumtime8[0] + 5), mean, '+',color=color[i], label='pixel ' + str(pos))
 		# plt.plot((np.array(vacuumtime8)-vacuumtime8[0]+5)[:-1],mean[:-1],color[i],marker='+',label='pixel '+str(pos),linewidth=1)
 		# plt.plot((np.array(vacuumtime8)-vacuumtime8[0]+5)[:-1],mean[:-1],color[i],marker='+')
 		f = interpolate.interp1d(vacuumtime8[-2:], mean[-2:], fill_value='extrapolate')
-		plt.plot((np.array(vacuumtime8)-vacuumtime8[0]+5),f(vacuumtime8),color=color[i],linestyle='--',linewidth=0.5)
+		plt.plot((np.array(vacuumtime7)-vacuumtime7[0]+60),f(vacuumtime7),color=color[i],linestyle='--',linewidth=0.8)
 		# plt.plot((np.array(vacuumtime8) - vacuumtime8[0] + 5)[:-1], f(vacuumtime8[:-1]), color=color[i], linestyle='--',linewidth=0.5)
 		# plt.errorbar(vacuumtime8,mean,yerr=std,label='pixel '+str(pos))
 		print(mean[-1]-mean[-2])
@@ -7638,19 +7663,28 @@ elif False:
 	plt.legend(loc='best')
 	plt.xlabel('Time from camera switch on [min]')
 	plt.ylabel('Counts [au]')
-	plt.savefig('gna2.eps')
-	plt.close()
+	plt.pause(0.001)
 
 
-	plt.imshow(data_all[-1,0],origin='lower')
+
+
+
+
+
+
+
+
+	sample=-1
+	plt.figure()
+	plt.title('Image '+str((np.array(vacuumtime8)-vacuumtime8[0]+5)[sample])+'min after switch on')
+	plt.imshow(data_all[sample,0],origin='lower')
 	plt.xlabel('Horizontal axis [pixles]')
 	plt.ylabel('Vertical axis [pixles]')
 	plt.colorbar().set_label('Counts [au]')
 
-	for pos in poscentred:
-		plt.plot(pos[0],pos[1],'+',markersize=10 ,label='pixel '+str(pos))
+	for index,pos in enumerate(poscentred):
+		plt.plot(pos[0],pos[1],'+'+color[index],markersize=15 ,label='pixel '+str(pos))
 
 	plt.legend(loc='best')
-	plt.savefig('gna3.eps')
-	plt.close()
+	plt.pause(0.001)
 

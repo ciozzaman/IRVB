@@ -3,14 +3,14 @@
 
 
 #this is if working on a pc, use pc printer
-exec(open("/home/ffederic/work/analysis scripts/preamble_import_pc.py").read())
+exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_import_pc.py").read())
 
 # #this is if working in batch, use predefined NOT visual printer
 # exec(open("/home/ffederic/work/analysis scripts/preamble_import_batch.py").read())
 
 
 #this is for importing all the variables names and which are the files
-exec(open("/home/ffederic/work/analysis scripts/preamble_indexing.py").read())
+exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_indexing.py").read())
 
 
 
@@ -28,7 +28,7 @@ exec(open("/home/ffederic/work/analysis scripts/preamble_indexing.py").read())
 
 
 
-
+'''
 
 
 
@@ -467,6 +467,12 @@ plt.colorbar().set_label('Phase [rad]')
 plt.xlabel('Horizontal axis [pixles]')
 plt.ylabel('Vertical axis [pixles]')
 plt.show()
+
+'''
+
+
+
+
 
 # I want to take real laser data, substract the oscillation ad see the difference
 
@@ -1193,7 +1199,7 @@ plt.legend()
 plt.legend(loc='best')
 plt.grid()
 
-data = coleval.clear_oscillation_central(data, framerate)
+data = coleval.clear_oscillation_central2(data, framerate,plot_conparison=False)
 
 datatemp, errdatatemp = coleval.count_to_temp_poly2(data, params, errparams)
 

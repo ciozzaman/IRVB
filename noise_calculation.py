@@ -3,14 +3,14 @@
 
 
 #this is if working on a pc, use pc printer
-exec(open("/home/ffederic/work/analysis_scripts/preamble_import_pc.py").read())
+exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_import_pc.py").read())
 
 # #this is if working in batch, use predefined NOT visual printer
 # exec(open("/home/ffederic/work/analysis scripts/preamble_import_batch.py").read())
 
 
 #this is for importing all the variables names and which are the files
-exec(open("/home/ffederic/work/analysis_scripts/preamble_indexing.py").read())
+exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_indexing.py").read())
 
 
 
@@ -695,7 +695,7 @@ n=3
 # folder of the parameters path
 pathparams='/home/ffederic/work/irvb/2018-05-14_multiple_search_for_parameters/1ms383Hz/average'
 # folder to read
-pathfiles=vacuum7[-5]
+pathfiles=files7[2]
 # framerate of the IR camera in Hz
 framerate=383
 # integration time of the camera in ms
@@ -924,7 +924,7 @@ plt.ylabel('std of the averaged pixels')
 plt.pause(0.001)
 
 
-plt.figure()
+plt.figure(1)
 x=[1,2,3,4,5,6,10]
 plt.plot(x,[108,17,11.4,4.84,3.7,1.95,0.9],label='spatial variation term')
 plt.plot(x,108*1/np.array(x),'k--')
@@ -946,7 +946,7 @@ plt.grid()
 plt.pause(0.001)
 
 
-plt.figure()
+plt.figure(2)
 x=[1,2,3,4,5,6,8,10]
 plt.plot(x,[108.6,77,64,44,50,46,40,36.6],label='spatial variation term')
 plt.plot(x,108.6*1/np.sqrt(x),'k--')
@@ -1012,81 +1012,479 @@ plt.pause(0.0001)
 
 
 
-# # Nope, this does not works because it finds only the point of the border of the foil or screw
-# treshold_for_bad_difference = 10
-# flag_differences = np.ones(np.shape(std))
-# for i in range(1,np.shape(std)[0]-1):
-# 	for j in range(1,np.shape(std)[1]-1):
-# 		temp = (mean[i - 1, j - 1:j + 2] * flag[i - 1, j - 1:j + 2]).tolist() + [
-# 			(mean[i, j - 1] * flag[i, j - 1]).tolist()] + [(mean[i, j + 1] * flag[i, j + 1]).tolist()] + (
-# 						   mean[i + 1, j - 1:j + 2] * flag[i + 1, j - 1:j + 2]).tolist()
-# 		temp2 = [x for x in temp if x != 0]
-# 		if np.abs(np.mean(temp2-mean[i,j])) > treshold_for_bad_difference*average_difference:
-# 			print(i,j)
-# 			print(temp)
-# 			print(mean[i,j])
-# 			flag_differences[i,j] = 0
-#
-# plt.figure()
-# plt.imshow(flag_differences, origin='lower')
-# plt.xlabel('Horizontal axis [pixles]')
-# plt.ylabel('Vertical axis [pixles]')
-# plt.title('Dead pixels')
-# plt.pause(0.0001)
-# # Nope, this does not works because it finds only the point of the border of the foil or screw
-#
-#
-#
-#
-# # mode 2
-# treshold_for_bad_difference = 30	# first: pixels that stand out of their neighbour no matter the std might be bad. check what is the max temperature difference expected on the foil. the treshold for badness must be loose.
-# flag_differences = np.ones(np.shape(std))
-# for i in range(1,np.shape(std)[0]-1):
-# 	for j in range(1,np.shape(std)[1]-1):
-# 		# if flag[i,j]==1:	# second: of the pixels tha have a high std I will keep only the one which average stays within the neighbour. the treshold for badness must be tight.
-# 		# 	continue
-# 		temp = (mean[i - 1, j - 1:j + 2] * flag[i - 1, j - 1:j + 2]).tolist() + [
-# 			(mean[i, j - 1] * flag[i, j - 1]).tolist()] + [(mean[i, j + 1] * flag[i, j + 1]).tolist()] + (
-# 						   mean[i + 1, j - 1:j + 2] * flag[i + 1, j - 1:j + 2]).tolist()
-# 		temp2 = [x for x in temp if x != 0]
-# 		if (mean[i,j]>max(temp)+treshold_for_bad_difference or mean[i,j]<min(temp)-treshold_for_bad_difference):
-# 			print(i,j)
-# 			print(temp)
-# 			print('mean')
-# 			print(mean[i,j])
-# 			print('std')
-# 			print(std[i,j])
-# 			flag_differences[i,j] = 0
-# temp = coleval.flatten_full(flag_differences)
-# temp3 = [x for x in temp if x != 1]
-# print('Bad pixels for eccessive difference with neighbours = '+str(len(temp3)))
-#
-# treshold_for_bad_difference = 0	# first: pixels that stand out of their neighbour no matter the std might be bad. check what is the max temperature difference expected on the foil. the treshold for badness must be loose.
-# for i in range(1,np.shape(std)[0]-1):
-# 	for j in range(1,np.shape(std)[1]-1):
-# 		if flag[i,j]==1:	# second: of the pixels tha have a high std I will keep only the one which average stays within the neighbour. the treshold for badness must be tight.
-# 			continue
-# 		temp = (mean[i - 1, j - 1:j + 2] * flag[i - 1, j - 1:j + 2]).tolist() + [
-# 			(mean[i, j - 1] * flag[i, j - 1]).tolist()] + [(mean[i, j + 1] * flag[i, j + 1]).tolist()] + (
-# 						   mean[i + 1, j - 1:j + 2] * flag[i + 1, j - 1:j + 2]).tolist()
-# 		temp2 = [x for x in temp if x != 0]
-# 		if (mean[i,j]>max(temp)+treshold_for_bad_difference or mean[i,j]<min(temp)-treshold_for_bad_difference):
-# 			# print(i,j)
-# 			# print(temp)
-# 			# print(mean[i,j])
-# 			flag_differences[i,j] = 0
-#
-# plt.figure()
-# plt.imshow(flag_differences, origin='lower')
-# plt.xlabel('Horizontal axis [pixles]')
-# plt.ylabel('Vertical axis [pixles]')
-# plt.title('Dead pixels')
-# plt.pause(0.0001)
-#
-#
-# temp = coleval.flatten_full(flag_differences)
-# temp2 = [x for x in temp if x != 1]
-# print('Bad pixels for high std and eccessive difference with neighbours = ' + str(len(temp2)-len(temp3)))
+
+
+
+
+
+
+
+
+
+
+
+# 22/04/2019 Little addition to put a bit better in numbers why we need to eliminate the oscillation
+
+# degree of polynomial of choice
+n = 3
+# folder of the parameters path
+pathparams = '/home/ffederic/work/irvb/2018-05-14_multiple_search_for_parameters/1ms383Hz/average'
+# folder to read
+pathfiles = files7[2]
+# framerate of the IR camera in Hz
+framerate = 383
+# integration time of the camera in ms
+inttime = 1
+# filestype
+type = '_stat.npy'
+# type='csv'
+
+filenames = coleval.all_file_names(pathfiles, type)[0]
+data = np.load(os.path.join(pathfiles, filenames))
+
+
+def fit_sin(x, *params):
+	import numpy as np
+	c1 = params[0]
+	c2 = params[1]
+	c3 = params[2]
+	c4 = params[3]
+	c5 = params[4]
+	#c5=0
+	return c1+c5*x+c2 * np.sin(x/c3+c4)
+
+
+plt.figure(figsize=(20,10))
+framerate=383
+maxstep=99
+minstep=0
+steps=maxstep-minstep
+poscentred=[[70,70],[70,200],[160,133],[250,200],[250,70]]
+color=['b','r','m','y','g','c']
+index=0
+for pos in poscentred:
+	for a in [10]:
+		datasample=np.mean(data[0,:,pos[1]-a:pos[1]+1+a,pos[0]-a:pos[0]+1+a],axis=(-1,-2))
+		plt.plot(datasample,color[index],label='averaged counts in [H,V] '+str(pos)+' +/- '+str(a))
+		# index+=1
+		guess = [np.mean(datasample), 2, 2, 0,0]
+		temp1,temp2=curve_fit(fit_sin,  np.linspace(minstep,maxstep-1,steps),datasample[minstep:maxstep], p0=guess, maxfev=100000000)
+		plt.plot(np.linspace(minstep+1,maxstep,steps),fit_sin(np.linspace(minstep+1,maxstep,steps),*temp1),color[index]+'--',label='fitting in [H,V] '+str(pos)+' +/- '+str(a)+' with amplitude and frequency '+str(int(abs(temp1[1])*100)/100)+'[au], '+str(int(100*framerate/(abs(temp1[2])*2*np.pi))/100)+'Hz',linewidth=3)
+		index+=1
+plt.legend(loc='best')
+plt.grid()
+plt.title('Averaged counts in different locations fitted with a sinusoidal curve to extract frequency and amplitude  \n from '+pathfiles)
+plt.xlabel('Frames')
+plt.ylabel('Counts [au]')
+plt.show()
+
+
+
+
+
+
+
+
+
+# degree of polynomial of choice
+n = 3
+# folder of the parameters path
+pathparams = '/home/ffederic/work/irvb/2018-05-14_multiple_search_for_parameters/1ms383Hz/average'
+# folder to read
+pathfiles = vacuum2[-12]
+# framerate of the IR camera in Hz
+framerate = 383
+# integration time of the camera in ms
+inttime = 1
+# filestype
+type = '.npy'
+# type='csv'
+
+filenames = coleval.all_file_names(pathfiles, type)[0]
+data = np.load(os.path.join(pathfiles, filenames))
+
+
+
+spectra = np.fft.fft(data[0], axis=0)
+# magnitude=np.sqrt(np.add(np.power(real,2),np.power(imag,2)))
+magnitude = 2 * np.abs(spectra) / len(spectra)
+phase = np.angle(spectra)
+freq = np.fft.fftfreq(len(magnitude), d=1 / framerate)
+
+plt.plot(freq,np.mean(magnitude,axis=(1,2)))
+plt.semilogy()
+plt.show()
+
+samplefreq = 587
+averaging = 1
+plt.title('Normalised amplitude of ' + str(np.around(freq[samplefreq],decimals=2))  + 'Hz oscillation from fast Fourier transform in counts in \n ' + pathfiles + ' FR ' + str(
+	framerate) + 'Hz, int. time ' + str(inttime) + 'ms',fontsize=9)
+plt.imshow(coleval.average_frame(magnitude[samplefreq],averaging), 'rainbow', origin='lower')
+plt.colorbar().set_label('Amplitude [au]')
+plt.xlabel('Horizontal axis [pixles]')
+plt.ylabel('Vertical axis [pixles]')
+# plt.show()
+plt.figure()
+plt.title('Phase of ' +  str(np.around(freq[samplefreq],decimals=2))  + 'Hz oscillation from fast Fourier transform in counts in \n ' + pathfiles + ' FR ' + str(
+	framerate) + 'Hz, int. time ' + str(inttime) + 'ms',fontsize=9)
+plt.imshow(coleval.average_frame(phase[samplefreq],averaging), 'rainbow', origin='lower')
+plt.colorbar().set_label('Phase [rad]')
+plt.xlabel('Horizontal axis [pixles]')
+plt.ylabel('Vertical axis [pixles]')
+plt.show()
+
+
+data2=coleval.clear_oscillation_central2(data,framerate,plot_conparison=False)
+flag=coleval.find_dead_pixels(data2)
+data3=coleval.replace_dead_pixels(data2,flag)
+data=np.array(data)
+data3=np.array(data3)
+
+plt.figure()
+averaging_all = [1,2,3,4,5,6,7,8,9,10,15,20,25,30,35,40,50,60,100]
+std_all_orig = []
+std_all_clean = []
+shape = (np.array(np.shape(data))/2).astype(int)
+# shape=[0,0,100,100]
+ref_orif=np.mean(data[0],axis=(0))
+ref_clean=np.mean(data3[0],axis=(0))
+for averaging in averaging_all:
+	average = np.mean(data[0,:,shape[2]:shape[2]+averaging,shape[3]:shape[3]+averaging]-ref_orif[shape[2]:shape[2]+averaging,shape[3]:shape[3]+averaging],axis=(-1,-2))
+	# average = coleval.average_multiple_frames(data,averaging)
+	# shape = (np.array(np.shape(average))/2).astype(int)
+	std = np.std(average)
+	std = np.mean((average[:-1]-average[1:])**2)
+	std_all_orig.append(std)
+	average = np.mean(data3[0,:,shape[2]:shape[2]+averaging,shape[3]:shape[3]+averaging]-ref_clean[shape[2]:shape[2]+averaging,shape[3]:shape[3]+averaging],axis=(-1,-2))
+	# average = coleval.average_multiple_frames(data,averaging)
+	# shape = (np.array(np.shape(average))/2).astype(int)
+	std = np.std(average)
+	std = np.mean((average[:-1] - average[1:]) ** 2)
+	std_all_clean.append(std)
+
+plt.plot(averaging_all,std_all_orig,'o')
+plt.plot(averaging_all,std_all_orig[0]/np.array(averaging_all),'--k')
+plt.plot(averaging_all,std_all_clean,'x')
+plt.plot(averaging_all,std_all_clean[0]/np.array(averaging_all),'--k')
+plt.semilogy()
+plt.pause(0.001)
+
+
+
+
+
+
+averaging_all = [1,2,3,4,5,6,7,8,9,10,20,30,40]
+std_all_orig = []
+std_all_clean = []
+params=np.load(os.path.join(pathparams,'coeffpolydeg'+str(n)+'int'+str(inttime)+'ms.npy'))
+errparams=np.load(os.path.join(pathparams,'errcoeffpolydeg'+str(n)+'int'+str(inttime)+'ms.npy'))
+
+try:
+	del datatempcrop_full_res
+	del basetemp_full_res
+except:
+	1+1
+
+basecounts = np.mean(data[0],axis=(0))
+rotangle=0
+datatemp, errdatatemp = coleval.count_to_temp_poly2([[basecounts]], params, errparams)
+basetemp = coleval.record_rotation(datatemp,rotangle)
+
+
+datatemp, errdatatemp = coleval.count_to_temp_poly2(data, params, errparams)
+datatempcrop = coleval.record_rotation(datatemp,rotangle)
+errdatatempcrop = coleval.record_rotation(errdatatemp,rotangle)
+
+
+mean = np.mean(data[0],axis=(0))
+
+testrot = mean
+rotangle = -1.5  # in degrees
+foilrot = rotangle * 2 * np.pi / 360
+foilrotdeg = rotangle
+foilcenter = [160, 133]
+foilhorizw = 0.09
+foilvertw = 0.07
+foilhorizwpixel = 240
+foilvertwpixel = np.int((foilhorizwpixel * foilvertw) // foilhorizw)
+r = ((foilhorizwpixel ** 2 + foilvertwpixel ** 2) ** 0.5) / 2  # HALF DIAGONAL
+a = foilvertwpixel / np.cos(foilrot)
+tgalpha = np.tan(foilrot)
+delta = -(a ** 2) / 4 + (1 + tgalpha ** 2) * (r ** 2)
+foilx = np.add(foilcenter[0], [(-0.5 * a * tgalpha + delta ** 0.5) / (1 + tgalpha ** 2),
+							   (-0.5 * a * tgalpha - delta ** 0.5) / (1 + tgalpha ** 2),
+							   (0.5 * a * tgalpha - delta ** 0.5) / (1 + tgalpha ** 2),
+							   (0.5 * a * tgalpha + delta ** 0.5) / (1 + tgalpha ** 2),
+							   (-0.5 * a * tgalpha + delta ** 0.5) / (1 + tgalpha ** 2)])
+foily = np.add(foilcenter[1] - tgalpha * foilcenter[0],
+			   [tgalpha * foilx[0] + a / 2, tgalpha * foilx[1] + a / 2, tgalpha * foilx[2] - a / 2,
+				tgalpha * foilx[3] - a / 2, tgalpha * foilx[0] + a / 2])
+foilxint = (np.rint(foilx)).astype(int)
+foilyint = (np.rint(foily)).astype(int)
+
+precisionincrease = 10
+dummy = np.ones(np.multiply(np.shape(testrot), precisionincrease))
+dummy[foilcenter[1] * precisionincrease, foilcenter[0] * precisionincrease] = 2
+dummy[int(foily[0] * precisionincrease), int(foilx[0] * precisionincrease)] = 3
+dummy[int(foily[1] * precisionincrease), int(foilx[1] * precisionincrease)] = 4
+dummy[int(foily[2] * precisionincrease), int(foilx[2] * precisionincrease)] = 5
+dummy[int(foily[3] * precisionincrease), int(foilx[3] * precisionincrease)] = 6
+dummy2 = rotate(dummy, foilrotdeg, axes=(-1, -2), order=0)
+foilcenterrot = (
+	np.rint([np.where(dummy2 == 2)[1][0] / precisionincrease, np.where(dummy2 == 2)[0][0] / precisionincrease])).astype(
+	int)
+foilxrot = (np.rint([np.where(dummy2 == 3)[1][0] / precisionincrease, np.where(dummy2 == 4)[1][0] / precisionincrease,
+					 np.where(dummy2 == 5)[1][0] / precisionincrease, np.where(dummy2 == 6)[1][0] / precisionincrease,
+					 np.where(dummy2 == 3)[1][0] / precisionincrease])).astype(int)
+foilyrot = (np.rint([np.where(dummy2 == 3)[0][0] / precisionincrease, np.where(dummy2 == 4)[0][0] / precisionincrease,
+					 np.where(dummy2 == 5)[0][0] / precisionincrease, np.where(dummy2 == 6)[0][0] / precisionincrease,
+					 np.where(dummy2 == 3)[0][0] / precisionincrease])).astype(int)
+
+foillx = min(foilxrot)
+foilrx = max(foilxrot)
+foilhorizwpixel = foilrx - foillx
+foildw = min(foilyrot)
+foilup = max(foilyrot)
+foilvertwpixel = foilup - foildw
+
+basecounts = mean
+
+datatemp, errdatatemp = coleval.count_to_temp_poly2([[basecounts]], params, errparams)
+datatemprot = rotate(datatemp, foilrotdeg, axes=(-1, -2))
+datatempcrop = datatemprot[:, :, foildw:foilup, foillx:foilrx]
+# basetemp = np.mean(datatempcrop[0, :, 1:-1, 1:-1], axis=0)
+basetemp = np.mean(datatempcrop[0], axis=0)
+
+
+datatemp, errdatatemp = coleval.count_to_temp_poly2(data, params, errparams)
+datatemprot = rotate(datatemp, foilrotdeg, axes=(-1, -2))
+datatempcrop = datatemprot[:, :, foildw:foilup, foillx:foilrx]
+errdatatemprot = rotate(errdatatemp, foilrotdeg, axes=(-1, -2))
+errdatatempcrop = errdatatemprot[:, :, foildw:foilup, foillx:foilrx]
+
+
+
+for spatial_averaging in averaging_all:
+
+	time_averaging = 1
+	if not ('datatempcrop_full_res' in dir()):
+		datatempcrop_full_res = copy.deepcopy(datatempcrop)
+	datatempcrop = coleval.average_multiple_frames(datatempcrop_full_res,spatial_averaging,timemean=time_averaging)
+	print('ping')
+
+	if not ('basetemp_full_res' in dir()):
+		basetemp_full_res = copy.deepcopy(basetemp)
+	basetemp=resize(basetemp_full_res,np.shape(datatempcrop[0,0]),order=1)
+	print('ping')
+
+	foilemissivityscaled_orig = 1 * np.ones((np.shape(datatempcrop[0,0])[0]-2,np.shape(datatempcrop[0,0])[1]-2))
+	foilthicknessscaled_orig = (2.5 / 1000000) * np.ones((np.shape(datatempcrop[0,0])[0]-2,np.shape(datatempcrop[0,0])[1]-2))
+	conductivityscaled = Ptthermalconductivity * np.ones((np.shape(datatempcrop[0,0])[0]-2,np.shape(datatempcrop[0,0])[1]-2))
+	reciprdiffusivityscaled_orig = (1 / (0.4*Ptthermaldiffusivity)) * np.ones((np.shape(datatempcrop[0,0])[0]-2,np.shape(datatempcrop[0,0])[1]-2))
+	flat_properties = True
+
+
+	dt=time_averaging*1/framerate
+	dx=foilhorizw/(np.shape(datatempcrop)[-1])
+	dy=foilvertw/(np.shape(datatempcrop)[-2])
+	relative_temp = np.add(datatempcrop,-basetemp)
+	dTdt=np.divide(relative_temp[:,2:,1:-1,1:-1]-relative_temp[:,:-2,1:-1,1:-1],2*dt)
+	d2Tdx2=np.divide(relative_temp[:,1:-1,1:-1,2:]-np.multiply(2,relative_temp[:,1:-1,1:-1,1:-1])+relative_temp[:,1:-1,1:-1,:-2],dx**2)
+	d2Tdy2=np.divide(relative_temp[:,1:-1,2:,1:-1]-np.multiply(2,relative_temp[:,1:-1,1:-1,1:-1])+relative_temp[:,1:-1,:-2,1:-1],dy**2)
+	# dTdt=np.divide(datatempcrop[:,2:,1:-1,1:-1]-datatempcrop[:,:-2,1:-1,1:-1],2*dt)
+	# d2Tdx2=np.divide(datatempcrop[:,1:-1,1:-1,2:]-np.multiply(2,datatempcrop[:,1:-1,1:-1,1:-1])+datatempcrop[:,1:-1,1:-1,:-2],dx**2)
+	# d2Tdy2=np.divide(datatempcrop[:,1:-1,2:,1:-1]-np.multiply(2,datatempcrop[:,1:-1,1:-1,1:-1])+datatempcrop[:,1:-1,:-2,1:-1],dx**2)
+	d2Tdxy=np.add(d2Tdx2,d2Tdy2)
+	negd2Tdxy=np.multiply(-1,d2Tdxy)
+	T4=np.power(np.add(zeroC,datatempcrop[:,1:-1,1:-1,1:-1]),4)
+	T04=np.power(np.add(zeroC,basetemp[1:-1, 1:-1]),4)
+
+	print('ping')
+	reciprdiffusivityscaled=np.multiply(1/1,reciprdiffusivityscaled_orig)
+	foilemissivityscaled=np.multiply(1,foilemissivityscaled_orig)
+	foilthicknessscaled=np.multiply(1,foilthicknessscaled_orig)
+
+	BBrad=[]
+	diffusion=[]
+	timevariation=[]
+	ktf=np.multiply(conductivityscaled,foilthicknessscaled)
+	for i in range(len(datatempcrop[:,0,0,0])):
+		BBrad.append([])
+		diffusion.append([])
+		timevariation.append([])
+		for j in range(len(datatempcrop[0,1:-1,0,0])):
+			BBradtemp=np.multiply(np.multiply(2*sigmaSB,foilemissivityscaled),np.add(T4[i,j],np.negative(T04)))
+			BBrad[i].append(BBradtemp)
+			diffusiontemp=np.multiply(ktf,negd2Tdxy[i,j])
+			diffusion[i].append(diffusiontemp)
+			timevariationtemp=np.multiply(ktf,np.multiply(reciprdiffusivityscaled,dTdt[i,j]))
+			timevariation[i].append(timevariationtemp)
+	BBrad=np.array(BBrad)
+	diffusion=np.array(diffusion)
+	timevariation=np.array(timevariation)
+	print('ping')
+	BBradnoback=np.add(BBrad,0)
+	diffusionnoback=np.add(diffusion,0)
+	timevariationnoback_orig=np.add(timevariation,0)
+
+	powernoback=np.add(np.add(diffusionnoback,timevariationnoback_orig),BBradnoback)
+	print('ping')
+
+	std_all_orig.append(np.std(coleval.flatten_full(timevariationnoback_orig[0])))
+
+
+
+
+try:
+	del datatempcrop_full_res
+	del basetemp_full_res
+except:
+	1+1
+
+basecounts = np.mean(data3[0],axis=(0))
+rotangle=0
+datatemp, errdatatemp = coleval.count_to_temp_poly2([[basecounts]], params, errparams)
+basetemp = coleval.record_rotation(datatemp,rotangle)
+
+
+datatemp, errdatatemp = coleval.count_to_temp_poly2(data3, params, errparams)
+datatempcrop = coleval.record_rotation(datatemp,rotangle)
+errdatatempcrop = coleval.record_rotation(errdatatemp,rotangle)
+
+
+mean = np.mean(data3[0],axis=(0))
+
+testrot = mean
+rotangle = -1.5  # in degrees
+foilrot = rotangle * 2 * np.pi / 360
+foilrotdeg = rotangle
+foilcenter = [160, 133]
+foilhorizw = 0.09
+foilvertw = 0.07
+foilhorizwpixel = 240
+foilvertwpixel = np.int((foilhorizwpixel * foilvertw) // foilhorizw)
+r = ((foilhorizwpixel ** 2 + foilvertwpixel ** 2) ** 0.5) / 2  # HALF DIAGONAL
+a = foilvertwpixel / np.cos(foilrot)
+tgalpha = np.tan(foilrot)
+delta = -(a ** 2) / 4 + (1 + tgalpha ** 2) * (r ** 2)
+foilx = np.add(foilcenter[0], [(-0.5 * a * tgalpha + delta ** 0.5) / (1 + tgalpha ** 2),
+							   (-0.5 * a * tgalpha - delta ** 0.5) / (1 + tgalpha ** 2),
+							   (0.5 * a * tgalpha - delta ** 0.5) / (1 + tgalpha ** 2),
+							   (0.5 * a * tgalpha + delta ** 0.5) / (1 + tgalpha ** 2),
+							   (-0.5 * a * tgalpha + delta ** 0.5) / (1 + tgalpha ** 2)])
+foily = np.add(foilcenter[1] - tgalpha * foilcenter[0],
+			   [tgalpha * foilx[0] + a / 2, tgalpha * foilx[1] + a / 2, tgalpha * foilx[2] - a / 2,
+				tgalpha * foilx[3] - a / 2, tgalpha * foilx[0] + a / 2])
+foilxint = (np.rint(foilx)).astype(int)
+foilyint = (np.rint(foily)).astype(int)
+
+precisionincrease = 10
+dummy = np.ones(np.multiply(np.shape(testrot), precisionincrease))
+dummy[foilcenter[1] * precisionincrease, foilcenter[0] * precisionincrease] = 2
+dummy[int(foily[0] * precisionincrease), int(foilx[0] * precisionincrease)] = 3
+dummy[int(foily[1] * precisionincrease), int(foilx[1] * precisionincrease)] = 4
+dummy[int(foily[2] * precisionincrease), int(foilx[2] * precisionincrease)] = 5
+dummy[int(foily[3] * precisionincrease), int(foilx[3] * precisionincrease)] = 6
+dummy2 = rotate(dummy, foilrotdeg, axes=(-1, -2), order=0)
+foilcenterrot = (
+	np.rint([np.where(dummy2 == 2)[1][0] / precisionincrease, np.where(dummy2 == 2)[0][0] / precisionincrease])).astype(
+	int)
+foilxrot = (np.rint([np.where(dummy2 == 3)[1][0] / precisionincrease, np.where(dummy2 == 4)[1][0] / precisionincrease,
+					 np.where(dummy2 == 5)[1][0] / precisionincrease, np.where(dummy2 == 6)[1][0] / precisionincrease,
+					 np.where(dummy2 == 3)[1][0] / precisionincrease])).astype(int)
+foilyrot = (np.rint([np.where(dummy2 == 3)[0][0] / precisionincrease, np.where(dummy2 == 4)[0][0] / precisionincrease,
+					 np.where(dummy2 == 5)[0][0] / precisionincrease, np.where(dummy2 == 6)[0][0] / precisionincrease,
+					 np.where(dummy2 == 3)[0][0] / precisionincrease])).astype(int)
+
+foillx = min(foilxrot)
+foilrx = max(foilxrot)
+foilhorizwpixel = foilrx - foillx
+foildw = min(foilyrot)
+foilup = max(foilyrot)
+foilvertwpixel = foilup - foildw
+
+basecounts = mean
+
+datatemp, errdatatemp = coleval.count_to_temp_poly2([[basecounts]], params, errparams)
+datatemprot = rotate(datatemp, foilrotdeg, axes=(-1, -2))
+datatempcrop = datatemprot[:, :, foildw:foilup, foillx:foilrx]
+# basetemp = np.mean(datatempcrop[0, :, 1:-1, 1:-1], axis=0)
+basetemp = np.mean(datatempcrop[0], axis=0)
+
+
+datatemp, errdatatemp = coleval.count_to_temp_poly2(data3, params, errparams)
+datatemprot = rotate(datatemp, foilrotdeg, axes=(-1, -2))
+datatempcrop = datatemprot[:, :, foildw:foilup, foillx:foilrx]
+errdatatemprot = rotate(errdatatemp, foilrotdeg, axes=(-1, -2))
+errdatatempcrop = errdatatemprot[:, :, foildw:foilup, foillx:foilrx]
+
+
+
+for spatial_averaging in averaging_all:
+
+	time_averaging = 1
+	if not ('datatempcrop_full_res' in dir()):
+		datatempcrop_full_res = copy.deepcopy(datatempcrop)
+	datatempcrop = coleval.average_multiple_frames(datatempcrop_full_res,spatial_averaging,timemean=time_averaging)
+	print('ping')
+
+	if not ('basetemp_full_res' in dir()):
+		basetemp_full_res = copy.deepcopy(basetemp)
+	basetemp=resize(basetemp_full_res,np.shape(datatempcrop[0,0]),order=1)
+	print('ping')
+
+	foilemissivityscaled_orig = 1 * np.ones((np.shape(datatempcrop[0,0])[0]-2,np.shape(datatempcrop[0,0])[1]-2))
+	foilthicknessscaled_orig = (2.5 / 1000000) * np.ones((np.shape(datatempcrop[0,0])[0]-2,np.shape(datatempcrop[0,0])[1]-2))
+	conductivityscaled = Ptthermalconductivity * np.ones((np.shape(datatempcrop[0,0])[0]-2,np.shape(datatempcrop[0,0])[1]-2))
+	reciprdiffusivityscaled_orig = (1 / (0.4*Ptthermaldiffusivity)) * np.ones((np.shape(datatempcrop[0,0])[0]-2,np.shape(datatempcrop[0,0])[1]-2))
+	flat_properties = True
+
+
+	dt=time_averaging*1/framerate
+	dx=foilhorizw/(np.shape(datatempcrop)[-1])
+	dy=foilvertw/(np.shape(datatempcrop)[-2])
+	relative_temp = np.add(datatempcrop,-basetemp)
+	dTdt=np.divide(relative_temp[:,2:,1:-1,1:-1]-relative_temp[:,:-2,1:-1,1:-1],2*dt)
+	d2Tdx2=np.divide(relative_temp[:,1:-1,1:-1,2:]-np.multiply(2,relative_temp[:,1:-1,1:-1,1:-1])+relative_temp[:,1:-1,1:-1,:-2],dx**2)
+	d2Tdy2=np.divide(relative_temp[:,1:-1,2:,1:-1]-np.multiply(2,relative_temp[:,1:-1,1:-1,1:-1])+relative_temp[:,1:-1,:-2,1:-1],dy**2)
+	# dTdt=np.divide(datatempcrop[:,2:,1:-1,1:-1]-datatempcrop[:,:-2,1:-1,1:-1],2*dt)
+	# d2Tdx2=np.divide(datatempcrop[:,1:-1,1:-1,2:]-np.multiply(2,datatempcrop[:,1:-1,1:-1,1:-1])+datatempcrop[:,1:-1,1:-1,:-2],dx**2)
+	# d2Tdy2=np.divide(datatempcrop[:,1:-1,2:,1:-1]-np.multiply(2,datatempcrop[:,1:-1,1:-1,1:-1])+datatempcrop[:,1:-1,:-2,1:-1],dx**2)
+	d2Tdxy=np.add(d2Tdx2,d2Tdy2)
+	negd2Tdxy=np.multiply(-1,d2Tdxy)
+	T4=np.power(np.add(zeroC,datatempcrop[:,1:-1,1:-1,1:-1]),4)
+	T04=np.power(np.add(zeroC,basetemp[1:-1, 1:-1]),4)
+
+	print('ping')
+	reciprdiffusivityscaled=np.multiply(1/1,reciprdiffusivityscaled_orig)
+	foilemissivityscaled=np.multiply(1,foilemissivityscaled_orig)
+	foilthicknessscaled=np.multiply(1,foilthicknessscaled_orig)
+
+	BBrad=[]
+	diffusion=[]
+	timevariation=[]
+	ktf=np.multiply(conductivityscaled,foilthicknessscaled)
+	for i in range(len(datatempcrop[:,0,0,0])):
+		BBrad.append([])
+		diffusion.append([])
+		timevariation.append([])
+		for j in range(len(datatempcrop[0,1:-1,0,0])):
+			BBradtemp=np.multiply(np.multiply(2*sigmaSB,foilemissivityscaled),np.add(T4[i,j],np.negative(T04)))
+			BBrad[i].append(BBradtemp)
+			diffusiontemp=np.multiply(ktf,negd2Tdxy[i,j])
+			diffusion[i].append(diffusiontemp)
+			timevariationtemp=np.multiply(ktf,np.multiply(reciprdiffusivityscaled,dTdt[i,j]))
+			timevariation[i].append(timevariationtemp)
+	BBrad=np.array(BBrad)
+	diffusion=np.array(diffusion)
+	timevariation=np.array(timevariation)
+	print('ping')
+	BBradnoback=np.add(BBrad,0)
+	diffusionnoback=np.add(diffusion,0)
+	timevariationnoback_clean=np.add(timevariation,0)
+
+	std_all_clean.append(np.std(coleval.flatten_full(timevariationnoback_clean[0])))
 
 
 
@@ -1100,11 +1498,68 @@ plt.pause(0.0001)
 
 
 
+plt.figure()
+averaging_all = [1,2,3,4,5,6,7,8,9,10,20, 30, 40,80,150,250]
+std_all_orig = []
+std_all_clean = []
+shape = (np.array(np.shape(timevariationnoback_clean))/2).astype(int)
+
+for averaging in averaging_all:
+	average = np.mean(timevariationnoback_orig[0,:,shape[2]:shape[2]+averaging,shape[3]:shape[3]+averaging],axis=(-1,-2))
+	# average = coleval.average_multiple_frames(data,averaging)
+	# shape = (np.array(np.shape(average))/2).astype(int)
+	std = np.std(average)
+	# std = np.mean((average[:-1]-average[1:])**2)
+	std_all_orig.append(std)
+	average = np.mean(timevariationnoback_clean[0,:,shape[2]:shape[2]+averaging,shape[3]:shape[3]+averaging],axis=(-1,-2))
+	# average = coleval.average_multiple_frames(data,averaging)
+	# shape = (np.array(np.shape(average))/2).astype(int)
+	std = np.std(average)
+	# std = np.mean((average[:-1] - average[1:]) ** 2)
+	std_all_clean.append(std)
+
+plt.figure()
+plt.plot(np.array(averaging_all)**2,std_all_orig,'o',label='unfiltered')
+plt.plot(np.array(averaging_all)**2,std_all_clean,'x',label='filtered')
+plt.plot(np.array(averaging_all)**2,std_all_orig[0]/np.array(averaging_all),'--k',label='reference')
+# plt.plot(averaging_all,std_all_clean[0]/np.array(averaging_all),'--k')
+plt.semilogx()
+plt.title('Time variation term of power density in \n ' + pathfiles,fontsize=9)
+plt.xlabel('Number of foil pixels averaged')
+plt.ylabel('Deviation of power time variation term [W/m2]')
+plt.grid()
+plt.legend(loc='best')
+plt.pause(0.001)
 
 
 
 
+plt.figure()
+spectra = np.fft.fft(data[0], axis=0)
+# magnitude=np.sqrt(np.add(np.power(real,2),np.power(imag,2)))
+magnitude = 2 * np.abs(spectra) / len(spectra)
+phase = np.angle(spectra)
+freq = np.fft.fftfreq(len(magnitude), d=1 / framerate)
+
+plt.figure()
+plt.plot(freq, np.mean(magnitude,axis=(-1,-2)),label='unfiltered data')
+plt.plot(freq, np.mean(magnitude,axis=(-1,-2)), '+')
 
 
 
-
+spectra = np.fft.fft(data2[0], axis=0)
+# magnitude=np.sqrt(np.add(np.power(real,2),np.power(imag,2)))
+magnitude = 2 * np.abs(spectra) / len(spectra)
+phase = np.angle(spectra)
+freq = np.fft.fftfreq(len(magnitude), d=1 / framerate)
+plt.plot(freq, np.mean(magnitude,axis=(-1,-2)),label='filtered data')
+plt.plot(freq, np.mean(magnitude,axis=(-1,-2)), '+')
+# plt.title(
+plt.semilogy()
+plt.title(
+	'Amplitued from fast Fourier transform averaged over all pixels in counts in \n ' + pathfiles + ' framerate ' + str(
+		framerate) + 'Hz, int. time ' + str(inttime) + 'ms')
+plt.xlabel('Frequency [Hz]')
+plt.ylabel('Amplitude [au]')
+plt.legend(loc='best')
+plt.pause(0.001)

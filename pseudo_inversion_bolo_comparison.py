@@ -44,7 +44,7 @@ for spatial_averaging in spatial_averaging_all:
 		radiator_emissivity = radiator_power / (np.pi * ((radiator_diameter / 2) ** 2) * 2 * np.pi * radiator_location[0])
 
 		if spatial_averaging > 1:
-			foil_resolution = str(spatial_averaging) + 'x' + str(spatial_averaging)
+			foil_resolutionlabe = str(spatial_averaging) + 'x' + str(spatial_averaging)
 		else:
 			foil_resolution = '187'
 

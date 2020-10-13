@@ -224,7 +224,7 @@ y_=-1.2-np.sqrt(0.08**2-(x-0.55)**2)
 plt.plot(x,y,'k')
 plt.plot(x,y_,'k')
 
-plt.show()
+plt.pause(0.01)
 
 
 
@@ -306,7 +306,7 @@ plt.title('Power density on the foil generated via CHERAB simulation')
 plt.colorbar().set_label('Power density on the foil [W/m^2], cut-off '+str(vmin)+'W/m^2')
 plt.xlabel('Horizontal axis [pixles]')
 plt.ylabel('Vertical axis [pixles]')
-plt.show()
+plt.pause(0.01)
 
 
 np.save('measured_power',measured_power)
