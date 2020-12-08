@@ -6,11 +6,11 @@
 # exec(open("/home/ffederic/work/analysis scripts/preamble_import_pc.py").read())
 
 #this is if working in batch, use predefined NOT visual printer
-exec(open("/home/ffederic/work/analysis_scripts/preamble_import_batch.py").read())
+exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_import_batch.py").read())
 
 
 #this is for importing all the variables names and which are the files
-exec(open("/home/ffederic/work/analysis_scripts/preamble_indexing.py").read())
+exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_indexing.py").read())
 
 
 

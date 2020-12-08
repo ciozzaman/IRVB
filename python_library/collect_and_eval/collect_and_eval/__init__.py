@@ -105,7 +105,16 @@ def order_filenames(filenames):
 	if ((extention=='.csv') or (extention=='.CSV')):
 		return order_filenames_csv(filenames)
 	else:
-		return sorted(filenames, key=str.lower)
+		numbers = []
+		for filename in filenames:
+			temp = '0'
+			for digit in filename:
+				if digit.isdigit() == True:
+					temp = temp+digit
+			numbers.append(np.int(temp))
+		filenames = [__ for _, __ in sorted(zip(numbers, filenames))]
+		# return sorted(filenames, key=str.lower)
+		return filenames
 
 ######################################################################################################
 
@@ -300,6 +309,7 @@ def collect_subfolder(extpath):
 def collect_subfolderfits(extpath,start='auto',stop='auto'):
 
 	# 2018/01/16 Upgraded to handle, as optional, a limited range of frames
+	# extpath: folder the containing the file .fts
 
 	##print('sys.argv[0] =', sys.argv[0])
 	#pathname = os.path.dirname(sys.argv[0])
@@ -344,64 +354,14 @@ def collect_subfolderfits(extpath,start='auto',stop='auto'):
 
 	numfiles=len(filenames)
 
-
-	filename=filenames[0]
-
-	# print('os.path.join(path,filename)',os.path.join(path,filename))
-
-	firstrow=-1
-	with open(os.path.join(path,filename),'r') as csvfile:
-		reader = csv.reader(csvfile)
-		# print('reader',reader)
-		pointer=0
-		for row in reader:
-	#		print('shape',np.shape(row))
-			# print('row',row)
-			if not row:
-				temp='empty'
-			else:
-				temp=row[0]
-			if (is_number(temp)) & (firstrow==-1):
-				firstrow=pointer
-				rowlen=np.shape(row)[0]
-				pointer+=1
-			elif is_number(temp) & firstrow>-1:
-				pointer+=1
-			else:
-				ponter=0
-	lastrow=pointer
-	sizey=lastrow-firstrow
-	sizex=rowlen
-
-
-	datafit=fits.open(os.path.join(path,filefits[0]))
-	datafit=datafit[0].data
-
-	datafit=datafit+32768
-	lenfits=len(datafit)
-
-	data=np.zeros((1,lenfits,sizey,sizex))
-	datatest=np.zeros((1,numfiles,sizey,sizex))
-	index=0
-	for frame in datafit:
-		# plt.pcolor(frame)
-		# plt.show()
-		frame=np.flip(frame,0)
-		# plt.pcolor(frame)
-		# plt.show()
-		data[0,index,:,:]=frame
-		index+=1
-
-
-	print('firstrow,lastrow,sizey,sizex',firstrow,lastrow,sizey,sizex)
-
-	file=0
-	for filename in filenames:
+	if numfiles>0:
+		filename=filenames[0]
+		# print('os.path.join(path,filename)',os.path.join(path,filename))
+		firstrow=-1
 		with open(os.path.join(path,filename),'r') as csvfile:
 			reader = csv.reader(csvfile)
 			# print('reader',reader)
-			tempdata=[]
-			pointer=sizey-1
+			pointer=0
 			for row in reader:
 		#		print('shape',np.shape(row))
 				# print('row',row)
@@ -409,16 +369,72 @@ def collect_subfolderfits(extpath,start='auto',stop='auto'):
 					temp='empty'
 				else:
 					temp=row[0]
-				if is_number(temp):
-					for k in range(len(row)):
-						# print('j,i,pointer,k',j,i,pointer,k)
-						datatest[0,file,pointer,k]=(float(row[k]))
-						# print('float(k)',float(row[k]))
-					pointer-=1
-					# print('row',row)
+				if (is_number(temp)) & (firstrow==-1):
+					firstrow=pointer
+					rowlen=np.shape(row)[0]
+					pointer+=1
+				elif is_number(temp) & firstrow>-1:
+					pointer+=1
 				else:
 					ponter=0
-			file+=1
+		lastrow=pointer
+		sizey=lastrow-firstrow
+		sizex=rowlen
+
+
+	datafit=fits.open(os.path.join(path,filefits[0]))
+	if numfiles==0:
+		sizey = datafit[0].shape[1]
+		sizex = datafit[0].shape[2]
+	lenfits=datafit[0].shape[0]
+	zero_level = 2**(datafit[0].header['BITPIX']-1)
+	datafit=datafit[0].data
+
+	datafit=datafit+zero_level
+
+	datatest=np.zeros((1,numfiles,sizey,sizex))
+	# data=np.zeros((1,lenfits,sizey,sizex))
+	# index=0
+	# for frame in datafit:
+	# 	# plt.pcolor(frame)
+	# 	# plt.show()
+	# 	frame=np.flip(frame,0)
+	# 	# plt.pcolor(frame)
+	# 	# plt.show()
+	# 	data[0,index,:,:]=frame
+	# 	index+=1
+	data = np.array([np.flip(datafit,axis=1)])
+
+	if numfiles>0:
+		print('firstrow,lastrow,sizey,sizex',firstrow,lastrow,sizey,sizex)
+	else:
+		print('sizey,sizex',sizey,sizex)
+
+	if numfiles>0:
+		file=0
+		for filename in filenames:
+			with open(os.path.join(path,filename),'r') as csvfile:
+				reader = csv.reader(csvfile)
+				# print('reader',reader)
+				tempdata=[]
+				pointer=sizey-1
+				for row in reader:
+			#		print('shape',np.shape(row))
+					# print('row',row)
+					if not row:
+						temp='empty'
+					else:
+						temp=row[0]
+					if is_number(temp):
+						for k in range(len(row)):
+							# print('j,i,pointer,k',j,i,pointer,k)
+							datatest[0,file,pointer,k]=(float(row[k]))
+							# print('float(k)',float(row[k]))
+						pointer-=1
+						# print('row',row)
+					else:
+						ponter=0
+				file+=1
 
 
 	# 2018/01/16 Section added to avoid the need of a separate "collect_subfolderfits_limited" function
@@ -432,7 +448,7 @@ def collect_subfolderfits(extpath,start='auto',stop='auto'):
 		force_start=start
 	if stop=='auto':
 		force_end=lenfits
-	elif (stop<0 or stop>lenfits or stop<=force_start):
+	elif ((stop<-lenfits+1) or stop>lenfits or stop<=force_start):
 		print('The final limit to search for the oscillation ad erase it is out of range (a number of frame)')
 		print(str(lenfits)+'s will be used instead of '+str(stop))
 		force_end=lenfits
@@ -454,11 +470,12 @@ def collect_subfolderfits(extpath,start='auto',stop='auto'):
 	# if (not (np.array_equal(datatest[0,0],data[0,0]))):
 	# 	print('there must be something wrong, the first frame of the FITS file do not match with the first csv files')
 	# 	exit()
-	if (not (np.array_equal(datatest[0,-1],data[0,-1]))):
+	if (numfiles>0 and (not (np.array_equal(datatest[0,-1],data[0,-1])))):
 		print('there must be something wrong, the last frame of the FITS file do not match with the last csv files')
 		# exit()
 	else:
-		np.save(os.path.join(extpath,lastpath),datacropped)
+		# np.save(os.path.join(extpath,lastpath),datacropped)
+		np.savez_compressed(os.path.join(extpath,lastpath),datacropped=datacropped)
 
 	# plt.pcolor(data[0,20,:,:])
 	# plt.show()
@@ -737,9 +754,12 @@ def movie(extpath,framerate,integration,xlabel=(),ylabel=(),barlabel=(),cmap='ra
 
 ######################################################################################################
 
-def movie_from_data(data,framerate,integration=1,xlabel=(),ylabel=(),barlabel=(),cmap='rainbow',timesteps='auto',extvmin='auto',extvmax='auto'):
+def movie_from_data(data,framerate,integration=1,xlabel=(),ylabel=(),barlabel=(),cmap='rainbow',timesteps='auto',extvmin='auto',extvmax='auto',mask=[0],time_offset=0,prelude=''):
+	import matplotlib.animation as animation
+	import numpy as np
 
-	fig = plt.figure()
+	form_factor = (np.shape(data[0][0])[1])/(np.shape(data[0][0])[0])
+	fig = plt.figure(figsize=(12*form_factor, 12))
 	ax = fig.add_subplot(111)
 
 	# I like to position my colorbars this way, but you don't have to
@@ -756,6 +776,10 @@ def movie_from_data(data,framerate,integration=1,xlabel=(),ylabel=(),barlabel=()
 	frames = [None]*len(data[0])
 	frames[0]=data[0,0]
 
+	if len(np.shape(mask))==2:
+		if np.shape(mask)!=np.shape(data[0][0]):
+			print('The shape of the mask '+str(np.shape(mask))+' does not match with the shape of the record '+str(np.shape(data[0][0])))
+
 	for i in range(len(data[0])):
 	    # x       += 1
 	    # curVals  = f(x, y)
@@ -763,6 +787,8 @@ def movie_from_data(data,framerate,integration=1,xlabel=(),ylabel=(),barlabel=()
 
 	cv0 = frames[0]
 	im = ax.imshow(cv0,cmap, origin='lower') # Here make an AxesImage rather than contour
+	# if len(np.shape(mask)) == 2:
+	# im = ax.imshow(mask,'gray',interpolation='none',alpha=1)
 
 
 	cb = fig.colorbar(im).set_label(barlabel)
@@ -789,7 +815,9 @@ def movie_from_data(data,framerate,integration=1,xlabel=(),ylabel=(),barlabel=()
 				vmin = extvmin
 			im.set_data(arr)
 			im.set_clim(vmin, vmax)
-			tx.set_text('Frame {0}'.format(i)+', FR '+str(framerate)+'Hz, t '+str(np.around(0+i/framerate,decimals=3))+'s int '+str(integration)+'ms')
+			tx.set_text(prelude + 'Frame {0}'.format(i)+', FR %.3gHz, t %.3gs, int %.3gms' %(framerate,time_offset+i/framerate,integration))
+			# if len(np.shape(mask)) == 2:
+			# 	im.imshow(mask,'binary',interpolation='none',alpha=0.3)
 
 		    # In this version you don't have to do anything to the colorbar,
 		    # it updates itself when the mappable it watches (im) changes
@@ -811,7 +839,9 @@ def movie_from_data(data,framerate,integration=1,xlabel=(),ylabel=(),barlabel=()
 				vmin = extvmin
 			im.set_data(arr)
 			im.set_clim(vmin, vmax)
-			tx.set_text('Frame {0}'.format(i)+', t '+str(timesteps[i])+'s int '+str(integration)+'ms')
+			tx.set_text(prelude + 'Frame {0}'.format(i)+', t %.3gs, int %.3gms' %(timesteps[i],integration))
+			# if len(np.shape(mask)) == 2:
+			# 	im.imshow(mask,'binary',interpolation='none',alpha=0.3)
 
 	ani = animation.FuncAnimation(fig, animate, frames=len(data[0]))
 
@@ -2142,6 +2172,7 @@ def clear_oscillation_central2(data,framerate,oscillation_search_window_begin='a
 	# This aproach seems much more efficient
 
 	print('shape of data array is '+str(np.shape(data))+', it should be (x,frames,v pixel,h pixel)')
+	# figure_index = plt.gcf().number
 
 	data=data[0]
 	if oscillation_search_window_begin=='auto':
@@ -2174,6 +2205,10 @@ def clear_oscillation_central2(data,framerate,oscillation_search_window_begin='a
 	datasection = data
 
 	if plot_conparison==True:
+		# plt.figure()
+		# plt.pause(0.01)
+		plt.figure()
+		figure_index = plt.gcf().number
 		poscentred = [[15, 80], [80, 80], [70, 200], [160, 133], [250, 200]]
 
 		# spectra_orig = np.fft.fft(data, axis=0)
@@ -2195,7 +2230,7 @@ def clear_oscillation_central2(data,framerate,oscillation_search_window_begin='a
 			plt.plot(x, y, color[i], label='original data at the point ' + str(pos))
 		# plt.title()
 
-		plt.figure(1)
+
 		plt.title('Amplitued from fast Fourier transform for different groups of ' + str(window * 2) + 'x' + str(
 			window * 2) + ' pixels, framerate ' + str(framerate)+'Hz' )
 		plt.xlabel('Frequency [Hz]')
@@ -2211,9 +2246,10 @@ def clear_oscillation_central2(data,framerate,oscillation_search_window_begin='a
 
 	number_of_waves = 3
 	fft_window_move = int(number_of_waves*frames_for_oscillation)
-	step = 1
 	if fft_window_move<10:
 		number_of_waves=10//frames_for_oscillation	# I want to scan for at least 10 frame shifts
+	fft_window_move = int(number_of_waves*frames_for_oscillation)
+	step = 1
 	while int(fft_window_move/step)>80:
 		step+=1		#if framerate is too high i will skip some of the shifts to limit the number of Fourier transforms to 100
 
@@ -2223,12 +2259,14 @@ def clear_oscillation_central2(data,framerate,oscillation_search_window_begin='a
 	len_data_restricted = len(datarestricted)
 	poscentre = [np.shape(data)[1] // 2, np.shape(data)[2] // 2]
 
-	while fft_window_move>(len_data_restricted/5):
-		fft_window_move-=1		# I want that the majority of the data I analyse remains the same
+	if (oscillation_search_window_begin=='auto' and oscillation_search_window_end=='auto'):
+		while fft_window_move>(len_data_restricted/5):
+			fft_window_move-=1		# I want that the majority of the data I analyse remains the same
 
 	if oscillation_search_window_end == 'auto':
 		if (len(datarestricted) / framerate) <= 1:
-			max_start = int(sections // 2)
+			# max_start = int(sections // 2)
+			max_start = int(len(datarestricted) // 2)
 		else:
 			max_start = int(5*framerate)  # I use 5 seconds of record
 	else:
@@ -2261,9 +2299,7 @@ def clear_oscillation_central2(data,framerate,oscillation_search_window_begin='a
 		y = np.array(
 			[magnitude_space_averaged for _, magnitude_space_averaged in sorted(zip(freq, magnitude_space_averaged))])
 		x = np.sort(freq)
-		if plot_conparison == True:
-			plt.figure(2)
-			plt.plot(x, y, label='Applied shift of ' + str(shift))
+
 		index_min_freq = int(find_nearest_index(x, min_frequency_to_erase))  # I restric the window over which I do the peak search
 		index_max_freq = int(find_nearest_index(x, max_frequency_to_erase))
 		index_7 = int(find_nearest_index(x, 7))
@@ -2277,6 +2313,11 @@ def clear_oscillation_central2(data,framerate,oscillation_search_window_begin='a
 		# 				axis=(-1))
 		# temp = peakutils.indexes(y[index_min_freq:index_max_freq], thres=noise + np.abs(magnitude.min()),
 		# 						 min_dist=(index_max_freq - index_min_freq) // 2)
+		if len(y[index_min_freq:index_max_freq])==0:
+			continue
+		if plot_conparison == True:
+			plt.figure(figure_index+1)
+			plt.plot(x, y, label='Applied shift of ' + str(shift))
 		temp = int(find_nearest_index(y[index_min_freq:index_max_freq],(y[index_min_freq:index_max_freq]).max()))
 		# if len(temp) == 1:
 		peak_index = index_min_freq + int(temp)
@@ -2289,7 +2330,7 @@ def clear_oscillation_central2(data,framerate,oscillation_search_window_begin='a
 	peak_freq_record = np.array(peak_freq_record)
 	peak_value_record = np.array(peak_value_record)
 	if plot_conparison==True:
-		plt.figure(2)
+		plt.figure(figure_index+1)
 		plt.title('Amplitued from fast Fourier transform averaged in a wondow of ' + str(window+1) + 'pixels around ' + str(
 			poscentre) + ', framerate ' + str(framerate) + 'Hz')
 		plt.xlabel('Frequency [Hz]')
@@ -2351,7 +2392,7 @@ def clear_oscillation_central2(data,framerate,oscillation_search_window_begin='a
 
 
 	if plot_conparison==True:
-		plt.figure(1)
+		plt.figure(figure_index)
 		datasection2 = data2
 		# spectra = np.fft.fft(datasection2, axis=0)
 		# # magnitude=np.sqrt(np.add(np.power(real,2),np.power(imag,2)))
@@ -2368,7 +2409,7 @@ def clear_oscillation_central2(data,framerate,oscillation_search_window_begin='a
 			y = np.array([y for _, y in sorted(zip(freq, y))])
 			x = np.sort(freq)
 			plt.plot(x, y, color[i] + '--',
-					 label='data at the point ' + str(pos) + ', ' + str(freq_to_erase) + 'Hz oscillation substracted')
+					 label='data at the point ' + str(pos) + ', ' + str(np.around(freq_to_erase,decimals=2)) + 'Hz oscillation substracted')
 		# plt.title()
 
 
@@ -2381,7 +2422,7 @@ def clear_oscillation_central2(data,framerate,oscillation_search_window_begin='a
 
 
 	print('stats of the oscillation removal')
-	print('with window of size '+str(np.around(section_frames/framerate,decimals=1))+'s of '+str(len(data)/framerate)+'s of record')
+	print('with window of size '+str(np.around(section_frames/framerate,decimals=5))+'s of '+str(len(data)/framerate)+'s of record')
 	print('found oscillation of frequency '+str(freq_to_erase)+'Hz')
 	print('On the foil centre oscillation magnitude reduced from '+str(peak_value_pre_filter)+'[au] to '+str(peak_value_post_filter)+'[au] \nwith an approximate maximum noise level of '+str(noise)+'[au]')
 
@@ -2495,29 +2536,60 @@ def find_dead_pixels(data, start_interval='auto',end_interval='auto', framerate=
 	data=data[0,start_interval:end_interval]
 	mean=np.mean(data,axis=(0))
 	std=np.std(data,axis=(0))
-	flag_ceck=np.zeros(np.shape(std))
+	flag_check=np.zeros(np.shape(std))
 	flag = np.ones(np.shape(std))
-	for i in range(np.shape(std)[0]):
-		for j in range(np.shape(std)[1]):
-			if std[i,j]>treshold_for_bad_std:
-				flag_ceck[i,j]=6
-				flag[i, j] = 0
-	for i in range(1, np.shape(std)[0] - 1):
-		for j in range(1, np.shape(std)[1] - 1):
-			temp = (mean[i - 1, j - 1:j + 2] * flag[i - 1, j - 1:j + 2]).tolist() + [
-				(mean[i, j - 1] * flag[i, j - 1]).tolist()] + [(mean[i, j + 1] * flag[i, j + 1]).tolist()] + (
-						   mean[i + 1, j - 1:j + 2] * flag[i + 1, j - 1:j + 2]).tolist()
-			temp2 = [x for x in temp if x != 0]
-			if (mean[i, j] > max(temp2) + treshold_for_bad_difference or mean[i, j] < min(
-					temp2) - treshold_for_bad_difference):
-				flag_ceck[i, j] += 3
+	# for i in range(np.shape(std)[0]):
+	# 	for j in range(np.shape(std)[1]):
+	# 		if std[i,j]>treshold_for_bad_std:
+	# 			flag_check[i,j]=6
+	# 			flag[i, j] = 0
+	flag_check[std>treshold_for_bad_std] = 6
+	flag[std>treshold_for_bad_std] = 0
+	for repeats in [0, 1]:
+		for i in range(1, np.shape(std)[0] - 1):
+			for j in range(1, np.shape(std)[1] - 1):
+				if flag_check[i,j] in [3,9]:
+					continue
+				temp = (mean[i - 1, j - 1:j + 2] * flag[i - 1, j - 1:j + 2]).tolist() + [
+					(mean[i, j - 1] * flag[i, j - 1]).tolist()] + [(mean[i, j + 1] * flag[i, j + 1]).tolist()] + (
+							   mean[i + 1, j - 1:j + 2] * flag[i + 1, j - 1:j + 2]).tolist()
+				if len(temp) == 0:
+					# flag_check[i, j] += 3
+					# flag[i, j] = 0
+					continue
+				else:
+					temp2 = [x for x in temp if x != 0]
+					if len(temp2) == 0:
+						# flag_check[i, j] += 3
+						# flag[i, j] = 0
+						continue
+					else:
+						if (mean[i, j] > max(temp2) + treshold_for_bad_difference or mean[i, j] < min(
+								temp2) - treshold_for_bad_difference):
+							flag_check[i, j] += 3
+							flag[i, j] = 0
+	# follows a slower version that checks also the edges
+	# i_indexes = (np.ones_like(std).T*np.linspace(0,np.shape(std)[0]-1,np.shape(std)[0])).T
+	# j_indexes = np.ones_like(std) * np.linspace(0, np.shape(std)[1] - 1, np.shape(std)[1])
+	# # gna=np.zeros_like(std)
+	# for repeats in [0, 1]:
+	# 	for i in range(np.shape(std)[0] ):
+	# 		for j in range(np.shape(std)[1] ):
+	# 			if flag_check[i,j] in [3,9]:
+	# 				continue
+	# 			temp = mean[np.logical_and(flag , np.logical_and(np.abs(i_indexes-i)<=1 , np.logical_and( np.abs(j_indexes-j)<=1 , np.logical_or(i_indexes!=i , j_indexes!=j))))]
+	# 			# gna[i,j] = np.std(temp)
+	# 			if (mean[i, j] > max(temp) + treshold_for_bad_difference or mean[i, j] < min(temp) - treshold_for_bad_difference):
+	# 				flag_check[i, j] += 3
+	# 				flag[i, j] = 0
 
-	counter = collections.Counter(flatten_full(flag_ceck))
+
+	counter = collections.Counter(flatten_full(flag_check))
 	print('Number of pixels that trepass the limit for count difference with neighbours '+str(counter.get(3)))
 	print('Number of pixels that trepass the limit for standard deviation '+str(counter.get(6)))
 	print('Number of pixels that trepass both limits '+str(counter.get(9)))
 
-	return flag_ceck
+	return flag_check
 
 
 ###################################################################################################
@@ -2549,8 +2621,8 @@ def replace_dead_pixels(data,flag, framerate='auto',from_data=True):
 
 	data2=np.array([data])
 
-	for i in range(np.shape(data)[1]):
-		for j in range(np.shape(data)[2]):
+	for i in range(np.shape(data)[-2]):
+		for j in range(np.shape(data)[-1]):
 			if flag[i,j]!=0:
 				temp=[]
 				for i_ in [-1,0,1]:
@@ -2982,3 +3054,118 @@ def foil_measurement_averaging_foil_pixels_extra_loseless(d,h_pixels,pixelmean_h
 
 
 
+
+#####################################################################################################
+
+def record_binning(data,time_averaging,spatial_averaging_h,spatial_averaging_v,flag,plot_info=False):
+
+	if np.shape(flag) != np.shape(data[0,0]):
+		print('ERROR\nThe shape of the flags and record is not equal\nflag is ('+str(np.shape(flag))+') while record is ('+str(np.shape(data))+')')
+		exit()
+
+	pixel_t, pixel_h, pixel_v = np.shape(data[0])
+	pixel_h_new = np.floor(pixel_h / spatial_averaging_h).astype('int')
+	pixel_v_new = np.floor(pixel_v / spatial_averaging_v).astype('int')
+	pixel_t_new = np.floor(pixel_t / time_averaging).astype('int')
+	print('record will be binned to (txhxv) ' + str(pixel_t_new) + 'x' + str(pixel_h_new) + 'x' + str(pixel_v_new) + ' pixels')
+
+	# if (time_averaging==1 and spatial_averaging_h==1 and spatial_averaging_v==1) :
+	# 	return data
+
+	binning_h = np.abs(np.linspace(0, pixel_h - 1, pixel_h) // spatial_averaging_h).astype('int')
+	binning_h[binning_h > pixel_h_new - 1] = pixel_h_new - 1
+	binning_v = np.abs(np.linspace(0, pixel_v - 1, pixel_v) // spatial_averaging_v).astype('int')
+	binning_v[binning_v > pixel_v_new - 1] = pixel_v_new - 1
+	binning_t = np.abs(np.linspace(0, pixel_t - 1, pixel_t) // time_averaging).astype('int')
+	binning_t[binning_t > pixel_t_new - 1] = pixel_t_new - 1
+	# pixels_to_bin = np.array([[(((np.ones((pixel_v, pixel_h)) * binning_h).T + binning_v * pixel_h_new).astype('int')).tolist()]*len(data_to_check[0])])
+	pixels_to_bin = ((np.ones((pixel_h, pixel_v)) * binning_v).T + binning_h * pixel_v_new).T.astype('int')
+
+	# temp = np.zeros((len(data[0]),np.max(binning_h) + 1, np.max(binning_v) + 1))
+	temp = np.zeros((len(data[0]), np.max(pixels_to_bin) + 1))
+	for bin_index in range(np.max(pixels_to_bin) + 1):
+		temp[:,bin_index] = np.mean(data[0,:,np.logical_and(pixels_to_bin == bin_index,flag==0)], axis=0)
+	# data_to_check_not_binned = copy.deepcopy(data)
+	data_spatially_binned = temp.reshape((len(temp), pixel_h_new,pixel_v_new))
+
+
+	pixels_to_bin = binning_t.astype('int')
+
+	pixels_to_bin = binning_t.astype('int')
+	temp = np.zeros((np.max(pixels_to_bin) + 1, *np.shape(data_spatially_binned[0])))
+	for bin_index in range(np.max(pixels_to_bin) + 1):
+		temp[bin_index] = np.mean(data_spatially_binned[pixels_to_bin == bin_index], axis=0)
+	# data_to_check_not_binned = copy.deepcopy(data_to_check)
+	# data_binned = cp.deepcopy(temp)
+
+	return np.array([temp])
+
+
+
+###################################################################################################
+
+
+def replace_dead_pixels_2(data_, framerate='auto',from_data=True):
+
+	import copy as cp
+	# Created 14/10/2019
+	# function replace dead pixels with the average from their neighbours
+	# different from# replace_dead_pixels because here you don't use a flag, but the dead pixels are the one that are nan
+
+	# if from_data==False:
+	# 	if framerate=='auto':
+	# 		print('if you load from file you must specify the framerate')
+	# 		exit()
+	# 	path=data_
+	# 	print('Loading a recod from '+path)
+	# 	filenames = all_file_names(path, '.npy')[0]
+	# 	data_ = np.load(os.path.join(path, filenames))
+	# 	data2 = clear_oscillation_central2(data_, framerate, plot_conparison=False)
+	# 	data_ = np.array(data2)
+	# else:
+	# 	data_ = np.array(data_)
+
+
+	if np.sum(np.isnan(data_))==0:
+		print('there are no "not a number" pixels')
+		return data_
+	else:
+		pixel_t, pixel_h, pixel_v = np.shape(data_[0])
+		while  np.sum(np.isnan(data_))!=0:
+			sample = cp.deepcopy(data_[0,0])
+			while np.sum(np.isnan(sample))!=0:
+				where_is = np.isnan(sample).argmax()
+				i = int(np.floor(where_is/pixel_v))
+				j = int(where_is-i*pixel_v)
+				positions = np.array([[i-1,j-1],[i,j-1],[i+1,j-1],[i-1,j],[i,j],[i+1,j],[i-1,j+1],[i,j+1],[i+1,j+1]]).astype('int')
+				temp = []
+				for index in range(len(positions)):
+					if (positions[index][0]>=0 and positions[index][1]>=0 and positions[index,0]<pixel_h and positions[index,1]<pixel_v) :
+						# print(str(positions[index])+' is good')
+						temp.append(data_[0,:,positions[index][0],positions[index][1]])
+				sample[i, j] = 0
+				if np.sum(np.isfinite(temp))>0:
+					# print('fixing ' + str([i, j]))
+					data_[0,:,i,j] = np.nanmean(temp,axis=(-1,-2))
+		return data_
+
+
+###################################################################################################
+
+
+def log_log_fit_derivative(x,y):
+	# 22/10/2019 calculates the derivative of a function by fitting its log-log plot and coming back to the original coordinates
+	import numpy as np
+	from scipy.interpolate import splrep, splev
+
+	x=np.array(x)
+	y = np.array(y)
+
+	x_hat = np.log(x)
+	y_hat = np.log(y)
+
+	f_hat = splrep(x_hat,y_hat,s=0)
+
+	f_derivative = np.exp(y_hat)*splev(x_hat,f_hat,der=1)*(1/x)
+
+	return f_derivative

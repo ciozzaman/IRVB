@@ -148,7 +148,7 @@ def residual_ext(hx,hy,ht,P_left, P_right,P_top, P_bottom, P_init, conductivity,
 
 		BB_diff = np.add(P ** 4, - T_reference ** 4)
 
-		return conductivity*thickness*(np.divide(dt , diffusivity)  -d2x - d2y ) + 2 * sigmaSB * np.multiply(emissivity,BB_diff)-Power_in
+		return conductivit fusivity)  -d2x - d2y ) + 2 * sigmaSB * np.multiply(emissivity,BB_diff)-Power_in
 		# return  conductivity*thickness*(np.divide(dt , diffusivity)  -d2x - d2y ) -Power_in
 	return residual
 
@@ -188,5 +188,3 @@ else:
 	plt.xlabel('Horizontal axis [pixles]')
 	plt.ylabel('Vertical axis [pixles]')
 	plt.show()
-
-
