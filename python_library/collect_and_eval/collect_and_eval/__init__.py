@@ -1458,7 +1458,7 @@ def build_poly_coeff2(temperature,files,int,path,nmax):
 
 ################################################################################################
 
-def build_multiple_poly_coeff(temperaturehot,temperaturecold,fileshot,filescold,inttime,framerate,pathparam,nmax):
+def build_multiple_poly_coeff(temperaturehot,temperaturecold,fileshot,filescold,inttime,framerate,pathparam,nmax,function_to_use = build_poly_coeff):
 	# 08/10/2018 THIS CALCULATE FROM MULTIPLE HOT>ROOM AND COLD >ROOM CYCLES THE COEFFICIENTS FOR ALL THE POSSIBLE COMBINATIONS
 
 	for i in range(len(temperaturehot)):
@@ -1496,7 +1496,7 @@ def build_multiple_poly_coeff(temperaturehot,temperaturecold,fileshot,filescold,
 				os.makedirs(path)
 			temperature=[temperaturehot[i],temperaturecold[j]]
 			files=[fileshot[i],filescold[j]]
-			build_poly_coeff(temperature,files,inttime,path,nmax)
+			function_to_use(temperature,files,inttime,path,nmax)
 
 ################################################################################################
 
@@ -1786,7 +1786,7 @@ def d2dx2(array,dx,axis,otheraxis=(),howcropotheraxis=0):
 
 def save_timestamp(extpath):
 
-	# 09/08/2018 This function lools at the CSV files and saves the timestamp of the firs and last one in a _timestamp.npy file
+	# 09/08/2018 This function looks at the CSV files and saves the timestamp of the firs and last one in a _timestamp.npy file
 
 	# path=os.getcwd()
 
@@ -1902,25 +1902,27 @@ def search_background_timestamp(extpath,ref_directory):
 def find_nearest_index(array,value):
 
 	# 14/08/2018 This function returns the index of the closer value to "value" inside an array
+	# 08/01/2021 This function is completely reduntant, but I have it in so many places I keep it
 
-	array_shape=np.shape(array)
-
-	index = np.abs(np.add(array,-value)).argmin()
-	residual_index=index
-	cycle=1
-	done=0
-	position_min=np.zeros(len(array_shape),dtype=int)
-	while done!=1:
-		length=array_shape[-cycle]
-		if residual_index<length:
-			position_min[-cycle]=residual_index
-			done=1
-		else:
-			position_min[-cycle]=round(((residual_index/length) %1) *length +0.000000000000001)
-			residual_index=residual_index//length
-			cycle+=1
-
-	return position_min[0]
+	if False:
+		array_shape=np.shape(array)
+		index = np.abs(np.add(array,-value)).argmin()
+		residual_index=index
+		cycle=1
+		done=0
+		position_min=np.zeros(len(array_shape),dtype=int)
+		while done!=1:
+			length=array_shape[-cycle]
+			if residual_index<length:
+				position_min[-cycle]=residual_index
+				done=1
+			else:
+				position_min[-cycle]=round(((residual_index/length) %1) *length +0.000000000000001)
+				residual_index=residual_index//length
+				cycle+=1
+		return position_min[0]
+	else:
+		return np.abs(np.array(array)-value).argmin()
 
 
 ###################################################################################################
@@ -2237,7 +2239,7 @@ def clear_oscillation_central2(data,framerate,oscillation_search_window_begin='a
 		plt.ylabel('Amplitude [au]')
 		plt.grid()
 		plt.semilogy()
-		plt.legend()
+		plt.legend(loc='best',fontsize='x-small')
 	# plt.show()
 
 
@@ -2284,6 +2286,8 @@ def clear_oscillation_central2(data,framerate,oscillation_search_window_begin='a
 	record_freq = []
 	peak_freq_record = []
 	peak_value_record = []
+	peak_index_record = []
+	shift_record = []
 
 	for i in range(int(fft_window_move/step)):
 		shift=i*step
@@ -2324,34 +2328,53 @@ def clear_oscillation_central2(data,framerate,oscillation_search_window_begin='a
 		peak_freq_record.append(x[peak_index])
 		peak_value = float(y[peak_index])
 		peak_value_record.append(peak_value)
+		peak_index_record.append(peak_index)
+		shift_record.append(shift)
 	record_magnitude = np.array(record_magnitude)
 	record_phase = np.array(record_phase)
 	record_freq = np.array(record_freq)
 	peak_freq_record = np.array(peak_freq_record)
 	peak_value_record = np.array(peak_value_record)
+	peak_index_record = np.array(peak_index_record)
+	shift_record = np.array(shift_record)
 	if plot_conparison==True:
 		plt.figure(figure_index+1)
-		plt.title('Amplitued from fast Fourier transform averaged in a wondow of ' + str(window+1) + 'pixels around ' + str(
-			poscentre) + ', framerate ' + str(framerate) + 'Hz')
+		plt.title('Amplitude from fast Fourier transform\naveraged in a wondow of ' + str(window+1) + ' pixels around ' + str(
+			poscentre) + ', framerate %.3gHz' %(framerate))
 		plt.xlabel('Frequency [Hz]')
 		plt.ylabel('Amplitude [au]')
 		plt.grid()
 		plt.semilogy()
-		plt.legend()
+		plt.xlim(left=0,right=max_frequency_to_erase*1.2)
+		plt.legend(loc='best',fontsize='x-small')
 
 
 
-	# I find the highest peak and that will be the one I use
-	index = int(find_nearest_index(peak_value_record, max(peak_value_record)+1))
-	shift = index * step
+	try:	# considering that the variation of the peak value of FFT is like a wave this methid seems more fair.
+		shift_peaks = shift_record[1:-1][np.logical_and((peak_value_record[1:-1]-peak_value_record[:-2])>=0,(peak_value_record[1:-1]-peak_value_record[2:])>=0)]
+		shift_through = shift_record[1:-1][np.logical_and((peak_value_record[1:-1]-peak_value_record[:-2])<=0,(peak_value_record[1:-1]-peak_value_record[2:])<=0)]
+		shift_roots = np.sort(np.append(shift_peaks,shift_through,0))
+		fit = np.polyfit(np.arange(len(shift_roots)),shift_roots,1)
+		shift = int(round(np.polyval(fit,[0,1])[np.abs(np.polyval(fit,[0,1])-shift_peaks[0]).argmin()]))
+		index = shift//step
+		fit = np.polyfit(peak_freq_record,peak_value_record,2)
+		freq_to_erase = -fit[1]/(fit[0]*2)
+	except:	# I find the highest peak and that will be the one I use
+		print('search of the best interval shift via the linear peak method failed')
+		index = int(find_nearest_index(peak_value_record, max(peak_value_record)+1))
+		shift = index * step
+		freq_to_erase = peak_freq_record[index]
 	datasection = datarestricted[min_start:max_start-fft_window_move+shift]
 	spectra = np.fft.fft(datasection, axis=0)
 	# magnitude=np.sqrt(np.add(np.power(real,2),np.power(imag,2)))
 	magnitude = 2 * np.abs(spectra) / len(spectra)
 	phase = np.angle(spectra)
 	freq = np.fft.fftfreq(len(magnitude), d=1 / framerate)
-	freq_to_erase = peak_freq_record[index]
 	freq_to_erase_index = int(find_nearest_index(freq, freq_to_erase))
+	if plot_conparison==True:
+		plt.plot([freq_to_erase]*2,[peak_value_record.min(),peak_value_record.max()],':k')
+		plt.plot([freq[freq_to_erase_index]]*2,[peak_value_record.min(),peak_value_record.max()],'--k')
+		plt.ylim(top=peak_value_record.max()*2)
 	framenumber = np.linspace(0, len(data) - 1, len(data)) - min_start
 	data2 = data - np.multiply(magnitude[freq_to_erase_index], np.cos(np.repeat(np.expand_dims(phase[freq_to_erase_index], axis=0), len(data), axis=0) + np.repeat(np.expand_dims(np.repeat(np.expand_dims(2 * np.pi * freq_to_erase * framenumber / framerate, axis=-1),np.shape(data)[1], axis=-1), axis=-1), np.shape(data)[2], axis=-1)))
 
@@ -2415,7 +2438,8 @@ def clear_oscillation_central2(data,framerate,oscillation_search_window_begin='a
 
 		plt.grid()
 		plt.semilogy()
-		plt.legend()
+		plt.xlim(left=0)
+		plt.legend(loc='best',fontsize='small')
 		plt.pause(0.0001)
 
 
@@ -3178,6 +3202,10 @@ def hex8_to_int(hex):
 	temp = hex[-2:]+hex[4:6]+hex[2:4]+hex[0:2]
 	return int(temp,16)
 
+def hex16_to_int(hex):
+	temp = hex[-2:]+hex[-4:-2]+hex[-6:-4]+hex[-8:-6]+hex[-10:-8]+hex[-12:-10]+hex[-14:-12]+hex[-16:-14]
+	return int(temp,16)
+
 def hex4_to_int(hex):
 	temp = hex[-2:]+hex[0:2]
 	return int(temp,16)
@@ -3199,7 +3227,7 @@ def FLIR_record_header_decomposition(header):
 def FLIR_frame_header_decomposition(header):
 	def return_requested_output(request):
 		if request=='time':
-			return hex8_to_int(header[16:24])	# ns
+			return hex16_to_int(header[16:32])	# microseconds
 		elif request=='frame_counter':
 			return hex8_to_int(header[32:40])
 		elif request=='DetectorTemp':
@@ -3238,8 +3266,8 @@ def raw_to_image(raw_digital_level,width,height,digital_level_bytes):
 	return np.flip(np.array(counts_digital_level).reshape((height,width)),axis=0)
 
 
-def ats_to_dict(path,fileats,digital_level_bytes=4,header_marker = '4949'):
-	data = open(os.path.join(path,fileats),'rb').read()
+def ats_to_dict(full_path,digital_level_bytes=4,header_marker = '4949'):
+	data = open(full_path,'rb').read()
 	hexdata = data.hex()
 	# raw_for_digitizer = b'\x18K\x00\x00zD\x00\x00 A\x00\x00\x00'
 	# header_marker = '4949'
@@ -3271,7 +3299,7 @@ def ats_to_dict(path,fileats,digital_level_bytes=4,header_marker = '4949'):
 		header = hexdata[last+value+length_header_marker:last+value+header_length+length_header_marker]
 		header = FLIR_frame_header_decomposition(header)
 		digitizer_ID.append(header('PageIndex'))
-		time_of_measurement.append(header('time'))
+		time_of_measurement.append(header('time'))	# time in microseconds from camera startup
 		frame_counter.append(header('frame_counter'))
 		DetectorTemp.append(header('DetectorTemp'))
 		SensorTemp_0.append(header('SensorTemp_0'))
@@ -3296,5 +3324,124 @@ def ats_to_dict(path,fileats,digital_level_bytes=4,header_marker = '4949'):
 	frame_counter = np.array(frame_counter)
 	DetectorTemp = np.array(DetectorTemp)
 	SensorTemp_0 = np.array(SensorTemp_0)
+	out = dict([('data',data)])
+	out['digitizer_ID']=digitizer_ID
+	out['time_of_measurement']=time_of_measurement
+	out['IntegrationTime']=IntegrationTime
+	out['FrameRate']=FrameRate
+	out['ExternalTrigger'] = ExternalTrigger
+	out['SensorTemp_0'] = SensorTemp_0
+	out['DetectorTemp'] = DetectorTemp
+	out['width'] = width
+	out['height'] = height
+	out['camera_SN'] = camera_SN
+	out['frame_counter'] = frame_counter
+	data_per_digitizer,uniques_digitizer_ID = separate_data_with_digitizer(out)
+	out['data_time_avg_counts'] = np.mean(data_per_digitizer,axis=1)
+	out['data_time_avg_counts_std'] = np.std(data_per_digitizer,axis=1)
+	out['data_time_space_avg_counts'] = np.mean(data_per_digitizer,axis=(1,2,3))
+	out['data_time_space_avg_counts_std'] = np.std(data_per_digitizer,axis=(1,2,3))
+	out['uniques_digitizer_ID'] = uniques_digitizer_ID
 	# return data,digitizer_ID,time_of_measurement,IntegrationTime,FrameRate,ExternalTrigger,SensorTemp_0,DetectorTemp,width,height,camera_SN,frame_counter
-	return dict([('data',data),('digitizer_ID',digitizer_ID),('time_of_measurement',time_of_measurement),('IntegrationTime',IntegrationTime),('FrameRate',FrameRate),('ExternalTrigger',ExternalTrigger),('SensorTemp_0',SensorTemp_0),('DetectorTemp',DetectorTemp),('width',width),('height',height),('camera_SN',camera_SN),('frame_counter',frame_counter)])
+	return out
+
+def separate_data_with_digitizer(full_saved_file_dict):
+	data = full_saved_file_dict['data']
+	digitizer_ID = full_saved_file_dict['digitizer_ID']
+	uniques_digitizer_ID = np.sort(np.unique(digitizer_ID))
+	data_per_digitizer = []
+	for ID in uniques_digitizer_ID:
+		data_per_digitizer.append(data[digitizer_ID==ID])
+	return data_per_digitizer,uniques_digitizer_ID
+
+def build_poly_coeff_multi_digitizer(temperature,files,int,path,n):
+	# modified 2018-10-08 to build the coefficient only for 1 degree of polinomial
+	while np.shape(temperature[0])!=():
+		temperature=np.concatenate(temperature)
+		files=np.concatenate(files)
+	meancounttot=[]
+	meancountstdtot=[]
+	all_SensorTemp_0 = []
+	all_DetectorTemp = []
+	all_frame_counter = []
+	all_time_of_measurement = []
+	for i_file,file in enumerate(files):
+		full_saved_file_dict=np.load(file+'.npz')
+		data_per_digitizer,uniques_digitizer_ID = separate_data_with_digitizer(full_saved_file_dict)
+		if i_file==0:
+			digitizer_ID = np.array(uniques_digitizer_ID)
+		if np.sum(digitizer_ID==uniques_digitizer_ID)<len(digitizer_ID):
+			print('ERROR: problem with the ID of the digitizer in \n' + file)
+			exit()
+		meancounttot.append([np.mean(x,axis=0) for x in data_per_digitizer])
+		meancountstdtot.append([np.std(x,axis=0) for x in data_per_digitizer])
+		all_SensorTemp_0.append(np.mean(full_saved_file_dict['SensorTemp_0']))
+		all_DetectorTemp.append(np.mean(full_saved_file_dict['DetectorTemp']))
+		all_time_of_measurement.append(np.mean(full_saved_file_dict['time_of_measurement']))
+		all_frame_counter.append(np.mean(full_saved_file_dict['frame_counter']))
+
+	meancounttot=np.array(meancounttot)
+	meancountstdtot=np.array(meancountstdtot)
+	shapex=np.shape(meancounttot)[-2]
+	shapey=np.shape(meancounttot)[-1]
+	score=np.zeros((len(digitizer_ID),shapex,shapey))
+
+	# WARNING; THIS CREATE COEFFICIENTS INCOMPATIBLE WITH PREVIOUS build_poly_coeff FUNCTION
+	coeff=np.zeros((len(digitizer_ID),shapex,shapey,n))
+	errcoeff=np.zeros((len(digitizer_ID),shapex,shapey,n,n))
+
+	for j in range(shapex):
+		for k in range(shapey):
+			for i_z,z in enumerate(digitizer_ID):
+				x=np.array(meancounttot[:,z==digitizer_ID,j,k]).flatten()
+				xerr=np.array(meancountstdtot[:,z==digitizer_ID,j,k]).flatten()
+				temp1,temp2=np.polyfit(temperature,x,n-1,cov='unscaled')
+				yerr=(np.polyval(temp1,x+xerr)-np.polyval(temp1,x-xerr))/2
+				temp1,temp2=np.polyfit(x,temperature,n-1,w=1/yerr,cov='unscaled')
+				# plt.figure()
+				# plt.errorbar(x,temperature,xerr=xerr)
+				# plt.plot(x,np.polyval(temp1,x),'--')
+				# plt.pause(0.01)
+				coeff[i_z,j,k,:]=temp1
+				errcoeff[i_z,j,k,:]=temp2
+				score[i_z,j,k]=rsquared(temperature,np.polyval(temp1,x))
+	np.savez_compressed(os.path.join(path,'coeff_polynomial_deg'+str(n-1)+'int_time'+str(int)+'ms'),**dict([('coeff',coeff),('errcoeff',errcoeff),('score',score)]))
+	print('for a polinomial of degree '+str(n-1)+' the R^2 score is '+str(np.sum(score[n-2])))
+
+
+def build_average_poly_coeff_multi_digitizer(temperaturehot,temperaturecold,fileshot,filescold,int,framerate,pathparam,n):
+	# 08/10/2018 THIS MAKES THE AVERAGE OF COEFFICIENTS FROM MULTIPLE HOT>ROOM AND COLD >ROOM CYCLES THE COEFFICIENTS
+
+	lengthhot=len(temperaturehot)
+	lengthcold=len(temperaturecold)
+
+	first=True
+	for i in range(lengthhot):
+		for j in range(lengthcold):
+			path=pathparam+'/'+str(int)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)+'/'+str(i+1)+'-'+str(j+1)
+			full_saved_file_dict=np.load(os.path.join(path,'coeff_polynomial_deg'+str(n-1)+'int_time'+str(int)+'ms'+'.npz'))
+			if first==True:
+				shape=np.shape(full_saved_file_dict['coeff'])
+				shape=np.concatenate(((lengthhot,lengthcold),shape))
+				coeff=np.zeros(shape)
+				shape=np.shape(full_saved_file_dict['errcoeff'])
+				shape=np.concatenate(((lengthhot,lengthcold),shape))
+				errcoeff=np.zeros(shape)
+				shape=np.shape(full_saved_file_dict['score'])
+				shape=np.concatenate(((lengthhot,lengthcold),shape))
+				score=np.zeros(shape)
+				first=False
+			coeff[i,j]=full_saved_file_dict['coeff']
+			errcoeff[i,j]=full_saved_file_dict['errcoeff']
+
+	select = np.zeros((n,n)).astype(bool)
+	np.fill_diagonal(select,True)
+	meancoeff=np.sum(coeff/errcoeff[:,:,:,:,:,select],axis=(0,1))/np.sum(1/errcoeff[:,:,:,:,:,select],axis=(0,1))
+	meanerrcoeff=(1/np.sum(1/errcoeff,axis=(0,1)))*1/((lengthhot*lengthcold)**0.5)
+	meanerrcoeff[:,:,:,select] = (np.std(coeff) + meanerrcoeff[:,:,:,select]**2)**0.5
+	meanscore = np.mean(score,axis=(0,1))
+
+	path=pathparam+'/'+str(int)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)+'/average'
+	if not os.path.exists(path):
+		os.makedirs(path)
+	np.savez_compressed(os.path.join(path,'coeff_polynomial_deg'+str(n-1)+'int_time'+str(int)+'ms'),**dict([('coeff',meancoeff),('errcoeff',meanerrcoeff),('score',meanscore)]))
