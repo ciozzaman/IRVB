@@ -16,6 +16,10 @@ import peakutils
 import collections
 from scipy.ndimage import rotate
 from skimage.transform import resize
+from uncertainties import correlated_values,ufloat
+from uncertainties.unumpy import nominal_values,std_devs
+import time as tm
+import concurrent.futures as cf
 
 
 #
@@ -2609,8 +2613,8 @@ def find_dead_pixels(data, start_interval='auto',end_interval='auto', framerate=
 
 
 	counter = collections.Counter(flatten_full(flag_check))
-	print('Number of pixels that trepass the limit for count difference with neighbours '+str(counter.get(3)))
-	print('Number of pixels that trepass the limit for standard deviation '+str(counter.get(6)))
+	print('Number of pixels that trepass '+str(treshold_for_bad_difference)+' counts difference with neighbours '+str(counter.get(3)))
+	print('Number of pixels that trepass '+str(treshold_for_bad_std)+' of standard deviation '+str(counter.get(6)))
 	print('Number of pixels that trepass both limits '+str(counter.get(9)))
 
 	return flag_check
@@ -2654,7 +2658,7 @@ def replace_dead_pixels(data,flag, framerate='auto',from_data=True):
 						if (i_!=0 and j_!=0):
 							if flag[i+i_,j+j_]==0:
 								temp.append(data[:,i+i_, j +j_])
-				data2[0,:,i,j]=np.mean(temp,axis=(0))
+				data2[0,:,i,j]=np.median(temp,axis=(0))
 
 	return data2
 
@@ -3287,6 +3291,7 @@ def ats_to_dict(full_path,digital_level_bytes=4,header_marker = '4949'):
 	frame_counter = []
 	DetectorTemp = []
 	SensorTemp_0 = []
+	SensorTemp_3 = []
 	last = 0
 	import time as tm
 	# value = data.find(string_for_digitizer)
@@ -3303,6 +3308,7 @@ def ats_to_dict(full_path,digital_level_bytes=4,header_marker = '4949'):
 		frame_counter.append(header('frame_counter'))
 		DetectorTemp.append(header('DetectorTemp'))
 		SensorTemp_0.append(header('SensorTemp_0'))
+		SensorTemp_3.append(header('SensorTemp_3'))
 		# time_lapsed = tm.time()-start_time
 		# print(time_lapsed)
 		raw_digital_level = hexdata[last+value-data_length:last+value]
@@ -3324,6 +3330,7 @@ def ats_to_dict(full_path,digital_level_bytes=4,header_marker = '4949'):
 	frame_counter = np.array(frame_counter)
 	DetectorTemp = np.array(DetectorTemp)
 	SensorTemp_0 = np.array(SensorTemp_0)
+	SensorTemp_3 = np.array(SensorTemp_3)
 	out = dict([('data',data)])
 	out['digitizer_ID']=digitizer_ID
 	out['time_of_measurement']=time_of_measurement
@@ -3331,16 +3338,17 @@ def ats_to_dict(full_path,digital_level_bytes=4,header_marker = '4949'):
 	out['FrameRate']=FrameRate
 	out['ExternalTrigger'] = ExternalTrigger
 	out['SensorTemp_0'] = SensorTemp_0
+	out['SensorTemp_3'] = SensorTemp_3
 	out['DetectorTemp'] = DetectorTemp
 	out['width'] = width
 	out['height'] = height
 	out['camera_SN'] = camera_SN
 	out['frame_counter'] = frame_counter
 	data_per_digitizer,uniques_digitizer_ID = separate_data_with_digitizer(out)
-	out['data_time_avg_counts'] = np.mean(data_per_digitizer,axis=1)
-	out['data_time_avg_counts_std'] = np.std(data_per_digitizer,axis=1)
-	out['data_time_space_avg_counts'] = np.mean(data_per_digitizer,axis=(1,2,3))
-	out['data_time_space_avg_counts_std'] = np.std(data_per_digitizer,axis=(1,2,3))
+	out['data_time_avg_counts'] = np.array([(np.mean(data,axis=0)) for data in data_per_digitizer])
+	out['data_time_avg_counts_std'] = np.array([(np.std(data,axis=0)) for data in data_per_digitizer])
+	out['data_time_space_avg_counts'] = np.array([(np.mean(data,axis=(0,1,2))) for data in data_per_digitizer])
+	out['data_time_space_avg_counts_std'] = np.array([(np.std(data,axis=(0,1,2))) for data in data_per_digitizer])
 	out['uniques_digitizer_ID'] = uniques_digitizer_ID
 	# return data,digitizer_ID,time_of_measurement,IntegrationTime,FrameRate,ExternalTrigger,SensorTemp_0,DetectorTemp,width,height,camera_SN,frame_counter
 	return out
@@ -3353,6 +3361,14 @@ def separate_data_with_digitizer(full_saved_file_dict):
 	for ID in uniques_digitizer_ID:
 		data_per_digitizer.append(data[digitizer_ID==ID])
 	return data_per_digitizer,uniques_digitizer_ID
+
+def generic_separate_with_digitizer(data,digitizer_ID):
+	uniques_digitizer_ID = np.sort(np.unique(digitizer_ID))
+	data_per_digitizer = []
+	for ID in uniques_digitizer_ID:
+		data_per_digitizer.append(data[digitizer_ID==ID])
+	return data_per_digitizer,uniques_digitizer_ID
+
 
 def build_poly_coeff_multi_digitizer(temperature,files,int,path,n):
 	# modified 2018-10-08 to build the coefficient only for 1 degree of polinomial
@@ -3438,10 +3454,96 @@ def build_average_poly_coeff_multi_digitizer(temperaturehot,temperaturecold,file
 	np.fill_diagonal(select,True)
 	meancoeff=np.sum(coeff/errcoeff[:,:,:,:,:,select],axis=(0,1))/np.sum(1/errcoeff[:,:,:,:,:,select],axis=(0,1))
 	meanerrcoeff=(1/np.sum(1/errcoeff,axis=(0,1)))*1/((lengthhot*lengthcold)**0.5)
-	meanerrcoeff[:,:,:,select] = (np.std(coeff) + meanerrcoeff[:,:,:,select]**2)**0.5
+	meanerrcoeff[:,:,:,select] = (np.std(coeff,axis=(0,1))**2 + meanerrcoeff[:,:,:,select])
 	meanscore = np.mean(score,axis=(0,1))
 
 	path=pathparam+'/'+str(int)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)+'/average'
 	if not os.path.exists(path):
 		os.makedirs(path)
 	np.savez_compressed(os.path.join(path,'coeff_polynomial_deg'+str(n-1)+'int_time'+str(int)+'ms'),**dict([('coeff',meancoeff),('errcoeff',meanerrcoeff),('score',meanscore)]))
+
+def count_to_temp_1D_homo_conversion(arg):
+	out = np.sum(np.power(np.array([arg[0].tolist()]*arg[2]).T,np.arange(arg[2]-1,-1,-1))*arg[1],axis=1)
+	out1 = nominal_values(out)
+	out2 = std_devs(out)
+	return [out1,out2]
+
+def count_to_temp_0D_homo_conversion(arg):
+	out = np.sum(np.power(np.array([arg[0].tolist()]*arg[2]).T,np.arange(arg[2]-1,-1,-1))*arg[1],axis=0)
+	out1 = nominal_values(out)
+	out2 = std_devs(out)
+	return [out1,out2]
+
+
+def count_to_temp_poly_multi_digitizer_time_dependent(counts,params,errparams,reference_background,reference_background_std,reference_background_flat,digitizer_ID,number_cpu_available,parallelised=True):
+	temperature = []
+	temperature_std = []
+	with cf.ProcessPoolExecutor(max_workers=number_cpu_available) as executor:
+		for i in range(len(digitizer_ID)):
+			counts_temp = np.array(counts[i])
+			temp1 = []
+			temp2 = []
+			for j in range(counts_temp.shape[1]):
+				# start_time = tm.time()
+
+				if parallelised:	# parallel way
+					arg = []
+					for k in range(counts_temp.shape[2]):
+						arg.append([counts_temp[:,j,k]-ufloat(reference_background[i,j,k],reference_background_std[i,j,k])+reference_background_flat[i],correlated_values(params[i,j,k],errparams[i,j,k]),n])
+					print(str(j) + ' , %.3gs' %(tm.time()-start_time))
+					out = list(executor.map(function_a,arg))
+				else:	# non parallel way
+					print(str(j) + ' , %.3gs' %(tm.time()-start_time))
+					out = []
+					for k in range(counts_temp.shape[2]):
+						out.append(function_a([counts_temp[:,j,k],correlated_values(params[i,j,k],errparams[i,j,k]),n]))
+
+				# print(str(j) + ' , %.3gs' %(tm.time()-start_time))
+				temp1.append([x for x,y in out])
+				temp2.append([y for x,y in out])
+				# print(str(j) + ' , %.3gs' %(tm.time()-start_time))
+			temperature.append(np.transpose(temp1,(2,0,1)))
+			temperature_std.append(np.transpose(temp2,(2,0,1)))
+
+	return temperature,temperature_std
+
+def count_to_temp_poly_multi_digitizer_stationary(counts,params,errparams,digitizer_ID,number_cpu_available,parallelised=True):
+
+	temperature = []
+	temperature_std = []
+	with cf.ProcessPoolExecutor(max_workers=number_cpu_available) as executor:
+		# executor = cf.ProcessPoolExecutor()#max_workers=number_cpu_available)
+		for i in range(len(digitizer_ID)):
+			counts_temp = np.array(counts[i])
+			temp1 = []
+			temp2 = []
+			for j in range(counts_temp.shape[0]):
+				start_time = tm.time()
+
+				arg = []
+				for k in range(counts_temp.shape[1]):
+					arg.append([counts_temp[j,k],correlated_values(params[i,j,k],errparams[i,j,k]),n])
+				print(str(j) + ' , %.3gs' %(tm.time()-start_time))
+				out = list(executor.map(function_b,arg))
+
+				# print(str(j) + ' , %.3gs' %(tm.time()-start_time))
+				# out = []
+				# for k in range(laser_counts_temp.shape[2]):
+				# 	out.append(function_a([laser_counts_temp[:,j,k],correlated_values(params[i,j,k],errparams[i,j,k]),n]))
+
+				print(str(j) + ' , %.3gs' %(tm.time()-start_time))
+				temp1.append([x for x,y in out])
+				temp2.append([y for x,y in out])
+				print(str(j) + ' , %.3gs' %(tm.time()-start_time))
+			temperature.append(temp1)
+			temperature_std.append(temp2)
+
+	return temperature,temperature_std
+
+def count_to_temp_poly_multi_digitizer(counts,params,errparams,digitizer_ID,number_cpu_available,parallelised=True):
+
+	shape = np.shape(counts)
+	if len(shape)==3:
+		return count_to_temp_poly_multi_digitizer_stationary(counts,params,errparams,digitizer_ID,number_cpu_available,parallelised)
+	else:
+		return count_to_temp_poly_multi_digitizer_time_dependent(counts,params,errparams,digitizer_ID,number_cpu_available,parallelised)

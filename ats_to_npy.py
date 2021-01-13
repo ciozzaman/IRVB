@@ -24,8 +24,8 @@ def function_a(f):
 	print(f)
 	try:
 		# coleval.collect_subfolderfits(f)
-		dict = coleval.ats_to_dict(f+'.ats')
-		np.savez_compressed(f,**dict)
+		full_saved_file_dict = coleval.ats_to_dict(f+'.ats')
+		np.savez_compressed(f,**full_saved_file_dict)
 		print(f+' done')
 	except:
 		print('error in '+f)
@@ -43,12 +43,15 @@ def function_a(f):
 # 	coleval.save_timestamp(file)
 
 
-files=[laser41,laser42,laser43,laser44,laser45,laser46,laser47,vacuum7]
-# files = [files1,files2,files3,files4,files5,files6,files7,files8,files10,files11,files12,files13,files14,files15,files16,files17,files18,files19,files20,files21,files22,files23,files24,files25,files26,files27,files28,files29,files30,files31]
-files=coleval.flatten_full(files)
+files1 = [laser41,laser42,laser43,laser44,laser45,laser46,laser47,vacuum7]
+files2 = [laser1,laser2,laser10,laser11,laser12,laser13,laser14,vacuum1]
+files3 = np.flip([laser15,laser16,laser17,laser18,laser19,vacuum2,vacuumtest1],axis=0)
+files4 = [files1,files2,files3,files4,files5,files6,files7,files8,files10,files11,files12,files13,files14,files15,files16,files17,files18,files19,files20,files21,files22,files23,files24,files25,files26,files27,files28,files29,files30,files31]
 
-
+all_files = [files1,files2,files3,files4]
 
 import concurrent.futures as cf
-with cf.ProcessPoolExecutor(max_workers=number_cpu_available) as executor:
-	executor.map(function_a,files)
+for files in all_files:
+	with cf.ProcessPoolExecutor(max_workers=number_cpu_available) as executor:
+		files=coleval.flatten_full(files)
+		executor.map(function_a,files)
