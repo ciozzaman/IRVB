@@ -17,7 +17,7 @@ import collections
 from scipy.ndimage import rotate
 from skimage.transform import resize
 from uncertainties import correlated_values,ufloat
-from uncertainties.unumpy import nominal_values,std_devs
+from uncertainties.unumpy import nominal_values,std_devs,uarray
 import time as tm
 import concurrent.futures as cf
 
@@ -2512,7 +2512,7 @@ def fullprint(*args, **kwargs):
 ###################################################################################################
 
 
-def find_dead_pixels(data, start_interval='auto',end_interval='auto', framerate='auto',from_data=True,treshold_for_bad_std=10,treshold_for_bad_difference=13):
+def find_dead_pixels(data, start_interval='auto',end_interval='auto', framerate='auto',from_data=True,treshold_for_bad_low_std=0,treshold_for_bad_std=10,treshold_for_bad_difference=13):
 
 	# Created 26/02/2019
 	# function that finds the dead pixels. 'data' can be a string with the path of the record or the data itself.
@@ -2573,6 +2573,8 @@ def find_dead_pixels(data, start_interval='auto',end_interval='auto', framerate=
 	# 			flag[i, j] = 0
 	flag_check[std>treshold_for_bad_std] = 6
 	flag[std>treshold_for_bad_std] = 0
+	flag_check[std<=treshold_for_bad_low_std] = 6
+	flag[std<=treshold_for_bad_low_std] = 0
 	for repeats in [0, 1]:
 		for i in range(1, np.shape(std)[0] - 1):
 			for j in range(1, np.shape(std)[1] - 1):
@@ -2613,9 +2615,9 @@ def find_dead_pixels(data, start_interval='auto',end_interval='auto', framerate=
 
 
 	counter = collections.Counter(flatten_full(flag_check))
-	print('Number of pixels that trepass '+str(treshold_for_bad_difference)+' counts difference with neighbours '+str(counter.get(3)))
-	print('Number of pixels that trepass '+str(treshold_for_bad_std)+' of standard deviation '+str(counter.get(6)))
-	print('Number of pixels that trepass both limits '+str(counter.get(9)))
+	print('Number of pixels that trepass '+str(treshold_for_bad_difference)+' counts difference with neighbours: '+str(counter.get(3)))
+	print('Number of pixels with standard deviation > '+str(treshold_for_bad_std)+' counts: '+str(counter.get(6)))
+	print('Number of pixels that trepass both limits: '+str(counter.get(9)))
 
 	return flag_check
 
@@ -3463,19 +3465,19 @@ def build_average_poly_coeff_multi_digitizer(temperaturehot,temperaturecold,file
 	np.savez_compressed(os.path.join(path,'coeff_polynomial_deg'+str(n-1)+'int_time'+str(int)+'ms'),**dict([('coeff',meancoeff),('errcoeff',meanerrcoeff),('score',meanscore)]))
 
 def count_to_temp_1D_homo_conversion(arg):
-	out = np.sum(np.power(np.array([arg[0].tolist()]*arg[2]).T,np.arange(arg[2]-1,-1,-1))*arg[1],axis=1)
+	out = np.sum(np.power(np.array([(arg[0]).tolist()]*arg[3]).T,np.arange(arg[3]-1,-1,-1))*correlated_values(arg[1],arg[2]),axis=1)
 	out1 = nominal_values(out)
 	out2 = std_devs(out)
 	return [out1,out2]
 
 def count_to_temp_0D_homo_conversion(arg):
-	out = np.sum(np.power(np.array([arg[0].tolist()]*arg[2]).T,np.arange(arg[2]-1,-1,-1))*arg[1],axis=0)
+	out = np.sum(np.power(np.array([(uarray(arg[0],arg[1])).tolist()]*arg[4]).T,np.arange(arg[4]-1,-1,-1))*correlated_values(arg[2],arg[3]),axis=0)
 	out1 = nominal_values(out)
 	out2 = std_devs(out)
 	return [out1,out2]
 
 
-def count_to_temp_poly_multi_digitizer_time_dependent(counts,params,errparams,reference_background,reference_background_std,reference_background_flat,digitizer_ID,number_cpu_available,parallelised=True):
+def count_to_temp_poly_multi_digitizer_time_dependent(counts,params,errparams,reference_background,reference_background_std,reference_background_flat,digitizer_ID,number_cpu_available,n,parallelised=True,report=0):
 	temperature = []
 	temperature_std = []
 	with cf.ProcessPoolExecutor(max_workers=number_cpu_available) as executor:
@@ -3483,31 +3485,37 @@ def count_to_temp_poly_multi_digitizer_time_dependent(counts,params,errparams,re
 			counts_temp = np.array(counts[i])
 			temp1 = []
 			temp2 = []
+			if report>0:
+				start_time = tm.time()
 			for j in range(counts_temp.shape[1]):
-				# start_time = tm.time()
-
+				if report>0:
+					start_time_1 = tm.time()
 				if parallelised:	# parallel way
 					arg = []
 					for k in range(counts_temp.shape[2]):
-						arg.append([counts_temp[:,j,k]-ufloat(reference_background[i,j,k],reference_background_std[i,j,k])+reference_background_flat[i],correlated_values(params[i,j,k],errparams[i,j,k]),n])
-					print(str(j) + ' , %.3gs' %(tm.time()-start_time))
-					out = list(executor.map(function_a,arg))
+						arg.append([counts_temp[:,j,k],params[i,j,k],errparams[i,j,k],n])
+					if report>1:
+						print(str(j) + ' , %.5gs , %.3gs' %(tm.time()-start_time,tm.time()-start_time_1))
+					out = list(executor.map(count_to_temp_1D_homo_conversion,arg))
 				else:	# non parallel way
-					print(str(j) + ' , %.3gs' %(tm.time()-start_time))
+					if report>1:
+						print(str(j) + ' , %.5gs , %.3gs' %(tm.time()-start_time,tm.time()-start_time_1))
 					out = []
 					for k in range(counts_temp.shape[2]):
-						out.append(function_a([counts_temp[:,j,k],correlated_values(params[i,j,k],errparams[i,j,k]),n]))
+						out.append(count_to_temp_1D_homo_conversion([counts_temp[:,j,k],params[i,j,k],errparams[i,j,k],n]))
 
-				# print(str(j) + ' , %.3gs' %(tm.time()-start_time))
+				if report>1:
+					print(str(j) + ' , %.5gs , %.3gs' %(tm.time()-start_time,tm.time()-start_time_1))
 				temp1.append([x for x,y in out])
 				temp2.append([y for x,y in out])
-				# print(str(j) + ' , %.3gs' %(tm.time()-start_time))
+				if report>0:
+					print(str(j) + ' , %.5gs , %.3gs' %(tm.time()-start_time,tm.time()-start_time_1))
 			temperature.append(np.transpose(temp1,(2,0,1)))
 			temperature_std.append(np.transpose(temp2,(2,0,1)))
 
 	return temperature,temperature_std
 
-def count_to_temp_poly_multi_digitizer_stationary(counts,params,errparams,digitizer_ID,number_cpu_available,parallelised=True):
+def count_to_temp_poly_multi_digitizer_stationary(counts,counts_std,params,errparams,digitizer_ID,number_cpu_available,n,parallelised=True,report=0):
 
 	temperature = []
 	temperature_std = []
@@ -3515,35 +3523,54 @@ def count_to_temp_poly_multi_digitizer_stationary(counts,params,errparams,digiti
 		# executor = cf.ProcessPoolExecutor()#max_workers=number_cpu_available)
 		for i in range(len(digitizer_ID)):
 			counts_temp = np.array(counts[i])
+			counts_std_temp = np.array(counts_std[i])
 			temp1 = []
 			temp2 = []
-			for j in range(counts_temp.shape[0]):
+			if report>0:
 				start_time = tm.time()
+			for j in range(counts_temp.shape[0]):
+				if report>0:
+					start_time_1 = tm.time()
 
-				arg = []
-				for k in range(counts_temp.shape[1]):
-					arg.append([counts_temp[j,k],correlated_values(params[i,j,k],errparams[i,j,k]),n])
-				print(str(j) + ' , %.3gs' %(tm.time()-start_time))
-				out = list(executor.map(function_b,arg))
+				if parallelised:	# parallel way
+					arg = []
+					for k in range(counts_temp.shape[1]):
+						arg.append([counts_temp[j,k],counts_std_temp[j,k],params[i,j,k],errparams[i,j,k],n])
+					if report>1:
+						print(str(j) + ' , %.5gs , %.3gs' %(tm.time()-start_time,tm.time()-start_time_1))
+					out = list(executor.map(count_to_temp_0D_homo_conversion,arg))
+				else:	# non parallel way
+					if report>1:
+						print(str(j) + ' , %.5gs , %.3gs' %(tm.time()-start_time,tm.time()-start_time_1))
+					out = []
+					for k in range(laser_counts_temp.shape[2]):
+						out.append(count_to_temp_0D_homo_conversion([counts_temp[j,k],counts_std_temp[j,k],params[i,j,k],errparams[i,j,k],n]))
 
-				# print(str(j) + ' , %.3gs' %(tm.time()-start_time))
-				# out = []
-				# for k in range(laser_counts_temp.shape[2]):
-				# 	out.append(function_a([laser_counts_temp[:,j,k],correlated_values(params[i,j,k],errparams[i,j,k]),n]))
-
-				print(str(j) + ' , %.3gs' %(tm.time()-start_time))
+				if report>1:
+					print(str(j) + ' , %.5gs , %.3gs' %(tm.time()-start_time,tm.time()-start_time_1))
 				temp1.append([x for x,y in out])
 				temp2.append([y for x,y in out])
-				print(str(j) + ' , %.3gs' %(tm.time()-start_time))
+				if report>0:
+					print(str(j) + ' , %.5gs , %.3gs' %(tm.time()-start_time,tm.time()-start_time_1))
 			temperature.append(temp1)
 			temperature_std.append(temp2)
 
 	return temperature,temperature_std
 
-def count_to_temp_poly_multi_digitizer(counts,params,errparams,digitizer_ID,number_cpu_available,parallelised=True):
+def count_to_temp_poly_multi_digitizer(counts,params,errparams,digitizer_ID,number_cpu_available,counts_std=[0],reference_background=[0],reference_background_std=[0],reference_background_flat=0,parallelised=True,report=0):
 
+	n = np.shape(params)[-1]
 	shape = np.shape(counts)
 	if len(shape)==3:
-		return count_to_temp_poly_multi_digitizer_stationary(counts,params,errparams,digitizer_ID,number_cpu_available,parallelised)
+		if np.shape(counts)!=np.shape(counts_std):
+			print("for steady state conversion counts std should be supplied, counts shape "+str(np.shape(counts))+" counts std "+str(np.shape(counts_std)))
+			exit()
+		return count_to_temp_poly_multi_digitizer_stationary(counts,counts_std,params,errparams,digitizer_ID,number_cpu_available,n,parallelised=parallelised,report=report)
 	else:
-		return count_to_temp_poly_multi_digitizer_time_dependent(counts,params,errparams,digitizer_ID,number_cpu_available,parallelised)
+		if (len(np.shape(reference_background))<2 or len(np.shape(reference_background_std))<2):
+			print("you didn't supply the appropriate background counts, requested "+str(np.shape(counts)[-2:]))
+			exit()
+		return count_to_temp_poly_multi_digitizer_time_dependent(counts,params,errparams,reference_background,reference_background_std,reference_background_flat,digitizer_ID,number_cpu_available,n,parallelised=parallelised,report=report)
+
+
+#

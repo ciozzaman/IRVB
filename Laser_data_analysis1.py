@@ -30,26 +30,65 @@ int_time=1
 type='_stat.npy'
 # type='csv'
 
-# Load data
-pathparams = pathparams+'/'+str(int_time)+'ms'+str(framerate)+'Hz/'+'numcoeff'+str(n)+'/average'
-fullpathparams=os.path.join(pathparams,'coeff_polynomial_deg'+str(n-1)+'int_time'+str(int_time)+'ms.npz')
-params_dict=np.load(fullpathparams)
-params = params_dict['coeff']
-errparams = params_dict['errcoeff']
+f = []
+for (dirpath, dirnames, filenames) in os.walk(pathparams):
+	f.append(dirnames)
+parameters_available = f[0]
+parameters_available_int_time = []
+parameters_available_framerate = []
+for path in parameters_available:
+	parameters_available_int_time.append(np.float(path[:path.find('ms')]))
+	parameters_available_framerate.append(np.float(path[path.find('ms')+2:path.find('Hz')]))
+parameters_available_int_time = np.array(parameters_available_int_time)
+parameters_available_framerate = np.array(parameters_available_framerate)
 
-background_timestamps = [(np.mean(np.load(file+'.npz')['time_of_measurement'])) for file in path_reference_frames if np.logical_and(np.abs(np.load(file+'.npz')['FrameRate']-framerate)<framerate/100,np.abs(np.load(file+'.npz')['IntegrationTime']/1000-int_time)<int_time/100)]
-background_temperatures = [(np.mean(np.load(file+'.npz')['SensorTemp_0'])) for file in path_reference_frames if np.logical_and(np.abs(np.load(file+'.npz')['FrameRate']-framerate)<framerate/100,np.abs(np.load(file+'.npz')['IntegrationTime']/1000-int_time)<int_time/100)]
-background_images = [(np.load(file+'.npz')['data_time_avg_counts']) for file in path_reference_frames if np.logical_and(np.abs(np.load(file+'.npz')['FrameRate']-framerate)<framerate/100,np.abs(np.load(file+'.npz')['IntegrationTime']/1000-int_time)<int_time/100)]
-background_images_std = [(np.load(file+'.npz')['data_time_avg_counts_std']) for file in path_reference_frames if np.logical_and(np.abs(np.load(file+'.npz')['FrameRate']-framerate)<framerate/100,np.abs(np.load(file+'.npz')['IntegrationTime']/1000-int_time)<int_time/100)]
-relevant_background_files = [file for file in path_reference_frames if np.logical_and(np.abs(np.load(file+'.npz')['FrameRate']-framerate)<framerate/100,np.abs(np.load(file+'.npz')['IntegrationTime']/1000-int_time)<int_time/100)]
+# # Load data
+# pathparams = pathparams+'/'+str(int_time)+'ms'+str(framerate)+'Hz/'+'numcoeff'+str(n)+'/average'
+# fullpathparams=os.path.join(pathparams,'coeff_polynomial_deg'+str(n-1)+'int_time'+str(int_time)+'ms.npz')
+# params_dict=np.load(fullpathparams)
+# params = params_dict['coeff']
+# errparams = params_dict['errcoeff']
+#
+# background_timestamps = [(np.mean(np.load(file+'.npz')['time_of_measurement'])) for file in path_reference_frames if np.logical_and(np.abs(np.load(file+'.npz')['FrameRate']-framerate)<framerate/100,np.abs(np.load(file+'.npz')['IntegrationTime']/1000-int_time)<int_time/100)]
+# background_temperatures = [(np.mean(np.load(file+'.npz')['SensorTemp_0'])) for file in path_reference_frames if np.logical_and(np.abs(np.load(file+'.npz')['FrameRate']-framerate)<framerate/100,np.abs(np.load(file+'.npz')['IntegrationTime']/1000-int_time)<int_time/100)]
+# background_images = [(np.load(file+'.npz')['data_time_avg_counts']) for file in path_reference_frames if np.logical_and(np.abs(np.load(file+'.npz')['FrameRate']-framerate)<framerate/100,np.abs(np.load(file+'.npz')['IntegrationTime']/1000-int_time)<int_time/100)]
+# background_images_std = [(np.load(file+'.npz')['data_time_avg_counts_std']) for file in path_reference_frames if np.logical_and(np.abs(np.load(file+'.npz')['FrameRate']-framerate)<framerate/100,np.abs(np.load(file+'.npz')['IntegrationTime']/1000-int_time)<int_time/100)]
+# relevant_background_files = [file for file in path_reference_frames if np.logical_and(np.abs(np.load(file+'.npz')['FrameRate']-framerate)<framerate/100,np.abs(np.load(file+'.npz')['IntegrationTime']/1000-int_time)<int_time/100)]
+
+print('STARTING '+laser_to_analyse)
+if not(os.path.exists(laser_to_analyse+'.npz')):
+	print('missing .npz file, aborted')
+	full_saved_file_dict = coleval.ats_to_dict(laser_to_analyse+'.ats')
+
 
 laser_dict = np.load(laser_to_analyse+'.npz')
-laser_counts, laser_digitizer_ID = coleval.separate_data_with_digitizer(laser_dict)
+# laser_counts, laser_digitizer_ID = coleval.separate_data_with_digitizer(laser_dict)
 time_of_experiment = laser_dict['time_of_measurement']
 mean_time_of_experiment = np.mean(time_of_experiment)
 laser_digitizer = laser_dict['digitizer_ID']
 time_of_experiment_digitizer_ID, laser_digitizer_ID = coleval.generic_separate_with_digitizer(time_of_experiment,laser_digitizer)
 laser_framerate = laser_dict['FrameRate']
+laser_int_time = laser_dict['IntegrationTime']
+
+temp = np.abs(parameters_available_int_time-laser_int_time/1000)<0.1
+framerate = np.array(parameters_available_framerate)[temp][np.abs(parameters_available_framerate[temp]-laser_framerate).argmin()]
+int_time = np.array(parameters_available_int_time)[temp][np.abs(parameters_available_framerate[temp]-laser_framerate).argmin()]
+temp = np.array(parameters_available)[temp][np.abs(parameters_available_framerate[temp]-laser_framerate).argmin()]
+print('parameters selected '+temp)
+
+# Load parameters
+temp = pathparams+'/'+temp+'/numcoeff'+str(n)+'/average'
+fullpathparams=os.path.join(temp,'coeff_polynomial_deg'+str(n-1)+'int_time'+str(int_time)+'ms.npz')
+params_dict=np.load(fullpathparams)
+params = params_dict['coeff']
+errparams = params_dict['errcoeff']
+
+# Selection of only the backgroud files with similar framerate and integration time
+background_timestamps = [(np.mean(np.load(file+'.npz')['time_of_measurement'])) for file in path_reference_frames if np.logical_and(np.abs(np.load(file+'.npz')['FrameRate']-framerate)<framerate/100,np.abs(np.load(file+'.npz')['IntegrationTime']/1000-int_time)<int_time/100)]
+background_temperatures = [(np.mean(np.load(file+'.npz')['SensorTemp_0'])) for file in path_reference_frames if np.logical_and(np.abs(np.load(file+'.npz')['FrameRate']-framerate)<framerate/100,np.abs(np.load(file+'.npz')['IntegrationTime']/1000-int_time)<int_time/100)]
+background_images = [(np.load(file+'.npz')['data_time_avg_counts']) for file in path_reference_frames if np.logical_and(np.abs(np.load(file+'.npz')['FrameRate']-framerate)<framerate/100,np.abs(np.load(file+'.npz')['IntegrationTime']/1000-int_time)<int_time/100)]
+background_images_std = [(np.load(file+'.npz')['data_time_avg_counts_std']) for file in path_reference_frames if np.logical_and(np.abs(np.load(file+'.npz')['FrameRate']-framerate)<framerate/100,np.abs(np.load(file+'.npz')['IntegrationTime']/1000-int_time)<int_time/100)]
+relevant_background_files = [file for file in path_reference_frames if np.logical_and(np.abs(np.load(file+'.npz')['FrameRate']-framerate)<framerate/100,np.abs(np.load(file+'.npz')['IntegrationTime']/1000-int_time)<int_time/100)]
 
 
 # Calculating the background image
@@ -61,8 +100,8 @@ reference_background_flat = np.mean(reference_background,axis=(1,2))
 reference_background_camera_temperature = (background_temperatures[ref[0]]*(background_timestamps[ref[1]]-mean_time_of_experiment) + background_temperatures[ref[1]]*(mean_time_of_experiment-background_timestamps[ref[0]]))/(background_timestamps[ref[1]]-background_timestamps[ref[0]])
 reference_background_full_1,background_digitizer_ID = coleval.separate_data_with_digitizer(np.load(relevant_background_files[ref[0]]+'.npz'))
 reference_background_full_2,background_digitizer_ID = coleval.separate_data_with_digitizer(np.load(relevant_background_files[ref[1]]+'.npz'))
-flag_1 = [coleval.find_dead_pixels([data]) for data in reference_background_full_1]
-flag_2 = [coleval.find_dead_pixels([data]) for data in reference_background_full_2]
+flag_1 = [coleval.find_dead_pixels([data],treshold_for_bad_difference=15) for data in reference_background_full_1]
+flag_2 = [coleval.find_dead_pixels([data],treshold_for_bad_difference=15) for data in reference_background_full_2]
 bad_pixels_flag = np.add(flag_1,flag_2)
 
 
@@ -167,85 +206,97 @@ else:	# I'm going to use the reference frames for foil position
 	foilvertwpixel=foilup-foildw
 
 
-# before of the temperature conversion I'm better to remove the oscillation
-# I try to use all the length of the record at first
-laser_counts_filtered = [coleval.clear_oscillation_central2([counts],laser_framerate/len(laser_digitizer_ID),oscillation_search_window_end=(len(counts)-1)/(laser_framerate/len(laser_digitizer_ID)),plot_conparison=False)[0] for counts in laser_counts]
+# # before of the temperature conversion I'm better to remove the oscillation
+# # I try to use all the length of the record at first
+# laser_counts_filtered = [coleval.clear_oscillation_central2([counts],laser_framerate/len(laser_digitizer_ID),oscillation_search_window_end=(len(counts)-1)/(laser_framerate/len(laser_digitizer_ID)),plot_conparison=False)[0] for counts in laser_counts]
 
+if False:	# done with functions now
+	from uncertainties import correlated_values,ufloat
+	from uncertainties.unumpy import nominal_values,std_devs,uarray
+	def function_a(arg):
+		out = np.sum(np.power(np.array([arg[0].tolist()]*arg[2]).T,np.arange(arg[2]-1,-1,-1))*arg[1],axis=1)
+		out1 = nominal_values(out)
+		out2 = std_devs(out)
+		return [out1,out2]
 
-from uncertainties import correlated_values,ufloat
-from uncertainties.unumpy import nominal_values,std_devs,uarray
-def function_a(arg):
-	out = np.sum(np.power(np.array([arg[0].tolist()]*arg[2]).T,np.arange(arg[2]-1,-1,-1))*arg[1],axis=1)
-	out1 = nominal_values(out)
-	out2 = std_devs(out)
-	return [out1,out2]
+	def function_b(arg):
+		out = np.sum(np.power(np.array([arg[0].tolist()]*arg[2]).T,np.arange(arg[2]-1,-1,-1))*arg[1],axis=0)
+		out1 = nominal_values(out)
+		out2 = std_devs(out)
+		return [out1,out2]
 
-def function_b(arg):
-	out = np.sum(np.power(np.array([arg[0].tolist()]*arg[2]).T,np.arange(arg[2]-1,-1,-1))*arg[1],axis=0)
-	out1 = nominal_values(out)
-	out2 = std_devs(out)
-	return [out1,out2]
+	import time as tm
+	import concurrent.futures as cf
+	laser_temperature = []
+	laser_temperature_std = []
+	with cf.ProcessPoolExecutor(max_workers=number_cpu_available) as executor:
+		# executor = cf.ProcessPoolExecutor()#max_workers=number_cpu_available)
+		for i in range(len(laser_digitizer_ID)):
+			laser_counts_temp = np.array(laser_counts_filtered[i])
+			temp1 = []
+			temp2 = []
+			for j in range(laser_counts_temp.shape[1]):
+				start_time = tm.time()
 
-import time as tm
-import concurrent.futures as cf
-laser_temperature = []
-laser_temperature_std = []
-with cf.ProcessPoolExecutor(max_workers=number_cpu_available) as executor:
-	# executor = cf.ProcessPoolExecutor()#max_workers=number_cpu_available)
-	for i in range(len(laser_digitizer_ID)):
-		laser_counts_temp = np.array(laser_counts_filtered[i])
-		temp1 = []
-		temp2 = []
-		for j in range(laser_counts_temp.shape[1]):
-			start_time = tm.time()
+				arg = []
+				for k in range(laser_counts_temp.shape[2]):
+					arg.append([laser_counts_temp[:,j,k]-ufloat(reference_background[i,j,k],reference_background_std[i,j,k])+reference_background_flat[i],correlated_values(params[i,j,k],errparams[i,j,k]),n])
+				print(str(j) + ' , %.3gs' %(tm.time()-start_time))
+				out = list(executor.map(function_a,arg))
 
-			arg = []
-			for k in range(laser_counts_temp.shape[2]):
-				arg.append([laser_counts_temp[:,j,k]-ufloat(reference_background[i,j,k],reference_background_std[i,j,k])+reference_background_flat[i],correlated_values(params[i,j,k],errparams[i,j,k]),n])
-			print(str(j) + ' , %.3gs' %(tm.time()-start_time))
-			out = list(executor.map(function_a,arg))
+				# print(str(j) + ' , %.3gs' %(tm.time()-start_time))
+				# out = []
+				# for k in range(laser_counts_temp.shape[2]):
+				# 	out.append(function_a([laser_counts_temp[:,j,k],correlated_values(params[i,j,k],errparams[i,j,k]),n]))
 
-			# print(str(j) + ' , %.3gs' %(tm.time()-start_time))
-			# out = []
-			# for k in range(laser_counts_temp.shape[2]):
-			# 	out.append(function_a([laser_counts_temp[:,j,k],correlated_values(params[i,j,k],errparams[i,j,k]),n]))
+				print(str(j) + ' , %.3gs' %(tm.time()-start_time))
+				temp1.append([x for x,y in out])
+				temp2.append([y for x,y in out])
+				print(str(j) + ' , %.3gs' %(tm.time()-start_time))
+			laser_temperature.append(np.transpose(temp1,(2,0,1)))
+			laser_temperature_std.append(np.transpose(temp2,(2,0,1)))
 
-			print(str(j) + ' , %.3gs' %(tm.time()-start_time))
-			temp1.append([x for x,y in out])
-			temp2.append([y for x,y in out])
-			print(str(j) + ' , %.3gs' %(tm.time()-start_time))
-		laser_temperature.append(np.transpose(temp1,(2,0,1)))
-		laser_temperature_std.append(np.transpose(temp2,(2,0,1)))
+	reference_background_temperature = []
+	reference_background_temperature_std = []
+	with cf.ProcessPoolExecutor(max_workers=number_cpu_available) as executor:
+		# executor = cf.ProcessPoolExecutor()#max_workers=number_cpu_available)
+		for i in range(len(laser_digitizer_ID)):
+			reference_background_temp = np.array(reference_background[i])
+			reference_background_std_temp = np.array(reference_background_std[i])
+			temp1 = []
+			temp2 = []
+			for j in range(reference_background_temp.shape[0]):
+				start_time = tm.time()
 
-reference_background_temperature = []
-reference_background_temperature_std = []
-with cf.ProcessPoolExecutor(max_workers=number_cpu_available) as executor:
-	# executor = cf.ProcessPoolExecutor()#max_workers=number_cpu_available)
-	for i in range(len(laser_digitizer_ID)):
-		reference_background_temp = np.array(reference_background[i])
-		reference_background_std_temp = np.array(reference_background_std[i])
-		temp1 = []
-		temp2 = []
-		for j in range(reference_background_temp.shape[0]):
-			start_time = tm.time()
+				arg = []
+				for k in range(reference_background_temp.shape[1]):
+					arg.append([uarray(reference_background_temp[j,k],reference_background_std_temp[j,k]),correlated_values(params[i,j,k],errparams[i,j,k]),n])
+				print(str(j) + ' , %.3gs' %(tm.time()-start_time))
+				out = list(executor.map(function_b,arg))
 
-			arg = []
-			for k in range(reference_background_temp.shape[1]):
-				arg.append([uarray(reference_background_temp[j,k],reference_background_std_temp[j,k]),correlated_values(params[i,j,k],errparams[i,j,k]),n])
-			print(str(j) + ' , %.3gs' %(tm.time()-start_time))
-			out = list(executor.map(function_b,arg))
+				# print(str(j) + ' , %.3gs' %(tm.time()-start_time))
+				# out = []
+				# for k in range(laser_counts_temp.shape[2]):
+				# 	out.append(function_a([laser_counts_temp[:,j,k],correlated_values(params[i,j,k],errparams[i,j,k]),n]))
 
-			# print(str(j) + ' , %.3gs' %(tm.time()-start_time))
-			# out = []
-			# for k in range(laser_counts_temp.shape[2]):
-			# 	out.append(function_a([laser_counts_temp[:,j,k],correlated_values(params[i,j,k],errparams[i,j,k]),n]))
+				print(str(j) + ' , %.3gs' %(tm.time()-start_time))
+				temp1.append([x for x,y in out])
+				temp2.append([y for x,y in out])
+				print(str(j) + ' , %.3gs' %(tm.time()-start_time))
+			reference_background_temperature.append(np.array(temp1))
+			reference_background_temperature_std.append(np.array(temp2))
 
-			print(str(j) + ' , %.3gs' %(tm.time()-start_time))
-			temp1.append([x for x,y in out])
-			temp2.append([y for x,y in out])
-			print(str(j) + ' , %.3gs' %(tm.time()-start_time))
-		reference_background_temperature.append(np.array(temp1))
-		reference_background_temperature_std.append(np.array(temp2))
+else:
+	reference_background_temperature,reference_background_temperature_std = coleval.count_to_temp_poly_multi_digitizer(reference_background,params,errparams,laser_digitizer_ID,number_cpu_available,counts_std=reference_background_std,report=0)
+
+	plt.figure()
+	plt.imshow(reference_background_temperature[0],'rainbow',origin='lower')
+	plt.colorbar().set_label('Temp [°C]')
+	plt.title('Reference frame for '+laser_to_analyse+'\n foil size '+str([foilhorizwpixel,foilvertwpixel])+'pixel',size=10)
+	plt.xlabel('Horizontal axis [pixles]')
+	plt.ylabel('Vertical axis [pixles]')
+	plt.pause(0.01)
+
 
 if False:	# I subtract the background to the counts, so this bit is not necessary
 	# I want to subtract the reference temperature and add back 300K. in this way I whould remove all the disuniformities.
@@ -256,12 +307,14 @@ if False:	# I subtract the background to the counts, so this bit is not necessar
 	# I subtract the background to the counts and add back the average of the background counts
 
 
+laser_temperature = [(laser_dict['laser_temperature_minus_background_median'][i] + laser_dict['laser_temperature_minus_background_minus_median_downgraded'][i].astype(np.float32)) for i in laser_digitizer_ID]
+laser_temperature_std = [(laser_dict['laser_temperature_minus_background_std_median'][i] + laser_dict['laser_temperature_minus_background_std_minus_median_downgraded'][i].astype(np.float32)) for i in laser_digitizer_ID]
 
 # I can replace the dead pixels even after the transformation to temperature, given the flag comes from the background data
 laser_temperature_no_dead_pixels = [coleval.replace_dead_pixels([data],flag)[0] for flag,data in zip(bad_pixels_flag,laser_temperature)]
 laser_temperature_std_no_dead_pixels = [coleval.replace_dead_pixels([data],flag)[0] for flag,data in zip(bad_pixels_flag,laser_temperature_std)]
-reference_background_temperature_no_dead_pixels = [coleval.replace_dead_pixels([data],flag)[0] for flag,data in zip(bad_pixels_flag,reference_background_temperature)]
-reference_background_temperature_std_no_dead_pixels = [coleval.replace_dead_pixels([data],flag)[0] for flag,data in zip(bad_pixels_flag,reference_background_temperature_std)]
+reference_background_temperature_no_dead_pixels = [coleval.replace_dead_pixels([[data]],flag)[0][0] for flag,data in zip(bad_pixels_flag,reference_background_temperature)]
+reference_background_temperature_std_no_dead_pixels = [coleval.replace_dead_pixels([[data]],flag)[[0]] for flag,data in zip(bad_pixels_flag,reference_background_temperature_std)]
 del laser_temperature,laser_temperature_std,reference_background_temperature,reference_background_temperature_std
 
 # I need to put together the data from the two digitizers
@@ -274,10 +327,10 @@ laser_temperature_rot=rotate(laser_temperature_full,foilrotdeg,axes=(-1,-2))
 laser_temperature_crop=laser_temperature_rot[:,foildw:foilup,foillx:foilrx];del laser_temperature_rot
 laser_temperature_std_rot=rotate(laser_temperature_std_full,foilrotdeg,axes=(-1,-2))
 laser_temperature_std_crop=laser_temperature_std_rot[:,foildw:foilup,foillx:foilrx];del laser_temperature_std_rot
-reference_background_temperature_rot=rotate(reference_background_temperature,foilrotdeg,axes=(-1,-2))
-reference_background_temperature_crop=reference_background_temperature_rot[:,foildw:foilup,foillx:foilrx];del reference_background_temperature_rot
-reference_background_temperature_std_rot=rotate(reference_background_temperature_std,foilrotdeg,axes=(-1,-2))
-reference_background_temperature_std_crop=reference_background_temperature_std_rot[:,foildw:foilup,foillx:foilrx];del reference_background_temperature_std_rot
+reference_background_temperature_rot=rotate(reference_background_temperature_no_dead_pixels,foilrotdeg,axes=(-1,-2))
+reference_background_temperature_crop=reference_background_temperature_rot[:,foildw:foilup,foillx:foilrx];del reference_background_temperature_no_dead_pixels
+reference_background_temperature_std_rot=rotate(reference_background_temperature_std_no_dead_pixels,foilrotdeg,axes=(-1,-2))
+reference_background_temperature_std_crop=reference_background_temperature_std_rot[:,foildw:foilup,foillx:foilrx];del reference_background_temperature_std_no_dead_pixels
 
 
 plt.figure()
