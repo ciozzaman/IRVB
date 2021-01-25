@@ -35,7 +35,7 @@ import collect_and_eval as coleval
 import copy as cp
 from scipy.interpolate import interp1d,splrep,splev,bisplrep,bisplev,griddata
 from scipy.signal import medfilt
-from scipy.ndimage import convolve,median_filter
+from scipy.ndimage import convolve,median_filter,generic_filter
 from uncertainties import ufloat,unumpy
 from scipy.special import hyp1f1
 from scipy.linalg import svd

@@ -13,7 +13,7 @@ exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_import_batch.py
 exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_indexing.py").read())
 
 from multiprocessing import Pool,cpu_count
-number_cpu_available = 8	#cpu_count()
+number_cpu_available = 14	#cpu_count()
 print('Number of cores available: '+str(number_cpu_available))
 import mkl
 mkl.set_num_threads(number_cpu_available)
@@ -47,8 +47,13 @@ files1 = [laser41,laser42,laser43,laser44,laser45,laser46,laser47,vacuum7]
 files2 = [laser1,laser2,laser10,laser11,laser12,laser13,laser14,vacuum1]
 files3 = np.flip([laser15,laser16,laser17,laser18,laser19,vacuum2,vacuumtest1],axis=0)
 files4 = [files1,files2,files3,files4,files5,files6,files7,files8,files10,files11,files12,files13,files14,files15,files16,files17,files18,files19,files20,files21,files22,files23,files24,files25,files26,files27,files28,files29,files30,files31]
+files5 = [vacuum5,laser33]
+files6 = [laser20,laser21,vacuum3]
+files7 = [vacuum4,laser22,laser23,laser24,laser25,laser26,laser27,laser28,laser29,laser30,laser31,laser32]
+files8 = [vacuum6,laser34,laser35,laser36,laser37,laser38,laser39]
 
-all_files = [files1,files2,files3,files4]
+# all_files = [files1,files2,files3,files4]
+all_files = [laser20[0]]
 
 import concurrent.futures as cf
 for files in all_files:

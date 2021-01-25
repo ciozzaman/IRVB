@@ -1641,8 +1641,8 @@ def flatten(array):
 	# This function flatten any array of one level.
 	# If it is already in one level it return is the way it is
 	#
-	array=np.array(array)
-	length=np.shape(array)[0]
+	# array=np.array(array)
+	length=len(array)
 
 	done=0
 	for item in array:
@@ -1661,7 +1661,10 @@ def flatten(array):
 		else:
 			for j in range(lengthinside[0]):
 				temp.append(temp2[j])
-	temp=np.array(temp)
+	try:
+		temp=np.array(temp)
+	except:
+		print('partial flattening obtained')
 	return temp
 
 #####################################################################################################
@@ -2215,7 +2218,8 @@ def clear_oscillation_central2(data,framerate,oscillation_search_window_begin='a
 		# plt.pause(0.01)
 		plt.figure()
 		figure_index = plt.gcf().number
-		poscentred = [[15, 80], [80, 80], [70, 200], [160, 133], [250, 200]]
+		data_shape = np.shape(data)
+		poscentred = [[int(data_shape[1]*1/5), int(data_shape[2]*1/5)], [int(data_shape[1]*1/2), int(data_shape[2]*1/5)], [int(data_shape[1]*4/5), int(data_shape[2]*1/5)], [int(data_shape[1]*4/5), int(data_shape[2]*1/2)], [int(data_shape[1]*4/5), int(data_shape[2]*4/5)], [int(data_shape[1]*1/2), int(data_shape[2]*1/2)]]
 
 		# spectra_orig = np.fft.fft(data, axis=0)
 		# magnitude=np.sqrt(np.add(np.power(real,2),np.power(imag,2)))
@@ -2357,12 +2361,39 @@ def clear_oscillation_central2(data,framerate,oscillation_search_window_begin='a
 	try:	# considering that the variation of the peak value of FFT is like a wave this methid seems more fair.
 		shift_peaks = shift_record[1:-1][np.logical_and((peak_value_record[1:-1]-peak_value_record[:-2])>=0,(peak_value_record[1:-1]-peak_value_record[2:])>=0)]
 		shift_through = shift_record[1:-1][np.logical_and((peak_value_record[1:-1]-peak_value_record[:-2])<=0,(peak_value_record[1:-1]-peak_value_record[2:])<=0)]
+		while np.diff(shift_peaks).min()<=2:	# to avoid detection of adiacent "fake" peak or through
+			target = np.diff(shift_peaks).argmin()
+			shift_through = shift_through[np.logical_not(np.logical_and(shift_through>shift_peaks[target],shift_through<shift_peaks[target+1]))]
+			shift_peaks = np.array(shift_peaks[:target].tolist() + [np.mean(shift_peaks[target:target+2])] + shift_peaks[target+2:].tolist())
+		while np.diff(shift_through).min()<=2:	# to avoid detection of adiacent "fake" peak or through
+			target = np.diff(shift_through).argmin()
+			shift_peaks = shift_peaks[np.logical_not(np.logical_and(shift_peaks>shift_through[target],shift_peaks<shift_through[target+1]))]
+			shift_through = np.array(shift_through[:target].tolist() + [np.mean(shift_through[target:target+2])] + shift_through[target+2:].tolist())
 		shift_roots = np.sort(np.append(shift_peaks,shift_through,0))
 		fit = np.polyfit(np.arange(len(shift_roots)),shift_roots,1)
 		shift = int(round(np.polyval(fit,[0,1])[np.abs(np.polyval(fit,[0,1])-shift_peaks[0]).argmin()]))
+		if peak_value_record[0]>peak_value_record[np.abs(shift_record-shift).argmin()]:
+			shift = shift_record[0]
 		index = shift//step
-		fit = np.polyfit(peak_freq_record,peak_value_record,2)
-		freq_to_erase = -fit[1]/(fit[0]*2)
+		gaussian = lambda x,A,sig,x0,q : A*np.exp(-0.5*(((x-x0)/sig)**2)) + q
+		bds = [[0,0,peak_freq_record.min(),-np.inf],[np.inf,np.inf,peak_freq_record.max(),peak_value_record.min()]]
+		guess = [peak_value_record.max()-peak_value_record.min(),0.3,peak_freq_record[peak_value_record.argmax()],peak_value_record.min()]
+		fit = curve_fit(gaussian, peak_freq_record,peak_value_record, p0=guess, bounds = bds, maxfev=100000000)
+		freq_to_erase = fit[0][2]
+		if plot_conparison==True:
+			plt.figure(figure_index+1)
+			plt.plot(np.sort(peak_freq_record),gaussian(np.sort(peak_freq_record),*fit[0]),':k',label='fit')
+			plt.figure(figure_index+2)
+			plt.plot(shift_record,peak_value_record)
+			plt.plot([shift]*2,[peak_value_record.min(),peak_value_record.max()],'--k')
+			plt.title('Amplitude from fast Fourier transform based on window shift\naveraged in a wondow of ' + str(window+1) + ' pixels around ' + str(
+				poscentre) + ', framerate %.3gHz' %(framerate))
+			plt.xlabel('Shift [au]')
+			plt.ylabel('Amplitude [au]')
+			plt.grid()
+			plt.semilogy()
+		# fit = np.polyfit(peak_freq_record,peak_value_record,2)
+		# freq_to_erase = -fit[1]/(fit[0]*2)
 	except:	# I find the highest peak and that will be the one I use
 		print('search of the best interval shift via the linear peak method failed')
 		index = int(find_nearest_index(peak_value_record, max(peak_value_record)+1))
@@ -2376,6 +2407,7 @@ def clear_oscillation_central2(data,framerate,oscillation_search_window_begin='a
 	freq = np.fft.fftfreq(len(magnitude), d=1 / framerate)
 	freq_to_erase_index = int(find_nearest_index(freq, freq_to_erase))
 	if plot_conparison==True:
+		plt.figure(figure_index+1)
 		plt.plot([freq_to_erase]*2,[peak_value_record.min(),peak_value_record.max()],':k')
 		plt.plot([freq[freq_to_erase_index]]*2,[peak_value_record.min(),peak_value_record.max()],'--k')
 		plt.ylim(top=peak_value_record.max()*2)
@@ -2562,6 +2594,14 @@ def find_dead_pixels(data, start_interval='auto',end_interval='auto', framerate=
 
 
 	data=data[0,start_interval:end_interval]
+
+	# in /home/ffederic/work/irvb/vacuum_chamber_testing/Aug13_2018/irvb_sample-000018
+	# I found that some frames can be completely missing, filled with 0 or 64896
+	# and this messes with calculating std and mean, so I need to remove this frames
+	min_data = np.nanmin(data,axis=(-1,-2))
+	# max_data = np.nanmin(data,axis=-1,-2)		# I don't want to use this because saturation could cause this too
+	data = data[min_data>0]
+
 	mean=np.mean(data,axis=(0))
 	std=np.std(data,axis=(0))
 	flag_check=np.zeros(np.shape(std))
@@ -3543,7 +3583,7 @@ def count_to_temp_poly_multi_digitizer_stationary(counts,counts_std,params,errpa
 					if report>1:
 						print(str(j) + ' , %.5gs , %.3gs' %(tm.time()-start_time,tm.time()-start_time_1))
 					out = []
-					for k in range(laser_counts_temp.shape[2]):
+					for k in range(counts_temp.shape[1]):
 						out.append(count_to_temp_0D_homo_conversion([counts_temp[j,k],counts_std_temp[j,k],params[i,j,k],errparams[i,j,k],n]))
 
 				if report>1:
@@ -3552,8 +3592,8 @@ def count_to_temp_poly_multi_digitizer_stationary(counts,counts_std,params,errpa
 				temp2.append([y for x,y in out])
 				if report>0:
 					print(str(j) + ' , %.5gs , %.3gs' %(tm.time()-start_time,tm.time()-start_time_1))
-			temperature.append(temp1)
-			temperature_std.append(temp2)
+			temperature.append(np.array(temp1))
+			temperature_std.append(np.array(temp2))
 
 	return temperature,temperature_std
 
