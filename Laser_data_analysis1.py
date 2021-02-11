@@ -12,7 +12,7 @@ exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_import_pc.py").
 #this is for importing all the variables names and which are the files
 exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_indexing.py").read())
 from multiprocessing import Pool,cpu_count,current_process,set_start_method,get_context,Semaphore
-number_cpu_available = 7
+number_cpu_available = 5
 # number_cpu_available = cpu_count()
 
 
@@ -39,9 +39,10 @@ if False:	# manual collection of parameters
 	all_focus_status=coleval.flatten(all_focus_status)
 	all_path_reference_frames=coleval.flatten(all_path_reference_frames)
 else:	# automatic collection of parameters
-	# cases_to_include = ['laser15','laser16','laser17','laser18','laser19','laser20','laser21','laser22','laser23','laser24','laser25','laser26','laser27','laser28','laser29','laser30','laser31','laser32','laser33','laser41','laser42','laser43','laser44','laser45','laser46','laser47']
-	# cases_to_include = ['laser34']
-	cases_to_include = ['laser34','laser35','laser36','laser37','laser38','laser39']
+	cases_to_include = ['laser15','laser16','laser17','laser18','laser19','laser20','laser21','laser22','laser23','laser24','laser25','laser26','laser27','laser28','laser29','laser30','laser31','laser32','laser33','laser34','laser35','laser36','laser37','laser38','laser39','laser41','laser42','laser43','laser44','laser45','laser46','laser47']
+	# cases_to_include = ['laser39','laser41','laser42','laser43','laser44','laser45','laser46','laser47']
+	# cases_to_include = ['laser34','laser35','laser36','laser37','laser38','laser39']
+	# cases_to_include = ['laser35']
 	all_case_ID = []
 	all_path_reference_frames = []
 	all_laser_to_analyse = []
@@ -53,6 +54,8 @@ else:	# automatic collection of parameters
 	all_power_interpolator = []
 	all_foil_position_dict = []
 	for name in cases_to_include:
+		if collection_of_records[name]['focus_status'][0] != 'fully_defocused':
+			continue
 		all_case_ID.extend([name] * len(collection_of_records[name]['path_files_laser']))
 		all_path_reference_frames.extend(collection_of_records[name]['reference_clear'])
 		all_laser_to_analyse.extend(collection_of_records[name]['path_files_laser'])
@@ -131,7 +134,7 @@ def function_a(index):
 		print(path_to_save_figures+ ' created')
 	path_to_save_figures2 = '_freq' + str(experimental_laser_frequency) + 'Hz_volt' + str(experimental_laser_voltage) + 'V_duty' + str(experimental_laser_duty) + '_'
 
-	print('STARTING '+laser_to_analyse)
+	print('STARTING '+laser_to_analyse+' , '+case_ID)
 	if not(os.path.exists(laser_to_analyse+'.npz')):
 		print('missing .npz file, aborted')
 		return 0
@@ -186,11 +189,11 @@ def function_a(index):
 	reference_background_full_1,background_digitizer_ID = coleval.separate_data_with_digitizer(np.load(relevant_background_files[ref[0]]+'.npz'))
 	reference_background_full_2,background_digitizer_ID = coleval.separate_data_with_digitizer(np.load(relevant_background_files[ref[1]]+'.npz'))
 	if not (laser_dict['height']==max_ROI[0][1]+1 and laser_dict['width']==max_ROI[1][1]+1):
-		flag_1 = [coleval.find_dead_pixels([data],treshold_for_bad_difference=300) for data in reference_background_full_1]
-		flag_2 = [coleval.find_dead_pixels([data],treshold_for_bad_difference=300) for data in reference_background_full_2]
+		flag_1 = [coleval.find_dead_pixels([data],treshold_for_bad_difference=100) for data in reference_background_full_1]
+		flag_2 = [coleval.find_dead_pixels([data],treshold_for_bad_difference=100) for data in reference_background_full_2]
 	else:
-		flag_1 = [coleval.find_dead_pixels([data],treshold_for_bad_difference=300) for data in reference_background_full_1]
-		flag_2 = [coleval.find_dead_pixels([data],treshold_for_bad_difference=300) for data in reference_background_full_2]
+		flag_1 = [coleval.find_dead_pixels([data],treshold_for_bad_difference=100) for data in reference_background_full_1]
+		flag_2 = [coleval.find_dead_pixels([data],treshold_for_bad_difference=100) for data in reference_background_full_2]
 	bad_pixels_flag = np.add(flag_1,flag_2)
 
 	# ani = coleval.movie_from_data(np.array([reference_background_full_2[0]]), laser_framerate, integration=laser_int_time/1000,xlabel='horizontal coord [pixels]',ylabel='vertical coord [pixels]',barlabel='Power [W/m2]')
@@ -544,14 +547,21 @@ def function_a(index):
 	temp1 = temp>=(np.nanmax(temp)-np.nanmin(temp))/2+np.nanmin(temp)
 	vertical_loc = (np.arange(len(temp))[temp1])[temp[temp1].argmax()]
 	dvertical_loc = np.nansum(temp>=(np.nanmax(temp)-np.nanmin(temp))/2+np.nanmin(temp))
-	if not (laser_dict['height']==max_ROI[0][1]+1 and laser_dict['width']==max_ROI[1][1]+1):
+	# dr = np.nanmean([dhorizontal_loc,dvertical_loc])
+	if focus_status == 'focused':
+		dr = np.nanmean([dhorizontal_loc,dvertical_loc])*0.4
+	elif focus_status == 'partially_defocused':
+		dr = np.nanmean([dhorizontal_loc,dvertical_loc])*0.5
+	elif focus_status == 'fully_defocused':
 		dr = np.nanmean([dhorizontal_loc,dvertical_loc])*0.6
 	else:
+		print('focus type '+focus_status+" unknown, used 'fully_defocused' settings")
 		dr = np.nanmean([dhorizontal_loc,dvertical_loc])
+	# dr_total_power = np.nanmean([dhorizontal_loc,dvertical_loc])*1.7
 	horizontal_coord = np.arange(np.shape(laser_temperature_minus_background_crop)[2])
 	vertical_coord = np.arange(np.shape(laser_temperature_minus_background_crop)[1])
 	horizontal_coord,vertical_coord = np.meshgrid(horizontal_coord,vertical_coord)
-	select = (((horizontal_coord-horizontal_loc)**2 + (vertical_coord-vertical_loc)**2)<=dr**2)[1:-1,1:-1]
+	# select = (((horizontal_coord-horizontal_loc)**2 + (vertical_coord-vertical_loc)**2)<=dr**2)[1:-1,1:-1]
 
 	plt.figure(figsize=(20, 10))
 	temp = np.nanmean(laser_temperature_minus_background_crop,axis=(0,1))
@@ -569,7 +579,8 @@ def function_a(index):
 	plt.plot([(np.arange(len(temp))-vertical_loc)[temp>=(np.nanmax(temp)-np.nanmin(temp))/2+np.nanmin(temp)][0]]*2,[0,0.5],'--r')
 	plt.plot([(np.arange(len(temp))-vertical_loc)[temp>=(np.nanmax(temp)-np.nanmin(temp))/2+np.nanmin(temp)][-1]]*2,[0,0.5],'--r')
 	plt.plot([0]*2,[0,1],'--k')
-	plt.title(preamble_4_prints+'Laser spot location in '+laser_to_analyse+'\n foil size '+str([foilhorizwpixel,foilvertwpixel])+'pixels, [%.3g,%.3g]mm\n laser located at [%.3g,%.3g]mm radious %.3gmm' %(foilhorizwpixel*dx*1e3,foilvertwpixel*dx*1e3,horizontal_loc*dx*1e3,vertical_loc*dx*1e3,dr*dx*1e3))
+	plt.plot([-dr,-dr,dr,dr],[0,1,1,0],'--k')
+	plt.title(preamble_4_prints+'Laser spot location in '+laser_to_analyse+'\n foil size '+str([foilhorizwpixel,foilvertwpixel])+'pixels, [%.3g,%.3g]mm\n laser located at [%.3g,%.3g]mm prelim radious %.3gmm' %(foilhorizwpixel*dx*1e3,foilvertwpixel*dx*1e3,horizontal_loc*dx*1e3,vertical_loc*dx*1e3,dr*dx*1e3))
 	plt.xlabel('axis [pixels]')
 	plt.ylabel('Temperature increase average in 1 direction [°C]')
 	plt.legend(loc='best', fontsize='small')
@@ -587,9 +598,11 @@ def function_a(index):
 	plt.pcolor(h_coordinates,v_coordinates,np.nanmean(laser_temperature_minus_background_crop,axis=0),cmap='rainbow')
 	plt.colorbar().set_label('Temp [°C]')
 	plt.errorbar(horizontal_loc*dx,vertical_loc*dx,xerr=dhorizontal_loc/2*dx,yerr=dvertical_loc/2*dx,color='k',linestyle='--')
-	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10,dr/10))*dx,(vertical_loc + np.abs(dr**2-np.arange(-dr,+dr+dr/10,dr/10)**2)**0.5)*dx,'k--',label='area accounted for sum')
-	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10,dr/10))*dx,(vertical_loc - np.abs(dr**2-np.arange(-dr,+dr+dr/10,dr/10)**2)**0.5)*dx,'k--')
-	plt.title(preamble_4_prints+'Average temperature increment in '+laser_to_analyse+'\n foil size '+str([foilhorizwpixel,foilvertwpixel])+'pixels, [%.3g,%.3g]mm\n laser located at [%.3g,%.3g]mm radious %.3gmm' %(foilhorizwpixel*dx*1e3,foilvertwpixel*dx*1e3,horizontal_loc*dx*1e3,vertical_loc*dx*1e3,dr*dx*1e3))
+	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10,dr/10))*dx,(vertical_loc + np.abs(dr**2-np.arange(-dr,+dr+dr/10,dr/10)**2)**0.5)*dx,'r--',label='guess for laser size')
+	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10,dr/10))*dx,(vertical_loc - np.abs(dr**2-np.arange(-dr,+dr+dr/10,dr/10)**2)**0.5)*dx,'r--')
+	# plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10))*dx,(vertical_loc + np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10)**2)**0.5)*dx,'k--',label='area accounted for sum')
+	# plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10))*dx,(vertical_loc - np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10)**2)**0.5)*dx,'k--')
+	plt.title(preamble_4_prints+'Average temperature increment in '+laser_to_analyse+'\n foil size '+str([foilhorizwpixel,foilvertwpixel])+'pixels, [%.3g,%.3g]mm\n laser located at [%.3g,%.3g]mm prelim radious %.3gmm' %(foilhorizwpixel*dx*1e3,foilvertwpixel*dx*1e3,horizontal_loc*dx*1e3,vertical_loc*dx*1e3,dr*dx*1e3))
 	plt.xlabel('Horizontal axis [m]')
 	plt.ylabel('Vertical axis [m]')
 	plt.legend(loc='best', fontsize='small')
@@ -602,9 +615,11 @@ def function_a(index):
 	plt.pcolor(h_coordinates,v_coordinates,temp,cmap='rainbow')
 	plt.colorbar().set_label('Temp [°C]')
 	plt.errorbar(horizontal_loc*dx,vertical_loc*dx,xerr=dhorizontal_loc/2*dx,yerr=dvertical_loc/2*dx,color='k',linestyle='--')
-	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10,dr/10))*dx,(vertical_loc + np.abs(dr**2-np.arange(-dr,+dr+dr/10,dr/10)**2)**0.5)*dx,'k--',label='area accounted for sum')
+	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10,dr/10))*dx,(vertical_loc + np.abs(dr**2-np.arange(-dr,+dr+dr/10,dr/10)**2)**0.5)*dx,'k--',label='guess for laser size')
 	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10,dr/10))*dx,(vertical_loc - np.abs(dr**2-np.arange(-dr,+dr+dr/10,dr/10)**2)**0.5)*dx,'k--')
-	plt.title(preamble_4_prints+'Hottest fraction of temperature increment in '+laser_to_analyse+'\n foil size '+str([foilhorizwpixel,foilvertwpixel])+'pixels, [%.3g,%.3g]mm\n laser located at [%.3g,%.3g]mm radious %.3gmm' %(foilhorizwpixel*dx*1e3,foilvertwpixel*dx*1e3,horizontal_loc*dx*1e3,vertical_loc*dx*1e3,dr*dx*1e3))
+	# plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10))*dx,(vertical_loc + np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10)**2)**0.5)*dx,'k--',label='area accounted for sum')
+	# plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10))*dx,(vertical_loc - np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10)**2)**0.5)*dx,'k--')
+	plt.title(preamble_4_prints+'Hottest fraction of temperature increment in '+laser_to_analyse+'\n foil size '+str([foilhorizwpixel,foilvertwpixel])+'pixels, [%.3g,%.3g]mm\n laser located at [%.3g,%.3g]mm prelim radious %.3gmm' %(foilhorizwpixel*dx*1e3,foilvertwpixel*dx*1e3,horizontal_loc*dx*1e3,vertical_loc*dx*1e3,dr*dx*1e3))
 	plt.xlabel('Horizontal axis [pixles]')
 	plt.ylabel('Vertical axis [pixles]')
 	plt.legend(loc='best', fontsize='small')
@@ -665,47 +680,72 @@ def function_a(index):
 	T4_T04_std = np.ones_like(dTdt).astype(np.float32)*np.nan
 	T4_T04_std[:,nan_ROI_mask[1:-1,1:-1]] = ((T4_std[:,nan_ROI_mask[1:-1,1:-1]]**2+T04_std**2)**0.5).astype(np.float32)
 
-	ktf=(np.multiply(conductivityscaled,foilthicknessscaled)).astype(np.float32)
-	BBrad = np.ones_like(dTdt).astype(np.float32)*np.nan
-	BBrad[:,nan_ROI_mask[1:-1,1:-1]] = (2*sigmaSB*foilemissivityscaled[nan_ROI_mask[1:-1,1:-1]]*T4_T04[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
-	BBrad_std = np.ones_like(dTdt).astype(np.float32)*np.nan
-	BBrad_std[:,nan_ROI_mask[1:-1,1:-1]] = (2*sigmaSB*foilemissivityscaled[nan_ROI_mask[1:-1,1:-1]]*T4_T04_std[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
-	diffusion = np.ones_like(dTdt).astype(np.float32)*np.nan
-	diffusion[:,nan_ROI_mask[1:-1,1:-1]] = (ktf[nan_ROI_mask[1:-1,1:-1]]*negd2Tdxy[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
-	diffusion_std = np.ones_like(dTdt).astype(np.float32)*np.nan
-	diffusion_std[:,nan_ROI_mask[1:-1,1:-1]] = (ktf[nan_ROI_mask[1:-1,1:-1]]*negd2Tdxy_std[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
-	timevariation = np.ones_like(dTdt).astype(np.float32)*np.nan
-	timevariation[:,nan_ROI_mask[1:-1,1:-1]] = (ktf[nan_ROI_mask[1:-1,1:-1]]*reciprdiffusivityscaled[nan_ROI_mask[1:-1,1:-1]]*dTdt[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
-	timevariation_std = np.ones_like(dTdt).astype(np.float32)*np.nan
-	timevariation_std[:,nan_ROI_mask[1:-1,1:-1]] = (ktf[nan_ROI_mask[1:-1,1:-1]]*reciprdiffusivityscaled[nan_ROI_mask[1:-1,1:-1]]*dTdt_std[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
-
-	powernoback = (diffusion + timevariation + BBrad).astype(np.float32)
-	powernoback_std = np.ones_like(dTdt)*np.nan
-	powernoback_std[:,nan_ROI_mask[1:-1,1:-1]] = ((diffusion_std[:,nan_ROI_mask[1:-1,1:-1]]**2 + timevariation_std[:,nan_ROI_mask[1:-1,1:-1]]**2 + BBrad_std[:,nan_ROI_mask[1:-1,1:-1]]**2)**0.5).astype(np.float32)
+	# ktf=(np.multiply(conductivityscaled,foilthicknessscaled)).astype(np.float32)
+	# BBrad = np.ones_like(dTdt).astype(np.float32)*np.nan
+	# BBrad[:,nan_ROI_mask[1:-1,1:-1]] = (2*sigmaSB*foilemissivityscaled[nan_ROI_mask[1:-1,1:-1]]*T4_T04[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
+	# BBrad_std = np.ones_like(dTdt).astype(np.float32)*np.nan
+	# BBrad_std[:,nan_ROI_mask[1:-1,1:-1]] = (2*sigmaSB*foilemissivityscaled[nan_ROI_mask[1:-1,1:-1]]*T4_T04_std[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
+	# diffusion = np.ones_like(dTdt).astype(np.float32)*np.nan
+	# diffusion[:,nan_ROI_mask[1:-1,1:-1]] = (ktf[nan_ROI_mask[1:-1,1:-1]]*negd2Tdxy[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
+	# diffusion_std = np.ones_like(dTdt).astype(np.float32)*np.nan
+	# diffusion_std[:,nan_ROI_mask[1:-1,1:-1]] = (ktf[nan_ROI_mask[1:-1,1:-1]]*negd2Tdxy_std[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
+	# timevariation = np.ones_like(dTdt).astype(np.float32)*np.nan
+	# timevariation[:,nan_ROI_mask[1:-1,1:-1]] = (ktf[nan_ROI_mask[1:-1,1:-1]]*reciprdiffusivityscaled[nan_ROI_mask[1:-1,1:-1]]*dTdt[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
+	# timevariation_std = np.ones_like(dTdt).astype(np.float32)*np.nan
+	# timevariation_std[:,nan_ROI_mask[1:-1,1:-1]] = (ktf[nan_ROI_mask[1:-1,1:-1]]*reciprdiffusivityscaled[nan_ROI_mask[1:-1,1:-1]]*dTdt_std[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
+	#
+	# powernoback = (diffusion + timevariation + BBrad).astype(np.float32)
+	# powernoback_std = np.ones_like(dTdt)*np.nan
+	# powernoback_std[:,nan_ROI_mask[1:-1,1:-1]] = ((diffusion_std[:,nan_ROI_mask[1:-1,1:-1]]**2 + timevariation_std[:,nan_ROI_mask[1:-1,1:-1]]**2 + BBrad_std[:,nan_ROI_mask[1:-1,1:-1]]**2)**0.5).astype(np.float32)
 
 	temp_BBrad = np.ones_like(dTdt).astype(np.float32)*np.nan
-	temp_BBrad[:,nan_ROI_mask[1:-1,1:-1]] = (sample_properties['emissivity']*2*sigmaSB*T4_T04[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
+	temp_BBrad[:,nan_ROI_mask[1:-1,1:-1]] = (2*sigmaSB*T4_T04[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
+	temp_BBrad_std = np.ones_like(dTdt).astype(np.float32)*np.nan
+	temp_BBrad_std[:,nan_ROI_mask[1:-1,1:-1]] = (2*sigmaSB*T4_T04_std[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
 	temp_diffusion = np.ones_like(dTdt).astype(np.float32)*np.nan
-	temp_diffusion[:,nan_ROI_mask[1:-1,1:-1]] = (sample_properties['thickness']*Ptthermalconductivity*negd2Tdxy[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
+	temp_diffusion[:,nan_ROI_mask[1:-1,1:-1]] = (Ptthermalconductivity*negd2Tdxy[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
+	temp_diffusion_std = np.ones_like(dTdt).astype(np.float32)*np.nan
+	temp_diffusion_std[:,nan_ROI_mask[1:-1,1:-1]] = (Ptthermalconductivity*negd2Tdxy_std[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
 	temp_timevariation = np.ones_like(dTdt).astype(np.float32)*np.nan
-	temp_timevariation[:,nan_ROI_mask[1:-1,1:-1]] = ((1/sample_properties['diffusivity'])*sample_properties['thickness']*Ptthermalconductivity*dTdt[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
-	temp_powernoback = (temp_diffusion + temp_timevariation + temp_BBrad).astype(np.float32)
-	del temp_BBrad,temp_diffusion,temp_timevariation
+	temp_timevariation[:,nan_ROI_mask[1:-1,1:-1]] = (Ptthermalconductivity*dTdt[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
+	temp_timevariation_std = np.ones_like(dTdt).astype(np.float32)*np.nan
+	temp_timevariation_std[:,nan_ROI_mask[1:-1,1:-1]] = (Ptthermalconductivity*dTdt_std[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
+	temp_powernoback = (sample_properties['thickness']*temp_diffusion + (1/sample_properties['diffusivity'])*sample_properties['thickness']*temp_timevariation + sample_properties['emissivity']*temp_BBrad).astype(np.float32)
+	del dTdt,dTdt_std,d2Tdxy,d2Tdxy_std,negd2Tdxy,negd2Tdxy_std,T4,T4_std,T04,T04_std
+
 	frames_for_one_pulse = laser_framerate/experimental_laser_frequency
 	def power_vs_space_sampling_explorer():
 		from uncertainties import ufloat
-		area_multiplier = np.array([2,1.5,1,0.8,0.6,0.5,0.4,0.3,0.2,0.1,0.08])
+		area_multiplier = np.flip(np.array([4,3,2.5,2,1.7,1.5,1.3,1.15,1,0.9,0.8,0.7,0.6,0.55,0.5,0.4,0.3,0.25,0.2,0.15,0.1,0.08]),axis=0)
 		number_of_pixels = []
+		all_dr = []
 		fitted_powers = []
 		for dr in (np.nanmean([dhorizontal_loc,dvertical_loc])*area_multiplier):
 			select = (((horizontal_coord-horizontal_loc)**2 + (vertical_coord-vertical_loc)**2)<=dr**2)[1:-1,1:-1]
 			number_of_pixels.append(np.nansum(select))
-			totalpower=np.multiply(np.nansum(temp_powernoback[:,select],axis=(-1)),dx**2)
+			totalpower=np.nansum(temp_diffusion[:,select],axis=(-1))/Ptthermalconductivity
 			totalpower_filtered_1 = generic_filter(totalpower[:int(len(totalpower)//frames_for_one_pulse*frames_for_one_pulse)],np.mean,size=[max(1,int(laser_framerate/experimental_laser_frequency*experimental_laser_duty/15//2*2+1))])
 			fitted_power_2 = [ufloat(np.median(np.sort(totalpower_filtered_1)[:-int(len(totalpower_filtered_1)*experimental_laser_duty)]),np.std(np.sort(totalpower_filtered_1)[:-int(len(totalpower_filtered_1)*experimental_laser_duty)])),ufloat(np.median(np.sort(totalpower_filtered_1)[-int(len(totalpower_filtered_1)*experimental_laser_duty):]),np.std(np.sort(totalpower_filtered_1)[-int(len(totalpower_filtered_1)*experimental_laser_duty):]))]
 			fitted_powers.append(fitted_power_2)
-		return dict([('number_of_pixels',np.array(number_of_pixels)),('fitted_powers',np.array(fitted_powers))])
+			all_dr.append(dr)
+		return dict([('number_of_pixels',np.array(number_of_pixels)),('fitted_powers',np.array(fitted_powers)),('all_dr',np.array(all_dr))])
 	power_vs_space_sampling = power_vs_space_sampling_explorer()
+
+	dr = (power_vs_space_sampling['all_dr'])[nominal_values(power_vs_space_sampling['fitted_powers'][:,1][power_vs_space_sampling['all_dr']<=dr]).argmax()]
+	# temp = np.logical_and(power_vs_space_sampling['all_dr']>dr*1.2,power_vs_space_sampling['all_dr']<np.max(power_vs_space_sampling['all_dr']))
+	# dr_total_power = (power_vs_space_sampling['all_dr'][temp])[nominal_values(power_vs_space_sampling['fitted_powers'][:,1][temp]).argmin()]
+	# dr_total_power = dr*2
+	if focus_status == 'focused':
+		dr_total_power = 5
+	elif focus_status == 'partially_defocused':
+		dr_total_power = 7
+	elif focus_status == 'fully_defocused':
+		dr_total_power = 10
+	else:
+		print('focus type '+focus_status+" unknown, used 'fully_defocused' settings")
+		dr_total_power = 16
+	select = (((horizontal_coord-horizontal_loc)**2 + (vertical_coord-vertical_loc)**2)<=dr_total_power**2)[1:-1,1:-1]
+
 	def power_vs_time_sampling_explorer():
 		from uncertainties import ufloat
 		time_multiplier = np.arange(11)/10
@@ -721,6 +761,74 @@ def function_a(index):
 	power_vs_time_sampling = power_vs_time_sampling_explorer()
 	del temp_powernoback,power_vs_space_sampling_explorer,power_vs_time_sampling_explorer
 
+	partial_BBrad=np.multiply(np.nansum(temp_BBrad[:,select],axis=(-1)),dx**2)
+	partial_BBrad_std=np.nansum(temp_BBrad_std[:,select]**2,axis=(-1))**0.5*(dx**2)
+	partial_diffusion=np.multiply(np.nansum(temp_diffusion[:,select],axis=(-1)),dx**2)
+	partial_diffusion_std=np.nansum(temp_diffusion_std[:,select]**2,axis=(-1))**0.5*(dx**2)
+	partial_timevariation=np.multiply(np.nansum(temp_timevariation[:,select],axis=(-1)),dx**2)
+	partial_timevariation_std=np.nansum(temp_timevariation_std[:,select]**2,axis=(-1))**0.5*(dx**2)
+	negative_partial_BBrad=temp_BBrad*(dx**2)
+	negative_partial_BBrad_time_mean = np.nanmean(negative_partial_BBrad,axis=0)
+	negative_partial_BBrad_time_std = np.nanstd(negative_partial_BBrad,axis=0)
+	if np.nansum(np.logical_not(select))>0:
+		negative_partial_BBrad = negative_partial_BBrad[:,np.logical_not(select)]
+		negative_partial_BBrad_space_mean = np.nanmean(negative_partial_BBrad,axis=(-1))
+		negative_partial_BBrad_space_std = np.nanstd(negative_partial_BBrad,axis=(-1))
+	else:
+		negative_partial_BBrad_space_mean = 0
+		negative_partial_BBrad_space_std = 0
+	del negative_partial_BBrad
+	negative_partial_diffusion=temp_diffusion*(dx**2)
+	negative_partial_diffusion_time_mean = np.nanmean(negative_partial_diffusion,axis=0)
+	negative_partial_diffusion_time_std = np.nanstd(negative_partial_diffusion,axis=0)
+	if np.nansum(np.logical_not(select))>0:
+		negative_partial_diffusion = negative_partial_diffusion[:,np.logical_not(select)]
+		negative_partial_diffusion_space_mean = np.nanmean(negative_partial_diffusion,axis=(-1))
+		negative_partial_diffusion_space_std = np.nanstd(negative_partial_diffusion,axis=(-1))
+	else:
+		negative_partial_diffusion_space_mean = 0
+		negative_partial_diffusion_space_std = 0
+	del negative_partial_diffusion
+	negative_partial_timevariation=temp_timevariation*(dx**2)
+	negative_partial_timevariation_time_mean = np.nanmean(negative_partial_timevariation,axis=0)
+	negative_partial_timevariation_time_std = np.nanstd(negative_partial_timevariation,axis=0)
+	if np.nansum(np.logical_not(select))>0:
+		negative_partial_timevariation = negative_partial_timevariation[:,np.logical_not(select)]
+		negative_partial_timevariation_space_mean = np.nanmean(negative_partial_timevariation,axis=(-1))
+		negative_partial_timevariation_space_std = np.nanstd(negative_partial_timevariation,axis=(-1))
+	else:
+		negative_partial_timevariation_space_mean = 0
+		negative_partial_timevariation_space_std = 0
+	del negative_partial_timevariation
+
+	BBrad = np.ones_like(temp_BBrad).astype(np.float32)*np.nan
+	BBrad[:,nan_ROI_mask[1:-1,1:-1]] = (temp_BBrad[:,nan_ROI_mask[1:-1,1:-1]] * foilemissivityscaled[nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
+	BBrad_std = np.ones_like(temp_BBrad).astype(np.float32)*np.nan
+	BBrad_std[:,nan_ROI_mask[1:-1,1:-1]] = (temp_BBrad_std[:,nan_ROI_mask[1:-1,1:-1]]*foilemissivityscaled[nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
+	diffusion = np.ones_like(temp_BBrad).astype(np.float32)*np.nan
+	diffusion[:,nan_ROI_mask[1:-1,1:-1]] = (temp_diffusion[:,nan_ROI_mask[1:-1,1:-1]]*foilthicknessscaled[nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
+	diffusion_std = np.ones_like(temp_BBrad).astype(np.float32)*np.nan
+	diffusion_std[:,nan_ROI_mask[1:-1,1:-1]] = (temp_diffusion_std[:,nan_ROI_mask[1:-1,1:-1]]*foilthicknessscaled[nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
+	timevariation = np.ones_like(temp_BBrad).astype(np.float32)*np.nan
+	timevariation[:,nan_ROI_mask[1:-1,1:-1]] = (temp_timevariation[:,nan_ROI_mask[1:-1,1:-1]]*foilthicknessscaled[nan_ROI_mask[1:-1,1:-1]]*reciprdiffusivityscaled[nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
+	timevariation_std = np.ones_like(temp_BBrad).astype(np.float32)*np.nan
+	timevariation_std[:,nan_ROI_mask[1:-1,1:-1]] = (temp_timevariation_std[:,nan_ROI_mask[1:-1,1:-1]]*foilthicknessscaled[nan_ROI_mask[1:-1,1:-1]]*reciprdiffusivityscaled[nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
+	del temp_BBrad,temp_BBrad_std,temp_diffusion,temp_diffusion_std,temp_timevariation,temp_timevariation_std
+	powernoback = (diffusion + timevariation + BBrad).astype(np.float32)
+	powernoback_std = np.ones_like(powernoback)*np.nan
+	powernoback_std[:,nan_ROI_mask[1:-1,1:-1]] = ((diffusion_std[:,nan_ROI_mask[1:-1,1:-1]]**2 + timevariation_std[:,nan_ROI_mask[1:-1,1:-1]]**2 + BBrad_std[:,nan_ROI_mask[1:-1,1:-1]]**2)**0.5).astype(np.float32)
+
+	totalpower=np.multiply(np.nansum(powernoback[:,select],axis=(-1)),dx**2)
+	totalpower_std=np.nansum(powernoback_std[:,select]**2,axis=(-1))**0.5*(dx**2)
+	totalBBrad=np.multiply(np.nansum(BBrad[:,select],axis=(-1)),dx**2)
+	totalBBrad_std=np.nansum(BBrad_std[:,select]**2,axis=(-1))**0.5*(dx**2)
+	totaldiffusion=np.multiply(np.nansum(diffusion[:,select],axis=(-1)),dx**2)
+	totaldiffusion_std=np.nansum(diffusion_std[:,select]**2,axis=(-1))**0.5*(dx**2)
+	totaltimevariation=np.multiply(np.nansum(timevariation[:,select],axis=(-1)),dx**2)
+	totaltimevariation_std=np.nansum(timevariation_std[:,select]**2,axis=(-1))**0.5*(dx**2)
+	del BBrad,BBrad_std,diffusion,diffusion_std,timevariation,timevariation_std
+
+
 	# ani = coleval.movie_from_data(np.array([powernoback]), laser_framerate, integration=laser_int_time/1000,xlabel='horizontal coord [pixels]',ylabel='vertical coord [pixels]',barlabel='Power [W/m2]',extvmin=np.nanmin(powernoback),extvmax=np.nanmax(powernoback))
 	# plt.pause(0.01)
 	# ani = coleval.movie_from_data(np.array([powernoback]), framerate, integration=int_time,xlabel='horizontal coord [pixels]',ylabel='vertical coord [pixels]',barlabel='Power [W/m2]')
@@ -734,10 +842,12 @@ def function_a(index):
 	time_averaged_power_over_duty_std = np.nanstd(powernoback[:int(len(powernoback)//frames_for_one_pulse*frames_for_one_pulse)],axis=0)/experimental_laser_duty
 	plt.pcolor(h_coordinates,v_coordinates,time_averaged_power_over_duty,cmap='rainbow',vmin=np.nanmin(time_averaged_power_over_duty[select]),vmax=np.nanmax(time_averaged_power_over_duty[select]))
 	plt.colorbar().set_label('Power [W/m2]')
-	plt.errorbar(horizontal_loc*dx,vertical_loc*dx,xerr=dhorizontal_loc/2*dx,yerr=dvertical_loc/2*dx,color='k',linestyle='--')
-	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10,dr/10))*dx,(vertical_loc + np.abs(dr**2-np.arange(-dr,+dr+dr/10,dr/10)**2)**0.5)*dx,'k--',label='area accounted for sum')
-	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10,dr/10))*dx,(vertical_loc - np.abs(dr**2-np.arange(-dr,+dr+dr/10,dr/10)**2)**0.5)*dx,'k--')
-	plt.title(preamble_4_prints+'Power source shape in '+laser_to_analyse+'\n foil size '+str([foilhorizwpixel,foilvertwpixel])+'pixels, [%.3g,%.3g]mm\n laser located at [%.3g,%.3g]mm radious %.3gmm' %(foilhorizwpixel*dx*1e3,foilvertwpixel*dx*1e3,horizontal_loc*dx*1e3,vertical_loc*dx*1e3,dr*dx*1e3))
+	# plt.errorbar(horizontal_loc*dx,vertical_loc*dx,xerr=dhorizontal_loc/2*dx,yerr=dvertical_loc/2*dx,color='k',linestyle='--')
+	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10,dr/10))*dx,(vertical_loc + np.abs(dr**2-np.arange(-dr,+dr+dr/10,dr/10)**2)**0.5)*dx,'r--',label='found laser size')
+	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10,dr/10))*dx,(vertical_loc - np.abs(dr**2-np.arange(-dr,+dr+dr/10,dr/10)**2)**0.5)*dx,'r--')
+	plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10))*dx,(vertical_loc + np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10)**2)**0.5)*dx,'k--',label='area accounted for sum')
+	plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10))*dx,(vertical_loc - np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10)**2)**0.5)*dx,'k--')
+	plt.title(preamble_4_prints+'Power source shape in '+laser_to_analyse+'\n foil size '+str([foilhorizwpixel,foilvertwpixel])+'pixels, [%.3g,%.3g]mm\n laser located at [%.3g,%.3g]mm laser radious %.3gmm' %(foilhorizwpixel*dx*1e3,foilvertwpixel*dx*1e3,horizontal_loc*dx*1e3,vertical_loc*dx*1e3,dr*dx*1e3))
 	plt.xlabel('Horizontal axis [mm]')
 	plt.ylabel('Vertical axis [mm]')
 	plt.legend(loc='best', fontsize='small')
@@ -745,34 +855,6 @@ def function_a(index):
 	plt.savefig(path_to_save_figures+laser_to_analyse[-6:] + path_to_save_figures2 + 'FIG'+str(figure_index)+'.eps', bbox_inches='tight')
 	plt.close('all')
 
-	totalpower=np.multiply(np.nansum(powernoback[:,select],axis=(-1)),dx**2)
-	totalpower_std=np.nansum(powernoback_std[:,select]**2,axis=(-1))**0.5*(dx**2)
-	totalBBrad=np.multiply(np.nansum(BBrad[:,select],axis=(-1)),dx**2)
-	totalBBrad_std=np.nansum(BBrad_std[:,select]**2,axis=(-1))**0.5*(dx**2)
-	totaldiffusion=np.multiply(np.nansum(diffusion[:,select],axis=(-1)),dx**2)
-	totaldiffusion_std=np.nansum(diffusion_std[:,select]**2,axis=(-1))**0.5*(dx**2)
-	totaltimevariation=np.multiply(np.nansum(timevariation[:,select],axis=(-1)),dx**2)
-	totaltimevariation_std=np.nansum(timevariation_std[:,select]**2,axis=(-1))**0.5*(dx**2)
-
-	partial_BBrad=np.multiply(np.nansum((2*sigmaSB*T4_T04)[:,select],axis=(-1)),dx**2)
-	partial_BBrad_std=np.nansum((2*sigmaSB*T4_T04_std)[:,select]**2,axis=(-1))**0.5*(dx**2)
-	partial_diffusion=np.multiply(np.nansum((conductivityscaled*negd2Tdxy)[:,select],axis=(-1)),dx**2)
-	partial_diffusion_std=np.nansum((conductivityscaled*negd2Tdxy_std)[:,select]**2,axis=(-1))**0.5*(dx**2)
-	partial_timevariation=np.multiply(np.nansum((conductivityscaled*dTdt)[:,select],axis=(-1)),dx**2)
-	partial_timevariation_std=np.nansum((conductivityscaled*dTdt_std)[:,select]**2,axis=(-1))**0.5*(dx**2)
-	negative_partial_BBrad=(2*sigmaSB*T4_T04)[:,np.logical_not(select)]*dx**2
-	negative_partial_BBrad_time_std = np.nanmean(np.nanstd(negative_partial_BBrad,axis=0))
-	negative_partial_BBrad_space_std = np.nanmean(np.nanstd(negative_partial_BBrad,axis=(-1,-2)))
-	del negative_partial_BBrad
-	negative_partial_diffusion=(conductivityscaled*negd2Tdxy)[:,np.logical_not(select)]*dx**2
-	negative_partial_diffusion_time_std = np.nanmean(np.nanstd(negative_partial_diffusion,axis=0))
-	negative_partial_diffusion_space_std = np.nanmean(np.nanstd(negative_partial_diffusion,axis=(-1,-2)))
-	del negative_partial_diffusion
-	negative_partial_timevariation=(conductivityscaled*dTdt)[:,np.logical_not(select)]*dx**2
-	negative_partial_timevariation_time_std = np.nanmean(np.nanstd(negative_partial_timevariation,axis=0))
-	negative_partial_timevariation_space_std = np.nanmean(np.nanstd(negative_partial_timevariation,axis=(-1,-2)))
-	del negative_partial_timevariation
-	del dTdt,dTdt_std,d2Tdxy,d2Tdxy_std,negd2Tdxy,negd2Tdxy_std,T4,T4_std,T04,T04_std
 
 	totalpower_filtered_1 = generic_filter(totalpower[:int(len(totalpower)//frames_for_one_pulse*frames_for_one_pulse)],np.mean,size=[max(1,int(laser_framerate/experimental_laser_frequency*experimental_laser_duty/15//2*2+1))])
 	totalpower_filtered_1_std = generic_filter((totalpower_std**2)/max(1,int(laser_framerate/experimental_laser_frequency/30//2*2+1)),np.nansum,size=[max(1,int(laser_framerate/experimental_laser_frequency/30//2*2+1))])**0.5
@@ -824,13 +906,15 @@ def function_a(index):
 	ax[0,0].set_ylabel('power [W]')
 	ax[0,0].set_title('Using the nominal (given to us) foil properties')
 	# plt.ylim(bottom=np.nanmin([totalpower,totalBBrad,totaldiffusion,totaltimevariation]),top=np.nanmax([totalpower,totalBBrad,totaldiffusion,totaltimevariation]))
-	ax[1,0].plot([np.nansum(select)]*2,[np.nanmax(nominal_values(power_vs_space_sampling['fitted_powers'][:,1])),np.nanmin(nominal_values(power_vs_space_sampling['fitted_powers'][:,0]))],'--k')
-	ax[1,0].errorbar(power_vs_space_sampling['number_of_pixels'],nominal_values(power_vs_space_sampling['fitted_powers'][:,1]),yerr=std_devs(power_vs_space_sampling['fitted_powers'][:,1]))
-	ax[1,0].errorbar(power_vs_space_sampling['number_of_pixels'],nominal_values(power_vs_space_sampling['fitted_powers'][:,0]),yerr=std_devs(power_vs_space_sampling['fitted_powers'][:,0]))
+	ax[1,0].plot([dr*dx*1e3]*2,[np.nanmax(nominal_values(power_vs_space_sampling['fitted_powers'][:,1])),np.nanmin(nominal_values(power_vs_space_sampling['fitted_powers'][:,0]))],'--r')
+	ax[1,0].plot([dr_total_power*dx*1e3]*2,[np.nanmax(nominal_values(power_vs_space_sampling['fitted_powers'][:,1])),np.nanmin(nominal_values(power_vs_space_sampling['fitted_powers'][:,0]))],'--k')
+	ax[1,0].errorbar(power_vs_space_sampling['all_dr']*dx*1e3,nominal_values(power_vs_space_sampling['fitted_powers'][:,1]),yerr=std_devs(power_vs_space_sampling['fitted_powers'][:,1]))
+	ax[1,0].errorbar(power_vs_space_sampling['all_dr']*dx*1e3,nominal_values(power_vs_space_sampling['fitted_powers'][:,0]),yerr=std_devs(power_vs_space_sampling['fitted_powers'][:,0]))
 	ax[1,0].grid()
-	ax[1,0].set_xlabel('pixels averaged [au]')
-	ax[1,0].set_ylabel('power [W]')
-	ax[1,0].set_title('manual foil properties: thickness=%.3gm, emissivity=%.3g, diffusivity=%.3gm2/s' %(sample_properties['thickness'],sample_properties['emissivity'],sample_properties['diffusivity']))
+	ax[1,0].set_xlabel('radious of sum [mm]')
+	ax[1,0].set_ylabel('temperature laplacian [K/m2]')
+	# ax[1,0].set_xscale('log')
+	ax[1,0].set_title('search for laser spot size')
 	ax[2,0].plot([power_vs_time_sampling['number_of_pulses'][-1]/experimental_laser_frequency]*2,[np.nanmax(nominal_values(power_vs_time_sampling['fitted_powers'][:,1])),np.nanmin(nominal_values(power_vs_time_sampling['fitted_powers'][:,0]))],'--k')
 	ax[2,0].errorbar(power_vs_time_sampling['number_of_pulses']/experimental_laser_frequency,nominal_values(power_vs_time_sampling['fitted_powers'][:,1]),yerr=std_devs(power_vs_time_sampling['fitted_powers'][:,1]))
 	ax[2,0].errorbar(power_vs_time_sampling['number_of_pulses']/experimental_laser_frequency,nominal_values(power_vs_time_sampling['fitted_powers'][:,0]),yerr=std_devs(power_vs_time_sampling['fitted_powers'][:,0]))
@@ -884,14 +968,21 @@ def function_a(index):
 	full_saved_file_dict['partial_timevariation']=partial_timevariation
 	full_saved_file_dict['partial_timevariation_std']=partial_timevariation_std
 	full_saved_file_dict['laser_location']=[horizontal_loc,dhorizontal_loc,vertical_loc,dvertical_loc,dr]
-	full_saved_file_dict['negative_partial_BBrad_time_std']=[negative_partial_BBrad_time_std]
-	full_saved_file_dict['negative_partial_BBrad_space_std']=[negative_partial_BBrad_space_std]
-	full_saved_file_dict['negative_partial_diffusion_time_std']=[negative_partial_diffusion_time_std]
-	full_saved_file_dict['negative_partial_diffusion_space_std']=[negative_partial_diffusion_space_std]
-	full_saved_file_dict['negative_partial_timevariation_time_std']=[negative_partial_timevariation_time_std]
-	full_saved_file_dict['negative_partial_timevariation_space_std']=[negative_partial_timevariation_space_std]
-	full_saved_file_dict['power_vs_space_sampling']=[power_vs_space_sampling]
-	full_saved_file_dict['power_vs_time_sampling']=[power_vs_time_sampling]
+	full_saved_file_dict['negative_partial_BBrad_time_mean']=negative_partial_BBrad_time_mean
+	full_saved_file_dict['negative_partial_BBrad_time_std']=negative_partial_BBrad_time_std
+	full_saved_file_dict['negative_partial_BBrad_space_mean']=negative_partial_BBrad_space_mean
+	full_saved_file_dict['negative_partial_BBrad_space_std']=negative_partial_BBrad_space_std
+	full_saved_file_dict['negative_partial_diffusion_time_mean']=negative_partial_diffusion_time_mean
+	full_saved_file_dict['negative_partial_diffusion_time_std']=negative_partial_diffusion_time_std
+	full_saved_file_dict['negative_partial_diffusion_space_mean']=negative_partial_diffusion_space_mean
+	full_saved_file_dict['negative_partial_diffusion_space_std']=negative_partial_diffusion_space_std
+	full_saved_file_dict['negative_partial_timevariation_time_mean']=negative_partial_timevariation_time_mean
+	full_saved_file_dict['negative_partial_timevariation_time_std']=negative_partial_timevariation_time_std
+	full_saved_file_dict['negative_partial_timevariation_space_mean']=negative_partial_timevariation_space_mean
+	full_saved_file_dict['negative_partial_timevariation_space_std']=negative_partial_timevariation_space_std
+	full_saved_file_dict['power_vs_space_sampling']=power_vs_space_sampling
+	full_saved_file_dict['power_vs_time_sampling']=power_vs_time_sampling
+	full_saved_file_dict['laser_input_power']=laser_to_analyse_power
 	np.savez_compressed(laser_to_analyse,**full_saved_file_dict)
 	print('FINISHED '+laser_to_analyse)
 	return 0
