@@ -3276,6 +3276,8 @@ def FLIR_frame_header_decomposition(header):
 			return hex16_to_int(header[16:32])	# microseconds
 		elif request=='frame_counter':
 			return hex8_to_int(header[32:40])
+		elif request=='NUCpresetUsed':
+			return hex4_to_int((header[60:64])	# ID
 		elif request=='DetectorTemp':
 			return hex8_to_float(header[64:72])	# K
 		elif request=='SensorTemp_0':
@@ -3365,6 +3367,7 @@ def ats_to_dict(full_path,digital_level_bytes=4,header_marker = '4949'):
 			IntegrationTime = header('IntegrationTime')
 			FrameRate = header('FrameRate')
 			ExternalTrigger = header('ExternalTrigger')
+			NUCpresetUsed = header('NUCpresetUsed')
 		# print(value)
 	data = np.array(data)
 	digitizer_ID = np.array(digitizer_ID)
@@ -3379,6 +3382,7 @@ def ats_to_dict(full_path,digital_level_bytes=4,header_marker = '4949'):
 	out['IntegrationTime']=IntegrationTime
 	out['FrameRate']=FrameRate
 	out['ExternalTrigger'] = ExternalTrigger
+	out['NUCpresetUsed'] = NUCpresetUsed
 	out['SensorTemp_0'] = SensorTemp_0
 	out['SensorTemp_3'] = SensorTemp_3
 	out['DetectorTemp'] = DetectorTemp
@@ -3613,4 +3617,14 @@ def count_to_temp_poly_multi_digitizer(counts,params,errparams,digitizer_ID,numb
 		return count_to_temp_poly_multi_digitizer_time_dependent(counts,params,errparams,reference_background,reference_background_std,reference_background_flat,digitizer_ID,number_cpu_available,n,parallelised=parallelised,report=report)
 
 
-#
+##################################################################################################################################################################################################
+
+def print_all_properties(obj):
+	# created 29/09/2020 function that prints all properties of an object
+  for attr in dir(obj):
+    print("object.%s = %r" % (attr, getattr(obj, attr)))
+
+
+
+
+##

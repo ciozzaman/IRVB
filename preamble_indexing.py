@@ -359,6 +359,7 @@ collection_of_records['laser15']['reference_clear'] = [vacuum2] * len(laser15)
 collection_of_records['laser15']['power_interpolator'] = [power_interpolator1] * len(laser15)
 collection_of_records['laser15']['focus_status'] = ['focused'] * len(laser15)
 collection_of_records['laser15']['foil_position_dict'] = [dict([('angle',-2),('foilcenter',[162,133]),('foilhorizwpixel',240)])] * len(laser15)
+collection_of_records['laser15']['scan_type'] = 'freq&duty'
 
 
 # Laser experiments 08/08/2018 1ms 994Hz (width=320, height=64, xoffset=0, yoffset=64, invert (V flip) selected) partially_defocused laser right in the pinhole
@@ -380,6 +381,7 @@ collection_of_records['laser16']['reference_clear'] = [vacuum2] * len(laser16)
 collection_of_records['laser16']['power_interpolator'] = [power_interpolator1] * len(laser16)
 collection_of_records['laser16']['focus_status'] = ['partially_defocused'] * len(laser16)
 collection_of_records['laser16']['foil_position_dict'] = [dict([('angle',-2),('foilcenter',[162,133]),('foilhorizwpixel',240)])] * len(laser16)
+collection_of_records['laser16']['scan_type'] = 'freq&duty'
 
 
 # Laser experiments 08/08/2018 1ms 383Hz focused laser as low as possible close to the corner
@@ -401,6 +403,7 @@ collection_of_records['laser17']['reference_clear'] = [vacuum2] * len(laser17)
 collection_of_records['laser17']['power_interpolator'] = [power_interpolator1] * len(laser17)
 collection_of_records['laser17']['focus_status'] = ['focused'] * len(laser17)
 collection_of_records['laser17']['foil_position_dict'] = [dict([('angle',-2),('foilcenter',[162,133]),('foilhorizwpixel',240)])] * len(laser17)
+collection_of_records['laser17']['scan_type'] = 'power&freq'	# other: 'freq&duty'
 
 
 # Laser experiments 08/08/2018 1ms 383Hz focused laser as high as possible close to the side
@@ -422,6 +425,7 @@ collection_of_records['laser18']['reference_clear'] = [vacuum2] * len(laser18)
 collection_of_records['laser18']['power_interpolator'] = [power_interpolator1] * len(laser18)
 collection_of_records['laser18']['focus_status'] = ['focused'] * len(laser18)
 collection_of_records['laser18']['foil_position_dict'] = [dict([('angle',-2),('foilcenter',[162,133]),('foilhorizwpixel',240)])] * len(laser18)
+collection_of_records['laser18']['scan_type'] = 'power&freq'	# other: 'freq&duty'
 
 
 # Laser experiments 08/08/2018 1ms 383Hz focused laser as close as possible to the aberration
@@ -443,6 +447,7 @@ collection_of_records['laser19']['reference_clear'] = [vacuum2] * len(laser19)
 collection_of_records['laser19']['power_interpolator'] = [power_interpolator1] * len(laser19)
 collection_of_records['laser19']['focus_status'] = ['focused'] * len(laser19)
 collection_of_records['laser19']['foil_position_dict'] = [dict([('angle',-2),('foilcenter',[162,133]),('foilhorizwpixel',240)])] * len(laser19)
+collection_of_records['laser19']['scan_type'] = 'power&freq'	# other: 'freq&duty'
 
 
 
@@ -480,6 +485,7 @@ collection_of_records['laser20']['reference_clear'] = [vacuum3] * len(laser20)
 collection_of_records['laser20']['power_interpolator'] = [power_interpolator4] * len(laser20)
 collection_of_records['laser20']['focus_status'] = ['fully_defocused'] * len(laser20)
 collection_of_records['laser20']['foil_position_dict'] = [dict([('angle',-2),('foilcenter',[162,133]),('foilhorizwpixel',240)])] * len(laser20)
+collection_of_records['laser20']['scan_type'] = 'freq'	# other: 'freq&duty' 'power&freq'
 
 
 # Laser experiments 13/08/2018 1ms 994Hz (width=320, height=64, xoffset=0, yoffset=64, invert (V flip) selected) fully_defocused laser straight on pinhole
@@ -501,6 +507,7 @@ collection_of_records['laser21']['reference_clear'] = [vacuum3] * len(laser21)
 collection_of_records['laser21']['power_interpolator'] = [power_interpolator4] * len(laser21)
 collection_of_records['laser21']['focus_status'] = ['fully_defocused'] * len(laser21)
 collection_of_records['laser21']['foil_position_dict'] = [dict([('angle',-2),('foilcenter',[162,133]),('foilhorizwpixel',240)])] * len(laser21)
+collection_of_records['laser21']['scan_type'] = 'freq'	# other: 'freq&duty' 'power&freq'
 
 
 
@@ -535,6 +542,7 @@ collection_of_records['laser22']['reference_clear'] = [vacuum4] * len(laser22)
 collection_of_records['laser22']['power_interpolator'] = [power_interpolator1] * len(laser22)
 collection_of_records['laser22']['focus_status'] = ['focused'] * len(laser22)
 collection_of_records['laser22']['foil_position_dict'] = [dict([('angle',-2),('foilcenter',[162,133]),('foilhorizwpixel',240)])] * len(laser22)
+collection_of_records['laser22']['scan_type'] = 'power&freq'	# other: 'freq&duty' 'power&freq' 'freq'
 
 
 # Laser experiments 20/08/2018 1ms 994Hz (width=320, height=64, xoffset=0, yoffset=64, invert (V flip) selected) focused laser on pinhole
@@ -556,6 +564,7 @@ collection_of_records['laser23']['reference_clear'] = [vacuum4] * len(laser23)
 collection_of_records['laser23']['power_interpolator'] = [power_interpolator1] * len(laser23)
 collection_of_records['laser23']['focus_status'] = ['focused'] * len(laser23)
 collection_of_records['laser23']['foil_position_dict'] = [dict([('angle',-2),('foilcenter',[162,133]),('foilhorizwpixel',240)])] * len(laser23)
+collection_of_records['laser23']['scan_type'] = 'power&freq'	# other: 'freq&duty' 'power&freq' 'freq'
 
 
 # Laser experiments 20/08/2018 0.5ms 1976Hz (width=192, height=64, xoffset=128, yoffset=64, invert (V flip) selected) focused laser on pinhole
@@ -577,6 +586,7 @@ collection_of_records['laser24']['reference_clear'] = [vacuum4] * len(laser24)
 collection_of_records['laser24']['power_interpolator'] = [power_interpolator1] * len(laser24)
 collection_of_records['laser24']['focus_status'] = ['focused'] * len(laser24)
 collection_of_records['laser24']['foil_position_dict'] = [dict([('angle',-2),('foilcenter',[162,133]),('foilhorizwpixel',240)])] * len(laser24)
+collection_of_records['laser24']['scan_type'] = 'power&freq'	# other: 'freq&duty' 'power&freq' 'freq'
 
 
 # Laser experiments 20/08/2018 2ms 383Hz focused laser on pinhole
@@ -598,6 +608,7 @@ collection_of_records['laser25']['reference_clear'] = [vacuum4] * len(laser25)
 collection_of_records['laser25']['power_interpolator'] = [power_interpolator1] * len(laser25)
 collection_of_records['laser25']['focus_status'] = ['focused'] * len(laser25)
 collection_of_records['laser25']['foil_position_dict'] = [dict([('angle',-2),('foilcenter',[162,133]),('foilhorizwpixel',240)])] * len(laser25)
+collection_of_records['laser25']['scan_type'] = 'power&freq'	# other: 'freq&duty' 'power&freq' 'freq'
 
 
 # Laser experiments 20/08/2018 0.5ms 1976Hz (width=192, height=64, xoffset=128, yoffset=64, invert (V flip) selected) focused laser right in the pinhole
@@ -619,6 +630,7 @@ collection_of_records['laser26']['reference_clear'] = [vacuum4] * len(laser26)
 collection_of_records['laser26']['power_interpolator'] = [power_interpolator1] * len(laser26)
 collection_of_records['laser26']['focus_status'] = ['focused'] * len(laser26)
 collection_of_records['laser26']['foil_position_dict'] = [dict([('angle',-2),('foilcenter',[162,133]),('foilhorizwpixel',240)])] * len(laser26)
+collection_of_records['laser26']['scan_type'] = 'freq&duty'	# other: 'freq&duty' 'power&freq' 'freq'
 
 
 # Laser experiments 20/08/2018 0.5ms 1976Hz (width=192, height=64, xoffset=128, yoffset=64, invert (V flip) selected) focused laser right in the pinhole at half power
@@ -640,6 +652,7 @@ collection_of_records['laser27']['reference_clear'] = [vacuum4] * len(laser27)
 collection_of_records['laser27']['power_interpolator'] = [power_interpolator1] * len(laser27)
 collection_of_records['laser27']['focus_status'] = ['focused'] * len(laser27)
 collection_of_records['laser27']['foil_position_dict'] = [dict([('angle',-2),('foilcenter',[162,133]),('foilhorizwpixel',240)])] * len(laser27)
+collection_of_records['laser27']['scan_type'] = 'freq&duty'	# other: 'freq&duty' 'power&freq' 'freq'
 
 
 # Laser experiments 20/08/2018 0.5ms 1976Hz (width=192, height=64, xoffset=128, yoffset=64, invert (V flip) selected) partially_defocused laser right in the pinhole
@@ -661,6 +674,7 @@ collection_of_records['laser28']['reference_clear'] = [vacuum4] * len(laser28)
 collection_of_records['laser28']['power_interpolator'] = [power_interpolator1] * len(laser28)
 collection_of_records['laser28']['focus_status'] = ['partially_defocused'] * len(laser28)
 collection_of_records['laser28']['foil_position_dict'] = [dict([('angle',-2),('foilcenter',[162,133]),('foilhorizwpixel',240)])] * len(laser28)
+collection_of_records['laser28']['scan_type'] = 'freq&duty'	# other: 'freq&duty' 'power&freq' 'freq'
 
 
 # Laser experiments 20/08/2018 0.5ms 1976Hz (width=192, height=64, xoffset=128, yoffset=64, invert (V flip) selected) partially_defocused laser right in the pinhole at half power
@@ -682,6 +696,7 @@ collection_of_records['laser29']['reference_clear'] = [vacuum4] * len(laser29)
 collection_of_records['laser29']['power_interpolator'] = [power_interpolator1] * len(laser29)
 collection_of_records['laser29']['focus_status'] = ['partially_defocused'] * len(laser29)
 collection_of_records['laser29']['foil_position_dict'] = [dict([('angle',-2),('foilcenter',[162,133]),('foilhorizwpixel',240)])] * len(laser29)
+collection_of_records['laser29']['scan_type'] = 'freq&duty'	# other: 'freq&duty' 'power&freq' 'freq'
 
 
 # Laser experiments 20/08/2018 2ms 383Hz fully_defocused laser straight on pinhole
@@ -703,6 +718,7 @@ collection_of_records['laser30']['reference_clear'] = [vacuum4] * len(laser30)
 collection_of_records['laser30']['power_interpolator'] = [power_interpolator4] * len(laser30)
 collection_of_records['laser30']['focus_status'] = ['fully_defocused'] * len(laser30)
 collection_of_records['laser30']['foil_position_dict'] = [dict([('angle',-2),('foilcenter',[162,133]),('foilhorizwpixel',240)])] * len(laser30)
+collection_of_records['laser30']['scan_type'] = 'freq'	# other: 'freq&duty' 'power&freq' 'freq'
 
 
 # Laser experiments 20/08/2018 0.5ms 1976Hz (width=192, height=64, xoffset=128, yoffset=64, invert (V flip) selected) fully_defocused laser straight on pinhole
@@ -724,6 +740,7 @@ collection_of_records['laser31']['reference_clear'] = [vacuum4] * len(laser31)
 collection_of_records['laser31']['power_interpolator'] = [power_interpolator4] * len(laser31)
 collection_of_records['laser31']['focus_status'] = ['fully_defocused'] * len(laser31)
 collection_of_records['laser31']['foil_position_dict'] = [dict([('angle',-2),('foilcenter',[162,133]),('foilhorizwpixel',240)])] * len(laser31)
+collection_of_records['laser31']['scan_type'] = 'freq'	# other: 'freq&duty' 'power&freq' 'freq'
 
 
 # Laser experiments 20/08/2018 1ms 383Hz focused laser as high and left as possible
@@ -745,6 +762,7 @@ collection_of_records['laser32']['reference_clear'] = [vacuum4] * len(laser32)
 collection_of_records['laser32']['power_interpolator'] = [power_interpolator1] * len(laser32)
 collection_of_records['laser32']['focus_status'] = ['focused'] * len(laser32)
 collection_of_records['laser32']['foil_position_dict'] = [dict([('angle',-2),('foilcenter',[162,133]),('foilhorizwpixel',240)])] * len(laser32)
+collection_of_records['laser32']['scan_type'] = 'power&freq'	# other: 'freq&duty' 'power&freq' 'freq'
 
 
 
@@ -780,6 +798,7 @@ collection_of_records['laser33']['reference_clear'] = [vacuum5] * len(laser33)
 collection_of_records['laser33']['power_interpolator'] = [power_interpolator2] * len(laser33)
 collection_of_records['laser33']['focus_status'] = ['fully_defocused'] * len(laser33)
 collection_of_records['laser33']['foil_position_dict'] = [dict([('angle',-2),('foilcenter',[162,133]),('foilhorizwpixel',240)])] * len(laser33)
+collection_of_records['laser33']['scan_type'] = 'power&freq'	# other: 'freq&duty' 'power&freq' 'freq'
 
 
 # Laser experiments 25/10/2018 1ms+0.5ms samples with no power on foil and IR camera shielded from any possible stray radiation to test background stability
@@ -811,6 +830,7 @@ collection_of_records['laser34']['reference_clear'] = [vacuum6] * len(laser34)
 collection_of_records['laser34']['power_interpolator'] = [power_interpolator1] * len(laser34)
 collection_of_records['laser34']['focus_status'] = ['focused'] * len(laser34)
 collection_of_records['laser34']['foil_position_dict'] = [dict([('angle',-2),('foilcenter',[163,130]),('foilhorizwpixel',240)])] * len(laser34)
+collection_of_records['laser34']['scan_type'] = 'power&freq'	# other: 'freq&duty' 'power&freq' 'freq'
 
 
 # Laser experiments 25/10/2018 1ms 383Hz fully_defocused laser
@@ -832,6 +852,7 @@ collection_of_records['laser35']['reference_clear'] = [vacuum6] * len(laser35)
 collection_of_records['laser35']['power_interpolator'] = [power_interpolator2] * len(laser35)
 collection_of_records['laser35']['focus_status'] = ['fully_defocused'] * len(laser35)
 collection_of_records['laser35']['foil_position_dict'] = [dict([('angle',-2),('foilcenter',[163,130]),('foilhorizwpixel',240)])] * len(laser35)
+collection_of_records['laser35']['scan_type'] = 'freq'	# other: 'freq&duty' 'power&freq' 'freq'
 
 
 # Laser experiments 25/10/2018 1ms 994Hz  (width=320, height=92, xoffset=0, yoffset=82, invert (V flip) selected) fully_defocused laser
@@ -853,6 +874,7 @@ collection_of_records['laser36']['reference_clear'] = [vacuum6] * len(laser36)
 collection_of_records['laser36']['power_interpolator'] = [power_interpolator2] * len(laser36)
 collection_of_records['laser36']['focus_status'] = ['fully_defocused'] * len(laser36)
 collection_of_records['laser36']['foil_position_dict'] = [dict([('angle',-2),('foilcenter',[163,130]),('foilhorizwpixel',240)])] * len(laser36)
+collection_of_records['laser36']['scan_type'] = 'freq'	# other: 'freq&duty' 'power&freq' 'freq'
 
 
 # Laser experiments 25/10/2018 0.5ms 1976Hz  (width=96, height=96, xoffset=160, yoffset=80, invert (V flip) selected) fully_defocused laser
@@ -874,6 +896,7 @@ collection_of_records['laser37']['reference_clear'] = [vacuum6] * len(laser37)
 collection_of_records['laser37']['power_interpolator'] = [power_interpolator2] * len(laser37)
 collection_of_records['laser37']['focus_status'] = ['fully_defocused'] * len(laser37)
 collection_of_records['laser37']['foil_position_dict'] = [dict([('angle',-2),('foilcenter',[163,130]),('foilhorizwpixel',240)])] * len(laser37)
+collection_of_records['laser37']['scan_type'] = 'freq'	# other: 'freq&duty' 'power&freq' 'freq'
 
 
 # Laser experiments 25/10/2018 1ms 994Hz  (width=320, height=92, xoffset=0, yoffset=82, invert (V flip) selected) focused laser
@@ -895,6 +918,7 @@ collection_of_records['laser38']['reference_clear'] = [vacuum6] * len(laser38)
 collection_of_records['laser38']['power_interpolator'] = [power_interpolator1] * len(laser38)
 collection_of_records['laser38']['focus_status'] = ['focused'] * len(laser38)
 collection_of_records['laser38']['foil_position_dict'] = [dict([('angle',-2),('foilcenter',[163,130]),('foilhorizwpixel',240)])] * len(laser38)
+collection_of_records['laser38']['scan_type'] = 'power&freq'	# other: 'freq&duty' 'power&freq' 'freq'
 
 
 # Laser experiments 25/10/2018 0.5ms 1976Hz  (width=96, height=96, xoffset=160, yoffset=80, invert (V flip) selected) focused laser
@@ -916,6 +940,7 @@ collection_of_records['laser39']['reference_clear'] = [vacuum6] * len(laser39)
 collection_of_records['laser39']['power_interpolator'] = [power_interpolator1] * len(laser39)
 collection_of_records['laser39']['focus_status'] = ['focused'] * len(laser39)
 collection_of_records['laser39']['foil_position_dict'] = [dict([('angle',-2),('foilcenter',[163,130]),('foilhorizwpixel',240)])] * len(laser39)
+collection_of_records['laser39']['scan_type'] = 'power&freq'	# other: 'freq&duty' 'power&freq' 'freq'
 
 
 
@@ -959,6 +984,7 @@ collection_of_records['laser41']['reference_clear'] = [vacuum7] * len(laser41)
 collection_of_records['laser41']['power_interpolator'] = [power_interpolator3] * len(laser41)
 collection_of_records['laser41']['focus_status'] = ['focused'] * len(laser41)
 collection_of_records['laser41']['foil_position_dict'] = [dict([('angle',-2),('foilcenter',[163,130]),('foilhorizwpixel',240)])] * len(laser41)
+collection_of_records['laser41']['scan_type'] = 'power&freq'	# other: 'freq&duty' 'power&freq' 'freq'
 
 
 # Laser experiments 19/11/2018 1ms 383Hz focused laser, center of the laser spot located at H167, V131 on the full frame
@@ -980,6 +1006,7 @@ collection_of_records['laser42']['reference_clear'] = [vacuum7] * len(laser42)
 collection_of_records['laser42']['power_interpolator'] = [power_interpolator3] * len(laser42)
 collection_of_records['laser42']['focus_status'] = ['focused'] * len(laser42)
 collection_of_records['laser42']['foil_position_dict'] = [dict([('angle',-2),('foilcenter',[163,130]),('foilhorizwpixel',240)])] * len(laser42)
+collection_of_records['laser42']['scan_type'] = 'power&freq'	# other: 'freq&duty' 'power&freq' 'freq'
 
 
 # Laser experiments 19/11/2018 1ms 383Hz focused laser, center of the laser spot located at H167, V141 on the full frame
@@ -1001,6 +1028,7 @@ collection_of_records['laser43']['reference_clear'] = [vacuum7] * len(laser43)
 collection_of_records['laser43']['power_interpolator'] = [power_interpolator3] * len(laser43)
 collection_of_records['laser43']['focus_status'] = ['focused'] * len(laser43)
 collection_of_records['laser43']['foil_position_dict'] = [dict([('angle',-2),('foilcenter',[163,130]),('foilhorizwpixel',240)])] * len(laser43)
+collection_of_records['laser43']['scan_type'] = 'power&freq'	# other: 'freq&duty' 'power&freq' 'freq'
 
 
 # Laser experiments 19/11/2018 1ms 383Hz focused laser, center of the laser spot located at H167, V151 on the full frame
@@ -1022,6 +1050,7 @@ collection_of_records['laser44']['reference_clear'] = [vacuum7] * len(laser44)
 collection_of_records['laser44']['power_interpolator'] = [power_interpolator3] * len(laser44)
 collection_of_records['laser44']['focus_status'] = ['focused'] * len(laser44)
 collection_of_records['laser44']['foil_position_dict'] = [dict([('angle',-2),('foilcenter',[163,130]),('foilhorizwpixel',240)])] * len(laser44)
+collection_of_records['laser44']['scan_type'] = 'power&freq'	# other: 'freq&duty' 'power&freq' 'freq'
 
 
 # Laser experiments 19/11/2018 1ms 383Hz focused laser, center of the laser spot located at H167, V161 on the full frame
@@ -1043,6 +1072,7 @@ collection_of_records['laser45']['reference_clear'] = [vacuum7] * len(laser45)
 collection_of_records['laser45']['power_interpolator'] = [power_interpolator3] * len(laser45)
 collection_of_records['laser45']['focus_status'] = ['focused'] * len(laser45)
 collection_of_records['laser45']['foil_position_dict'] = [dict([('angle',-2),('foilcenter',[163,130]),('foilhorizwpixel',240)])] * len(laser45)
+collection_of_records['laser45']['scan_type'] = 'power&freq'	# other: 'freq&duty' 'power&freq' 'freq'
 
 
 # Laser experiments 19/11/2018 1ms 383Hz focused laser, center of the laser spot located at H167, V171 on the full frame
@@ -1064,6 +1094,7 @@ collection_of_records['laser46']['reference_clear'] = [vacuum7] * len(laser46)
 collection_of_records['laser46']['power_interpolator'] = [power_interpolator3] * len(laser46)
 collection_of_records['laser46']['focus_status'] = ['focused'] * len(laser46)
 collection_of_records['laser46']['foil_position_dict'] = [dict([('angle',-2),('foilcenter',[163,130]),('foilhorizwpixel',240)])] * len(laser46)
+collection_of_records['laser46']['scan_type'] = 'power&freq'	# other: 'freq&duty' 'power&freq' 'freq'
 
 
 # Laser experiments 19/11/2018 1ms 383Hz focused laser, center of the laser spot located at H187, V121 on the full frame
@@ -1085,6 +1116,7 @@ collection_of_records['laser47']['reference_clear'] = [vacuum7] * len(laser47)
 collection_of_records['laser47']['power_interpolator'] = [power_interpolator3] * len(laser47)
 collection_of_records['laser47']['focus_status'] = ['focused'] * len(laser47)
 collection_of_records['laser47']['foil_position_dict'] = [dict([('angle',-2),('foilcenter',[163,130]),('foilhorizwpixel',240)])] * len(laser47)
+collection_of_records['laser47']['scan_type'] = 'power&freq'	# other: 'freq&duty' 'power&freq' 'freq'
 
 
 # Experiment 20/11/2018 1ms samples with no power on foil and IR camera shielded from any possible stray radiation to test background stability.
