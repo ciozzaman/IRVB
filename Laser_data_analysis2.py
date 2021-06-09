@@ -85,7 +85,8 @@ plt.close()
 
 
 
-threshold_freq_list = [1,10,60,100,160,240,300]
+# threshold_freq_list = [1,10,60,100,160,240,300]
+threshold_freq_list = [1,10]
 # cases_to_include = ['laser17']
 # cases_to_include = ['laser39','laser37']	# FR ~2kHz
 # cases_to_include = ['laser38','laser36']	# FR ~1kHz
@@ -247,6 +248,7 @@ for cases_to_include in all_cases_to_include:
 		sharpness_degradation_high_frequency = np.array(sharpness_degradation_high_frequency)
 
 		def calculate_laser_power_given_parameters_1(trash,search_thickness,search_diffusivity):
+			print([search_thickness,search_diffusivity])
 			all_fitted_power = []
 			for index in range(len(all_laser_to_analyse_power_end)):
 				partial_BBrad = all_partial_BBrad[index]
@@ -281,7 +283,7 @@ for cases_to_include in all_cases_to_include:
 				# # all_fitted_power.extend(fitted_power_2)
 
 				totalpower_filtered_2 = generic_filter(powernoback,np.mean,size=[max(1,int(frames_for_one_pulse*experimental_laser_duty))])
-				totalpower_filtered_2 = totalpower_filtered_2[int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5))]
+				# totalpower_filtered_2 = totalpower_filtered_2[int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5))]
 				temp = max(1,int((len(totalpower_filtered_2)-len(totalpower_filtered_2)//frames_for_one_pulse*frames_for_one_pulse)/2))
 				totalpower_filtered_2 = totalpower_filtered_2[temp:-temp]
 				peaks_loc = find_peaks(totalpower_filtered_2,distance=frames_for_one_pulse*0.95)[0]
@@ -290,7 +292,7 @@ for cases_to_include in all_cases_to_include:
 
 				if experimental_laser_duty!=0.5:
 					totalpower_filtered_2 = generic_filter(powernoback,np.mean,size=[max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))])
-					totalpower_filtered_2 = totalpower_filtered_2[int(max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))*0.5))]
+					# totalpower_filtered_2 = totalpower_filtered_2[int(max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))*0.5))]
 					temp = max(1,int((len(totalpower_filtered_2)-len(totalpower_filtered_2)//frames_for_one_pulse*frames_for_one_pulse)/2))
 					totalpower_filtered_2 = totalpower_filtered_2[temp:-temp]
 				through_loc = find_peaks(-totalpower_filtered_2,distance=frames_for_one_pulse*0.95)[0]
@@ -300,20 +302,26 @@ for cases_to_include in all_cases_to_include:
 				noise_amplitude = (peaks-through)*0.03
 				# noise_amplitude = 4e-5
 				totalpower_filtered_1 = generic_filter(powernoback,np.mean,size=[max(1,int(frames_for_one_pulse*experimental_laser_duty/15//2*2+1))])
-				totalpower_filtered_1 = totalpower_filtered_1[int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5))]
-				totalpower_filtered_1 = totalpower_filtered_1[temp:-temp]
-				len_totalpower_filtered_1 = len(totalpower_filtered_1)
 				# sharpness_indicator = np.logical_and(totalpower_filtered_1 > through+noise_amplitude , totalpower_filtered_1 < peaks-noise_amplitude)
 				# sharpness_indicator = np.logical_or(sharpness_indicator,totalpower_filtered_1<through-noise_amplitude)
 				# sharpness_indicator = np.logical_or(sharpness_indicator,totalpower_filtered_1>peaks+noise_amplitude)
-				sharpness_indicator = np.sum(np.logical_and(totalpower_filtered_1 > peaks-noise_amplitude , totalpower_filtered_1 < peaks+noise_amplitude))
-				if experimental_laser_duty!=0.5:
-					totalpower_filtered_1 = generic_filter(powernoback,np.mean,size=[max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)/15//2*2+1))])
-					totalpower_filtered_1 = totalpower_filtered_1[int(max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))*0.5))]
+				if False:
+					totalpower_filtered_1 = totalpower_filtered_1[int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5))]
 					totalpower_filtered_1 = totalpower_filtered_1[temp:-temp]
-				sharpness_indicator = sharpness_indicator + np.sum(np.logical_and(totalpower_filtered_1 > through-noise_amplitude , totalpower_filtered_1 < through+noise_amplitude))
-				len_totalpower_filtered_1 = max(len_totalpower_filtered_1,len(totalpower_filtered_1))
-				sharpness_indicator = sharpness_indicator/len_totalpower_filtered_1
+					len_totalpower_filtered_1 = len(totalpower_filtered_1)
+					sharpness_indicator = np.sum(np.logical_and(totalpower_filtered_1 > peaks-noise_amplitude , totalpower_filtered_1 < peaks+noise_amplitude))
+					if experimental_laser_duty!=0.5:
+						totalpower_filtered_1 = generic_filter(powernoback,np.mean,size=[max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)/15//2*2+1))])
+						totalpower_filtered_1 = totalpower_filtered_1[int(max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))*0.5))]
+						totalpower_filtered_1 = totalpower_filtered_1[temp:-temp]
+					sharpness_indicator = sharpness_indicator + np.sum(np.logical_and(totalpower_filtered_1 > through-noise_amplitude , totalpower_filtered_1 < through+noise_amplitude))
+					len_totalpower_filtered_1 = max(len_totalpower_filtered_1,len(totalpower_filtered_1))
+					sharpness_indicator = sharpness_indicator/len_totalpower_filtered_1
+				else:
+					sharpness_indicator = 1-((np.std(totalpower_filtered_1[totalpower_filtered_1>(peaks+through)/2])**2+np.std(totalpower_filtered_1[totalpower_filtered_1<(peaks+through)/2])**2))/(peaks-through)
+					totalpower_filtered_1 = totalpower_filtered_1[int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5))]
+					totalpower_filtered_1 = totalpower_filtered_1[temp:-temp]
+					len_totalpower_filtered_1 = len(totalpower_filtered_1)
 
 				# totalpower_filtered_2 = generic_filter(powernoback,np.mean,size=[max(1,int(frames_for_one_pulse*experimental_laser_duty))])[temp:-temp]
 				# peaks = np.mean(totalpower_filtered_2[find_peaks(totalpower_filtered_2,distance=frames_for_one_pulse*0.9)[0]])
@@ -321,15 +329,14 @@ for cases_to_include in all_cases_to_include:
 				# all_fitted_power.extend([through,fitted_power_2[1],peaks,fitted_power_2[3]])
 				# all_fitted_power.extend([through,peaks])
 				all_fitted_power.append(sharpness_indicator)
-			print([search_thickness,search_diffusivity])
 			return all_fitted_power
 
 		x = np.arange(len(all_laser_to_analyse_power_end))
 		y = np.ones_like(all_laser_to_analyse_power_end)
 		# weigth = np.array([np.ones_like(all_laser_to_analyse_power_end)*1,np.ones_like(all_laser_to_analyse_power_end)*0.1,np.ones_like(all_laser_to_analyse_power_end)*0.001*sharpness_degradation_high_frequency]).T.flatten()
 		weigth = np.ones_like(y)
-		bds = [[0.1*2.5/1000000,0.1*Ptthermaldiffusivity],[2*2.5/1000000,5*Ptthermaldiffusivity]]
-		guess=[2.5/1000000,1e-5]
+		bds = [[0.1*2.5e-6,0.1*Ptthermaldiffusivity],[2*2.5e-6,5*Ptthermaldiffusivity]]
+		guess=[2.5e-6,Ptthermaldiffusivity]
 		fit = curve_fit(calculate_laser_power_given_parameters_1, x, y, sigma=weigth, p0=guess,bounds=bds,maxfev=int(1e6),verbose=2,ftol=1e-12,xtol=1e-14,gtol=1e-12)
 		best_sharpness = calculate_laser_power_given_parameters_1(1,*fit[0])
 		thickness_first_stage, diffusivity_first_stage = fit[0]
@@ -339,6 +346,7 @@ for cases_to_include in all_cases_to_include:
 
 		power_reduction_window = 0.9
 		def calculate_laser_power_given_parameters(trash,search_thickness,search_emissivity,defocused_to_focesed_power,search_diffusivity):
+			print([search_thickness,search_emissivity,power_reduction_window,defocused_to_focesed_power,search_diffusivity])
 			all_fitted_power = []
 			for index in range(len(all_laser_to_analyse_power_end)):
 				partial_BBrad = all_partial_BBrad[index]
@@ -373,7 +381,7 @@ for cases_to_include in all_cases_to_include:
 				# # all_fitted_power.extend(fitted_power_2)
 
 				totalpower_filtered_2 = generic_filter(powernoback,np.mean,size=[max(1,int(frames_for_one_pulse*experimental_laser_duty))])
-				totalpower_filtered_2 = totalpower_filtered_2[int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5))]
+				# totalpower_filtered_2 = totalpower_filtered_2[int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5))]
 				temp = max(1,int((len(totalpower_filtered_2)-len(totalpower_filtered_2)//frames_for_one_pulse*frames_for_one_pulse)/2))
 				totalpower_filtered_2 = totalpower_filtered_2[temp:-temp]
 				peaks_loc = find_peaks(totalpower_filtered_2,distance=frames_for_one_pulse*0.95)[0]
@@ -382,7 +390,7 @@ for cases_to_include in all_cases_to_include:
 
 				if experimental_laser_duty!=0.5:
 					totalpower_filtered_2 = generic_filter(powernoback,np.mean,size=[max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))])
-					totalpower_filtered_2 = totalpower_filtered_2[int(max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))*0.5))]
+					# totalpower_filtered_2 = totalpower_filtered_2[int(max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))*0.5))]
 					temp = max(1,int((len(totalpower_filtered_2)-len(totalpower_filtered_2)//frames_for_one_pulse*frames_for_one_pulse)/2))
 					totalpower_filtered_2 = totalpower_filtered_2[temp:-temp]
 				through_loc = find_peaks(-totalpower_filtered_2,distance=frames_for_one_pulse*0.95)[0]
@@ -392,20 +400,25 @@ for cases_to_include in all_cases_to_include:
 				noise_amplitude = (peaks-through)*0.03
 				# noise_amplitude = 4e-5
 				totalpower_filtered_1 = generic_filter(powernoback,np.mean,size=[max(1,int(frames_for_one_pulse*experimental_laser_duty/15//2*2+1))])
-				totalpower_filtered_1 = totalpower_filtered_1[int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5))]
-				totalpower_filtered_1 = totalpower_filtered_1[temp:-temp]
-				len_totalpower_filtered_1 = len(totalpower_filtered_1)
-				# sharpness_indicator = np.logical_and(totalpower_filtered_1 > through+noise_amplitude , totalpower_filtered_1 < peaks-noise_amplitude)
-				# sharpness_indicator = np.logical_or(sharpness_indicator,totalpower_filtered_1<through-noise_amplitude)
-				# sharpness_indicator = np.logical_or(sharpness_indicator,totalpower_filtered_1>peaks+noise_amplitude)
-				sharpness_indicator = np.sum(np.logical_and(totalpower_filtered_1 > peaks-noise_amplitude , totalpower_filtered_1 < peaks+noise_amplitude))
-				if experimental_laser_duty!=0.5:
-					totalpower_filtered_1 = generic_filter(powernoback,np.mean,size=[max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)/15//2*2+1))])
-					totalpower_filtered_1 = totalpower_filtered_1[int(max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))*0.5))]
+				if False:
+					totalpower_filtered_1 = totalpower_filtered_1[int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5))]
 					totalpower_filtered_1 = totalpower_filtered_1[temp:-temp]
-				sharpness_indicator = sharpness_indicator + np.sum(np.logical_and(totalpower_filtered_1 > through-noise_amplitude , totalpower_filtered_1 < through+noise_amplitude))
-				len_totalpower_filtered_1 = max(len_totalpower_filtered_1,len(totalpower_filtered_1))
-				sharpness_indicator = sharpness_indicator/len_totalpower_filtered_1
+					len_totalpower_filtered_1 = len(totalpower_filtered_1)
+					# sharpness_indicator = np.logical_and(totalpower_filtered_1 > through+noise_amplitude , totalpower_filtered_1 < peaks-noise_amplitude)
+					# sharpness_indicator = np.logical_or(sharpness_indicator,totalpower_filtered_1<through-noise_amplitude)
+					# sharpness_indicator = np.logical_or(sharpness_indicator,totalpower_filtered_1>peaks+noise_amplitude)
+					sharpness_indicator = np.sum(np.logical_and(totalpower_filtered_1 > peaks-noise_amplitude , totalpower_filtered_1 < peaks+noise_amplitude))
+					if experimental_laser_duty!=0.5:
+						totalpower_filtered_1 = generic_filter(powernoback,np.mean,size=[max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)/15//2*2+1))])
+						totalpower_filtered_1 = totalpower_filtered_1[int(max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))*0.5))]
+						totalpower_filtered_1 = totalpower_filtered_1[temp:-temp]
+					sharpness_indicator = sharpness_indicator + np.sum(np.logical_and(totalpower_filtered_1 > through-noise_amplitude , totalpower_filtered_1 < through+noise_amplitude))
+					len_totalpower_filtered_1 = max(len_totalpower_filtered_1,len(totalpower_filtered_1))
+					sharpness_indicator = sharpness_indicator/len_totalpower_filtered_1
+				else:
+					sharpness_indicator = 1-((np.std(powernoback[totalpower_filtered_1>(peaks+through)/2])**2+np.std(powernoback[totalpower_filtered_1<(peaks+through)/2])**2))/(peaks-through)
+					totalpower_filtered_1 = totalpower_filtered_1[int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5))]
+					totalpower_filtered_1 = totalpower_filtered_1[temp:-temp]
 
 				# totalpower_filtered_2 = generic_filter(powernoback,np.mean,size=[max(1,int(frames_for_one_pulse*experimental_laser_duty))])[temp:-temp]
 				# peaks = np.mean(totalpower_filtered_2[find_peaks(totalpower_filtered_2,distance=frames_for_one_pulse*0.9)[0]])
@@ -426,7 +439,7 @@ for cases_to_include in all_cases_to_include:
 			# all_fitted_power[1::2] = all_fitted_power[1::2]/all_laser_to_analyse_power_end
 			all_fitted_power[0::3] = all_fitted_power[0::3]/(all_laser_to_analyse_power_end*power_reduction_window)
 			all_fitted_power[1::3] = all_fitted_power[1::3]/(all_laser_to_analyse_power_end*power_reduction_window)
-			print([search_thickness,search_emissivity,power_reduction_window,defocused_to_focesed_power,search_diffusivity])
+			# print([search_thickness,search_emissivity,power_reduction_window,defocused_to_focesed_power,search_diffusivity])
 			print(all_fitted_power[1::3])
 			return all_fitted_power
 
@@ -445,9 +458,12 @@ for cases_to_include in all_cases_to_include:
 		# weigth = np.array([(1/(all_laser_to_analyse_duty_end/all_laser_to_analyse_frequency_end)).tolist()]*3).T.flatten()
 		weigth = np.array([np.ones_like(all_laser_to_analyse_power_end)*1,np.ones_like(all_laser_to_analyse_power_end)*0.1,np.ones_like(all_laser_to_analyse_power_end)*0.1*sharpness_degradation_high_frequency]).T.flatten()
 		# weigth = np.array([(np.ones_like(all_laser_to_analyse_power_end)*np.min(1/(all_laser_to_analyse_duty_end/all_laser_to_analyse_frequency_end)))]*2+[(1/(all_laser_to_analyse_duty_end/all_laser_to_analyse_frequency_end))]).T.flatten()
-		bds = [[1/1000000,0.8,0.7,diffusivity_first_stage*0.9],[2*2.5/1000000,1,2,diffusivity_first_stage*1.1]]
-		# bds = [[1e-9,1e-9,1e-9,0.2],[10*2.5/1000000,1,10*Ptthermaldiffusivity,1]]
-		guess=[thickness_first_stage,1,1.2,diffusivity_first_stage]
+		if False:
+			bds = [[1e-6,0.8,0.7,diffusivity_first_stage*0.9],[2*2.5e-6,1,2,diffusivity_first_stage*1.1]]
+			guess=[thickness_first_stage,1,1.2,diffusivity_first_stage]
+		else:
+			bds = [[1e-7,0.8,0.7,Ptthermaldiffusivity*0.9999],[10*2.5e-6,1,2,1.0001*Ptthermaldiffusivity]]
+			guess=[2.5e-6,1,1.2,Ptthermaldiffusivity]
 		# guess = fitted_coefficients_2
 		# x_scale=[2.5/1000000,1,0.9,1,1e-5]
 		fit = curve_fit(calculate_laser_power_given_parameters, x, y, p0=guess, sigma=weigth,bounds=bds,maxfev=int(1e6),verbose=2,ftol=1e-12,xtol=1e-14,gtol=1e-12)
