@@ -27,9 +27,10 @@ if False:	# manual collection of parameters
 	all_laser_to_analyse=coleval.flatten_full(all_laser_to_analyse)
 	all_laser_to_analyse_ROI=coleval.flatten(all_laser_to_analyse_ROI)
 else:	# automatic collection of parameters
+	cases_to_include = ['laser15','laser16','laser17','laser18','laser19','laser20','laser21','laser22','laser23','laser24','laser25','laser26','laser27','laser28','laser29','laser30','laser31','laser32','laser33','laser34','laser35','laser36','laser37','laser38','laser39','laser41','laser42','laser43','laser44','laser45','laser46','laser47']
 	# cases_to_include = ['laser22','laser23','laser24','laser25','laser26','laser27','laser28','laser29','laser30','laser31','laser32']
 	# cases_to_include = ['laser34','laser35','laser36','laser37','laser38','laser39']
-	cases_to_include = ['laser15']
+	# cases_to_include = ['laser15']
 	all_case_ID = []
 	all_path_reference_frames = []
 	all_laser_to_analyse = []
@@ -90,10 +91,22 @@ for i_laser_to_analyse,laser_to_analyse in enumerate(all_laser_to_analyse):
 	limited_ROI = all_laser_to_analyse_ROI[i_laser_to_analyse]
 
 	# laser_dict = np.load(laser_to_analyse+'.npz')
-	laser_counts, laser_digitizer_ID = coleval.separate_data_with_digitizer(laser_dict)
+	# laser_counts, laser_digitizer_ID = coleval.separate_data_with_digitizer(laser_dict)
+	laser_counts = laser_dict['data']
 	time_of_experiment = laser_dict['time_of_measurement']
 	mean_time_of_experiment = np.mean(time_of_experiment)
 	laser_digitizer = laser_dict['digitizer_ID']
+	if np.diff(time_of_experiment).max()>np.median(np.diff(time_of_experiment))*1.1:
+		hole_pos = np.diff(time_of_experiment).argmax()
+		if hole_pos<len(time_of_experiment)/2:
+			time_of_experiment = time_of_experiment[hole_pos+1:]
+			laser_digitizer = laser_digitizer[hole_pos+1:]
+			laser_counts = laser_counts[hole_pos+1:]
+		else:
+			time_of_experiment = time_of_experiment[:-(hole_pos+1)]
+			laser_digitizer = laser_digitizer[:-(hole_pos+1)]
+			laser_counts = laser_counts[:-(hole_pos+1)]
+	laser_counts, laser_digitizer_ID = coleval.generic_separate_with_digitizer(laser_counts,laser_digitizer)
 	time_of_experiment_digitizer_ID, laser_digitizer_ID = coleval.generic_separate_with_digitizer(time_of_experiment,laser_digitizer)
 	laser_framerate = laser_dict['FrameRate']
 	laser_int_time = laser_dict['IntegrationTime']
@@ -236,7 +249,7 @@ for i_laser_to_analyse,laser_to_analyse in enumerate(all_laser_to_analyse):
 	laser_temperature_minus_background_std_minus_median_downgraded = [np.float16(data-median) for data,median in zip(laser_temperature_std,laser_temperature_minus_background_std_median)]
 
 	full_saved_file_dict = dict(laser_dict)
-	full_saved_file_dict['laser_temperature_minus_background_median']=laser_temperature_minus_background_median
+	full_saved_file_dict['laser_temperature_minus_background_median']=laser_temperature_minus_background_median	# this is NOT minus_background, that is a relic of what I did before, but I keep it not to recreate all .npz, same for the next3
 	full_saved_file_dict['laser_temperature_minus_background_minus_median_downgraded']=laser_temperature_minus_background_minus_median_downgraded
 	full_saved_file_dict['laser_temperature_minus_background_std_median']=laser_temperature_minus_background_std_median
 	full_saved_file_dict['laser_temperature_minus_background_std_minus_median_downgraded']=laser_temperature_minus_background_std_minus_median_downgraded

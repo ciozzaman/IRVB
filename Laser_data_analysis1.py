@@ -146,6 +146,14 @@ def function_a(index):
 	time_of_experiment = laser_dict['time_of_measurement']	# microseconds
 	mean_time_of_experiment = np.nanmean(time_of_experiment)
 	laser_digitizer = laser_dict['digitizer_ID']
+	if np.diff(time_of_experiment).max()>np.median(np.diff(time_of_experiment))*1.1:
+		hole_pos = np.diff(time_of_experiment).argmax()
+		if hole_pos<len(time_of_experiment)/2:
+			time_of_experiment = time_of_experiment[hole_pos+1:]
+			laser_digitizer = laser_digitizer[hole_pos+1:]
+		else:
+			time_of_experiment = time_of_experiment[:-(hole_pos+1)]
+			laser_digitizer = laser_digitizer[:-(hole_pos+1)]
 	time_of_experiment_digitizer_ID, laser_digitizer_ID = coleval.generic_separate_with_digitizer(time_of_experiment,laser_digitizer)
 	laser_framerate = laser_dict['FrameRate']
 	laser_int_time = laser_dict['IntegrationTime']
@@ -417,7 +425,7 @@ def function_a(index):
 		# I subtract the background to the counts and add back the average of the background counts
 		# NO!! I cannot do this either, because the counts to temp coefficients are fuilt in with the disuniformity, and non't work if I remove it before hand.
 
-	temp1 = laser_dict['laser_temperature_minus_background_median']
+	temp1 = laser_dict['laser_temperature_minus_background_median']	# this is NOT minus_background, that is a relic of what I did before, but I keep it not to recreate all .npz, same for the next3
 	temp2 = laser_dict['laser_temperature_minus_background_minus_median_downgraded']
 	temp3 = laser_dict['laser_temperature_minus_background_std_median']
 	temp4 = laser_dict['laser_temperature_minus_background_std_minus_median_downgraded']
@@ -441,8 +449,8 @@ def function_a(index):
 	# I need to put together the data from the two digitizers
 	# laser_temperature_full = [(laser_temperature_no_dead_pixels[0][np.abs(time_of_experiment_digitizer_ID[0]-time).argmin()]) if ID==laser_digitizer_ID[0] else (laser_temperature_no_dead_pixels[1][np.abs(time_of_experiment_digitizer_ID[1]-time).argmin()]) for time,ID in zip(time_of_experiment,laser_digitizer)]
 	# laser_temperature_std_full = [(laser_temperature_std_no_dead_pixels[0][np.abs(time_of_experiment_digitizer_ID[0]-time).argmin()]) if ID==laser_digitizer_ID[0] else (laser_temperature_std_no_dead_pixels[1][np.abs(time_of_experiment_digitizer_ID[1]-time).argmin()]) for time,ID in zip(time_of_experiment,laser_digitizer)]
-	laser_temperature_minus_background_full = [(laser_temperature_minus_background_no_dead_pixels[0][np.abs(time_of_experiment_digitizer_ID[0]-time).argmin()]) if ID==laser_digitizer_ID[0] else (laser_temperature_minus_background_no_dead_pixels[1][np.abs(time_of_experiment_digitizer_ID[1]-time).argmin()]) for time,ID in zip(time_of_experiment,laser_digitizer)]
-	laser_temperature_std_minus_background_full = [(laser_temperature_std_minus_background_no_dead_pixels[0][np.abs(time_of_experiment_digitizer_ID[0]-time).argmin()]) if ID==laser_digitizer_ID[0] else (laser_temperature_std_minus_background_no_dead_pixels[1][np.abs(time_of_experiment_digitizer_ID[1]-time).argmin()]) for time,ID in zip(time_of_experiment,laser_digitizer)]
+	laser_temperature_minus_background_full = [(laser_temperature_minus_background_no_dead_pixels[0][np.abs(time_of_experiment_digitizer_ID[0]-time).argmin()]) if time in time_of_experiment_digitizer_ID[0] else (laser_temperature_minus_background_no_dead_pixels[1][np.abs(time_of_experiment_digitizer_ID[1]-time).argmin()]) for time in time_of_experiment]
+	laser_temperature_std_minus_background_full = [(laser_temperature_std_minus_background_no_dead_pixels[0][np.abs(time_of_experiment_digitizer_ID[0]-time).argmin()]) if time in time_of_experiment_digitizer_ID[0] else (laser_temperature_std_minus_background_no_dead_pixels[1][np.abs(time_of_experiment_digitizer_ID[1]-time).argmin()]) for time in time_of_experiment]
 	del laser_temperature_no_dead_pixels,laser_temperature_std_no_dead_pixels,laser_temperature_minus_background_no_dead_pixels,laser_temperature_std_minus_background_no_dead_pixels
 
 

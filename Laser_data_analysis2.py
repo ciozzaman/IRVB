@@ -345,8 +345,8 @@ for cases_to_include in all_cases_to_include:
 		all_sharpness_first.append(np.nanmean(best_sharpness))
 
 		power_reduction_window = 0.9
-		def calculate_laser_power_given_parameters(trash,search_thickness,search_emissivity,defocused_to_focesed_power,search_diffusivity):
-			print([search_thickness,search_emissivity,power_reduction_window,defocused_to_focesed_power,search_diffusivity])
+		def calculate_laser_power_given_parameters(trash,search_thickness,search_emissivity,defocused_to_focused_power,search_diffusivity):
+			print([search_thickness,search_emissivity,power_reduction_window,defocused_to_focused_power,search_diffusivity])
 			all_fitted_power = []
 			for index in range(len(all_laser_to_analyse_power_end)):
 				partial_BBrad = all_partial_BBrad[index]
@@ -424,8 +424,8 @@ for cases_to_include in all_cases_to_include:
 				# peaks = np.mean(totalpower_filtered_2[find_peaks(totalpower_filtered_2,distance=frames_for_one_pulse*0.9)[0]])
 				# through = np.mean(totalpower_filtered_2[find_peaks(-totalpower_filtered_2,distance=frames_for_one_pulse*0.9)[0]])
 				if focus_status=='fully_defocused':
-					peaks *= defocused_to_focesed_power
-					through *= defocused_to_focesed_power
+					peaks *= defocused_to_focused_power
+					through *= defocused_to_focused_power
 				# all_fitted_power.extend([through,fitted_power_2[1],peaks,fitted_power_2[3]])
 				# all_fitted_power.extend([through,peaks])
 				all_fitted_power.extend([through,peaks,sharpness_indicator])
@@ -439,7 +439,7 @@ for cases_to_include in all_cases_to_include:
 			# all_fitted_power[1::2] = all_fitted_power[1::2]/all_laser_to_analyse_power_end
 			all_fitted_power[0::3] = all_fitted_power[0::3]/(all_laser_to_analyse_power_end*power_reduction_window)
 			all_fitted_power[1::3] = all_fitted_power[1::3]/(all_laser_to_analyse_power_end*power_reduction_window)
-			# print([search_thickness,search_emissivity,power_reduction_window,defocused_to_focesed_power,search_diffusivity])
+			# print([search_thickness,search_emissivity,power_reduction_window,defocused_to_focused_power,search_diffusivity])
 			print(all_fitted_power[1::3])
 			return all_fitted_power
 
@@ -625,17 +625,21 @@ for cases_to_include in all_cases_to_include:
 		experimental_laser_duty = all_laser_to_analyse_duty_end[index]
 		laser_to_analyse_power_end = all_laser_to_analyse_power_end[index]
 		focus_status = all_focus_status_end[index]
-		defocused_to_focesed_power = 1
+		defocused_to_focused_power = 1
 		if focus_status=='fully_defocused':
-			defocused_to_focesed_power = fitted_coefficients_2[3]
+			defocused_to_focused_power = fitted_coefficients_2[3]
 		power_reduction_window = fitted_coefficients_2[2]
-		BBrad = partial_BBrad * fitted_coefficients_2[1] * defocused_to_focesed_power
-		BBrad_std = partial_BBrad_std * fitted_coefficients_2[1] * defocused_to_focesed_power
-		diffusion = partial_diffusion * fitted_coefficients_2[0] * defocused_to_focesed_power
-		diffusion_std = partial_diffusion_std * fitted_coefficients_2[0] * defocused_to_focesed_power
-		timevariation = (1/fitted_coefficients_2[4])*fitted_coefficients_2[0] * partial_timevariation * defocused_to_focesed_power
-		timevariation_std = (1/fitted_coefficients_2[4])*fitted_coefficients_2[0] * partial_timevariation_std * defocused_to_focesed_power
+		BBrad = partial_BBrad * fitted_coefficients_2[1] * defocused_to_focused_power
+		BBrad_first = partial_BBrad * 1 * defocused_to_focused_power
+		BBrad_std = partial_BBrad_std * fitted_coefficients_2[1] * defocused_to_focused_power
+		diffusion_first = partial_diffusion * thickness_first_stage * defocused_to_focused_power
+		diffusion = partial_diffusion * fitted_coefficients_2[0] * defocused_to_focused_power
+		diffusion_std = partial_diffusion_std * fitted_coefficients_2[0] * defocused_to_focused_power
+		timevariation = (1/fitted_coefficients_2[4])*fitted_coefficients_2[0] * partial_timevariation * defocused_to_focused_power
+		timevariation_first = (1/diffusivity_first_stage)*thickness_first_stage * partial_timevariation * defocused_to_focused_power
+		timevariation_std = (1/fitted_coefficients_2[4])*fitted_coefficients_2[0] * partial_timevariation_std * defocused_to_focused_power
 		powernoback = diffusion + timevariation + BBrad
+		powernoback_first = diffusion_first + timevariation_first + BBrad_first
 		powernoback_std = (diffusion_std**2 + timevariation_std**2 + BBrad_std**2)**0.5
 
 		frames_for_one_pulse = laser_framerate/experimental_laser_frequency
@@ -647,6 +651,7 @@ for cases_to_include in all_cases_to_include:
 
 		time_axis = (time_of_experiment[1:-1]-time_of_experiment[1])/1e6
 		totalpower_filtered_2_full = generic_filter(powernoback,np.mean,size=[max(1,int(frames_for_one_pulse*experimental_laser_duty))])
+		totalpower_filtered_2_full_first = generic_filter(powernoback_first,np.mean,size=[max(1,int(frames_for_one_pulse*experimental_laser_duty))])
 		totalpower_filtered_2 = totalpower_filtered_2_full[int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5))]
 		time_axis_crop = time_axis[int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5))]
 		temp = max(1,int((len(totalpower_filtered_2)-len(totalpower_filtered_2)//frames_for_one_pulse*frames_for_one_pulse)/2))
@@ -674,6 +679,7 @@ for cases_to_include in all_cases_to_include:
 		fitted_power_2 = [through,throughs_std,peak,peaks_std]
 
 		totalpower_filtered_1_full = generic_filter(powernoback,np.mean,size=[max(1,int(frames_for_one_pulse*experimental_laser_duty/15//2*2+1))])
+		totalpower_filtered_1_full_first = generic_filter(powernoback_first,np.mean,size=[max(1,int(frames_for_one_pulse*experimental_laser_duty/15//2*2+1))])
 		totalpower_filtered_1 = totalpower_filtered_1_full[int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5))]
 		totalpower_filtered_1 = totalpower_filtered_1[temp:-temp]
 		len_totalpower_filtered_1 = len(totalpower_filtered_1)
@@ -696,6 +702,8 @@ for cases_to_include in all_cases_to_include:
 
 		plt.figure(figsize=(20, 10))
 		plt.plot()
+		plt.plot(time_axis,powernoback_first,'--',label='totalpower first pass')
+		plt.plot(time_axis,totalpower_filtered_1_full_first,'--',label='totalpower filtered first pass')
 		plt.plot(time_axis,powernoback,label='totalpower')
 		plt.plot(time_axis,BBrad,label='totalBBrad')
 		plt.plot(time_axis,diffusion,label='totaldiffusion')
@@ -716,14 +724,14 @@ for cases_to_include in all_cases_to_include:
 		plt.plot([time_axis[0],time_axis[-1]],[through-noise_amplitude]*2,'--k')
 		plt.plot([time_axis[0],time_axis[-1]],[peak-noise_amplitude]*2,'--k')
 		plt.plot([time_axis[0],time_axis[-1]],[peak+noise_amplitude]*2,'--k')
-		plt.plot([time_axis[0],time_axis[-1]],[laser_to_analyse_power_end*defocused_to_focesed_power]*2,'--r',label='power input')
+		plt.plot([time_axis[0],time_axis[-1]],[laser_to_analyse_power_end*defocused_to_focused_power]*2,'--r',label='power input')
 		# plt.plot([time_axis[0],time_axis[-1]],[fitted_power_2[0]]*2,color='k',linestyle=':',linewidth=2,label='power upper/lower median')
 		# plt.plot([time_axis[0],time_axis[-1]],[fitted_power_2[1]]*2,color='k',linestyle=':',linewidth=2)
 		plt.legend(loc='best', fontsize='small')
 		plt.xlabel('time [s]')
 		plt.ylabel('power [W]')
 		plt.grid()
-		plt.title(laser_to_analyse+' in '+case_ID+'\nInput '+focus_status+', spot location '+ str([int(laser_location[0]),int(laser_location[2])]) +' power %.3gW, freq %.3gHz, duty%.3g\nHigh Power=%.3g+/-%.3gW, Low Power=%.3g+/-%.3gW, sharpness=%.3g' %(laser_to_analyse_power_end*defocused_to_focesed_power,experimental_laser_frequency,experimental_laser_duty,fitted_power_2[2],fitted_power_2[3],fitted_power_2[0],fitted_power_2[1],sharpness_indicator))
+		plt.title(laser_to_analyse+' in '+case_ID+'\nInput '+focus_status+', spot location '+ str([int(laser_location[0]),int(laser_location[2])]) +' power %.3gW, freq %.3gHz, duty%.3g\nHigh Power=%.3g+/-%.3gW, Low Power=%.3g+/-%.3gW, sharpness=%.3g' %(laser_to_analyse_power_end*defocused_to_focused_power,experimental_laser_frequency,experimental_laser_duty,fitted_power_2[2],fitted_power_2[3],fitted_power_2[0],fitted_power_2[1],sharpness_indicator))
 		# plt.pause(0.01)
 		figure_index+=1
 		plt.savefig(path_where_to_save_everything_int + 'example_' + str(figure_index) +'.eps', bbox_inches='tight')

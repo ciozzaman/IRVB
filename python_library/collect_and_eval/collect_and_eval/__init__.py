@@ -20,6 +20,7 @@ from uncertainties import correlated_values,ufloat
 from uncertainties.unumpy import nominal_values,std_devs,uarray
 import time as tm
 import concurrent.futures as cf
+import copy as cp
 
 
 #
@@ -1999,16 +2000,16 @@ def clear_oscillation_central(data,framerate,oscillation_search_window_begin='au
 	print('shape of data array is '+str(np.shape(data))+', it should be (x,frames,v pixel,h pixel)')
 
 	data=data[0]
-	if oscillation_search_window_begin=='auto':
+	if oscillation_search_window_begin=='auto':	# in seconds
 		force_start=0
-	elif (oscillation_search_window_begin<0 or oscillation_search_window_begin>len(data)):
+	elif (oscillation_search_window_begin<0 or oscillation_search_window_begin>len(data)*framerate):
 		print('The initial limit to search for the oscillation ad erase it is out of range (a time in seconds)')
 		print('0s will be used instead')
 		force_start=0
 	else:
 		force_start=int(oscillation_search_window_begin/framerate)
 
-	if oscillation_search_window_end=='auto':
+	if oscillation_search_window_end=='auto':	# in seconds
 		force_end=len(data)
 	elif (oscillation_search_window_end<0 or oscillation_search_window_end>(len(data)*framerate) or oscillation_search_window_end<=(force_start*framerate)):
 		print('The final limit to search for the oscillation ad erase it is out of range (a time in seconds)')
@@ -2067,7 +2068,6 @@ def clear_oscillation_central(data,framerate,oscillation_search_window_begin='au
 		if (len(datarestricted) / framerate) <= 1:
 			max_start = int(sections // 2)
 		else:
-
 			max_start = min(int(1 + sections / 2), int(
 				max_time * framerate / (len(datarestricted) / sections)))  # I can use only a part of the record to filter the signal
 	else:
@@ -2075,8 +2075,6 @@ def clear_oscillation_central(data,framerate,oscillation_search_window_begin='au
 
 	if (len(datarestricted) / framerate) <= 1:
 		min_start = max(1, int(0.2 * framerate / (len(datarestricted) / sections)))
-
-
 	else:
 		extra = 0
 		while ((max_start - int(max_start / (5 / 2.5)) + extra) < 7):	# 7 is just a try. this is in a way to have enough fitting to compare
@@ -2187,7 +2185,7 @@ def clear_oscillation_central(data,framerate,oscillation_search_window_begin='au
 
 ###################################################################################################
 
-def clear_oscillation_central2(data,framerate,oscillation_search_window_begin='auto',oscillation_search_window_end='auto',min_frequency_to_erase=20,max_frequency_to_erase=34,plot_conparison=False):
+def clear_oscillation_central2(data,framerate,oscillation_search_window_begin='auto',oscillation_search_window_end='auto',min_frequency_to_erase=20,max_frequency_to_erase=34,plot_conparison=False,which_plot=[1,2,3],ROI='auto',window=2,force_poscentre='auto'):
 
 	# Created 15/02/2019
 	# This function take the raw counts. analyse the fast fourier transform in a selectable interval IN THE CENTER OF THE FRAME.
@@ -2201,16 +2199,16 @@ def clear_oscillation_central2(data,framerate,oscillation_search_window_begin='a
 	data=data[0]
 	if oscillation_search_window_begin=='auto':
 		force_start=0
-	elif (oscillation_search_window_begin<0 or oscillation_search_window_begin>len(data)):
+	elif (oscillation_search_window_begin<0 or oscillation_search_window_begin>len(data)*framerate):
 		print('The initial limit to search for the oscillation ad erase it is out of range (a time in seconds)')
 		print('0s will be used instead')
 		force_start=0
 	else:
-		force_start=int(oscillation_search_window_begin/framerate)
+		force_start=int(oscillation_search_window_begin*framerate)
 
 	if oscillation_search_window_end=='auto':
 		force_end=len(data)
-	elif (oscillation_search_window_end<0 or oscillation_search_window_end>(len(data)*framerate) or oscillation_search_window_end<=(force_start*framerate)):
+	elif (oscillation_search_window_end<0 or oscillation_search_window_end>(len(data)/framerate) or oscillation_search_window_end<=force_start/framerate):
 		print('The final limit to search for the oscillation ad erase it is out of range (a time in seconds)')
 		print(str(int(len(data)//(2*framerate)))+'s will be used instead')
 		force_end=int(len(data)//(2*framerate))
@@ -2225,7 +2223,7 @@ def clear_oscillation_central2(data,framerate,oscillation_search_window_begin='a
 		print('See http://www.skillbank.co.uk/SignalConversion/rate.htm')
 		exit()
 
-	window = 1	# Previously found that as long as the fft is averaged over at least 4 pixels the peak shape and location does not change
+	#window = 2	# Previously found that as long as the fft is averaged over at least 4 pixels the peak shape and location does not change
 	datasection = data
 
 	if plot_conparison==True:
@@ -2233,36 +2231,40 @@ def clear_oscillation_central2(data,framerate,oscillation_search_window_begin='a
 		# plt.pause(0.01)
 		plt.figure()
 		figure_index = plt.gcf().number
-		data_shape = np.shape(data)
-		poscentred = [[int(data_shape[1]*1/5), int(data_shape[2]*1/5)], [int(data_shape[1]*1/2), int(data_shape[2]*1/5)], [int(data_shape[1]*4/5), int(data_shape[2]*1/5)], [int(data_shape[1]*4/5), int(data_shape[2]*1/2)], [int(data_shape[1]*4/5), int(data_shape[2]*4/5)], [int(data_shape[1]*1/2), int(data_shape[2]*1/2)]]
+		if 1 in which_plot:
+			data_shape = np.shape(data)
+			poscentred = [[int(data_shape[1]*1/5), int(data_shape[2]*1/5)], [int(data_shape[1]*1/2), int(data_shape[2]*1/5)], [int(data_shape[1]*4/5), int(data_shape[2]*1/5)], [int(data_shape[1]*4/5), int(data_shape[2]*1/2)], [int(data_shape[1]*4/5), int(data_shape[2]*4/5)], [int(data_shape[1]*1/2), int(data_shape[2]*1/2)]]
 
-		# spectra_orig = np.fft.fft(data, axis=0)
-		# magnitude=np.sqrt(np.add(np.power(real,2),np.power(imag,2)))
-		# magnitude = 2 * np.abs(spectra_orig) / len(spectra_orig)
-		# phase = np.angle(spectra_orig)
-		# freq = np.fft.fftfreq(len(magnitude), d=1 / framerate)
+			# spectra_orig = np.fft.fft(data, axis=0)
+			# magnitude=np.sqrt(np.add(np.power(real,2),np.power(imag,2)))
+			# magnitude = 2 * np.abs(spectra_orig) / len(spectra_orig)
+			# phase = np.angle(spectra_orig)
+			# freq = np.fft.fftfreq(len(magnitude), d=1 / framerate)
 
-		color = ['m', 'c', 'y', 'b', 'r', 'k', 'g', 'm']
-		for i in range(len(poscentred)):
-			pos = poscentred[i]
-			spectra_orig = np.fft.fft(data[:, pos[0] - window:pos[0] + window, pos[1] - window:pos[1] + window], axis=0)
-			magnitude = 2 * np.abs(spectra_orig) / len(spectra_orig)
-			freq = np.fft.fftfreq(len(magnitude), d=1 / framerate)
-			y = np.mean(magnitude, axis=(-1, -2))
-			# y=magnitude[:,pos[0],pos[1]]
-			y = np.array([y for _, y in sorted(zip(freq, y))])
-			x = np.sort(freq)
-			plt.plot(x, y, color[i], label='original data at the point ' + str(pos))
-		# plt.title()
+			color = ['m', 'c', 'y', 'b', 'r', 'k', 'g', 'm']
+			for i in range(len(poscentred)):
+				pos = poscentred[i]
+				spectra_orig = np.fft.fft(np.mean(data[:, pos[0] - window:pos[0] + window+1, pos[1] - window:pos[1] + window+1],axis=(-1,-2)), axis=0)
+				magnitude = 2 * np.abs(spectra_orig) / len(spectra_orig)
+				freq = np.fft.fftfreq(len(magnitude), d=1 / framerate)
+				# y = np.mean(magnitude, axis=(-1, -2))
+				y = magnitude
+				# y=magnitude[:,pos[0],pos[1]]
+				y = np.array([y for _, y in sorted(zip(freq, y))])
+				x = np.sort(freq)
+				plt.plot(x, y*100, color[i], label='original data at the point ' + str(pos) + ' x100')
+			# plt.title()
 
 
-		plt.title('Amplitued from fast Fourier transform for different groups of ' + str(window * 2) + 'x' + str(
-			window * 2) + ' pixels, framerate ' + str(framerate)+'Hz' )
-		plt.xlabel('Frequency [Hz]')
-		plt.ylabel('Amplitude [au]')
-		plt.grid()
-		plt.semilogy()
-		plt.legend(loc='best',fontsize='x-small')
+			plt.title('Amplitued from fast Fourier transform in the whole time interval\nfor different groups of ' + str(window * 2+1) + 'x' + str(
+				window * 2+1) + ' pixels, framerate %.3gHz' %(framerate) )
+			plt.xlabel('Frequency [Hz]')
+			plt.ylabel('Amplitude [au]')
+			plt.grid()
+			plt.semilogy()
+			plt.legend(loc='best',fontsize='x-small')
+		else:
+			plt.close(figure_index)
 	# plt.show()
 
 
@@ -2282,7 +2284,10 @@ def clear_oscillation_central2(data,framerate,oscillation_search_window_begin='a
 	# I restrict the window over which I search for the oscillation
 	datarestricted = data[force_start:force_end]#
 	len_data_restricted = len(datarestricted)
-	poscentre = [np.shape(data)[1] // 2, np.shape(data)[2] // 2]
+	if force_poscentre == 'auto':
+		poscentre = [np.shape(data)[1] // 2, np.shape(data)[2] // 2]
+	else:
+		poscentre = force_poscentre
 
 	if (oscillation_search_window_begin=='auto' and oscillation_search_window_end=='auto'):
 		while fft_window_move>(len_data_restricted/5):
@@ -2295,14 +2300,25 @@ def clear_oscillation_central2(data,framerate,oscillation_search_window_begin='a
 		else:
 			max_start = int(5*framerate)  # I use 5 seconds of record
 	else:
-		max_start = force_end
+		max_start = len(datarestricted)	# this is actually ineffective, as datarestricted is already limited to force_start:force_end
 
 	if oscillation_search_window_begin == 'auto':
 		min_start = 0
 	else:
-		min_start = force_start
+		# min_start = force_start	# alreay enforced through force_start
+		min_start = 0
 
 	section_frames = max_start - min_start-fft_window_move
+
+	if ROI=='auto':
+		# datarestricted2 = np.mean(datarestricted[:, poscentre[0] -window :poscentre[0] + window+1, poscentre[1] - window:poscentre[1] + window+1],axis=(1,2))
+		datarestricted2 = np.mean(datarestricted[:, poscentre[0] -window :poscentre[0] + window+1, poscentre[1] - window:poscentre[1] + window+1],axis=(-1,-2))
+	else:
+		horizontal_coord = np.arange(np.shape(datarestricted)[2])
+		vertical_coord = np.arange(np.shape(datarestricted)[1])
+		horizontal_coord,vertical_coord = np.meshgrid(horizontal_coord,vertical_coord)
+		select = np.logical_or(np.logical_or(vertical_coord<ROI[0],vertical_coord>ROI[1]),np.logical_or(horizontal_coord<ROI[2],horizontal_coord>ROI[3]))
+		datarestricted2 = np.mean(datarestricted[:, select],axis=(-1))
 
 	record_magnitude = []
 	record_phase = []
@@ -2314,7 +2330,7 @@ def clear_oscillation_central2(data,framerate,oscillation_search_window_begin='a
 
 	for i in range(int(fft_window_move/step)):
 		shift=i*step
-		datasection = datarestricted[min_start:max_start-fft_window_move+shift, poscentre[0] -1 :poscentre[0] + window, poscentre[1] - 1:poscentre[1] + window]
+		datasection = datarestricted2[min_start:max_start-fft_window_move+shift]
 		spectra = np.fft.fft(datasection, axis=0)
 		magnitude = 2 * np.abs(spectra) / len(spectra)
 		record_magnitude.append(magnitude[0:len(magnitude) // 2])
@@ -2322,9 +2338,9 @@ def clear_oscillation_central2(data,framerate,oscillation_search_window_begin='a
 		record_phase.append(phase[0:len(magnitude) // 2])
 		freq = np.fft.fftfreq(len(magnitude), d=1 / framerate)
 		record_freq.append(freq[0:len(magnitude) // 2])
-		magnitude_space_averaged = np.mean(magnitude, axis=(-1, -2))
-		y = np.array(
-			[magnitude_space_averaged for _, magnitude_space_averaged in sorted(zip(freq, magnitude_space_averaged))])
+		# magnitude_space_averaged = np.mean(magnitude, axis=(-1, -2))
+		magnitude_space_averaged = cp.deepcopy(magnitude)
+		y = np.array([magnitude_space_averaged for _, magnitude_space_averaged in sorted(zip(freq, magnitude_space_averaged))])
 		x = np.sort(freq)
 
 		index_min_freq = int(find_nearest_index(x, min_frequency_to_erase))  # I restric the window over which I do the peak search
@@ -2342,7 +2358,7 @@ def clear_oscillation_central2(data,framerate,oscillation_search_window_begin='a
 		# 						 min_dist=(index_max_freq - index_min_freq) // 2)
 		if len(y[index_min_freq:index_max_freq])==0:
 			continue
-		if plot_conparison == True:
+		if plot_conparison == True and (2 in which_plot):
 			plt.figure(figure_index+1)
 			plt.plot(x, y, label='Applied shift of ' + str(shift))
 		temp = int(find_nearest_index(y[index_min_freq:index_max_freq],(y[index_min_freq:index_max_freq]).max()))
@@ -2360,57 +2376,73 @@ def clear_oscillation_central2(data,framerate,oscillation_search_window_begin='a
 	peak_value_record = np.array(peak_value_record)
 	peak_index_record = np.array(peak_index_record)
 	shift_record = np.array(shift_record)
-	if plot_conparison==True:
+	if plot_conparison==True and (2 in which_plot):
 		plt.figure(figure_index+1)
-		plt.title('Amplitude from fast Fourier transform\naveraged in a wondow of ' + str(window+1) + ' pixels around ' + str(
-			poscentre) + ', framerate %.3gHz' %(framerate))
+		# plt.title('Amplitude from fast Fourier transform from %.3gs to %.3gs\naveraged in a window of ' %(force_start/framerate,(force_start+max_start)/framerate)+ str(window*2+1) + ' pixels around ' + str(
+		# 	poscentre) + ', framerate %.3gHz' %(framerate))
+		if ROI=='auto':
+			plt.title('Amplitude from fast Fourier transform from %.3gs to %.3gs\naveraged in a window of ' %(force_start/framerate,(force_start+max_start)/framerate)+ str([window * 2+1,window * 2+1]) + ' pixels around ' + str(poscentre) + ', framerate %.3gHz' %(framerate))
+		else:
+			plt.title('Amplitude from fast Fourier transform from %.3gs to %.3gs\naveraged ouside the ROI ' %(force_start/framerate,(force_start+max_start)/framerate)+ str(ROI) + ' pixels around ' + str(ROI) + ', framerate %.3gHz' %(framerate))
 		plt.xlabel('Frequency [Hz]')
 		plt.ylabel('Amplitude [au]')
 		plt.grid()
 		plt.semilogy()
-		plt.xlim(left=0,right=max_frequency_to_erase*1.2)
+		plt.xlim(left=min_frequency_to_erase*0.8,right=max_frequency_to_erase*1.2)
+		plt.ylim(bottom=1e-3)
 		plt.legend(loc='best',fontsize='x-small')
 
 
-
-	try:	# considering that the variation of the peak value of FFT is like a wave this methid seems more fair.
-		shift_peaks = shift_record[1:-1][np.logical_and((peak_value_record[1:-1]-peak_value_record[:-2])>=0,(peak_value_record[1:-1]-peak_value_record[2:])>=0)]
-		shift_through = shift_record[1:-1][np.logical_and((peak_value_record[1:-1]-peak_value_record[:-2])<=0,(peak_value_record[1:-1]-peak_value_record[2:])<=0)]
-		while np.diff(shift_peaks).min()<=2:	# to avoid detection of adiacent "fake" peak or through
-			target = np.diff(shift_peaks).argmin()
-			shift_through = shift_through[np.logical_not(np.logical_and(shift_through>shift_peaks[target],shift_through<shift_peaks[target+1]))]
-			shift_peaks = np.array(shift_peaks[:target].tolist() + [np.mean(shift_peaks[target:target+2])] + shift_peaks[target+2:].tolist())
-		while np.diff(shift_through).min()<=2:	# to avoid detection of adiacent "fake" peak or through
-			target = np.diff(shift_through).argmin()
-			shift_peaks = shift_peaks[np.logical_not(np.logical_and(shift_peaks>shift_through[target],shift_peaks<shift_through[target+1]))]
-			shift_through = np.array(shift_through[:target].tolist() + [np.mean(shift_through[target:target+2])] + shift_through[target+2:].tolist())
-		shift_roots = np.sort(np.append(shift_peaks,shift_through,0))
-		fit = np.polyfit(np.arange(len(shift_roots)),shift_roots,1)
-		shift = int(round(np.polyval(fit,[0,1])[np.abs(np.polyval(fit,[0,1])-shift_peaks[0]).argmin()]))
-		if peak_value_record[0]>peak_value_record[np.abs(shift_record-shift).argmin()]:
-			shift = shift_record[0]
-		index = shift//step
-		gaussian = lambda x,A,sig,x0,q : A*np.exp(-0.5*(((x-x0)/sig)**2)) + q
-		bds = [[0,0,peak_freq_record.min(),-np.inf],[np.inf,np.inf,peak_freq_record.max(),peak_value_record.min()]]
-		guess = [peak_value_record.max()-peak_value_record.min(),0.3,peak_freq_record[peak_value_record.argmax()],peak_value_record.min()]
-		fit = curve_fit(gaussian, peak_freq_record,peak_value_record, p0=guess, bounds = bds, maxfev=100000000)
-		freq_to_erase = fit[0][2]
-		if plot_conparison==True:
-			plt.figure(figure_index+1)
-			plt.plot(np.sort(peak_freq_record),gaussian(np.sort(peak_freq_record),*fit[0]),':k',label='fit')
-			plt.figure(figure_index+2)
-			plt.plot(shift_record,peak_value_record)
-			plt.plot([shift]*2,[peak_value_record.min(),peak_value_record.max()],'--k')
-			plt.title('Amplitude from fast Fourier transform based on window shift\naveraged in a wondow of ' + str(window+1) + ' pixels around ' + str(
-				poscentre) + ', framerate %.3gHz' %(framerate))
-			plt.xlabel('Shift [au]')
-			plt.ylabel('Amplitude [au]')
-			plt.grid()
-			plt.semilogy()
-		# fit = np.polyfit(peak_freq_record,peak_value_record,2)
-		# freq_to_erase = -fit[1]/(fit[0]*2)
-	except:	# I find the highest peak and that will be the one I use
-		print('search of the best interval shift via the linear peak method failed')
+	if False:	# this method fails if the oscillation is actually composed of 2 separate oscillations very close to each other. it tries to remove a frequency in between that does not cause any problem. better to just not do it
+		try:	# considering that the variation of the peak value of FFT is like a wave this methid seems more fair.
+			shift_peaks = shift_record[1:-1][np.logical_and((peak_value_record[1:-1]-peak_value_record[:-2])>=0,(peak_value_record[1:-1]-peak_value_record[2:])>=0)]
+			shift_through = shift_record[1:-1][np.logical_and((peak_value_record[1:-1]-peak_value_record[:-2])<=0,(peak_value_record[1:-1]-peak_value_record[2:])<=0)]
+			while np.diff(shift_peaks).min()<=2:	# to avoid detection of adiacent "fake" peak or through
+				target = np.diff(shift_peaks).argmin()
+				shift_through = shift_through[np.logical_not(np.logical_and(shift_through>shift_peaks[target],shift_through<shift_peaks[target+1]))]
+				shift_peaks = np.array(shift_peaks[:target].tolist() + [np.mean(shift_peaks[target:target+2])] + shift_peaks[target+2:].tolist())
+			while np.diff(shift_through).min()<=2:	# to avoid detection of adiacent "fake" peak or through
+				target = np.diff(shift_through).argmin()
+				shift_peaks = shift_peaks[np.logical_not(np.logical_and(shift_peaks>shift_through[target],shift_peaks<shift_through[target+1]))]
+				shift_through = np.array(shift_through[:target].tolist() + [np.mean(shift_through[target:target+2])] + shift_through[target+2:].tolist())
+			shift_roots = np.sort(np.append(shift_peaks,shift_through,0))
+			fit = np.polyfit(np.arange(len(shift_roots)),shift_roots,1)
+			shift = int(round(np.polyval(fit,[0,1])[np.abs(np.polyval(fit,[0,1])-shift_peaks[0]).argmin()]))
+			if peak_value_record[0]>peak_value_record[np.abs(shift_record-shift).argmin()]:
+				shift = shift_record[0]
+			index = shift//step
+			gaussian = lambda x,A,sig,x0,q : A*np.exp(-0.5*(((x-x0)/sig)**2)) + q
+			bds = [[0,0,peak_freq_record.min(),-np.inf],[np.inf,np.inf,peak_freq_record.max(),peak_value_record.min()]]
+			guess = [peak_value_record.max()-peak_value_record.min(),0.3,peak_freq_record[peak_value_record.argmax()],peak_value_record.min()]
+			fit = curve_fit(gaussian, peak_freq_record,peak_value_record, p0=guess, bounds = bds, maxfev=100000000)
+			freq_to_erase = fit[0][2]
+			if plot_conparison==True:
+				if 2 in which_plot:
+					plt.figure(figure_index+1)
+					plt.plot(np.linspace(peak_freq_record.min(),peak_freq_record.max()),gaussian(np.linspace(peak_freq_record.min(),peak_freq_record.max()),*fit[0]),':k',label='fit')
+				if 3 in which_plot:
+					plt.figure(figure_index+2)
+					plt.plot(shift_record,peak_value_record)
+					plt.plot([shift]*2,[peak_value_record.min(),peak_value_record.max()],'--k')
+					# plt.title('Amplitude from fast Fourier transform based on window shift\naveraged in a wondow of ' + str(window+1) + ' pixels around ' + str(
+					# 	poscentre) + ', framerate %.3gHz' %(framerate))
+					if ROI=='auto':
+						plt.title('Amplitude from fast Fourier transform based on window shift\naveraged in a window of ' + str([window * 2+1,window * 2+1]) + ' pixels around ' + str(poscentre) + ', framerate %.3gHz' %(framerate))
+					else:
+						plt.title('Amplitude from fast Fourier transform based on window shift\naveraged ouside the ROI ' + str(ROI) + ' pixels around ' + str(ROI) + ', framerate %.3gHz' %(framerate))
+					plt.xlabel('Shift [au]')
+					plt.ylabel('Amplitude [au]')
+					plt.grid()
+					plt.grid()
+					plt.semilogy()
+			# fit = np.polyfit(peak_freq_record,peak_value_record,2)
+			# freq_to_erase = -fit[1]/(fit[0]*2)
+		except:	# I find the highest peak and that will be the one I use
+			print('search of the best interval shift via the linear peak method failed')
+			index = int(find_nearest_index(peak_value_record, max(peak_value_record)+1))
+			shift = index * step
+			freq_to_erase = peak_freq_record[index]
+	else:
 		index = int(find_nearest_index(peak_value_record, max(peak_value_record)+1))
 		shift = index * step
 		freq_to_erase = peak_freq_record[index]
@@ -2421,23 +2453,54 @@ def clear_oscillation_central2(data,framerate,oscillation_search_window_begin='a
 	phase = np.angle(spectra)
 	freq = np.fft.fftfreq(len(magnitude), d=1 / framerate)
 	freq_to_erase_index = int(find_nearest_index(freq, freq_to_erase))
-	if plot_conparison==True:
+	if plot_conparison==True and (2 in which_plot):
 		plt.figure(figure_index+1)
 		plt.plot([freq_to_erase]*2,[peak_value_record.min(),peak_value_record.max()],':k')
 		plt.plot([freq[freq_to_erase_index]]*2,[peak_value_record.min(),peak_value_record.max()],'--k')
 		plt.ylim(top=peak_value_record.max()*2)
-	framenumber = np.linspace(0, len(data) - 1, len(data)) - min_start
+	framenumber = np.linspace(0, len(data) - 1, len(data)) -force_start- min_start
 	data2 = data - np.multiply(magnitude[freq_to_erase_index], np.cos(np.repeat(np.expand_dims(phase[freq_to_erase_index], axis=0), len(data), axis=0) + np.repeat(np.expand_dims(np.repeat(np.expand_dims(2 * np.pi * freq_to_erase * framenumber / framerate, axis=-1),np.shape(data)[1], axis=-1), axis=-1), np.shape(data)[2], axis=-1)))
 
-	# section only for stats
-	datasection = data[:, poscentre[0] - 1:poscentre[0] + window, poscentre[1] - 1:poscentre[1] + window]
+
+	# added to visualize the goodness of the result
+	if ROI=='auto':
+		datasection = np.mean(data2[force_start:force_end][min_start:max_start-fft_window_move+shift][:, poscentre[0] -window :poscentre[0] + window+1, poscentre[1] - window:poscentre[1] + window+1],axis=(-1,-2))
+	else:
+		horizontal_coord = np.arange(np.shape(datarestricted)[2])
+		vertical_coord = np.arange(np.shape(datarestricted)[1])
+		horizontal_coord,vertical_coord = np.meshgrid(horizontal_coord,vertical_coord)
+		select = np.logical_or(np.logical_or(vertical_coord<ROI[0],vertical_coord>ROI[1]),np.logical_or(horizontal_coord<ROI[2],horizontal_coord>ROI[3]))
+		datasection = np.mean(data2[force_start:force_end][min_start:max_start-fft_window_move+shift][:, select],axis=(-1))
+	# datasection = data2[force_start:force_end][min_start:max_start-fft_window_move+shift, poscentre[0] -1 :poscentre[0] + window+1, poscentre[1] - 1:poscentre[1] + window+1]
 	spectra = np.fft.fft(datasection, axis=0)
-	magnitude = 2 * np.abs(spectra) / len(spectra)
+	magnitude_space_averaged = 2 * np.abs(spectra) / len(spectra)
+	freq = np.fft.fftfreq(len(magnitude), d=1 / framerate)
+	# magnitude_space_averaged = np.mean(magnitude, axis=(-1, -2))
+	y = np.array([magnitude_space_averaged for _, magnitude_space_averaged in sorted(zip(freq, magnitude_space_averaged))])
+	x = np.sort(freq)
+	if plot_conparison==True and (2 in which_plot):
+		plt.figure(figure_index+1)
+		plt.plot(x, y,'--k',label='subtracted')
+		plt.legend(loc='best',fontsize='x-small')
+		# plt.grid()
+
+
+	# section only for stats
+	# datasection = data[:, poscentre[0] - 1:poscentre[0] + window, poscentre[1] - 1:poscentre[1] + window]
+	if ROI=='auto':
+		datasection = np.mean(data[:, poscentre[0] -window :poscentre[0] + window+1, poscentre[1] - window:poscentre[1] + window+1],axis=(-1,-2))
+	else:
+		horizontal_coord = np.arange(np.shape(datarestricted)[2])
+		vertical_coord = np.arange(np.shape(datarestricted)[1])
+		horizontal_coord,vertical_coord = np.meshgrid(horizontal_coord,vertical_coord)
+		select = np.logical_or(np.logical_or(vertical_coord<ROI[0],vertical_coord>ROI[1]),np.logical_or(horizontal_coord<ROI[2],horizontal_coord>ROI[3]))
+		datasection = np.mean(data[:, select],axis=(-1))
+	spectra = np.fft.fft(datasection, axis=0)
+	magnitude_space_averaged = 2 * np.abs(spectra) / len(spectra)
 	phase = np.angle(spectra)
 	freq = np.fft.fftfreq(len(magnitude), d=1 / framerate)
-	magnitude_space_averaged = np.mean(magnitude, axis=(-1, -2))
-	y = np.array(
-		[magnitude_space_averaged for _, magnitude_space_averaged in sorted(zip(freq, magnitude_space_averaged))])
+	# magnitude_space_averaged = np.mean(magnitude, axis=(-1, -2))
+	y = np.array([magnitude_space_averaged for _, magnitude_space_averaged in sorted(zip(freq, magnitude_space_averaged))])
 	x = np.sort(freq)
 	index_min_freq = int(find_nearest_index(x, min_frequency_to_erase))  # I restric the window over which I do the peak search
 	index_max_freq = int(find_nearest_index(x, max_frequency_to_erase))
@@ -2447,50 +2510,63 @@ def clear_oscillation_central2(data,framerate,oscillation_search_window_begin='a
 	index_max_freq_n = int(find_nearest_index(x, -max_frequency_to_erase))
 	index_0 = int(find_nearest_index(x, 0))
 	noise = (np.array(y[3:index_max_freq_n].tolist() + y[index_min_freq_n:index_n7].tolist() + y[index_7:index_min_freq].tolist() + y[index_max_freq:-3].tolist())).max()
-	temp = int(find_nearest_index(y[index_min_freq:index_max_freq], (y[index_min_freq:index_max_freq]).max()))
-	peak_index = index_min_freq + int(temp)
+	# temp = int(find_nearest_index(y[index_min_freq:index_max_freq], (y[index_min_freq:index_max_freq]).max()))
+	# peak_index = index_min_freq + int(temp)
+	peak_index = index_min_freq + y[index_min_freq:index_max_freq].argmax()
 	peak_value_pre_filter = float(y[peak_index])
 
-	datasection = data2[:, poscentre[0] - 1:poscentre[0] + window, poscentre[1] - 1:poscentre[1] + window]
+	# datasection = data2[:, poscentre[0] - 1:poscentre[0] + window, poscentre[1] - 1:poscentre[1] + window]
+	if ROI=='auto':
+		datasection = np.mean(data2[:, poscentre[0] -window :poscentre[0] + window+1, poscentre[1] - window:poscentre[1] + window+1],axis=(-1,-2))
+	else:
+		horizontal_coord = np.arange(np.shape(datarestricted)[2])
+		vertical_coord = np.arange(np.shape(datarestricted)[1])
+		horizontal_coord,vertical_coord = np.meshgrid(horizontal_coord,vertical_coord)
+		select = np.logical_or(np.logical_or(vertical_coord<ROI[0],vertical_coord>ROI[1]),np.logical_or(horizontal_coord<ROI[2],horizontal_coord>ROI[3]))
+		datasection = np.mean(data2[:, select],axis=(-1))
 	spectra = np.fft.fft(datasection, axis=0)
-	magnitude = 2 * np.abs(spectra) / len(spectra)
+	magnitude_space_averaged = 2 * np.abs(spectra) / len(spectra)
 	phase = np.angle(spectra)
 	freq = np.fft.fftfreq(len(magnitude), d=1 / framerate)
-	magnitude_space_averaged = np.mean(magnitude, axis=(-1, -2))
-	y = np.array(
-		[magnitude_space_averaged for _, magnitude_space_averaged in sorted(zip(freq, magnitude_space_averaged))])
+	# magnitude_space_averaged = np.mean(magnitude, axis=(-1, -2))
+	y = np.array([magnitude_space_averaged for _, magnitude_space_averaged in sorted(zip(freq, magnitude_space_averaged))])
 	x = np.sort(freq)
-	temp = int(find_nearest_index(y[index_min_freq:index_max_freq], (y[index_min_freq:index_max_freq]).max()))
-	peak_index = index_min_freq + int(temp)
+	# temp = int(find_nearest_index(y[index_min_freq:index_max_freq], (y[index_min_freq:index_max_freq]).max()))
+	# peak_index = index_min_freq + int(temp)
+	peak_index = index_min_freq + y[index_min_freq:index_max_freq].argmax()
 	peak_value_post_filter = float(y[peak_index])
 
 
 	if plot_conparison==True:
-		plt.figure(figure_index)
-		datasection2 = data2
-		# spectra = np.fft.fft(datasection2, axis=0)
-		# # magnitude=np.sqrt(np.add(np.power(real,2),np.power(imag,2)))
-		# magnitude2 = 2 * np.abs(spectra) / len(spectra)
-		# phase2 = np.angle(spectra)
-		# freq = np.fft.fftfreq(len(magnitude2), d=1 / framerate)
-		for i in range(len(poscentred)):
-			pos = poscentred[i]
-			spectra = np.fft.fft(datasection2[:, pos[0] - window:pos[0] + window, pos[1] - window:pos[1] + window], axis=0)
-			magnitude2 = 2 * np.abs(spectra) / len(spectra)
-			freq = np.fft.fftfreq(len(magnitude2), d=1 / framerate)
-			y = np.mean(magnitude2, axis=(-1, -2))
-			# y=magnitude[:,pos[0],pos[1]]
-			y = np.array([y for _, y in sorted(zip(freq, y))])
-			x = np.sort(freq)
-			plt.plot(x, y, color[i] + '--',
-					 label='data at the point ' + str(pos) + ', ' + str(np.around(freq_to_erase,decimals=2)) + 'Hz oscillation substracted')
-		# plt.title()
+		if 1 in which_plot:
+			plt.figure(figure_index)
+			datasection2 = data2
+			# spectra = np.fft.fft(datasection2, axis=0)
+			# # magnitude=np.sqrt(np.add(np.power(real,2),np.power(imag,2)))
+			# magnitude2 = 2 * np.abs(spectra) / len(spectra)
+			# phase2 = np.angle(spectra)
+			# freq = np.fft.fftfreq(len(magnitude2), d=1 / framerate)
+			for i in range(len(poscentred)):
+				pos = poscentred[i]
+				spectra = np.fft.fft(np.mean(datasection2[:, pos[0] - window:pos[0] + window, pos[1] - window:pos[1] + window],axis=(-1,-2)), axis=0)
+				magnitude2 = 2 * np.abs(spectra) / len(spectra)
+				freq = np.fft.fftfreq(len(magnitude2), d=1 / framerate)
+				# y = np.mean(magnitude2, axis=(-1, -2))
+				y = magnitude2
+				# y=magnitude[:,pos[0],pos[1]]
+				y = np.array([y for _, y in sorted(zip(freq, y))])
+				x = np.sort(freq)
+				plt.plot(x, y, color[i] + '--',label='data at the point ' + str(pos) + ', ' + str(np.around(freq_to_erase,decimals=2)) + 'Hz oscillation substracted')
+				plt.axvline(x=freq_to_erase,color='k',linestyle=':')
+				plt.axvline(x=freq[np.abs(freq-freq_to_erase).argmin()],color='k',linestyle='--')
+			# plt.title()
 
 
-		plt.grid()
-		plt.semilogy()
-		plt.xlim(left=0)
-		plt.legend(loc='best',fontsize='small')
+			# plt.grid()
+			plt.semilogy()
+			plt.xlim(left=0)
+			plt.ylim(top=y[np.logical_and(x>min_frequency_to_erase,x<max_frequency_to_erase)].max()*2e3)
+			plt.legend(loc='best',fontsize='small')
 		plt.pause(0.0001)
 
 
@@ -2499,12 +2575,203 @@ def clear_oscillation_central2(data,framerate,oscillation_search_window_begin='a
 	print('stats of the oscillation removal')
 	print('with window of size '+str(np.around(section_frames/framerate,decimals=5))+'s of '+str(len(data)/framerate)+'s of record')
 	print('found oscillation of frequency '+str(freq_to_erase)+'Hz')
-	print('On the foil centre oscillation magnitude reduced from '+str(peak_value_pre_filter)+'[au] to '+str(peak_value_post_filter)+'[au] \nwith an approximate maximum noise level of '+str(noise)+'[au]')
+	print('On the ROI oscillation magnitude reduced from '+str(peak_value_pre_filter)+'[au] to '+str(peak_value_post_filter)+'[au] \nwith an approximate maximum noise level of '+str(noise)+'[au]')
 
 	return np.array([data2])
 
 
 
+
+###################################################################################################
+
+def clear_oscillation_central3(data,time,framerate,oscillation_search_window_begin=6,oscillation_search_window_end=2.5,min_frequency_to_erase=20,max_frequency_to_erase=34,plot_conparison=False,which_plot=[1,2,3],ROI='auto',window=2,force_poscentre='auto'):
+
+	# Created 17/06/2021
+	# I try a different approach.
+	# I find the oscillation acress the whole foil and subtract it from the whole record without looking at it pixel by pixel
+
+	plt.figure()
+	full_average = np.mean(data[0],axis=(-1,-2))
+	full_spectra = np.fft.fft(full_average)
+	full_magnitude = 2 * np.abs(full_spectra) / len(full_spectra)
+	full_freq = np.fft.fftfreq(len(full_magnitude), d=1 / framerate)
+	plt.plot(full_freq,full_magnitude,label='full')
+	after_pulse_average = np.mean(data[0][int(oscillation_search_window_begin*framerate):],axis=(-1,-2))
+	after_pulse_spectra = np.fft.fft(after_pulse_average)
+	after_pulse_magnitude = 2 * np.abs(after_pulse_spectra) / len(full_spectra)
+	after_pulse_freq = np.fft.fftfreq(len(after_pulse_magnitude), d=1 / framerate)
+	plt.plot(after_pulse_freq,after_pulse_magnitude,label='after pulse')
+	plt.legend(loc='best',fontsize='x-small')
+	plt.xlabel('Frequency [Hz]')
+	plt.ylabel('Amplitude [au]')
+	plt.grid()
+	plt.semilogy()
+	plt.pause(0.01)
+
+	from pynfft import NFFT, Solver
+	time_cropped = time[np.logical_or(time<oscillation_search_window_end,time>oscillation_search_window_begin)]
+	temp1 = data[0][time<oscillation_search_window_end]
+	temp1 = np.mean(temp1,axis=(-1,-2))
+	# temp1 -= np.mean(temp1)
+	temp2 = data[0][time>oscillation_search_window_begin]
+	temp2 = np.mean(temp2,axis=(-1,-2))
+	# temp2 -= np.mean(temp2)
+	data_cropped = np.array(temp1.tolist() + temp2.tolist())
+	# data_cropped = np.mean(data[0],axis=(1,2))
+	data_cropped -= generic_filter(data_cropped,np.mean,size=[int(framerate/30*2)])
+	plt.figure()
+	plt.plot(time_cropped,data_cropped)
+	plt.pause(0.01)
+
+	temp1 = data[0][time<oscillation_search_window_end]
+	temp1 = np.mean(temp1,axis=(-1,-2))
+	temp1 -= generic_filter(temp1,np.nanmean,size=[int(framerate/min_frequency_to_erase*10)])
+	temp1 -= np.mean(temp1)
+	temp2 = data[0][time>oscillation_search_window_begin]
+	temp2 = np.mean(temp2,axis=(-1,-2))
+	temp2 -= generic_filter(temp2,np.nanmean,size=[int(framerate/min_frequency_to_erase*10)])
+	temp2 -= np.mean(temp2)
+	data_cropped = np.array(temp1.tolist() + temp2.tolist())
+	# plt.figure()
+	plt.plot(time_cropped,data_cropped)
+	plt.pause(0.01)
+
+	M=len(data_cropped)
+	N=M//2
+	f = np.empty(M, dtype=np.complex128)
+	f_hat = np.empty(N, dtype=np.complex128)
+
+
+	if True:	# even if simple this seems to wiork well
+		this_nfft = NFFT(N=N, M=M)
+		this_nfft.x = (time_cropped/time_cropped.max() - 0.5)
+		this_nfft.precompute()
+		this_nfft.f = data_cropped
+		ret2=this_nfft.adjoint()
+		magnitude=2*np.abs(ret2)/len(ret2)
+		freq = np.arange(-N/2,+N/2,1)/time_cropped.max()
+		select = np.logical_and(magnitude>=magnitude.max(),freq>=0)
+		# select = magnitude>=magnitude.max()
+		peak_freq = freq[select]
+		peak_angle = np.angle(ret2[select])
+		plt.figure()
+		plt.plot(np.abs(freq),magnitude)
+		plt.plot(np.abs(freq)[select],magnitude[select],'+')
+		plt.axvline(x=peak_freq,color='k',linestyle='--')
+		plt.pause(0.01)
+		angle = np.angle(ret2)
+		plt.figure()
+		plt.plot(freq,angle)
+		plt.plot(freq[select],angle[select],'+')
+		plt.pause(0.01)
+
+		ret2[abs(freq)<20] = 0
+		check_nfft = NFFT(N=N, M=M)
+		check_nfft.x = (time_cropped/time_cropped.max() - 0.5)
+		check_nfft.precompute()
+		check_nfft.f_hat = ret2
+		f=check_nfft.trafo()
+
+		plt.figure()
+		plt.plot((time_cropped/time_cropped.max() - 0.5),data_cropped)
+		plt.plot((time_cropped/time_cropped.max() - 0.5),f*data_cropped.max()/f.max(),'--')
+		plt.pause(0.01)
+		plt.figure()
+		plt.plot((time_cropped/time_cropped.max() - 0.5),data_cropped)
+		plt.plot((time_cropped/time_cropped.max() - 0.5),f,'--')
+		plt.pause(0.01)
+
+		# ret2[freq<0] = 0
+		# ret2[abs(freq)<29] = 0
+		# ret2[abs(freq)>45] = 0
+		ret2[::2]=0
+		# ret2[np.logical_not(select)] = 0
+		check_nfft = NFFT(N=N, M=len(time))
+		check_nfft.x = (time/time.max() - 0.5)
+		check_nfft.precompute()
+		check_nfft.f_hat = ret2
+		f=check_nfft.trafo()
+		plt.figure()
+		plt.plot((time_cropped/time_cropped.max() - 0.5),data_cropped)
+		plt.plot((time/time.max() - 0.5),f*data_cropped.max()/f.max(),'--')
+		plt.pause(0.01)
+
+		def fun_cos(x,a,f,p):
+			print([a,f,p])
+			return a*np.cos(p+2*np.pi*x*f)
+
+		for value in np.linspace(29,30,num=10):
+			guess = [1,np.abs(peak_freq),peak_angle]
+			# bds = [[0.5,0,-np.pi],[np.inf,np.inf,np.pi]]
+			bds = [[1,28,-np.inf],[np.inf,32,np.inf]]
+			x_scale = [0.1,30,0.1]
+			fit = curve_fit(fun_cos,time_cropped,data_cropped,p0=guess,bounds=bds,ftol=1e-13,xtol=1e-13,verbose=2)
+			print(value)
+			print(fit)
+		plt.figure()
+		plt.plot(time_cropped,data_cropped)
+		temp = fun_cos(time,*fit[0])
+		plt.plot(time,temp,'--')
+		temp = fun_cos(time_cropped,*fit[0])
+		plt.plot(time_cropped,data_cropped-temp)
+		plt.pause(0.01)
+
+
+		# freq = np.fft.fftfreq(len(magnitude), d=1 / framerate)
+		# select = np.logical_and(magnitude>0.1,freq>=0)
+		# plt.figure()
+		# plt.plot(freq,magnitude)
+		# plt.plot(freq[select],magnitude[select],'+')
+		# plt.pause(0.01)
+	elif False:	# the iterative process seems to diverge
+		this_solver = Solver(this_nfft)
+		this_solver.y = data_cropped
+		this_solver.f_hat_iter = ret2
+		this_solver.before_loop()
+		while not np.all(this_solver.r_iter < 1e-2):
+			this_solver.loop_one_step()
+		magnitude=2*np.abs(this_solver.f_hat_iter)/len(this_solver.f_hat_iter)
+		plt.figure()
+		plt.plot(np.abs(np.arange(-N/2,+N/2,1)),magnitude)
+		plt.pause(0.01)
+		angle = np.angle(this_solver.f_hat_iter)
+		plt.figure()
+		plt.plot(np.abs(np.arange(-N/2,+N/2,1)),angle)
+		plt.plot(np.abs(np.arange(-N/2,+N/2,1)),magnitude>np.sort(magnitude)[-10],anglemagnitude>np.sort(magnitude)[-10],'+')
+		magnitude>np.sort(magnitude)[-10]
+		plt.pause(0.01)
+
+	data2 = cp.deepcopy(data[0].T)
+	for i_freq,freq_ in enumerate(freq):
+		if select[i_freq]==True:
+			# break
+			data2 -= magnitude[i_freq]*np.cos(angle[i_freq] + 2 * np.pi * freq_ * time)
+	data2 = data2.T
+
+	neg_nfft = NFFT(N=N, M=np.shape(data)[1])
+	neg_nfft.x = time/time.max() - 0.5
+	neg_nfft.precompute()
+	neg_nfft.f_hat = ret2
+	f = neg_nfft.trafo()
+
+	plt.figure()
+	plt.plot(time,np.mean(data[0],axis=(-1,-2)))
+	plt.plot(time,np.mean(data2,axis=(-1,-2)),'--')
+	plt.pause(0.01)
+
+
+	cos_fun = lambda x,a,x0,p0,x1,p1,x2,p2: a*np.cos(x0 + 2*np.pi*p0*x)*np.cos(x1 + 2*np.pi*p1*x)*np.cos(x2 + 2*np.pi*p2*x)
+	bds = [[1,-np.pi,24,-np.pi,0,-np.pi,0],[np.inf,np.pi,34,np.pi,5,np.pi,15]]
+	guess=[1.5,0,29,0,1,]
+	x_scale = [1,0.1,0.1,0.1,0.1]
+	fit = curve_fit(cos_fun, time_cropped, data_cropped, p0=guess,bounds=bds,x_scale=x_scale,maxfev=int(1e6),verbose=2,ftol=1e-15)
+	plt.plot(time,cos_fun(time,*fit[0]))
+	plt.figure()
+	plt.plot(time,np.mean(data[0],axis=(-1,-2)))
+	plt.plot(time,np.mean(data[0],axis=(-1,-2))-cos_fun(time,*fit[0]),'--')
+	plt.pause(0.01)
+
+	# path abandoned
 
 ###################################################################################################
 
@@ -3398,16 +3665,26 @@ def ats_to_dict(full_path,digital_level_bytes=4,header_marker = '4949'):
 			FrameRate = header('FrameRate')
 			ExternalTrigger = header('ExternalTrigger')
 			NUCpresetUsed = header('NUCpresetUsed')
-		print(str(present_header_marker_position)+' / '+str(next_header_marker_position))
+		# print(str(present_header_marker_position)+' / '+str(next_header_marker_position))
 		# print(value)
 	data = np.array(data)
+	data_median = int(np.median(data))
+	if np.abs(data-data_median).max()<2**8/2-1:
+		data_minus_median = (data-data_median).astype(np.int8)
+	elif np.abs(data-data_median).max()<2**16/2-1:
+		data_minus_median = (data-data_median).astype(np.int16)
+	elif np.abs(data-data_median).max()<2**32/2-1:
+		data_minus_median = (data-data_median).astype(np.int32)
 	digitizer_ID = np.array(digitizer_ID)
 	time_of_measurement = np.array(time_of_measurement)
 	frame_counter = np.array(frame_counter)
 	DetectorTemp = np.array(DetectorTemp)
 	SensorTemp_0 = np.array(SensorTemp_0)
 	SensorTemp_3 = np.array(SensorTemp_3)
-	out = dict([('data',data)])
+	out = dict([])
+	# out['data'] = data
+	out['data_median'] = data_median
+	out['data'] = data_minus_median	# I do this to save memory, also because the change in counts in a single recording is always small
 	out['digitizer_ID']=digitizer_ID
 	out['time_of_measurement']=time_of_measurement
 	out['IntegrationTime']=IntegrationTime
@@ -3471,6 +3748,13 @@ def ptw_to_dict(full_path):
 		SensorTemp_3.append(frame_header.h_sensorTemp4)
 		AtmosphereTemp.append(frame_header.h_AtmosphereTemp)	# additional data not present in the .ats format
 	data = np.array(data)
+	data_median = int(np.median(data))
+	if np.abs(data-data_median).max()<2**8/2-1:
+		data_minus_median = (data-data_median).astype(np.int8)
+	elif np.abs(data-data_median).max()<2**16/2-1:
+		data_minus_median = (data-data_median).astype(np.int16)
+	elif np.abs(data-data_median).max()<2**32/2-1:
+		data_minus_median = (data-data_median).astype(np.int32)
 	digitizer_ID = np.array(digitizer_ID)
 	time_of_measurement = np.array(time_of_measurement)
 	frame_counter = np.array(frame_counter)
@@ -3478,7 +3762,10 @@ def ptw_to_dict(full_path):
 	SensorTemp_0 = np.array(SensorTemp_0)
 	SensorTemp_3 = np.array(SensorTemp_3)
 	AtmosphereTemp = np.array(AtmosphereTemp)
-	out = dict([('data',data)])
+	out = dict([])
+	# out['data'] = data
+	out['data_median'] = data_median
+	out['data'] = data_minus_median	# I do this to save memory, also because the change in counts in a single recording is always small
 	out['digitizer_ID']=digitizer_ID
 	out['time_of_measurement']=time_of_measurement
 	out['IntegrationTime']=IntegrationTime
@@ -3503,7 +3790,13 @@ def ptw_to_dict(full_path):
 	return out
 
 def separate_data_with_digitizer(full_saved_file_dict):
-	data = full_saved_file_dict['data']
+	try:
+		data_median = full_saved_file_dict['data_median']
+		data = full_saved_file_dict['data']
+		data = data.astype(np.int)
+		data += data_median
+	except:
+		data = full_saved_file_dict['data']
 	digitizer_ID = full_saved_file_dict['digitizer_ID']
 	uniques_digitizer_ID = np.sort(np.unique(digitizer_ID))
 	data_per_digitizer = []
@@ -3714,7 +4007,7 @@ def count_to_temp_poly_multi_digitizer(counts,params,errparams,digitizer_ID,numb
 			exit()
 		return count_to_temp_poly_multi_digitizer_stationary(counts,counts_std,params,errparams,digitizer_ID,number_cpu_available,n,parallelised=parallelised,report=report)
 	else:
-		if (len(np.shape(reference_background))<2 or len(np.shape(reference_background_std))<2):
+		if (len(np.shape(reference_background))<2 or len(np.shape(reference_background_std))<2) and False:	# this is no longer necessary in count_to_temp_poly_multi_digitizer_time_dependent
 			print("you didn't supply the appropriate background counts, requested "+str(np.shape(counts)[-2:]))
 			exit()
 		return count_to_temp_poly_multi_digitizer_time_dependent(counts,params,errparams,reference_background,reference_background_std,reference_background_flat,digitizer_ID,number_cpu_available,n,parallelised=parallelised,report=report)

@@ -1470,3 +1470,19 @@ mdsnos_sxd2H = [69665, 69666, 69667, 69668, 69669, 69670, 69671, 69672, 69673, 6
 #
 # MAST simulation that compared best against experimental data
 # 39625
+
+
+MASTU_shots_timing = dict([])
+MASTU_shots_timing['44115'] = dict([('pulse_start',0.5)])	# s
+MASTU_shots_timing['44116'] = dict([('pulse_start',0.5)])
+MASTU_shots_timing['44117'] = dict([('pulse_start',1.5)])
+MASTU_shots_timing['44118'] = dict([('pulse_start',1.5)])
+MASTU_shots_timing['44119'] = dict([('pulse_start',1.5)])
+MASTU_shots_timing['44120'] = dict([('pulse_start',2.0)])
+MASTU_shots_timing['44121'] = dict([('pulse_start',2.0)])
+MASTU_shots_timing['44122'] = dict([('pulse_start',2.0)])
+MASTU_shots_timing['44123'] = dict([('pulse_start',2.0)])
+MASTU_shots_timing['44124'] = dict([('pulse_start',2.0)])
+MASTU_shots_timing['44125'] = dict([('pulse_start',2.0)])
+MASTU_shots_timing['44126'] = dict([('pulse_start',2.0)])
+MASTU_shots_timing['44127'] = dict([('pulse_start',1.6)])
