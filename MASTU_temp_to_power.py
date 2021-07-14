@@ -67,6 +67,7 @@ for i_day,day in enumerate(to_do):
 
 		saved_file_dict_short = np.load(laser_to_analyse[:-4]+'_short.npz')
 		saved_file_dict_short = dict(saved_file_dict_short)
+		saved_file_dict_short.allow_pickle=True
 
 		try:
 			try:
@@ -101,6 +102,7 @@ for i_day,day in enumerate(to_do):
 			except:
 				print('missing '+laser_to_analyse[:-4]+'.npz'+' file. rigenerated')
 				full_saved_file_dict = dict(laser_dict)
+				saved_file_dict_short.allow_pickle=True
 
 				laser_temperature_full = full_saved_file_dict['only_pulse_data'].all()['laser_temperature_full_median'] + full_saved_file_dict['only_pulse_data'].all()['laser_temperature_full_minus_median'].astype(np.float32)
 				laser_temperature_std_full = full_saved_file_dict['only_pulse_data'].all()['laser_temperature_std_full_median'] + full_saved_file_dict['only_pulse_data'].all()['laser_temperature_std_full_minus_median'].astype(np.float32)

@@ -1,3 +1,9 @@
+from PIL import Image
+MASTU_wireframe = Image.open("/home/ffederic/work/irvb/MAST-U/Calcam_theoretical_view.png")
+MASTU_wireframe_resize = np.array(np.asarray(MASTU_wireframe)[:,:,3].tolist()).astype(np.float64)
+MASTU_wireframe_resize[MASTU_wireframe_resize>0] = 1
+MASTU_wireframe_resize = np.flip(MASTU_wireframe_resize,axis=0)
+masked = np.ma.masked_where(MASTU_wireframe_resize == 0, MASTU_wireframe_resize)
 
 foil_position_dict = dict([('angle',0.5),('foilcenter',[158,136]),('foilhorizwpixel',241)])	# fixed orientation, for now, this is from 2021-06-04/44168
 flat_foil_properties = dict([])
@@ -9,6 +15,7 @@ flat_foil_properties['diffusivity'] = 1.03*1e-5
 print('starting power analysis' + laser_to_analyse)
 
 laser_dict = np.load(laser_to_analyse[:-4]+'.npz')
+laser_dict.allow_pickle=True
 # full_saved_file_dict = dict(laser_dict)
 
 time_full = laser_dict['only_pulse_data'].all()['time_full']
@@ -16,6 +23,7 @@ laser_framerate = 1/np.mean(np.sort(np.diff(time_full))[2:-2])
 laser_int_time = laser_dict['IntegrationTime']
 
 saved_file_dict_short = np.load(laser_to_analyse[:-4]+'_short.npz')
+saved_file_dict_short.allow_pickle=True
 saved_file_dict_short = dict(saved_file_dict_short)
 
 try:
@@ -49,8 +57,12 @@ try:
 		powernoback = saved_file_dict_short['power_data'].all()['powernoback']
 		powernoback_std = saved_file_dict_short['power_data'].all()['powernoback_std']
 
+		foilhorizw=0.09	# m
+		foilvertw=0.07	# m
+
 	except:
-		print('missing '+laser_to_analyse[:-4]+'.npz'+' file. rigenerated')
+		print('missing '+laser_to_analyse[:-4]+'_short.npz'+' file. rigenerated')
+		# full_saved_file_dict.allow_pickle=True
 		full_saved_file_dict = dict(laser_dict)
 
 		laser_temperature_full = full_saved_file_dict['only_pulse_data'].all()['laser_temperature_full_median'] + full_saved_file_dict['only_pulse_data'].all()['laser_temperature_full_minus_median'].astype(np.float32)
@@ -75,7 +87,7 @@ try:
 		foilhorizw=0.09	# m
 		foilvertw=0.07	# m
 		foilhorizwpixel = foil_position_dict['foilhorizwpixel']
-		foilvertwpixel=np.int((foilhorizwpixel*foilvertw)//foilhorizw)
+		foilvertwpixel=int((foilhorizwpixel*foilvertw)//foilhorizw)
 		r=((foilhorizwpixel**2+foilvertwpixel**2)**0.5)/2  # HALF DIAGONAL
 		a=foilvertwpixel/np.cos(foilrot)
 		tgalpha=np.tan(foilrot)
@@ -84,45 +96,58 @@ try:
 		foily=np.add(foilcenter[1]-tgalpha*foilcenter[0],[tgalpha*foilx[0]+a/2,tgalpha*foilx[1]+a/2,tgalpha*foilx[2]-a/2,tgalpha*foilx[3]-a/2,tgalpha*foilx[0]+a/2])
 		foilxint=(np.rint(foilx)).astype('int')
 		foilyint=(np.rint(foily)).astype('int')
-		rotangle = foil_position_dict['angle'] #in degrees
-		foilrot=rotangle*2*np.pi/360
-		foilrotdeg=rotangle
-		foilcenter = foil_position_dict['foilcenter']
-		foilhorizw=0.09	# m
-		foilvertw=0.07	# m
-		foilhorizwpixel = foil_position_dict['foilhorizwpixel']
-		foilvertwpixel=np.int((foilhorizwpixel*foilvertw)//foilhorizw)
-		r=((foilhorizwpixel**2+foilvertwpixel**2)**0.5)/2  # HALF DIAGONAL
-		a=foilvertwpixel/np.cos(foilrot)
-		tgalpha=np.tan(foilrot)
-		delta=-(a**2)/4+(1+tgalpha**2)*(r**2)
-		foilx=np.add(foilcenter[0],[(-0.5*a*tgalpha+delta**0.5)/(1+tgalpha**2),(-0.5*a*tgalpha-delta**0.5)/(1+tgalpha**2),(0.5*a*tgalpha-delta**0.5)/(1+tgalpha**2),(0.5*a*tgalpha+delta**0.5)/(1+tgalpha**2),(-0.5*a*tgalpha+delta**0.5)/(1+tgalpha**2)])
-		foily=np.add(foilcenter[1]-tgalpha*foilcenter[0],[tgalpha*foilx[0]+a/2,tgalpha*foilx[1]+a/2,tgalpha*foilx[2]-a/2,tgalpha*foilx[3]-a/2,tgalpha*foilx[0]+a/2])
-		foilxint=(np.rint(foilx)).astype('int')
-		foilyint=(np.rint(foily)).astype('int')
+		# rotangle = foil_position_dict['angle'] #in degrees
+		# foilrot=rotangle*2*np.pi/360
+		# foilrotdeg=rotangle
+		# foilcenter = foil_position_dict['foilcenter']
+		# foilhorizw=0.09	# m
+		# foilvertw=0.07	# m
+		# foilhorizwpixel = foil_position_dict['foilhorizwpixel']
+		# foilvertwpixel=int((foilhorizwpixel*foilvertw)//foilhorizw)
+		# r=((foilhorizwpixel**2+foilvertwpixel**2)**0.5)/2  # HALF DIAGONAL
+		# a=foilvertwpixel/np.cos(foilrot)
+		# tgalpha=np.tan(foilrot)
+		# delta=-(a**2)/4+(1+tgalpha**2)*(r**2)
+		# foilx=np.add(foilcenter[0],[(-0.5*a*tgalpha+delta**0.5)/(1+tgalpha**2),(-0.5*a*tgalpha-delta**0.5)/(1+tgalpha**2),(0.5*a*tgalpha-delta**0.5)/(1+tgalpha**2),(0.5*a*tgalpha+delta**0.5)/(1+tgalpha**2),(-0.5*a*tgalpha+delta**0.5)/(1+tgalpha**2)])
+		# foily=np.add(foilcenter[1]-tgalpha*foilcenter[0],[tgalpha*foilx[0]+a/2,tgalpha*foilx[1]+a/2,tgalpha*foilx[2]-a/2,tgalpha*foilx[3]-a/2,tgalpha*foilx[0]+a/2])
+		# foilxint=(np.rint(foilx)).astype('int')
+		# foilyint=(np.rint(foily)).astype('int')
 
 		plt.figure(figsize=(20, 10))
 		plt.title('Foil search in '+laser_to_analyse+'\nFoil center '+str(foilcenter)+', foil rot '+str(foilrotdeg)+'deg, foil size '+str([foilhorizwpixel,foilvertwpixel])+'pixel')
 		plt.imshow(testrot,'rainbow',origin='lower')
-		plt.xlabel('Horizontal axis [pixles]')
-		plt.ylabel('Vertical axis [pixles]')
+		plt.ylabel('Horizontal axis [pixles]')
+		plt.xlabel('Vertical axis [pixles]')
 		temp = np.sort(testrot[testrot>0])
 		plt.clim(vmin=np.nanmean(temp[:max(20,int(len(temp)/20))]), vmax=np.nanmean(temp[-max(20,int(len(temp)/20)):]))
 		# plt.clim(vmax=27.1,vmin=26.8)
 		# plt.clim(vmin=np.nanmin(testrot[testrot>0]), vmax=np.nanmax(testrot))
 		plt.colorbar().set_label('counts [au]')
-		plt.plot(foilxint,foilyint,'r')
+		plt.plot(foilx,foily,'r')
 		plt.plot(foilcenter[0],foilcenter[1],'k+',markersize=30)
 		plt.savefig(laser_to_analyse[:-4]+'_foil_fit.eps', bbox_inches='tight')
+		plt.close('all')
+
+		plt.figure(figsize=(20, 10))
+		temp = np.max(laser_temperature_minus_background_full[:,:,:200],axis=(-1,-2)).argmax()
+		plt.title('Foil search in '+laser_to_analyse+'\nFoil center '+str(foilcenter)+', foil rot '+str(foilrotdeg)+'deg, foil size '+str([foilhorizwpixel,foilvertwpixel])+'pixel\nhottest frame at %.4gsec' %(time_full[temp]))
+		plt.imshow(laser_temperature_minus_background_full[temp],'rainbow',origin='lower',vmax=np.max(laser_temperature_minus_background_full[:,:,:200],axis=(-1,-2))[temp])
+		plt.ylabel('Horizontal axis [pixles]')
+		plt.xlabel('Vertical axis [pixles]')
+		plt.clim(vmax=np.max(laser_temperature_minus_background_full[:,:,:200],axis=(-1,-2))[temp])
+		plt.colorbar().set_label('temp increase [K]')
+		plt.plot(foilx,foily,'r')
+		plt.plot(foilcenter[0],foilcenter[1],'k+',markersize=30)
+		plt.savefig(laser_to_analyse[:-4]+'_foil_fit_plasma.eps', bbox_inches='tight')
 		plt.close('all')
 		testrotback=rotate(testrot,foilrotdeg,axes=(-1,-2))
 		precisionincrease=10
 		dummy=np.ones(np.multiply(np.shape(testrot),precisionincrease))
 		dummy[foilcenter[1]*precisionincrease,foilcenter[0]*precisionincrease]=2
-		dummy[np.int(foily[0]*precisionincrease),np.int(foilx[0]*precisionincrease)]=3
-		dummy[np.int(foily[1]*precisionincrease),np.int(foilx[1]*precisionincrease)]=4
-		dummy[np.int(foily[2]*precisionincrease),np.int(foilx[2]*precisionincrease)]=5
-		dummy[np.int(foily[3]*precisionincrease),np.int(foilx[3]*precisionincrease)]=6
+		dummy[int(foily[0]*precisionincrease),int(foilx[0]*precisionincrease)]=3
+		dummy[int(foily[1]*precisionincrease),int(foilx[1]*precisionincrease)]=4
+		dummy[int(foily[2]*precisionincrease),int(foilx[2]*precisionincrease)]=5
+		dummy[int(foily[3]*precisionincrease),int(foilx[3]*precisionincrease)]=6
 		dummy2=rotate(dummy,foilrotdeg,axes=(-1,-2),order=0)
 		foilcenterrot=(np.rint([np.where(dummy2==2)[1][0]/precisionincrease,np.where(dummy2==2)[0][0]/precisionincrease])).astype('int')
 		foilxrot=(np.rint([np.where(dummy2==3)[1][0]/precisionincrease,np.where(dummy2==4)[1][0]/precisionincrease,np.where(dummy2==5)[1][0]/precisionincrease,np.where(dummy2==6)[1][0]/precisionincrease,np.where(dummy2==3)[1][0]/precisionincrease])).astype('int')
@@ -193,6 +218,29 @@ try:
 			foilthicknessscaled=flat_foil_properties['thickness']*np.ones((foilvertwpixel-2,foilhorizwpixel-2))
 			conductivityscaled=Ptthermalconductivity*np.ones((foilvertwpixel-2,foilhorizwpixel-2))
 			reciprdiffusivityscaled=(1/flat_foil_properties['diffusivity'])*np.ones((foilvertwpixel-2,foilhorizwpixel-2))
+
+		plt.figure(figsize=(20, 10))
+		temp = np.max(laser_temperature_minus_background_crop,axis=(-1,-2)).argmax()
+		plt.title('Foil search in '+laser_to_analyse+'\nhottest frame at %.4gsec with mask from Calcam' %(time_full[temp]) + '\ngas injection points at R=0.261m, Z=-0.264m, '+r'$theta$'+'=105°(LX), 195°(DX)')
+		plt.imshow(np.flip(np.transpose(laser_temperature_minus_background_crop[temp],(1,0)),axis=1),'rainbow',interpolation='none')#,origin='lower',vmax=np.max(laser_temperature_minus_background_crop[:,:,:180],axis=(-1,-2))[temp])
+		# MASTU_wireframe_resize = MASTU_wireframe.resize(np.shape(laser_temperature_minus_background_crop[temp]))
+		# MASTU_wireframe_resize[MASTU_wireframe_resize==0] = np.nan
+		plt.colorbar().set_label('temp increase [K]')
+		plt.imshow(masked, 'gray', interpolation='none', alpha=0.4,origin='lower',extent = [0,np.shape(laser_temperature_minus_background_crop[temp])[0]-1,0,np.shape(laser_temperature_minus_background_crop[temp])[1]-1])
+		plt.xlabel('Horizontal axis [pixles]')
+		plt.ylabel('Vertical axis [pixles]')
+		# plt.clim(vmax=np.max(laser_temperature_minus_background_crop[:,:,:180],axis=(-1,-2))[temp])
+		plt.savefig(laser_to_analyse[:-4]+'_temp_overlay.png', bbox_inches='tight')
+		plt.close('all')
+		plt.figure(figsize=(20, 10))
+		plt.title('Foil search in '+laser_to_analyse+'\nhottest frame at %.4gsec' %(time_full[temp]) )
+		plt.imshow(np.flip(np.transpose(laser_temperature_minus_background_crop[temp],(1,0)),axis=1),'rainbow',interpolation='none',origin='lower')#,vmax=np.max(laser_temperature_minus_background_crop[:,:,:180],axis=(-1,-2))[temp])
+		plt.colorbar().set_label('temp increase [K]')
+		plt.xlabel('Horizontal axis [pixles]')
+		plt.ylabel('Vertical axis [pixles]')
+		# plt.clim(vmax=np.max(laser_temperature_minus_background_crop[:,:,:180],axis=(-1,-2))[temp])
+		plt.savefig(laser_to_analyse[:-4]+'_temp.eps', bbox_inches='tight')
+		plt.close('all')
 
 		# ani = coleval.movie_from_data(np.array([laser_temperature_minus_background_crop]), laser_framerate, integration=laser_int_time/1000,time_offset=-start_time_of_pulse,xlabel='horizontal coord [pixels]',ylabel='vertical coord [pixels]',barlabel='raw counts [au]')
 		# dt=1/laser_framerate
@@ -291,7 +339,7 @@ try:
 	pinhole_to_foil_vertical = 0.008 + 0.003 + 0.002 + 0.045	# pinhole holder, washer, foil holder, standoff
 	pinhole_to_pixel_distance = (pinhole_to_foil_vertical**2 + distance_from_vertical**2)**0.5
 
-	etendue = np.ones_like(powernoback[0]) * (np.pi*(0.002**2)) / (pinhole_to_pixel_distance**2) * 4*np.pi	# I should include also the area of the pixel, but that is already in the w/m2 power
+	etendue = np.ones_like(powernoback[0]) * (np.pi*(0.002**2)) / (pinhole_to_pixel_distance**2)	# I should include also the area of the pixel, but that is already in the w/m2 power
 	etendue *= (pinhole_to_foil_vertical/pinhole_to_pixel_distance)**2	 # cos(a)*cos(b). for pixels not directly under the pinhole bot pinhole and pixel are tilted respect to the vertical, with same angle.
 
 	plt.figure(figsize=(8, 5))
@@ -309,22 +357,46 @@ try:
 	plt.close('all')
 	shrink_factor = 20
 	temp = generic_filter(powernoback,np.nanmean,size=[1,shrink_factor,shrink_factor])
-	ani = coleval.movie_from_data(np.array([np.flip(np.transpose(temp,(0,2,1)),axis=2)]), laser_framerate, integration=laser_int_time/1000,time_offset=time_full[1],extvmax=temp[:,:,180].max(),extvmin=0,xlabel='horizontal coord [pixels]',ylabel='vertical coord [pixels]',barlabel='Power on foil [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4] + '\nsmoothed spatially '+str([shrink_factor,shrink_factor]) + '\n')
+	ani = coleval.movie_from_data(np.array([np.flip(np.transpose(temp,(0,2,1)),axis=2)]), laser_framerate,mask=masked, integration=laser_int_time/1000,time_offset=time_full[1],extvmax=temp[:,:,180].max(),extvmin=0,xlabel='horizontal coord [pixels]',ylabel='vertical coord [pixels]',barlabel='Power on foil [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4] + '\nsmoothed spatially '+str([shrink_factor,shrink_factor]) + '\n', include_EFIT=True, pulse_ID=laser_to_analyse[-9:-4], overlay_x_point=True, overlay_mag_axis=True)
 	ani.save(laser_to_analyse[:-4]+ '_power_smooth1.mp4', fps=5, writer='ffmpeg',codec='mpeg4')
 	plt.close('all')
 	saved_file_dict_short['power_data']['smooth_'+str(1) + 'x' + str(shrink_factor) + 'x' + str(shrink_factor)] = temp
-	temp = generic_filter(powernoback/etendue,np.nanmean,size=[1,shrink_factor,shrink_factor])
+	temp = generic_filter(4*np.pi*powernoback/etendue,np.nanmean,size=[1,shrink_factor,shrink_factor])
 	ani = coleval.movie_from_data(np.array([np.flip(np.transpose(temp,(0,2,1)),axis=2)]), laser_framerate, integration=laser_int_time/1000,time_offset=time_full[1],extvmax=temp[:,:,180].max(),extvmin=0,xlabel='horizontal coord [pixels]',ylabel='vertical coord [pixels]',barlabel='Brightness [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4] + '\nsmoothed spatially '+str([shrink_factor,shrink_factor]) + '\n')
 	ani.save(laser_to_analyse[:-4]+ '_brightness_smooth1.mp4', fps=5, writer='ffmpeg',codec='mpeg4')
 	plt.close('all')
-	shrink_factor_t = 16
+	shrink_factor_t = 13
 	shrink_factor_x = 10
 	temp = generic_filter(powernoback,np.nanmean,size=[shrink_factor_t,shrink_factor_x,shrink_factor_x])
-	ani = coleval.movie_from_data(np.array([np.flip(np.transpose(temp,(0,2,1)),axis=2)]), laser_framerate, integration=laser_int_time/1000,time_offset=time_full[1],extvmax=temp[:,:,180].max(),extvmin=0,xlabel='horizontal coord [pixels]',ylabel='vertical coord [pixels]',barlabel='Power on foil [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4] + '\nsmoothed '+str([shrink_factor_t,shrink_factor_x,shrink_factor_x]) + '\n')
+	ani = coleval.movie_from_data(np.array([np.flip(np.transpose(temp,(0,2,1)),axis=2)]), laser_framerate,mask=masked, integration=laser_int_time/1000,time_offset=time_full[1],extvmax=temp[:,:,180].max(),extvmin=0,xlabel='horizontal coord [pixels]',ylabel='vertical coord [pixels]',barlabel='Power on foil [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4] + '\nsmoothed '+str([shrink_factor_t,shrink_factor_x,shrink_factor_x]) + '\n', include_EFIT=True, pulse_ID=laser_to_analyse[-9:-4], overlay_x_point=True, overlay_mag_axis=True)
 	ani.save(laser_to_analyse[:-4]+ '_power_smooth2.mp4', fps=5, writer='ffmpeg',codec='mpeg4')
 	plt.close('all')
 	saved_file_dict_short['power_data']['smooth_'+str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x)] = temp
-	temp = generic_filter(powernoback/etendue,np.nanmean,size=[shrink_factor_t,shrink_factor_x,shrink_factor_x])
+
+	temp_2 = np.max(temp,axis=(-1,-2)).argmax()
+	plt.figure(figsize=(20, 10))
+	plt.title('Foil search in '+laser_to_analyse+'\nhighest power frame at %.4gsec with mask from Calcam' %(time_full[temp_2]) +' smooth '+str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x)+ '\ngas injection points at R=0.261m, Z=-0.264m, '+r'$\theta$'+'=105°(LX), 195°(DX)')
+	plt.imshow(np.flip(np.transpose(temp[temp_2],(1,0)),axis=1),'rainbow',interpolation='none')#,origin='lower',vmax=np.max(temp[:,:,:180],axis=(-1,-2))[temp_2])
+	# MASTU_wireframe_resize = MASTU_wireframe.resize(np.shape(temp[temp_2]))
+	# MASTU_wireframe_resize[MASTU_wireframe_resize==0] = np.nan
+	plt.colorbar().set_label('Power on foil [W/m2]')
+	plt.imshow(masked, 'gray', interpolation='none', alpha=0.4,origin='lower',extent = [0,np.shape(temp[temp_2])[0]-1,0,np.shape(temp[temp_2])[1]-1])
+	plt.xlabel('Horizontal axis [pixles]')
+	plt.ylabel('Vertical axis [pixles]')
+	# plt.clim(vmax=np.max(temp[:,:,:180],axis=(-1,-2))[temp_2])
+	plt.savefig(laser_to_analyse[:-4]+'_power_overlay.png', bbox_inches='tight')
+	plt.close('all')
+	plt.figure(figsize=(20, 10))
+	plt.title('Foil search in '+laser_to_analyse+'\nhighest power frame at %.4gsec' %(time_full[temp_2]) +' smooth '+str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x))
+	plt.imshow(np.flip(np.transpose(temp[temp_2],(1,0)),axis=1),'rainbow',interpolation='none',origin='lower',vmax=np.max(temp[:,:,:180],axis=(-1,-2))[temp_2])
+	plt.colorbar().set_label('Power on foil [W/m2]')
+	plt.xlabel('Horizontal axis [pixles]')
+	plt.ylabel('Vertical axis [pixles]')
+	# plt.clim(vmax=np.max(temp[:,:,:180],axis=(-1,-2))[temp_2])
+	plt.savefig(laser_to_analyse[:-4]+'_power.eps', bbox_inches='tight')
+	plt.close('all')
+
+	temp = generic_filter(4*np.pi*powernoback/etendue,np.nanmean,size=[shrink_factor_t,shrink_factor_x,shrink_factor_x])
 	ani = coleval.movie_from_data(np.array([np.flip(np.transpose(temp,(0,2,1)),axis=2)]), laser_framerate, integration=laser_int_time/1000,time_offset=time_full[1],extvmax=temp[:,:,180].max(),extvmin=0,xlabel='horizontal coord [pixels]',ylabel='vertical coord [pixels]',barlabel='Brightness [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4] + '\nsmoothed '+str([shrink_factor_t,shrink_factor_x,shrink_factor_x]) + '\n')
 	ani.save(laser_to_analyse[:-4]+ '_brightness_smooth2.mp4', fps=5, writer='ffmpeg',codec='mpeg4')
 	plt.close('all')
@@ -366,34 +438,35 @@ try:
 	        ndarray = op(-1*(i+1))
 	    return ndarray
 
-	shrink_factor_t = 20
-	shrink_factor_x = 8
-	new_shape=np.array([np.array(powernoback.shape)[0]//shrink_factor_t,np.array(powernoback.shape)[1]//shrink_factor_x,np.array(powernoback.shape)[2]//shrink_factor_x]).astype(int)
-	powernoback_short = powernoback[:powernoback.shape[0]//shrink_factor_t*shrink_factor_t,:int(powernoback.shape[1]//shrink_factor_x*shrink_factor_x),powernoback.shape[2]-int(powernoback.shape[2]//shrink_factor_x*shrink_factor_x):]
-	a=bin_ndarray(powernoback_short, new_shape=new_shape, operation='mean')
-	ani = coleval.movie_from_data(np.array([np.flip(np.transpose(a,(0,2,1)),axis=2)]), laser_framerate/shrink_factor_t, integration=laser_int_time/1000,time_offset=time_full[1],xlabel='horizontal coord [pixels]',ylabel='vertical coord [pixels]',barlabel='Power on foil [W/m2]',extvmax=a[:,:,int(180//shrink_factor_x)].max(),extvmin=0, prelude='shot ' + laser_to_analyse[-9:-4] + '\nbinned '+str([shrink_factor_t,shrink_factor_x,shrink_factor_x]) + '\n')
-	# ani = coleval.movie_from_data(np.array([np.flip(np.transpose(a,(0,2,1)),axis=2)]), laser_framerate/shrink_factor_t, integration=laser_int_time/1000,xlabel='horizontal coord [pixels]',ylabel='vertical coord [pixels]',barlabel='Power [W/m2]',extvmax=a.max(),extvmin=0, prelude='shot ' + laser_to_analyse[-9:-4] + '\nbinned '+str([shrink_factor_t,shrink_factor_x,shrink_factor_x]) + '\n')
-	ani.save(laser_to_analyse[:-4]+ '_power_bin_' + str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x) + '.mp4', fps=5, writer='ffmpeg',codec='mpeg4')
-	plt.close('all')
-	saved_file_dict_short['power_data']['bin_'+str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x)] = a
+	for shrink_factor_t in [13,7]:
+		shrink_factor_x = 8
+		new_shape=np.array([np.array(powernoback.shape)[0]//shrink_factor_t,np.array(powernoback.shape)[1]//shrink_factor_x,np.array(powernoback.shape)[2]//shrink_factor_x]).astype(int)
+		# new_shape=np.array([int(np.ceil(np.array(powernoback.shape)[0]/shrink_factor_t)),int(np.ceil(np.array(powernoback.shape)[1]/shrink_factor_x)),int(np.ceil(np.array(powernoback.shape)[2]/shrink_factor_x))]).astype(int)
+		powernoback_short = powernoback[:powernoback.shape[0]//shrink_factor_t*shrink_factor_t,:int(powernoback.shape[1]//shrink_factor_x*shrink_factor_x),powernoback.shape[2]-int(powernoback.shape[2]//shrink_factor_x*shrink_factor_x):]
+		a=bin_ndarray(powernoback_short, new_shape=new_shape, operation='mean')
+		ani = coleval.movie_from_data(np.array([np.flip(np.transpose(a,(0,2,1)),axis=2)]), laser_framerate/shrink_factor_t, integration=laser_int_time/1000,time_offset=time_full[1],xlabel='horizontal coord [pixels]',ylabel='vertical coord [pixels]',barlabel='Power on foil [W/m2]',extvmax=a[:,:,int(180//shrink_factor_x)].max(),extvmin=0, prelude='shot ' + laser_to_analyse[-9:-4] + '\nbinned '+str([shrink_factor_t,shrink_factor_x,shrink_factor_x]) + '\n')
+		# ani = coleval.movie_from_data(np.array([np.flip(np.transpose(a,(0,2,1)),axis=2)]), laser_framerate/shrink_factor_t, integration=laser_int_time/1000,xlabel='horizontal coord [pixels]',ylabel='vertical coord [pixels]',barlabel='Power [W/m2]',extvmax=a.max(),extvmin=0, prelude='shot ' + laser_to_analyse[-9:-4] + '\nbinned '+str([shrink_factor_t,shrink_factor_x,shrink_factor_x]) + '\n')
+		ani.save(laser_to_analyse[:-4]+ '_power_bin_' + str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x) + '.mp4', fps=5/shrink_factor_t, writer='ffmpeg',codec='mpeg4')
+		plt.close('all')
+		saved_file_dict_short['power_data']['bin_'+str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x)] = a
 
-	timevariation_short = timevariation[:powernoback.shape[0]//shrink_factor_t*shrink_factor_t,:int(powernoback.shape[1]//shrink_factor_x*shrink_factor_x),powernoback.shape[2]-int(powernoback.shape[2]//shrink_factor_x*shrink_factor_x):]
-	a=bin_ndarray(timevariation_short, new_shape=new_shape, operation='mean')
-	ani = coleval.movie_from_data(np.array([np.flip(np.transpose(a,(0,2,1)),axis=2)]), laser_framerate/shrink_factor_t, integration=laser_int_time/1000,time_offset=time_full[1],xlabel='horizontal coord [pixels]',ylabel='vertical coord [pixels]',barlabel='Power on foil [W/m2]',extvmax=a[:,:,int(180//shrink_factor_x)].max(),extvmin=0, prelude='shot ' + laser_to_analyse[-9:-4] + '\nbinned '+str([shrink_factor_t,shrink_factor_x,shrink_factor_x]) + '\n')
-	ani.save(laser_to_analyse[:-4]+ '_dT_dt_bin' + str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x) + '.mp4', fps=5, writer='ffmpeg',codec='mpeg4')
-	plt.close('all')
+		timevariation_short = timevariation[:powernoback.shape[0]//shrink_factor_t*shrink_factor_t,:int(powernoback.shape[1]//shrink_factor_x*shrink_factor_x),powernoback.shape[2]-int(powernoback.shape[2]//shrink_factor_x*shrink_factor_x):]
+		a=bin_ndarray(timevariation_short, new_shape=new_shape, operation='mean')
+		ani = coleval.movie_from_data(np.array([np.flip(np.transpose(a,(0,2,1)),axis=2)]), laser_framerate/shrink_factor_t, integration=laser_int_time/1000,time_offset=time_full[1],xlabel='horizontal coord [pixels]',ylabel='vertical coord [pixels]',barlabel='Power on foil [W/m2]',extvmax=a[:,:,int(180//shrink_factor_x)].max(),extvmin=0, prelude='shot ' + laser_to_analyse[-9:-4] + '\nbinned '+str([shrink_factor_t,shrink_factor_x,shrink_factor_x]) + '\n')
+		ani.save(laser_to_analyse[:-4]+ '_dT_dt_bin' + str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x) + '.mp4', fps=5/shrink_factor_t, writer='ffmpeg',codec='mpeg4')
+		plt.close('all')
 
-	diffusion_short = diffusion[:powernoback.shape[0]//shrink_factor_t*shrink_factor_t,:int(powernoback.shape[1]//shrink_factor_x*shrink_factor_x),powernoback.shape[2]-int(powernoback.shape[2]//shrink_factor_x*shrink_factor_x):]
-	a=bin_ndarray(diffusion_short, new_shape=new_shape, operation='mean')
-	ani = coleval.movie_from_data(np.array([np.flip(np.transpose(a,(0,2,1)),axis=2)]), laser_framerate/shrink_factor_t, integration=laser_int_time/1000,time_offset=time_full[1],xlabel='horizontal coord [pixels]',ylabel='vertical coord [pixels]',barlabel='Power on foil [W/m2]',extvmax=a[:,:,int(180//shrink_factor_x)].max(),extvmin=0, prelude='shot ' + laser_to_analyse[-9:-4] + '\nbinned '+str([shrink_factor_t,shrink_factor_x,shrink_factor_x]) + '\n')
-	ani.save(laser_to_analyse[:-4]+ '_diffus_bin' + str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x) + '.mp4', fps=5, writer='ffmpeg',codec='mpeg4')
-	plt.close('all')
+		diffusion_short = diffusion[:powernoback.shape[0]//shrink_factor_t*shrink_factor_t,:int(powernoback.shape[1]//shrink_factor_x*shrink_factor_x),powernoback.shape[2]-int(powernoback.shape[2]//shrink_factor_x*shrink_factor_x):]
+		a=bin_ndarray(diffusion_short, new_shape=new_shape, operation='mean')
+		ani = coleval.movie_from_data(np.array([np.flip(np.transpose(a,(0,2,1)),axis=2)]), laser_framerate/shrink_factor_t, integration=laser_int_time/1000,time_offset=time_full[1],xlabel='horizontal coord [pixels]',ylabel='vertical coord [pixels]',barlabel='Power on foil [W/m2]',extvmax=a[:,:,int(180//shrink_factor_x)].max(),extvmin=0, prelude='shot ' + laser_to_analyse[-9:-4] + '\nbinned '+str([shrink_factor_t,shrink_factor_x,shrink_factor_x]) + '\n')
+		ani.save(laser_to_analyse[:-4]+ '_diffus_bin' + str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x) + '.mp4', fps=5/shrink_factor_t, writer='ffmpeg',codec='mpeg4')
+		plt.close('all')
 
-	BBrad_short = BBrad[:powernoback.shape[0]//shrink_factor_t*shrink_factor_t,:int(powernoback.shape[1]//shrink_factor_x*shrink_factor_x),powernoback.shape[2]-int(powernoback.shape[2]//shrink_factor_x*shrink_factor_x):]
-	a=bin_ndarray(BBrad_short, new_shape=new_shape, operation='mean')
-	ani = coleval.movie_from_data(np.array([np.flip(np.transpose(a,(0,2,1)),axis=2)]), laser_framerate/shrink_factor_t, integration=laser_int_time/1000,time_offset=time_full[1],xlabel='horizontal coord [pixels]',ylabel='vertical coord [pixels]',barlabel='Power on foil [W/m2]',extvmax=a[:,:,int(180//shrink_factor_x)].max(),extvmin=0, prelude='shot ' + laser_to_analyse[-9:-4] + '\nbinned '+str([shrink_factor_t,shrink_factor_x,shrink_factor_x]) + '\n')
-	ani.save(laser_to_analyse[:-4]+ '_BB_bin' + str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x) + '.mp4', fps=5, writer='ffmpeg',codec='mpeg4')
-	plt.close('all')
+		BBrad_short = BBrad[:powernoback.shape[0]//shrink_factor_t*shrink_factor_t,:int(powernoback.shape[1]//shrink_factor_x*shrink_factor_x),powernoback.shape[2]-int(powernoback.shape[2]//shrink_factor_x*shrink_factor_x):]
+		a=bin_ndarray(BBrad_short, new_shape=new_shape, operation='mean')
+		ani = coleval.movie_from_data(np.array([np.flip(np.transpose(a,(0,2,1)),axis=2)]), laser_framerate/shrink_factor_t, integration=laser_int_time/1000,time_offset=time_full[1],xlabel='horizontal coord [pixels]',ylabel='vertical coord [pixels]',barlabel='Power on foil [W/m2]',extvmax=a[:,:,int(180//shrink_factor_x)].max(),extvmin=0, prelude='shot ' + laser_to_analyse[-9:-4] + '\nbinned '+str([shrink_factor_t,shrink_factor_x,shrink_factor_x]) + '\n')
+		ani.save(laser_to_analyse[:-4]+ '_BB_bin' + str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x) + '.mp4', fps=5/shrink_factor_t, writer='ffmpeg',codec='mpeg4')
+		plt.close('all')
 
 	np.savez_compressed(laser_to_analyse[:-4]+'_short',**saved_file_dict_short)
 	print('completed ' + laser_to_analyse)

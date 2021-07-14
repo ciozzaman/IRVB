@@ -1,10 +1,13 @@
-
+# Created 2021-07-08
+# in order to facilitate a proper binning and remotion of the oscillation only after that, here I will only:
+# do the initial adjustment of the ramp up, convert to temperature
 print('starting ' + laser_to_analyse)
 
 try:
 	laser_dict = np.load(laser_to_analyse[:-4]+'.npz')
 	laser_dict.allow_pickle=True
-	a=laser_dict['IntegrationTime']
+	laser_digitizer_ID = laser_dict['uniques_digitizer_ID']
+	test = laser_dict['only_foil'].all()[str(laser_digitizer_ID[0])]['laser_temperature_no_dead_pixels_crop_minus_median']
 except:
 	print('missing '+laser_to_analyse[:-4]+'.npz'+' file. rigenerated')
 	if laser_to_analyse[-4:]=='.ats':
@@ -115,8 +118,11 @@ try:
 							print('%.3gv,%.3gh failed' %(v,h))
 							continue
 		else:
-			fit = curve_fit(exponential_biased, time_of_experiment_digitizer_ID_seconds[select_time], reference[select_time]-np.mean(reference[-int(1*laser_framerate/len(laser_digitizer_ID)):]), p0=guess,bounds=bds,maxfev=int(1e6))
-			aggregated_correction_coefficients[i] = fit[0]
+			if aggregated_correction_coefficients_present:
+				fit = [aggregated_correction_coefficients[i]]
+			else:
+				fit = curve_fit(exponential_biased, time_of_experiment_digitizer_ID_seconds[select_time], reference[select_time]-np.mean(reference[-int(1*laser_framerate/len(laser_digitizer_ID)):]), p0=guess,bounds=bds,maxfev=int(1e6))
+				aggregated_correction_coefficients[i] = fit[0]
 			ax[plot_index,0].plot(time_of_experiment_digitizer_ID_seconds-start_time_of_pulse,exponential_biased(time_of_experiment_digitizer_ID_seconds,*fit[0])+np.mean(reference[-int(1*laser_framerate/len(laser_digitizer_ID)):]),':',color=color[i],label='fit of out of foil area')
 			# startup_correction.append(np.mean(reference[(time_of_experiment_digitizer_ID[i]-time_of_experiment_digitizer_ID[i][0])*1e-6>12]) - reference)
 			# startup_correction.append(-exponential((time_of_experiment_digitizer_ID[i]-time_of_experiment_digitizer_ID[i][0])*1e-6,*fit[0]))
@@ -167,33 +173,8 @@ try:
 		# else:
 		# 	full_saved_file_dict['aggregated_correction_coeff'] = aggregated_correction_coefficients
 		# 	full_saved_file_dict['correction_equation'] = '-c1*np.exp(-c2*(t-t0)-c3*((t-t0)**2)-c4*((t-t0)**3))'
-		# 	np.savez_compressed(laser_to_analyse[:-4],**full_saved_file_dict)
 		plt.savefig(laser_to_analyse[:-4]+'_1.eps', bbox_inches='tight')
-	plt.close('all')
-
-	ROI_horizontal = [220,238,50,100]
-	# ROI_horizontal = [35,45,68,73]
-	ROI_vertical = [100,170,28,45]
-	plt.figure(figsize=(10, 5))
-	for i in range(len(laser_digitizer_ID)):
-		# horizontal_displacement = np.diff((np.sum(laser_counts[i][:,ROI_horizontal[0]:ROI_horizontal[1],ROI_horizontal[2]:ROI_horizontal[3]],axis=2).T/(np.sum(laser_counts[i][:,ROI_horizontal[0]:ROI_horizontal[1],ROI_horizontal[2]:ROI_horizontal[3]],axis=2)[:,0])).T,axis=1).argmin(axis=1)
-		horizontal_displacement = np.diff((np.sum(laser_counts[i][:,ROI_horizontal[0]:ROI_horizontal[1],ROI_horizontal[2]:ROI_horizontal[3]],axis=2)),axis=1).argmin(axis=1)
-		horizontal_displacement = horizontal_displacement-horizontal_displacement[10]
-		# vertical_displacement = np.diff((np.sum(laser_counts[i][:,ROI_vertical[0]:ROI_vertical[1],ROI_vertical[2]:ROI_vertical[3]],axis=1).T/(np.sum(laser_counts[i][:,ROI_vertical[0]:ROI_vertical[1],ROI_vertical[2]:ROI_vertical[3]],axis=1)[:,0])).T,axis=1).argmax(axis=1)
-		vertical_displacement = np.diff((np.sum(laser_counts[i][:,ROI_vertical[0]:ROI_vertical[1],ROI_vertical[2]:ROI_vertical[3]],axis=1)),axis=1).argmax(axis=1)
-		vertical_displacement = vertical_displacement-vertical_displacement[10]
-		time_of_experiment_digitizer_ID_seconds = (time_of_experiment_digitizer_ID[i]-time_of_experiment[0])*1e-6
-		if i==0:
-			plt.plot(time_of_experiment_digitizer_ID_seconds-start_time_of_pulse,horizontal_displacement,label='horizontal',color=color[0])
-			plt.plot(time_of_experiment_digitizer_ID_seconds-start_time_of_pulse,vertical_displacement,label='vertical',color=color[1])
-		else:
-			plt.plot(time_of_experiment_digitizer_ID_seconds-start_time_of_pulse,horizontal_displacement,color=color[0])
-			plt.plot(time_of_experiment_digitizer_ID_seconds-start_time_of_pulse,vertical_displacement,color=color[1])
-	plt.xlabel('time [s]')
-	plt.ylabel('pixels of displacement [au]')
-	plt.title('Displacement of the image\nlooking for the effect of disruptions')
-	plt.legend(loc='best', fontsize='x-small')
-	plt.savefig(laser_to_analyse[:-4]+'_2.eps', bbox_inches='tight')
+	np.savez_compressed(laser_to_analyse[:-4],**full_saved_file_dict)
 	plt.close('all')
 
 	if every_pixel_independent:	# I do the startup correction for every pixel independently
@@ -244,10 +225,8 @@ try:
 	# plt.pause(0.01)
 
 	try:
-		test = full_saved_file_dict['only_pulse_data']['laser_temperature_std_minus_background_full_minus_median']['dsfdsfdsf']	# I want them all
-		saved_file_dict_short = np.load(laser_to_analyse[:-4]+'_short.npz')
-		saved_file_dict_short.allow_pickle=True
-		temperature_minus_background = saved_file_dict_short['temperature_minus_background']
+		test = full_saved_file_dict['only_foil'].all()[str(laser_digitizer_ID[0])]['laser_temperature_no_dead_pixels_crop_minus_median']
+		time_full = full_saved_file_dict['full_frame'].all()['time_full']
 	except:
 		temp = np.abs(parameters_available_int_time-laser_int_time/1000)<0.1
 		framerate = np.array(parameters_available_framerate)[temp][np.abs(parameters_available_framerate[temp]-laser_framerate).argmin()]
@@ -265,98 +244,91 @@ try:
 
 		temp_counts = []
 		temp_bad_pixels_flag = []
-		temp_time = []
+		time_partial = []
 		temp_ref_counts = []
 		temp_ref_counts_std = []
-		full_saved_file_dict['only_pulse_data'] = dict([])
+		full_saved_file_dict['full_frame'] = dict([])
 		horizontal_coord = np.arange(np.shape(laser_counts[0])[2])
 		vertical_coord = np.arange(np.shape(laser_counts[0])[1])
 		horizontal_coord,vertical_coord = np.meshgrid(horizontal_coord,vertical_coord)
 		select_space = np.logical_or(np.logical_or(vertical_coord<30,vertical_coord>240),np.logical_or(horizontal_coord<30,horizontal_coord>290))
-		# filter_plot_index = 1
+		frames_per_oscillation = max(1,int(round(laser_framerate/len(laser_digitizer_ID)/30)))
 
-		frames_per_oscillation = max(1,int(round(laser_framerate/30)))
-
+		seconds_for_bad_pixels = 2	# s
 		fig, ax = plt.subplots( 2,1,figsize=(8, 12), squeeze=False)
 		for i in range(len(laser_digitizer_ID)):
-			# laser_counts_filtered = coleval.clear_oscillation_central2([laser_counts_corrected[i]],laser_framerate/len(laser_digitizer_ID),oscillation_search_window_begin=10/(laser_framerate/len(laser_digitizer_ID)),oscillation_search_window_end=(len(laser_counts_corrected[i])-1)/(laser_framerate/len(laser_digitizer_ID)),plot_conparison=True)[0]
-			# laser_counts_filtered = coleval.clear_oscillation_central2([laser_counts_corrected[i]],laser_framerate/len(laser_digitizer_ID),oscillation_search_window_begin=10/(laser_framerate/len(laser_digitizer_ID)),oscillation_search_window_end=2,plot_conparison=True)[0]
-			# laser_counts_filtered = coleval.clear_oscillation_central2([laser_counts_corrected[i]],laser_framerate/len(laser_digitizer_ID),oscillation_search_window_begin=6,oscillation_search_window_end=(len(laser_counts_corrected[i])-1)/(laser_framerate/len(laser_digitizer_ID)),plot_conparison=True)[0]
-			full_saved_file_dict['only_pulse_data'][str(laser_digitizer_ID[i])] = dict([])
+			full_saved_file_dict['full_frame'][str(laser_digitizer_ID[i])] = dict([])
 			time_of_experiment_digitizer_ID_seconds = (time_of_experiment_digitizer_ID[i]-time_of_experiment[0])*1e-6
 			if external_clock_marker:
 				time_of_experiment_digitizer_ID_seconds = time_of_experiment_digitizer_ID_seconds-np.mean(aggregated_correction_coefficients[:,4])	# I use the mean of the coefficients because I want to avoid small unpredictable differences between the digitisers
 				select_time = np.logical_and(time_of_experiment_digitizer_ID_seconds-start_time_of_pulse>0-0.5,time_of_experiment_digitizer_ID_seconds-start_time_of_pulse<1.5)	# I use the mean of the coefficients because I want to avoid small unpredictable differences between the digitisers
-				if False:	# big failure, it fails to clean up the oscillation
-					# with external clocks I still have the counts ramp up after the pulse, so I need to take only the flattest and part of the record
-					laser_counts_filtered = coleval.clear_oscillation_central2([laser_counts_corrected[i]],laser_framerate/len(laser_digitizer_ID),oscillation_search_window_begin=8,oscillation_search_window_end=(len(laser_counts_corrected[i])-1)/(laser_framerate/len(laser_digitizer_ID)),plot_conparison=False,which_plot=[1,2],ROI=[30,240,30,290])[0]
-					for j in range(2):
-						fig = matplotlib.pyplot.gcf()
-						fig.set_size_inches(15, 10, forward=True)
-						plt.savefig(laser_to_analyse[:-4]+'_filter'+str(filter_plot_index)+'.eps', bbox_inches='tight')
-						filter_plot_index+=1
-						plt.close()
-					laser_counts_filtered = coleval.clear_oscillation_central2([laser_counts_filtered],laser_framerate/len(laser_digitizer_ID),oscillation_search_window_begin=8,oscillation_search_window_end=(len(laser_counts_corrected[i])-1)/(laser_framerate/len(laser_digitizer_ID)),plot_conparison=False,which_plot=[1,2],ROI=[30,240,30,290])[0]
-					for j in range(2):
-						fig = matplotlib.pyplot.gcf()
-						fig.set_size_inches(15, 10, forward=True)
-						plt.savefig(laser_to_analyse[:-4]+'_filter'+str(filter_plot_index)+'.eps', bbox_inches='tight')
-						filter_plot_index+=1
-						plt.close()
-					if (len(laser_counts_corrected[i])-1)/(laser_framerate/len(laser_digitizer_ID))>14:	# the longer the record is the more single frequencies have to be removed to erase complitely the oshillation, so I think this is reasonable.
-						laser_counts_filtered = coleval.clear_oscillation_central2([laser_counts_filtered],laser_framerate/len(laser_digitizer_ID),oscillation_search_window_begin=8,oscillation_search_window_end=(len(laser_counts_corrected[i])-1)/(laser_framerate/len(laser_digitizer_ID)),plot_conparison=False,which_plot=[1,2],ROI=[30,240,30,290])[0]
-						for j in range(2):
-							fig = matplotlib.pyplot.gcf()
-							fig.set_size_inches(15, 10, forward=True)
-							plt.savefig(laser_to_analyse[:-4]+'_filter'+str(filter_plot_index)+'.eps', bbox_inches='tight')
-							filter_plot_index+=1
-							plt.close()
-				else:	# bare bone approach, maybe this work
-					filter_agent = np.mean(laser_counts_corrected[i][:,select_space],axis=-1) - generic_filter(np.mean(laser_counts_corrected[i][:,select_space],axis=-1),np.nanmean,size=[frames_per_oscillation])
-					# filter_agent = np.mean(laser_counts_corrected[i],axis=(-1,-2)) - generic_filter(np.mean(laser_counts_corrected[i],axis=(-1,-2)),np.nanmean,size=[7])
-					laser_counts_filtered = (laser_counts_corrected[i].T - filter_agent).T
-					filter_agent = np.mean(laser_counts_filtered[:,select_space],axis=-1) - generic_filter(np.mean(laser_counts_filtered[:,select_space],axis=-1),np.nanmean,size=[frames_per_oscillation*2])
-					# filter_agent = np.mean(laser_counts_filtered,axis=(-1,-2)) - generic_filter(np.mean(laser_counts_filtered,axis=(-1,-2)),np.nanmean,size=[15])
-					laser_counts_filtered = (laser_counts_filtered.T - filter_agent).T
-					filter_agent = np.mean(laser_counts_filtered[:,select_space],axis=-1) - generic_filter(np.mean(laser_counts_filtered[:,select_space],axis=-1),np.nanmean,size=[7])
-					laser_counts_filtered = (laser_counts_filtered.T - filter_agent).T
-					laser_counts_filtered = coleval.clear_oscillation_central2([laser_counts_filtered],laser_framerate/len(laser_digitizer_ID),oscillation_search_window_begin=0,oscillation_search_window_end=start_time_of_pulse+1.5+2.5,plot_conparison=False,which_plot=[1,2,3],window=50)[0]#,force_poscentre=[np.shape(laser_counts_corrected[i])[1]-30,30])[0]#,ROI=[30,240,30,290])[0]
-					laser_counts_filtered = coleval.clear_oscillation_central2([laser_counts_filtered],laser_framerate/len(laser_digitizer_ID),oscillation_search_window_begin=0,oscillation_search_window_end=start_time_of_pulse+1.5+2.5,plot_conparison=False,which_plot=[1,2,3],window=50)[0]#,force_poscentre=[np.shape(laser_counts_corrected[i])[1]-30,30])[0]#,ROI=[30,240,30,290])[0]
-					# laser_counts_filtered = coleval.clear_oscillation_central2([laser_counts_filtered],laser_framerate/len(laser_digitizer_ID),oscillation_search_window_begin=start_time_of_pulse-0.5,oscillation_search_window_end=1.5+0.5,plot_conparison=False,which_plot=[1,2,3],force_poscentre=[np.shape(laser_counts_corrected[i])[1]-30,30],window=1000)[0]#,ROI=[30,240,30,290])[0]
-					# laser_counts_filtered = coleval.clear_oscillation_central2([laser_counts_filtered],laser_framerate/len(laser_digitizer_ID),oscillation_search_window_begin=start_time_of_pulse-0.5,oscillation_search_window_end=1.5+0.5,plot_conparison=False,which_plot=[1,2,3],force_poscentre=[np.shape(laser_counts_corrected[i])[1]-30,30],window=1000)[0]#,ROI=[30,240,30,290])[0]
 			else:
 				select_time = np.logical_and(time_of_experiment_digitizer_ID_seconds-start_time_of_pulse>0-0.5,time_of_experiment_digitizer_ID_seconds-start_time_of_pulse<1.5)
+			if True:	# I'm not creating my problems by doing this before binning, but I have to do many cleanings
+				filter_agent = np.mean(laser_counts_corrected[i][:,select_space],axis=-1) - generic_filter(np.mean(laser_counts_corrected[i][:,select_space],axis=-1),np.nanmean,size=[frames_per_oscillation])
+				laser_counts_filtered = (laser_counts_corrected[i].T - filter_agent).T
+				filter_agent = np.mean(laser_counts_filtered[:,select_space],axis=-1) - generic_filter(np.mean(laser_counts_filtered[:,select_space],axis=-1),np.nanmean,size=[frames_per_oscillation*2])
+				laser_counts_filtered = (laser_counts_filtered.T - filter_agent).T
+				filter_agent = np.mean(laser_counts_filtered[:,select_space],axis=-1) - generic_filter(np.mean(laser_counts_filtered[:,select_space],axis=-1),np.nanmean,size=[7])
+				laser_counts_filtered = (laser_counts_filtered.T - filter_agent).T
+				window = np.min(np.shape(laser_counts_filtered)[1:])//6
 				filter_plot_index = 1
-				if False:	# big failure, it fails to clean up the oscillation
-					# with internal clocks there is no ramp up and I can use a larger portion of the record after the poulse, I only have to avoid the cooling of the foil
-					laser_counts_filtered = coleval.clear_oscillation_central2([laser_counts_corrected[i]],laser_framerate/len(laser_digitizer_ID),oscillation_search_window_begin=0,oscillation_search_window_end=(len(laser_counts_corrected[i])-1)/(laser_framerate/len(laser_digitizer_ID)),plot_conparison=True,which_plot=[1,2,3],force_poscentre=[np.shape(laser_counts_corrected[i])[1]-30,30],window=1000)[0]#,ROI=[30,240,30,290])[0]
+				if laser_framerate/len(laser_digitizer_ID)/2>32:
+					laser_counts_filtered,peak_value_pre_filter,peak_value_post_filter,max_noise,median_noise = coleval.clear_oscillation_central2([laser_counts_filtered],laser_framerate/len(laser_digitizer_ID),oscillation_search_window_begin=0,oscillation_search_window_end=(len(laser_counts_filtered)-1)/(laser_framerate/len(laser_digitizer_ID)),plot_conparison=True,which_plot=[1,2,3],window=window,output_noise=True)
+					laser_counts_filtered = laser_counts_filtered[0]
 					for trash in range(2):
 						fig = matplotlib.pyplot.gcf()
 						fig.set_size_inches(15, 10, forward=True)
 						plt.savefig(laser_to_analyse[:-4]+'_digitizer'+str(i) +'_filter'+str(filter_plot_index)+'.eps', bbox_inches='tight')
 						filter_plot_index+=1
 						plt.close()
-					for trash in range(5):
-						laser_counts_filtered = coleval.clear_oscillation_central2([laser_counts_filtered],laser_framerate/len(laser_digitizer_ID),oscillation_search_window_begin=0,oscillation_search_window_end=(len(laser_counts_corrected[i])-1)/(laser_framerate/len(laser_digitizer_ID)),plot_conparison=True,which_plot=[1,2,3],force_poscentre=[np.shape(laser_counts_corrected[i])[1]-30,30],window=1000)[0]#,ROI=[30,240,30,290])[0]
+					while peak_value_post_filter>3.2*median_noise:
+						laser_counts_filtered,peak_value_pre_filter,peak_value_post_filter,max_noise,median_noise = coleval.clear_oscillation_central2([laser_counts_filtered],laser_framerate/len(laser_digitizer_ID),oscillation_search_window_begin=0,oscillation_search_window_end=(len(laser_counts_filtered)-1)/(laser_framerate/len(laser_digitizer_ID)),plot_conparison=True,which_plot=[1,2,3],window=window,output_noise=True)
+						laser_counts_filtered = laser_counts_filtered[0]
 						for trash in range(2):
 							fig = matplotlib.pyplot.gcf()
 							fig.set_size_inches(15, 10, forward=True)
 							plt.savefig(laser_to_analyse[:-4]+'_digitizer'+str(i) +'_filter'+str(filter_plot_index)+'.eps', bbox_inches='tight')
 							filter_plot_index+=1
 							plt.close()
-				else:	# bare bone approach, maybe this work
-					filter_agent = np.mean(laser_counts_corrected[i][:,select_space],axis=-1) - generic_filter(np.mean(laser_counts_corrected[i][:,select_space],axis=-1),np.nanmean,size=[frames_per_oscillation])
-					# filter_agent = np.mean(laser_counts_corrected[i],axis=(-1,-2)) - generic_filter(np.mean(laser_counts_corrected[i],axis=(-1,-2)),np.nanmean,size=[7])
-					laser_counts_filtered = (laser_counts_corrected[i].T - filter_agent).T
-					filter_agent = np.mean(laser_counts_filtered[:,select_space],axis=-1) - generic_filter(np.mean(laser_counts_filtered[:,select_space],axis=-1),np.nanmean,size=[frames_per_oscillation*2])
-					# filter_agent = np.mean(laser_counts_filtered,axis=(-1,-2)) - generic_filter(np.mean(laser_counts_filtered,axis=(-1,-2)),np.nanmean,size=[15])
-					laser_counts_filtered = (laser_counts_filtered.T - filter_agent).T
-					filter_agent = np.mean(laser_counts_filtered[:,select_space],axis=-1) - generic_filter(np.mean(laser_counts_filtered[:,select_space],axis=-1),np.nanmean,size=[7])
-					laser_counts_filtered = (laser_counts_filtered.T - filter_agent).T
-					laser_counts_filtered = coleval.clear_oscillation_central2([laser_counts_filtered],laser_framerate/len(laser_digitizer_ID),oscillation_search_window_begin=0,oscillation_search_window_end=start_time_of_pulse+1.5+2.5,plot_conparison=False,which_plot=[1,2,3],window=50)[0]#,force_poscentre=[np.shape(laser_counts_corrected[i])[1]-30,30])[0]#,ROI=[30,240,30,290])[0]
-					laser_counts_filtered = coleval.clear_oscillation_central2([laser_counts_filtered],laser_framerate/len(laser_digitizer_ID),oscillation_search_window_begin=0,oscillation_search_window_end=start_time_of_pulse+1.5+2.5,plot_conparison=False,which_plot=[1,2,3],window=50)[0]#,force_poscentre=[np.shape(laser_counts_corrected[i])[1]-30,30])[0]#,ROI=[30,240,30,290])[0]
-					# laser_counts_filtered = coleval.clear_oscillation_central2([laser_counts_filtered],laser_framerate/len(laser_digitizer_ID),oscillation_search_window_begin=start_time_of_pulse-0.5,oscillation_search_window_end=1.5+0.5,plot_conparison=False,which_plot=[1,2,3],force_poscentre=[np.shape(laser_counts_corrected[i])[1]-30,30],window=1000)[0]#,ROI=[30,240,30,290])[0]
-					# laser_counts_filtered = coleval.clear_oscillation_central2([laser_counts_filtered],laser_framerate/len(laser_digitizer_ID),oscillation_search_window_begin=start_time_of_pulse-0.5,oscillation_search_window_end=1.5+0.5,plot_conparison=False,which_plot=[1,2,3],force_poscentre=[np.shape(laser_counts_corrected[i])[1]-30,30],window=1000)[0]#,ROI=[30,240,30,290])[0]
+				if laser_framerate/len(laser_digitizer_ID)/2>65:
+					laser_counts_filtered,peak_value_pre_filter,peak_value_post_filter,max_noise,median_noise = coleval.clear_oscillation_central2([laser_counts_filtered],laser_framerate/len(laser_digitizer_ID),min_frequency_to_erase=50,max_frequency_to_erase=70,oscillation_search_window_begin=0,oscillation_search_window_end=(len(laser_counts_filtered)-1)/(laser_framerate/len(laser_digitizer_ID)),plot_conparison=True,which_plot=[1,2,3],window=window,output_noise=True)
+					laser_counts_filtered = laser_counts_filtered[0]
+					for trash in range(2):
+						fig = matplotlib.pyplot.gcf()
+						fig.set_size_inches(15, 10, forward=True)
+						plt.savefig(laser_to_analyse[:-4]+'_digitizer'+str(i) +'_filter'+str(filter_plot_index)+'.eps', bbox_inches='tight')
+						filter_plot_index+=1
+						plt.close()
+					while peak_value_post_filter>4*median_noise:
+						laser_counts_filtered,peak_value_pre_filter,peak_value_post_filter,max_noise,median_noise = coleval.clear_oscillation_central2([laser_counts_filtered],laser_framerate/len(laser_digitizer_ID),min_frequency_to_erase=50,max_frequency_to_erase=70,oscillation_search_window_begin=0,oscillation_search_window_end=(len(laser_counts_filtered)-1)/(laser_framerate/len(laser_digitizer_ID)),plot_conparison=True,which_plot=[1,2,3],window=window,output_noise=True)
+						laser_counts_filtered = laser_counts_filtered[0]
+						for trash in range(2):
+							fig = matplotlib.pyplot.gcf()
+							fig.set_size_inches(15, 10, forward=True)
+							plt.savefig(laser_to_analyse[:-4]+'_digitizer'+str(i) +'_filter'+str(filter_plot_index)+'.eps', bbox_inches='tight')
+							filter_plot_index+=1
+							plt.close()
+				if laser_framerate/len(laser_digitizer_ID)/2>90:
+					laser_counts_filtered,peak_value_pre_filter,peak_value_post_filter,max_noise,median_noise = coleval.clear_oscillation_central2([laser_counts_filtered],laser_framerate/len(laser_digitizer_ID),min_frequency_to_erase=75,max_frequency_to_erase=102,oscillation_search_window_begin=0,oscillation_search_window_end=(len(laser_counts_filtered)-1)/(laser_framerate/len(laser_digitizer_ID)),plot_conparison=True,which_plot=[1,2,3],window=window,output_noise=True)
+					laser_counts_filtered = laser_counts_filtered[0]
+					for trash in range(2):
+						fig = matplotlib.pyplot.gcf()
+						fig.set_size_inches(15, 10, forward=True)
+						plt.savefig(laser_to_analyse[:-4]+'_digitizer'+str(i) +'_filter'+str(filter_plot_index)+'.eps', bbox_inches='tight')
+						filter_plot_index+=1
+						plt.close()
+					while peak_value_post_filter>3.2*median_noise:
+						laser_counts_filtered,peak_value_pre_filter,peak_value_post_filter,max_noise,median_noise = coleval.clear_oscillation_central2([laser_counts_filtered],laser_framerate/len(laser_digitizer_ID),min_frequency_to_erase=75,max_frequency_to_erase=102,oscillation_search_window_begin=0,oscillation_search_window_end=(len(laser_counts_filtered)-1)/(laser_framerate/len(laser_digitizer_ID)),plot_conparison=True,which_plot=[1,2,3],window=window,output_noise=True)
+						laser_counts_filtered = laser_counts_filtered[0]
+						for trash in range(2):
+							fig = matplotlib.pyplot.gcf()
+							fig.set_size_inches(15, 10, forward=True)
+							plt.savefig(laser_to_analyse[:-4]+'_digitizer'+str(i) +'_filter'+str(filter_plot_index)+'.eps', bbox_inches='tight')
+							filter_plot_index+=1
+							plt.close()
+			else:
+				laser_counts_filtered = laser_counts_corrected[i]
 			full_average = np.mean(laser_counts_corrected[i][:,np.logical_not(select_space)][select_time],axis=(-1))
 			full_spectra = np.fft.fft(full_average)
 			full_magnitude = 2 * np.abs(full_spectra) / len(full_spectra)
@@ -373,19 +345,12 @@ try:
 			ax[1,0].plot(time_of_experiment_digitizer_ID_seconds[select_time],full_average-temp*i,'k--')
 			# ax[1,0].plot(time_of_experiment_digitizer_ID_seconds,full_average,'k--')
 
-			select_time = np.logical_and(time_of_experiment_digitizer_ID_seconds-start_time_of_pulse>0,time_of_experiment_digitizer_ID_seconds-start_time_of_pulse<1.5)
-			full_saved_file_dict['only_pulse_data'][str(laser_digitizer_ID[i])]['time'] = (time_of_experiment_digitizer_ID_seconds-start_time_of_pulse)[select_time]
-			temp_time.append(full_saved_file_dict['only_pulse_data'][str(laser_digitizer_ID[i])]['time'])
-			full_saved_file_dict['only_pulse_data'][str(laser_digitizer_ID[i])]['counts'] = np.float16(laser_counts_filtered[select_time])
-			temp_counts.append(laser_counts_filtered[select_time])
-			full_saved_file_dict['only_pulse_data'][str(laser_digitizer_ID[i])]['ref_counts'] = np.float16(np.mean(laser_counts_filtered[-int(1*laser_framerate/len(laser_digitizer_ID)):],axis=0))
-			full_saved_file_dict['only_pulse_data'][str(laser_digitizer_ID[i])]['ref_counts_std'] = np.float16(np.std(laser_counts_filtered[-int(seconds_for_reference_frame*laser_framerate/len(laser_digitizer_ID)):],axis=0))
-			bad_pixels_flag = coleval.find_dead_pixels([laser_counts_corrected[i][-int(seconds_for_bad_pixels*laser_framerate/len(laser_digitizer_ID)):]],treshold_for_bad_difference=100)
-			full_saved_file_dict['only_pulse_data'][str(laser_digitizer_ID[i])]['bad_pixels_flag'] = bad_pixels_flag
+			full_saved_file_dict['full_frame'][str(laser_digitizer_ID[i])]['time'] = (time_of_experiment_digitizer_ID_seconds-start_time_of_pulse)
+			time_partial.append(full_saved_file_dict['full_frame'][str(laser_digitizer_ID[i])]['time'])
+			temp_counts.append(laser_counts_filtered)
+			bad_pixels_flag = coleval.find_dead_pixels([laser_counts_corrected[i][-int(seconds_for_bad_pixels*laser_framerate/len(laser_digitizer_ID)):]],treshold_for_bad_difference=200)
+			full_saved_file_dict['full_frame'][str(laser_digitizer_ID[i])]['bad_pixels_flag'] = bad_pixels_flag
 			temp_bad_pixels_flag.append(bad_pixels_flag)
-
-			temp_ref_counts.append(np.mean(laser_counts_filtered[-int(1*laser_framerate/len(laser_digitizer_ID)):],axis=0))
-			temp_ref_counts_std.append(np.std(laser_counts_filtered[-int(seconds_for_reference_frame*laser_framerate/len(laser_digitizer_ID)):],axis=0))	# need to modify count_to_temp_poly_multi_digitizer to accept 2 backgrounds rather than 1 for both digitizers
 		fig.suptitle('Removal of unwanted oscillations\naverage of all frame except the frame')
 
 		ax[0,0].semilogy()
@@ -401,85 +366,33 @@ try:
 		plt.close('all')
 
 		laser_temperature,laser_temperature_std = coleval.count_to_temp_poly_multi_digitizer(temp_counts,params,errparams,laser_digitizer_ID,number_cpu_available,report=1)
-		reference_background_temperature,reference_background_temperature_std = coleval.count_to_temp_poly_multi_digitizer(temp_ref_counts,params,errparams,laser_digitizer_ID,number_cpu_available,counts_std=temp_ref_counts_std,report=0,parallelised=False)
-		laser_temperature_minus_background = [laser_temperature[i]-reference_background_temperature[i] for i in range(len(laser_digitizer_ID))]
-		laser_temperature_std_minus_background = [(laser_temperature_std[i]**2+reference_background_temperature_std[i]**2)**0.5 for i in range(len(laser_digitizer_ID))]
-
 		laser_temperature_no_dead_pixels = [coleval.replace_dead_pixels([data],flag)[0] for flag,data in zip(temp_bad_pixels_flag,laser_temperature)]
 		laser_temperature_std_no_dead_pixels = [coleval.replace_dead_pixels([data],flag)[0] for flag,data in zip(temp_bad_pixels_flag,laser_temperature_std)]
-		laser_temperature_minus_background_no_dead_pixels = [coleval.replace_dead_pixels([data],flag)[0] for flag,data in zip(temp_bad_pixels_flag,laser_temperature_minus_background)]
-		laser_temperature_std_minus_background_no_dead_pixels = [coleval.replace_dead_pixels([data],flag)[0] for flag,data in zip(temp_bad_pixels_flag,laser_temperature_std_minus_background)]
-		reference_background_temperature_no_dead_pixels = [coleval.replace_dead_pixels([[data]],flag)[0][0] for flag,data in zip(temp_bad_pixels_flag,reference_background_temperature)]
-		reference_background_temperature_std_no_dead_pixels = [coleval.replace_dead_pixels([[data]],flag)[0][0] for flag,data in zip(temp_bad_pixels_flag,reference_background_temperature_std)]
-		temp_counts = [coleval.replace_dead_pixels([data],flag)[0] for flag,data in zip(temp_bad_pixels_flag,temp_counts)]
 
-		for i in range(len(laser_digitizer_ID)):
-			# full_saved_file_dict['only_pulse_data'][str(laser_digitizer_ID[i])]['laser_temperature_no_dead_pixels'] = np.float16(laser_temperature_no_dead_pixels[i])
-			# full_saved_file_dict['only_pulse_data'][str(laser_digitizer_ID[i])]['laser_temperature_std_no_dead_pixels'] = np.float16(laser_temperature_std_no_dead_pixels[i])
-			# full_saved_file_dict['only_pulse_data'][str(laser_digitizer_ID[i])]['laser_temperature_minus_background_no_dead_pixels'] = np.float16(laser_temperature_minus_background_no_dead_pixels[i])
-			# full_saved_file_dict['only_pulse_data'][str(laser_digitizer_ID[i])]['laser_temperature_std_minus_background_no_dead_pixels'] = np.float16(laser_temperature_std_minus_background_no_dead_pixels[i])
-			full_saved_file_dict['only_pulse_data'][str(laser_digitizer_ID[i])]['reference_background_temperature_no_dead_pixels'] = np.array(reference_background_temperature_no_dead_pixels[i])
-			full_saved_file_dict['only_pulse_data'][str(laser_digitizer_ID[i])]['reference_background_temperature_std_no_dead_pixels'] = np.array(reference_background_temperature_std_no_dead_pixels[i])
-			try:
-				del full_saved_file_dict['only_pulse_data'][str(laser_digitizer_ID[i])]['laser_temperature_no_dead_pixels']
-				del full_saved_file_dict['only_pulse_data'][str(laser_digitizer_ID[i])]['laser_temperature_std_no_dead_pixels']
-				del full_saved_file_dict['only_pulse_data'][str(laser_digitizer_ID[i])]['laser_temperature_minus_background_no_dead_pixels']
-				del full_saved_file_dict['only_pulse_data'][str(laser_digitizer_ID[i])]['laser_temperature_std_minus_background_no_dead_pixels']
-			except:
-				print('no legacy elements to erase')
+		# for i in range(len(laser_digitizer_ID)):
+		# 	full_saved_file_dict['full_frame'][str(laser_digitizer_ID[i])]['laser_temperature_no_dead_pixels_minus_median'] = np.float16(laser_temperature_no_dead_pixels[i].T-np.median(laser_temperature_no_dead_pixels[i],axis=(-1,-2))).T
+		# 	full_saved_file_dict['full_frame'][str(laser_digitizer_ID[i])]['laser_temperature_no_dead_pixels_median'] = np.median(laser_temperature_no_dead_pixels[i],axis=(-1,-2))
+		# 	full_saved_file_dict['full_frame'][str(laser_digitizer_ID[i])]['laser_temperature_std_no_dead_pixels_minus_median'] = np.float16(laser_temperature_std_no_dead_pixels[i].T-np.median(laser_temperature_std_no_dead_pixels[i],axis=(-1,-2))).T
+		# 	full_saved_file_dict['full_frame'][str(laser_digitizer_ID[i])]['laser_temperature_std_no_dead_pixels_median'] = np.median(laser_temperature_std_no_dead_pixels[i],axis=(-1,-2))
 
-
-		temp_time_full = np.sort(np.concatenate(temp_time))
-		laser_full = [(temp_counts[0][np.abs(temp_time[0]-time).argmin()]) if time in temp_time[0] else (temp_counts[1][np.abs(temp_time[1]-time).argmin()]) for time in temp_time_full]
-		laser_temperature_full = [(laser_temperature_no_dead_pixels[0][np.abs(temp_time[0]-time).argmin()]) if time in temp_time[0] else (laser_temperature_no_dead_pixels[1][np.abs(temp_time[1]-time).argmin()]) for time in temp_time_full]
-		laser_temperature_std_full = [(laser_temperature_std_no_dead_pixels[0][np.abs(temp_time[0]-time).argmin()]) if time in temp_time[0] else (laser_temperature_std_no_dead_pixels[1][np.abs(temp_time[1]-time).argmin()]) for time in temp_time_full]
-		laser_temperature_minus_background_full = [(laser_temperature_minus_background_no_dead_pixels[0][np.abs(temp_time[0]-time).argmin()]) if time in temp_time[0] else (laser_temperature_minus_background_no_dead_pixels[1][np.abs(temp_time[1]-time).argmin()]) for time in temp_time_full]
-		laser_temperature_std_minus_background_full = [(laser_temperature_std_minus_background_no_dead_pixels[0][np.abs(temp_time[0]-time).argmin()]) if time in temp_time[0] else (laser_temperature_std_minus_background_no_dead_pixels[1][np.abs(temp_time[1]-time).argmin()]) for time in temp_time_full]
-		full_saved_file_dict['only_pulse_data']['laser_temperature_full_median'] = np.median(laser_temperature_full,axis=0)
-		full_saved_file_dict['only_pulse_data']['laser_temperature_std_full_median'] = np.median(laser_temperature_std_full,axis=0)
-		full_saved_file_dict['only_pulse_data']['laser_temperature_full_minus_median'] = np.float16(laser_temperature_full-np.median(laser_temperature_full,axis=0))
-		full_saved_file_dict['only_pulse_data']['laser_temperature_std_full_minus_median'] = np.float16(laser_temperature_std_full-np.median(laser_temperature_std_full,axis=0))
-		full_saved_file_dict['only_pulse_data']['laser_temperature_minus_background_full_median'] = np.median(laser_temperature_minus_background_full,axis=0)
-		full_saved_file_dict['only_pulse_data']['laser_temperature_std_minus_background_full_median'] = np.median(laser_temperature_std_minus_background_full,axis=0)
-		full_saved_file_dict['only_pulse_data']['laser_temperature_minus_background_full_minus_median'] = np.float16(laser_temperature_minus_background_full-np.median(laser_temperature_minus_background_full,axis=0))
-		full_saved_file_dict['only_pulse_data']['laser_temperature_std_minus_background_full_minus_median'] = np.float16(laser_temperature_std_minus_background_full-np.median(laser_temperature_std_minus_background_full,axis=0))
-		if len(np.unique(np.diff(temp_time_full)))<5:
-			temp = np.polyval(np.polyfit(np.arange(len(temp_time_full)),temp_time_full,1),np.arange(len(temp_time_full)))
-			temp_time_full = temp - (temp[0]-temp_time_full[0])
-			full_saved_file_dict['only_pulse_data']['time_full_mode'] = 'the time series was eiterpolated to increase resolution. time intervals were '+str(np.diff(temp_time_full))
+		time_full = np.sort(np.concatenate(time_partial))
+		if len(np.unique(np.diff(time_full)))<5:
+			temp = np.polyval(np.polyfit(np.arange(len(time_full)),time_full,1),np.arange(len(time_full)))
+			time_full = temp - (temp[0]-time_full[0])
+			full_saved_file_dict['full_frame']['time_full_mode'] = 'the time series was eiterpolated to increase resolution. time intervals were '+str(np.diff(temp_time_full))
 		else:
-			full_saved_file_dict['only_pulse_data']['time_full_mode'] = 'no time refinement required'
-		full_saved_file_dict['only_pulse_data']['time_full'] = np.array(temp_time_full)
+			full_saved_file_dict['full_frame']['time_full_mode'] = 'no time refinement required'
+		full_saved_file_dict['full_frame']['time_full'] = time_full
 
-		try:
-			del full_saved_file_dict['only_pulse_data']['laser_temperature_full']
-			del full_saved_file_dict['only_pulse_data']['laser_temperature_std_full']
-			del full_saved_file_dict['only_pulse_data']['laser_temperature_minus_background_full']
-			del full_saved_file_dict['only_pulse_data']['laser_temperature_std_minus_background_full']
-		except:
-			print('no legacy elements to erase')
-
-		np.savez_compressed(laser_to_analyse[:-4],**full_saved_file_dict)
-
-		try:
-			saved_file_dict_short = np.load(laser_to_analyse[:-4]+'_short.npz')
-			saved_file_dict_short.allow_pickle=True
-			a=saved_file_dict_short['counts']
-			saved_file_dict_short = dict(saved_file_dict_short)
-		except:
-			saved_file_dict_short = dict([])
-		saved_file_dict_short['counts'] = np.float32(laser_full)
-		saved_file_dict_short['temperature_minus_background'] = np.float32(laser_temperature_minus_background_full)
-		saved_file_dict_short['temperature_minus_background_std'] = np.float32(laser_temperature_std_minus_background_full)
-		saved_file_dict_short['temperature'] = np.float32(laser_temperature_full)
-		saved_file_dict_short['temperature_std'] = np.float32(laser_temperature_std_full)
-		saved_file_dict_short['time_full'] = np.array(temp_time_full)
-		np.savez_compressed(laser_to_analyse[:-4]+'_short',**saved_file_dict_short)
+		exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_pulse_process3.py").read())
 
 	for i in laser_digitizer_ID:
 		laser_counts_corrected[i] = laser_counts_corrected[i].tolist()
 	laser_counts_corrected = list(laser_counts_corrected)
 
+	ROI_horizontal = [220,238,50,100]
+	# ROI_horizontal = [35,45,68,73]
+	ROI_vertical = [100,170,28,45]
 	if not every_pixel_independent:
 		for i in range(len(laser_digitizer_ID)):
 			time_of_experiment_digitizer_ID_seconds = (time_of_experiment_digitizer_ID[i]-time_of_experiment[0])*1e-6
@@ -519,10 +432,10 @@ try:
 		ani.save(laser_to_analyse[:-4]+ '_counts.mp4', fps=5, writer='ffmpeg',codec='mpeg4')
 		plt.close('all')
 		# plt.pause(0.01)
-		laser_temperature_minus_background_full = full_saved_file_dict['only_pulse_data']['laser_temperature_minus_background_full_median'] + full_saved_file_dict['only_pulse_data']['laser_temperature_minus_background_full_minus_median'].astype(np.float64)
-		ani = coleval.movie_from_data(np.array([np.flip(np.transpose(laser_temperature_minus_background_full,(0,2,1)),axis=2)]), laser_framerate,integration=laser_int_time / 1000, extvmin=0,extvmax=laser_temperature_minus_background_full[10:,:,:220].max(),xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='temp increase [K]', prelude='shot ' + laser_to_analyse[-9:-4] + '\n')
-		ani.save(laser_to_analyse[:-4]+ '_temp.mp4', fps=5, writer='ffmpeg',codec='mpeg4')
-		plt.close('all')
+		# laser_temperature_minus_background_full = full_saved_file_dict['only_pulse_data']['laser_temperature_minus_background_full_median'] + full_saved_file_dict['only_pulse_data']['laser_temperature_minus_background_full_minus_median'].astype(np.float64)
+		# ani = coleval.movie_from_data(np.array([np.flip(np.transpose(laser_temperature_minus_background_full,(0,2,1)),axis=2)]), laser_framerate,integration=laser_int_time / 1000, extvmin=0,extvmax=laser_temperature_minus_background_full[10:,:,:220].max(),xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='temp increase [K]', prelude='shot ' + laser_to_analyse[-9:-4] + '\n')
+		# ani.save(laser_to_analyse[:-4]+ '_temp.mp4', fps=5, writer='ffmpeg',codec='mpeg4')
+		# plt.close('all')
 		laser_counts_merged = np.array([(laser_counts[0][np.abs(time_of_experiment_digitizer_ID[0]-time).argmin()]) if ID==laser_digitizer_ID[0] else (laser_counts[1][np.abs(time_of_experiment_digitizer_ID[1]-time).argmin()]) for time,ID in zip(time_of_experiment,laser_digitizer)])
 		ani = coleval.movie_from_data(np.array([np.flip(np.transpose(laser_counts_merged,(0,2,1)),axis=2)]), laser_framerate, integration=laser_int_time/1000,time_offset=-start_time_of_pulse,xlabel='horizontal coord [pixels]',ylabel='vertical coord [pixels]',barlabel='raw counts [au]', prelude='shot ' + laser_to_analyse[-9:-4] + '\n')
 		# plt.pause(0.01)
@@ -535,7 +448,7 @@ try:
 
 		print('completed ' + laser_to_analyse)
 
-	exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_temp_to_power2.py").read())
+	# exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_temp_to_power2.py").read())
 
 except Exception as e:
 	print('FAILED ' + laser_to_analyse)

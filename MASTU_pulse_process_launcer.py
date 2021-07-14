@@ -40,47 +40,31 @@ parameters_available_int_time = np.array(parameters_available_int_time)
 parameters_available_framerate = np.array(parameters_available_framerate)
 
 
-path = '/home/ffederic/work/irvb/MAST-U/'
-# to_do = ['2021-05-18','2021-05-19','2021-05-20','2021-05-21','2021-05-25','2021-05-26','2021-05-27','2021-05-28','2021-06-02','2021-06-03','2021-06-04','2021-06-15','2021-06-16','2021-06-17','2021-06-18','2021-06-22','2021-06-23','2021-06-24','2021-06-25','2021-06-29','2021-06-30','2021-07-01','2021-07-06','2021-07-07']
-to_do = ['2021-07-06']
-to_do = np.flip(to_do,axis=0)
-# to_do = ['2021-06-03']
-# path = '/home/ffederic/work/irvb/MAST-U/preliminaly_shots/'
-# to_do = ['2021-05-13','2021-05-12','2021-04-28','2021-04-29','2021-04-30']
-
 seconds_for_bad_pixels = 2	# s
 seconds_for_reference_frame = 1	# s
 
-
-f = []
-for (dirpath, dirnames, filenames) in os.walk(path):
-	f.append(dirnames)
-days_available = f[0]
-shot_available = []
-for i_day,day in enumerate(to_do):
-	f = []
-	for (dirpath, dirnames, filenames) in os.walk(path+day+'/'):
-		f.append(filenames)
-	shot_available.append([])
-	for name in f[0]:
-		if name[-3:]=='ats' or name[-3:]=='ptw':
-			shot_available[i_day].append(name)
-
-
 every_pixel_independent = False
 
-# for i_day,day in enumerate(to_do):
-# # for i_day,day in enumerate(np.flip(to_do,axis=0)):
-# 	# for name in shot_available[i_day]:
-# 	for name in np.flip(shot_available[i_day],axis=0):
-# 		laser_to_analyse=path+day+'/'+name
-#
-# 		exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_pulse_process.py").read())
 
-i_day,day = 0,'2021-07-01'
-name='IRVB-MASTU_shot-44391.ptw'
-# i_day,day = 0,'2021-07-06'
-# name='IRVB-MASTU_shot-44415.ptw'
-laser_to_analyse=path+day+'/'+name
-exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_pulse_process2.py").read())
-exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_temp_to_power3.py").read())
+last_pulse_path = '/home/ffederic/work/irvb/MAST-U/'
+last_pulse_dict = dict(np.load(last_pulse_path+'last_pulse.npz'))
+
+day = str(last_pulse_dict['location'][0])
+if len(last_pulse_dict['location'])>1:
+	last_pulse_dict['location'] = last_pulse_dict['location'][1:]
+elif len(last_pulse_dict['location'])==0:
+	print('no pulse to analyse')
+	exit()
+else:
+	last_pulse_dict['location'] = []
+name = str(last_pulse_dict['filename'][0])
+if len(last_pulse_dict['filename'])>1:
+	last_pulse_dict['filename'] = last_pulse_dict['filename'][1:]
+else:
+	last_pulse_dict['filename'] = []
+np.savez_compressed(last_pulse_path+'last_pulse',**last_pulse_dict)
+
+laser_to_analyse=last_pulse_path+day+'/'+name
+path = last_pulse_path
+
+exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_pulse_process.py").read())

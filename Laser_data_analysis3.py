@@ -1,6 +1,6 @@
 # Created 28/06/2021
 # Fabio Federici
-# I start from Laser_data_analysis3, but I want to start from the steady state, that gives me emissivity and diffusivity
+# I start from Laser_data_analysis2, but I want to start from the steady state, that gives me emissivity and diffusivity
 
 #this is if working on a pc, use pc printer
 exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_import_pc.py").read())
@@ -64,16 +64,16 @@ index1=0
 index2=0
 index3=0
 for array in f:
-	x=np.float(array[2])*dx+np.random.random()/4*dx
-	y=np.float(array[4])*dx+np.random.random()/4*dx
+	x=float(array[2])*dx+np.random.random()/4*dx
+	y=float(array[4])*dx+np.random.random()/4*dx
 	if array[0]=='fully_defocused':
-		plt.plot(x,y,'o',fillstyle='none',color=color[index1],label='full def'+' FR%.5gHz ' %(np.float(array[-1])) + array[1],markersize=5+index1*2)
+		plt.plot(x,y,'o',fillstyle='none',color=color[index1],label='full def'+' FR%.5gHz ' %(float(array[-1])) + array[1],markersize=5+index1*2)
 		index1+=1
 	elif array[0]=='partially_defocused':
-		plt.plot(x,y,'v',fillstyle='none',color=color[index2],label='part def'+' FR%.5gHz ' %(np.float(array[-1])) + array[1],markersize=5+index2*2)
+		plt.plot(x,y,'v',fillstyle='none',color=color[index2],label='part def'+' FR%.5gHz ' %(float(array[-1])) + array[1],markersize=5+index2*2)
 		index2+=1
 	else:
-		plt.plot(x,y,'+',color=color[index3],label='focus'+' FR%.5gHz ' %(np.float(array[-1])) + array[1],markersize=5+index3*2)
+		plt.plot(x,y,'+',color=color[index3],label='focus'+' FR%.5gHz ' %(float(array[-1])) + array[1],markersize=5+index3*2)
 		index3+=1
 	plt.annotate(array[1][-2:],(x+1e-4,y+1e-4),fontsize=10)
 plt.plot([0,foilhorizw,foilhorizw,0,0],[0,0,foilvertw,foilvertw,0],'k')
@@ -177,7 +177,7 @@ for cases_to_include in all_cases_to_include:
 			partial_diffusion_std = laser_dict['partial_diffusion_std']
 			partial_timevariation = laser_dict['partial_timevariation']
 			partial_timevariation_std = laser_dict['partial_timevariation_std']
-			time_of_experiment = laser_dict['time_of_measurement']	# microseconds
+			time_of_experiment = laser_dict['time_of_experiment']	# microseconds
 			if np.diff(time_of_experiment).max()>np.median(np.diff(time_of_experiment))*1.1:
 				hole_pos = np.diff(time_of_experiment).argmax()
 				if hole_pos<len(time_of_experiment)/2:
@@ -248,6 +248,7 @@ for cases_to_include in all_cases_to_include:
 		print([search_emissivity,search_thickness])
 		search_diffusivity = Ptthermaldiffusivity
 		all_fitted_power = []
+		all_fitted_zero_power = []
 		for index in range(len(all_laser_to_analyse_power_end)):
 			time_of_experiment = all_time_of_experiment[index]
 			partial_BBrad = all_partial_BBrad[index]
@@ -265,9 +266,10 @@ for cases_to_include in all_cases_to_include:
 			# BBrad_std = partial_BBrad_std * 1
 			diffusion = partial_diffusion * search_thickness
 			# diffusion_std = partial_diffusion_std * search_thickness
-			timevariation = (1/search_diffusivity)*search_thickness * partial_timevariation
+			# timevariation = (1/search_diffusivity)*search_thickness * partial_timevariation
 			# timevariation_std = (1/search_diffusivity)*search_thickness * partial_timevariation_std
-			powernoback = diffusion + timevariation + BBrad
+			# powernoback = diffusion + timevariation + BBrad
+			powernoback = diffusion + BBrad
 			# powernoback_std = (diffusion_std**2 + timevariation_std**2 + BBrad_std**2)**0.5
 			frames_for_one_pulse = int(laser_framerate/experimental_laser_frequency)
 			time_ON_after_SS = int(frames_for_one_pulse*experimental_laser_duty - minimum_ON_period*laser_framerate)
@@ -282,15 +284,17 @@ for cases_to_include in all_cases_to_include:
 			# plt.plot(time_of_experiment[1:-1],totalpower_filtered_1)
 			# plt.pause(0.01)
 
-			all_fitted_power.append(totalpower_filtered_1.max())
-		all_fitted_power = np.array(all_fitted_power)/(all_laser_to_analyse_power_end*power_reduction_window)
+			all_fitted_power.append(totalpower_filtered_1.max()-totalpower_filtered_1.min())
+			all_fitted_zero_power.append(totalpower_filtered_1.min())
+		all_fitted_power = np.concatenate([np.array(all_fitted_power)/(all_laser_to_analyse_power_end*power_reduction_window),np.array(all_fitted_zero_power)/(all_laser_to_analyse_power_end*power_reduction_window)])
 		return all_fitted_power
 
-	x = np.arange(len(all_laser_to_analyse_power_end))
-	y = np.ones_like(all_laser_to_analyse_power_end)
+	x = np.arange(len(all_laser_to_analyse_power_end)*2)
+	y = np.concatenate([np.ones_like(all_laser_to_analyse_power_end),np.zeros_like(all_laser_to_analyse_power_end)])
 	# weigth = np.array([np.ones_like(all_laser_to_analyse_power_end)*1,np.ones_like(all_laser_to_analyse_power_end)*0.1,np.ones_like(all_laser_to_analyse_power_end)*0.001*sharpness_degradation_high_frequency]).T.flatten()
 	# sigma = np.ones_like(y)
 	sigma = np.abs(all_laser_to_analyse_power_end-all_laser_to_analyse_power_end.max()) + all_laser_to_analyse_power_end.max()
+	sigma = np.concatenate([sigma,sigma])
 	bds = [[0.7,0.1*2.5e-6],[1,10*2.5e-6]]
 	guess=[1,2.5e-6]
 	fit = curve_fit(calculate_laser_power_given_parameters_1, x, y, sigma=sigma, p0=guess,bounds=bds,maxfev=int(1e6),verbose=2,ftol=1e-12,xtol=1e-14,gtol=1e-12)
@@ -298,7 +302,7 @@ for cases_to_include in all_cases_to_include:
 	guess_best_power = calculate_laser_power_given_parameters_1(1,*guess)
 	emissivity_first_stage, thickness_first_stage = fit[0]
 	coefficients_first_stage.append(fit[0])
-	all_sharpness_first.append(np.nanmean(best_sharpness))
+	# all_sharpness_first.append(np.nanmean(best_sharpness))
 
 	minimum_ON_period = minimum_ON_period_list[1]
 
@@ -348,7 +352,7 @@ for cases_to_include in all_cases_to_include:
 			partial_diffusion_std = laser_dict['partial_diffusion_std']
 			partial_timevariation = laser_dict['partial_timevariation']
 			partial_timevariation_std = laser_dict['partial_timevariation_std']
-			time_of_experiment = laser_dict['time_of_measurement']	# microseconds
+			time_of_experiment = laser_dict['time_of_experiment']	# microseconds
 			laser_framerate = laser_dict['FrameRate']	# Hz
 			laser_location = laser_dict['laser_location']
 			success_read = True
@@ -493,7 +497,9 @@ for cases_to_include in all_cases_to_include:
 	fit = curve_fit(calculate_laser_power_given_parameters, x, y, sigma=weigth, p0=guess,bounds=bds,maxfev=int(1e6),verbose=2,ftol=1e-12,xtol=1e-14,gtol=1e-12)
 	best_sharpness = calculate_laser_power_given_parameters(1,*fit[0])
 	diffusivity_second_stage = fit[0][0]
-	diffusivity_second_stage = 1.03e-5	# this seems to work better. I'm fixing now the experiments in which there are breaks in time that mess up things.
+	# diffusivity_second_stage = 1.03e-5	# this seems to work better. I'm fixing now the experiments in which there are breaks in time that mess up things.
+	# # when that is done I hope that this automatic procedure will give me around the value I found manually
+	diffusivity_second_stage = 4.2e-5	# this seems to work better. I'm fixing now the experiments in which there are breaks in time that mess up things.
 	# when that is done I hope that this automatic procedure will give me around the value I found manually
 
 	for index in np.arange(len(all_laser_to_analyse_power_end)):
@@ -620,7 +626,7 @@ for cases_to_include in all_cases_to_include:
 		plt.xlabel('time [s]')
 		plt.ylabel('power [W]')
 		plt.grid()
-		plt.title(laser_to_analyse+' in '+case_ID+'\nInput '+focus_status+', spot location '+ str([int(laser_location[0]),int(laser_location[2])]) +' power %.3gW, freq %.3gHz, duty%.3g\nHigh Power=%.3g+/-%.3gW, Low Power=%.3g+/-%.3gW, sharpness=%.3g' %(laser_to_analyse_power_end*defocused_to_focused_power,experimental_laser_frequency,experimental_laser_duty,fitted_power_2[2],fitted_power_2[3],fitted_power_2[0],fitted_power_2[1],sharpness_indicator))
+		plt.title(laser_to_analyse+' in '+case_ID+'\nInput '+focus_status+', spot location '+ str([int(laser_location[0]),int(laser_location[2])]) +' power %.3gW, freq %.3gHz, duty%.3g\nHigh Power=%.3g+/-%.3gW, Low Power=%.3g+/-%.3gW, sharpness=%.3g' %(laser_to_analyse_power_end*defocused_to_focused_power*power_reduction_window,experimental_laser_frequency,experimental_laser_duty,fitted_power_2[2],fitted_power_2[3],fitted_power_2[0],fitted_power_2[1],sharpness_indicator))
 		# plt.pause(0.01)
 		figure_index+=1
 		plt.savefig(path_where_to_save_everything_int + 'example_' + str(figure_index) +'.eps', bbox_inches='tight')

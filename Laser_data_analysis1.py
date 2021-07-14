@@ -8,11 +8,14 @@ exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_import_pc.py").
 # #this is if working in batch, use predefined NOT visual printer
 # exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_import_batch.py").read())
 
+# to show the line where it fails
+import sys, traceback, logging
+logging.basicConfig(level=logging.ERROR)
 
 #this is for importing all the variables names and which are the files
 exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_indexing.py").read())
 from multiprocessing import Pool,cpu_count,current_process,set_start_method,get_context,Semaphore
-number_cpu_available = 5
+number_cpu_available = 8
 # number_cpu_available = cpu_count()
 
 
@@ -54,8 +57,8 @@ else:	# automatic collection of parameters
 	all_power_interpolator = []
 	all_foil_position_dict = []
 	for name in cases_to_include:
-		if collection_of_records[name]['focus_status'][0] != 'fully_defocused':
-			continue
+		# if collection_of_records[name]['focus_status'][0] == 'fully_defocused':
+		# 	continue
 		all_case_ID.extend([name] * len(collection_of_records[name]['path_files_laser']))
 		all_path_reference_frames.extend(collection_of_records[name]['reference_clear'])
 		all_laser_to_analyse.extend(collection_of_records[name]['path_files_laser'])
@@ -87,8 +90,8 @@ parameters_available = f[0]
 parameters_available_int_time = []
 parameters_available_framerate = []
 for path in parameters_available:
-	parameters_available_int_time.append(np.float(path[:path.find('ms')]))
-	parameters_available_framerate.append(np.float(path[path.find('ms')+2:path.find('Hz')]))
+	parameters_available_int_time.append(float(path[:path.find('ms')]))
+	parameters_available_framerate.append(float(path[path.find('ms')+2:path.find('Hz')]))
 parameters_available_int_time = np.array(parameters_available_int_time)
 parameters_available_framerate = np.array(parameters_available_framerate)
 
@@ -107,10 +110,14 @@ parameters_available_framerate = np.array(parameters_available_framerate)
 
 # example good properties that I use to see how detected power changes with sampling area
 sample_properties = dict([])
-sample_properties['thickness'] = 3.2*1e-6
+# sample_properties['thickness'] = 3.2*1e-6
+# sample_properties['emissivity'] = 1
+# sample_properties['diffusivity'] = 1.32*1e-5
+sample_properties['thickness'] = 2.093616658223934e-06
 sample_properties['emissivity'] = 1
-sample_properties['diffusivity'] = 1.32*1e-5
-
+sample_properties['diffusivity'] = 1.03*1e-5
+# BBtreshold = 0.06
+BBtreshold = 0.13
 
 def function_a(index):
 	from uncertainties.unumpy import nominal_values,std_devs
@@ -255,7 +262,7 @@ def function_a(index):
 		foilhorizw=0.09	# m
 		foilvertw=0.07	# m
 		foilhorizwpixel = foil_position_dict['foilhorizwpixel']
-		foilvertwpixel=np.int((foilhorizwpixel*foilvertw)//foilhorizw)
+		foilvertwpixel=int((foilhorizwpixel*foilvertw)//foilhorizw)
 		r=((foilhorizwpixel**2+foilvertwpixel**2)**0.5)/2  # HALF DIAGONAL
 		a=foilvertwpixel/np.cos(foilrot)
 		tgalpha=np.tan(foilrot)
@@ -295,10 +302,10 @@ def function_a(index):
 		precisionincrease=10
 		dummy=np.ones(np.multiply(np.shape(testrot),precisionincrease))
 		dummy[foilcenter[1]*precisionincrease,foilcenter[0]*precisionincrease]=2
-		dummy[np.int(foily[0]*precisionincrease),np.int(foilx[0]*precisionincrease)]=3
-		dummy[np.int(foily[1]*precisionincrease),np.int(foilx[1]*precisionincrease)]=4
-		dummy[np.int(foily[2]*precisionincrease),np.int(foilx[2]*precisionincrease)]=5
-		dummy[np.int(foily[3]*precisionincrease),np.int(foilx[3]*precisionincrease)]=6
+		dummy[int(foily[0]*precisionincrease),int(foilx[0]*precisionincrease)]=3
+		dummy[int(foily[1]*precisionincrease),int(foilx[1]*precisionincrease)]=4
+		dummy[int(foily[2]*precisionincrease),int(foilx[2]*precisionincrease)]=5
+		dummy[int(foily[3]*precisionincrease),int(foilx[3]*precisionincrease)]=6
 		dummy2=rotate(dummy,foilrotdeg,axes=(-1,-2),order=0)
 		foilcenterrot=(np.rint([np.where(dummy2==2)[1][0]/precisionincrease,np.where(dummy2==2)[0][0]/precisionincrease])).astype('int')
 		foilxrot=(np.rint([np.where(dummy2==3)[1][0]/precisionincrease,np.where(dummy2==4)[1][0]/precisionincrease,np.where(dummy2==5)[1][0]/precisionincrease,np.where(dummy2==6)[1][0]/precisionincrease,np.where(dummy2==3)[1][0]/precisionincrease])).astype('int')
@@ -425,6 +432,7 @@ def function_a(index):
 		# I subtract the background to the counts and add back the average of the background counts
 		# NO!! I cannot do this either, because the counts to temp coefficients are fuilt in with the disuniformity, and non't work if I remove it before hand.
 
+	laser_dict.allow_pickle=True
 	temp1 = laser_dict['laser_temperature_minus_background_median']	# this is NOT minus_background, that is a relic of what I did before, but I keep it not to recreate all .npz, same for the next3
 	temp2 = laser_dict['laser_temperature_minus_background_minus_median_downgraded']
 	temp3 = laser_dict['laser_temperature_minus_background_std_median']
@@ -488,8 +496,8 @@ def function_a(index):
 		laser_temperature_std_minus_background_rot[np.logical_and(laser_temperature_minus_background_rot<np.nanmin(laser_temperature_minus_background_full),laser_temperature_minus_background_rot>np.nanmax(laser_temperature_minus_background_full))]=0
 		laser_temperature_minus_background_rot*=out_of_ROI_mask
 		laser_temperature_minus_background_rot[np.logical_and(laser_temperature_minus_background_rot<np.nanmin(laser_temperature_minus_background_full),laser_temperature_minus_background_rot>np.nanmax(laser_temperature_minus_background_full))]=0
-	laser_temperature_minus_background_crop=laser_temperature_minus_background_rot[:,foildw:foilup,foillx:foilrx]
-	laser_temperature_std_minus_background_crop=laser_temperature_std_minus_background_rot[:,foildw:foilup,foillx:foilrx]
+	laser_temperature_minus_background_crop=laser_temperature_minus_background_rot[:,foildw:foilup,foillx:foilrx].astype(np.float32)
+	laser_temperature_std_minus_background_crop=laser_temperature_std_minus_background_rot[:,foildw:foilup,foillx:foilrx].astype(np.float32)
 	nan_ROI_mask = np.isfinite(np.nanmedian(laser_temperature_minus_background_crop[:10],axis=0))
 
 	reference_background_temperature_rot=rotate(reference_background_temperature_no_dead_pixels,foilrotdeg,axes=(-1,-2))
@@ -500,9 +508,9 @@ def function_a(index):
 		reference_background_temperature_rot*=out_of_ROI_mask
 		reference_background_temperature_rot[np.logical_and(reference_background_temperature_rot<np.nanmin(reference_background_temperature_no_dead_pixels),reference_background_temperature_rot>np.nanmax(reference_background_temperature_no_dead_pixels))]=np.nanmean(reference_background_temperature_no_dead_pixels)
 	reference_background_temperature_crop=reference_background_temperature_rot[:,foildw:foilup,foillx:foilrx]
-	reference_background_temperature_crop = np.nanmean(reference_background_temperature_crop,axis=0)
+	reference_background_temperature_crop = np.nanmean(reference_background_temperature_crop,axis=0).astype(np.float32)
 	reference_background_temperature_std_crop=reference_background_temperature_std_rot[:,foildw:foilup,foillx:foilrx]
-	reference_background_temperature_std_crop = np.nanmean(reference_background_temperature_std_crop,axis=0)
+	reference_background_temperature_std_crop = np.nanmean(reference_background_temperature_std_crop,axis=0).astype(np.float32)
 
 	del laser_temperature_minus_background_rot,laser_temperature_std_minus_background_rot,reference_background_temperature_no_dead_pixels,reference_background_temperature_std_no_dead_pixels
 
@@ -740,19 +748,71 @@ def function_a(index):
 	power_vs_space_sampling = power_vs_space_sampling_explorer()
 
 	dr = (power_vs_space_sampling['all_dr'])[nominal_values(power_vs_space_sampling['fitted_powers'][:,1][power_vs_space_sampling['all_dr']<=dr]).argmax()]
+
+	if focus_status == 'focused':
+		dr_total_power_minimum = 5
+		# dr_total_power = 17
+	elif focus_status == 'partially_defocused':
+		dr_total_power_minimum = 7
+		# dr_total_power = 20
+	elif focus_status == 'fully_defocused':
+		dr_total_power_minimum = 10
+		# dr_total_power = 25
+	else:
+		print('focus type '+focus_status+" unknown, used 'fully_defocused' settings")
+		# dr_total_power = 16
+		dr_total_power_minimum = 25
+
+	limit = 110
+	test=0
+	while True:
+		select1 = (((horizontal_coord-horizontal_loc)**2 + (vertical_coord-vertical_loc)**2)>(limit)**2)[1:-1,1:-1]
+		if np.nansum(nan_ROI_mask[1:-1,1:-1][select1])>300:
+			break
+		else:
+			limit -= 10
+	fig, ax = plt.subplots( 2,1,figsize=(10, 14), squeeze=False, sharex=True)
+	time_averaged_BBrad_over_duty = np.nanmean(temp_BBrad[:int(len(temp_BBrad)//frames_for_one_pulse*frames_for_one_pulse)],axis=0)
+	test = []
+	for value in np.arange(5,limit-10):
+		select2 = np.logical_and( (((horizontal_coord-horizontal_loc)**2 + (vertical_coord-vertical_loc)**2)<=(value+2)**2)[1:-1,1:-1] , (((horizontal_coord-horizontal_loc)**2 + (vertical_coord-vertical_loc)**2)>value**2)[1:-1,1:-1] )
+		test.append(np.nanmean(time_averaged_BBrad_over_duty[select2])-np.nanmean(time_averaged_BBrad_over_duty[select1]))
+	dr_total_power_BB = np.arange(5,limit-10)[np.abs(np.array(test)-BBtreshold).argmin()]
+	ax[0,0].plot(np.arange(5,limit-10)*dx,test)
+	ax[0,0].axhline(y=BBtreshold,linestyle='--',color='k',label='treshold')
+	ax[0,0].axvline(x=dr_total_power_BB*dx,linestyle='--',color='r',label='detected')
+	ax[0,0].axvline(x=dr_total_power_minimum*dx,linestyle='--',color='b',label='minimum')
+	ax[0,0].set_ylim(top=min(np.nanmax(test),BBtreshold*5),bottom=np.nanmin(test))
+	ax[0,0].set_xlim(left=0)
+	ax[0,0].set_ylabel('black body')
+	ax[0,0].legend(loc='best', fontsize='x-small')
+	ax[0,0].grid()
+	temp = np.nanmax(laser_temperature_minus_background_crop[1:-1],axis=(1,2))
+	time_averaged_diffusion_over_duty = np.nanmean(temp_diffusion[temp>np.sort(temp)[-int(len(temp)*experimental_laser_duty)]],axis=0)
+	test = []
+	for value in np.arange(5,limit-10):
+		select1 = (((horizontal_coord-horizontal_loc)**2 + (vertical_coord-vertical_loc)**2)>(value)**2)[1:-1,1:-1]
+		select2 = np.logical_and( (((horizontal_coord-horizontal_loc)**2 + (vertical_coord-vertical_loc)**2)<=(value+4)**2)[1:-1,1:-1] , (((horizontal_coord-horizontal_loc)**2 + (vertical_coord-vertical_loc)**2)>value**2)[1:-1,1:-1] )
+		test.append(np.nanmean(time_averaged_diffusion_over_duty[select1]))
+	dr_total_power_diff = np.arange(5,limit-10)[np.abs((test[:40]+2*np.max(np.abs(test[40:])))).argmin()]
+	ax[1,0].plot(np.arange(5,limit-10)*dx,test)
+	ax[1,0].axhline(y=-2*np.nanmax(np.abs(test[40:])),linestyle='--',color='k')
+	ax[1,0].axvline(x=dr_total_power_diff*dx,linestyle='--',color='r')
+	ax[1,0].axvline(x=dr_total_power_minimum*dx,linestyle='--',color='b')
+	ax[1,0].set_ylim(bottom=-4*np.nanmax(np.abs(test[40:])),top=np.nanmax(test))
+	ax[1,0].set_xlim(left=0)
+	ax[1,0].set_ylabel('diffusion')
+	ax[1,0].set_xlabel('radious of power sum [mm]')
+	ax[1,0].grid()
+	dr_total_power = np.max([dr_total_power_diff,dr_total_power_minimum,dr_total_power_BB])
 	# temp = np.logical_and(power_vs_space_sampling['all_dr']>dr*1.2,power_vs_space_sampling['all_dr']<np.max(power_vs_space_sampling['all_dr']))
 	# dr_total_power = (power_vs_space_sampling['all_dr'][temp])[nominal_values(power_vs_space_sampling['fitted_powers'][:,1][temp]).argmin()]
 	# dr_total_power = dr*2
-	if focus_status == 'focused':
-		dr_total_power = 5
-	elif focus_status == 'partially_defocused':
-		dr_total_power = 7
-	elif focus_status == 'fully_defocused':
-		dr_total_power = 10
-	else:
-		print('focus type '+focus_status+" unknown, used 'fully_defocused' settings")
-		dr_total_power = 16
 	select = (((horizontal_coord-horizontal_loc)**2 + (vertical_coord-vertical_loc)**2)<=dr_total_power**2)[1:-1,1:-1]
+	fig.suptitle(preamble_4_prints+'Search for power sum size in '+laser_to_analyse+'\nfound %.3gmm' %(dr_total_power*dx))
+	figure_index+=1
+	plt.savefig(path_to_save_figures+laser_to_analyse[-6:] + path_to_save_figures2 + 'FIG'+str(figure_index)+'.eps', bbox_inches='tight')
+	plt.close('all')
 
 	def power_vs_time_sampling_explorer():
 		from uncertainties import ufloat
@@ -821,7 +881,7 @@ def function_a(index):
 	timevariation[:,nan_ROI_mask[1:-1,1:-1]] = (temp_timevariation[:,nan_ROI_mask[1:-1,1:-1]]*foilthicknessscaled[nan_ROI_mask[1:-1,1:-1]]*reciprdiffusivityscaled[nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
 	timevariation_std = np.ones_like(temp_BBrad).astype(np.float32)*np.nan
 	timevariation_std[:,nan_ROI_mask[1:-1,1:-1]] = (temp_timevariation_std[:,nan_ROI_mask[1:-1,1:-1]]*foilthicknessscaled[nan_ROI_mask[1:-1,1:-1]]*reciprdiffusivityscaled[nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
-	del temp_BBrad,temp_BBrad_std,temp_diffusion,temp_diffusion_std,temp_timevariation,temp_timevariation_std
+	del temp_BBrad_std,temp_diffusion_std,temp_timevariation,temp_timevariation_std
 	powernoback = (diffusion + timevariation + BBrad).astype(np.float32)
 	powernoback_std = np.ones_like(powernoback)*np.nan
 	powernoback_std[:,nan_ROI_mask[1:-1,1:-1]] = ((diffusion_std[:,nan_ROI_mask[1:-1,1:-1]]**2 + timevariation_std[:,nan_ROI_mask[1:-1,1:-1]]**2 + BBrad_std[:,nan_ROI_mask[1:-1,1:-1]]**2)**0.5).astype(np.float32)
@@ -862,6 +922,42 @@ def function_a(index):
 	figure_index+=1
 	plt.savefig(path_to_save_figures+laser_to_analyse[-6:] + path_to_save_figures2 + 'FIG'+str(figure_index)+'.eps', bbox_inches='tight')
 	plt.close('all')
+
+	plt.figure(figsize=(20, 10))
+	time_averaged_diffusion_over_duty = np.nanmean(temp_diffusion[temp>np.sort(temp)[-int(len(temp)*experimental_laser_duty)]],axis=0)
+	plt.pcolor(h_coordinates,v_coordinates,generic_filter(time_averaged_diffusion_over_duty,np.mean,size=[3,3]),cmap='rainbow',vmax=0)#vmin=np.nanmin(time_averaged_diff_over_duty[select]),vmax=np.nanmax(time_averaged_diff_over_duty[select]))
+	plt.colorbar().set_label('Power [W/m2]')
+	# plt.errorbar(horizontal_loc*dx,vertical_loc*dx,xerr=dhorizontal_loc/2*dx,yerr=dvertical_loc/2*dx,color='k',linestyle='--')
+	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10,dr/10))*dx,(vertical_loc + np.abs(dr**2-np.arange(-dr,+dr+dr/10,dr/10)**2)**0.5)*dx,'r--',label='found laser size')
+	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10,dr/10))*dx,(vertical_loc - np.abs(dr**2-np.arange(-dr,+dr+dr/10,dr/10)**2)**0.5)*dx,'r--')
+	plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10))*dx,(vertical_loc + np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10)**2)**0.5)*dx,'k--',label='area accounted for sum')
+	plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10))*dx,(vertical_loc - np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10)**2)**0.5)*dx,'k--')
+	plt.title(preamble_4_prints+'Diffusion component shape in '+laser_to_analyse+'\n foil size '+str([foilhorizwpixel,foilvertwpixel])+'pixels, [%.3g,%.3g]mm\n laser located at [%.3g,%.3g]mm laser radious %.3gmm' %(foilhorizwpixel*dx*1e3,foilvertwpixel*dx*1e3,horizontal_loc*dx*1e3,vertical_loc*dx*1e3,dr*dx*1e3))
+	plt.xlabel('Horizontal axis [mm]')
+	plt.ylabel('Vertical axis [mm]')
+	plt.legend(loc='best', fontsize='small')
+	figure_index+=1
+	plt.savefig(path_to_save_figures+laser_to_analyse[-6:] + path_to_save_figures2 + 'FIG'+str(figure_index)+'.eps', bbox_inches='tight')
+	plt.close('all')
+	del temp_diffusion
+
+	plt.figure(figsize=(20, 10))
+	time_averaged_BBrad_over_duty = np.nanmean(temp_BBrad[:int(len(temp_BBrad)//frames_for_one_pulse*frames_for_one_pulse)],axis=0)
+	plt.pcolor(h_coordinates,v_coordinates,time_averaged_BBrad_over_duty,cmap='rainbow',vmax=BBtreshold*5)
+	plt.colorbar().set_label('Power [W/m2]')
+	# plt.errorbar(horizontal_loc*dx,vertical_loc*dx,xerr=dhorizontal_loc/2*dx,yerr=dvertical_loc/2*dx,color='k',linestyle='--')
+	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10,dr/10))*dx,(vertical_loc + np.abs(dr**2-np.arange(-dr,+dr+dr/10,dr/10)**2)**0.5)*dx,'r--',label='found laser size')
+	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10,dr/10))*dx,(vertical_loc - np.abs(dr**2-np.arange(-dr,+dr+dr/10,dr/10)**2)**0.5)*dx,'r--')
+	plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10))*dx,(vertical_loc + np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10)**2)**0.5)*dx,'k--',label='area accounted for sum')
+	plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10))*dx,(vertical_loc - np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10)**2)**0.5)*dx,'k--')
+	plt.title(preamble_4_prints+'BB component shape in '+laser_to_analyse+'\n foil size '+str([foilhorizwpixel,foilvertwpixel])+'pixels, [%.3g,%.3g]mm\n laser located at [%.3g,%.3g]mm laser radious %.3gmm' %(foilhorizwpixel*dx*1e3,foilvertwpixel*dx*1e3,horizontal_loc*dx*1e3,vertical_loc*dx*1e3,dr*dx*1e3))
+	plt.xlabel('Horizontal axis [mm]')
+	plt.ylabel('Vertical axis [mm]')
+	plt.legend(loc='best', fontsize='small')
+	figure_index+=1
+	plt.savefig(path_to_save_figures+laser_to_analyse[-6:] + path_to_save_figures2 + 'FIG'+str(figure_index)+'.eps', bbox_inches='tight')
+	plt.close('all')
+	del temp_BBrad
 
 
 	totalpower_filtered_1 = generic_filter(totalpower[:int(len(totalpower)//frames_for_one_pulse*frames_for_one_pulse)],np.mean,size=[max(1,int(laser_framerate/experimental_laser_frequency*experimental_laser_duty/15//2*2+1))])
@@ -991,6 +1087,7 @@ def function_a(index):
 	full_saved_file_dict['power_vs_space_sampling']=power_vs_space_sampling
 	full_saved_file_dict['power_vs_time_sampling']=power_vs_time_sampling
 	full_saved_file_dict['laser_input_power']=laser_to_analyse_power
+	full_saved_file_dict['time_of_experiment'] = time_of_experiment
 	np.savez_compressed(laser_to_analyse,**full_saved_file_dict)
 	print('FINISHED '+laser_to_analyse)
 	return 0
@@ -1008,7 +1105,11 @@ def function_a(index):
 # 	pool.terminate()
 # 	del pool
 for index in range(len(all_laser_to_analyse)):
-	function_a(index)
+	try:
+		function_a(index)
+	except Exception as e:
+		print('index '+str(index)+' failed')
+		logging.exception('with error: ' + str(e))
 
 
 #

@@ -73,6 +73,7 @@ plt.plot(x,y_,'k')
 
 
 # os.chdir("/home/ffederic/work/cherab/cherab_mastu/diagnostics/bolometry/irvb/")
+# os.chdir("/home/ffederic/work/cherab/raysect/raysect")
 from raysect.core.math import Point2D, Point3D, Vector3D, rotate_z, translate, rotate_basis
 from raysect.primitive import import_stl, Sphere, Mesh, Cylinder
 from raysect.optical import World, ConstantSF
