@@ -22,6 +22,9 @@ import time as tm
 import concurrent.futures as cf
 import copy as cp
 
+import sys, traceback, logging
+logging.basicConfig(level=logging.ERROR)
+
 
 #
 # This is a collection of script that can be usefull in the interpretation of IR camera files
@@ -769,6 +772,7 @@ plane_equation = np.array([1,-1,0,2**0.5 * Rf])
 pinhole_location = np.array([-1.04087,1.068856,-0.7198])
 centre_of_foil = np.array([-1.095782166, 1.095782166, -0.7])
 foil_size = [0.07,0.09]
+R_centre_column = 0.261	# m
 
 def point_toroidal_to_cartesian(coords):	# r,z,teta deg	to	x,y,z
 	out = np.zeros_like(coords).astype(float)
@@ -796,6 +800,10 @@ for time in range(len(stucture_r)):
 	point_location = point_toroidal_to_cartesian(point_location)
 	point_location = find_location_on_foil(point_location)
 	structure_point_location_on_foil.append(absolute_position_on_foil_to_foil_coord(point_location))
+
+def return_structure_point_location_on_foil():
+	return structure_point_location_on_foil
+
 fueling_point_location_on_foil = []
 for time in range(len(fueling_r)):
 	point_location = np.array([fueling_r[time],fueling_z[time],fueling_t[time]]).T
@@ -803,7 +811,72 @@ for time in range(len(fueling_r)):
 	point_location = find_location_on_foil(point_location)
 	fueling_point_location_on_foil.append(absolute_position_on_foil_to_foil_coord(point_location))
 
-def movie_from_data(data,framerate,integration=1,xlabel=(),ylabel=(),barlabel=(),cmap='rainbow',timesteps='auto',extvmin='auto',extvmax='auto',mask=[0],mask_alpha=0.2,time_offset=0,prelude='',vline=None,hline=None,EFIT_path=EFIT_path_default,include_EFIT=False,pulse_ID=None,overlay_x_point=False,overlay_mag_axis=False,overlay_structure=False,structure_alpha=0.5,foil_size=foil_size):
+def return_fueling_point_location_on_foil():
+	return fueling_point_location_on_foil
+
+def return_all_time_x_point_location(efit_reconstruction,resolution = 1000):
+	all_time_x_point_location = []
+	for time in range(len(efit_reconstruction.time)):
+		x_point_location = np.array([[efit_reconstruction.lower_xpoint_r[time]]*resolution,[efit_reconstruction.lower_xpoint_z[time]]*resolution,np.linspace(0,360,resolution)]).T
+		x_point_location = point_toroidal_to_cartesian(x_point_location)
+		x_point_location = find_location_on_foil(x_point_location)
+		all_time_x_point_location.append(absolute_position_on_foil_to_foil_coord(x_point_location))
+	all_time_x_point_location = np.array(all_time_x_point_location)
+	return all_time_x_point_location
+
+def return_all_time_mag_axis_location(efit_reconstruction,resolution = 1000):
+	all_time_mag_axis_location = []
+	for time in range(len(efit_reconstruction.time)):
+		mag_axis_location = np.array([[efit_reconstruction.mag_axis_r[time]]*resolution,[efit_reconstruction.mag_axis_z[time]]*resolution,np.linspace(0,360,resolution)]).T
+		mag_axis_location = point_toroidal_to_cartesian(mag_axis_location)
+		mag_axis_location = find_location_on_foil(mag_axis_location)
+		all_time_mag_axis_location.append(absolute_position_on_foil_to_foil_coord(mag_axis_location))
+	all_time_mag_axis_location = np.array(all_time_mag_axis_location)
+	return all_time_mag_axis_location
+
+def return_all_time_strike_points_location(efit_reconstruction,all_time_sep_r,all_time_sep_z,r_fine,z_fine,resolution = 1000):
+	from scipy.signal import find_peaks, peak_prominences as get_proms
+	for time in range(len(efit_reconstruction.time)):
+		temp = np.array([efit_reconstruction.strikepointR[time],efit_reconstruction.strikepointZ[time]]).T
+		if temp.max()<1e-1:
+			a=np.concatenate([r_fine[all_time_sep_r[time][0]],r_fine[all_time_sep_r[time][2]]])
+			b=np.concatenate([z_fine[all_time_sep_z[time][0]],z_fine[all_time_sep_z[time][2]]])
+			c=np.abs(a-R_centre_column)
+			peaks = find_peaks(-c)[0]
+			peaks = peaks[c[peaks]<2e-3]
+			efit_reconstruction.strikepointR[time][:min(len(efit_reconstruction.strikepointR[time]),len(peaks))] = a[peaks][:min(len(efit_reconstruction.strikepointR[time]),len(peaks))]
+			efit_reconstruction.strikepointZ[time][:min(len(efit_reconstruction.strikepointZ[time]),len(peaks))] = b[peaks][:min(len(efit_reconstruction.strikepointZ[time]),len(peaks))]
+	all_time_strike_points_location = []
+	for time in range(len(efit_reconstruction.time)):
+		strike_point_location = np.array([efit_reconstruction.strikepointR[time],-np.abs(efit_reconstruction.strikepointZ[time]),[60]*len(efit_reconstruction.strikepointZ[time])]).T
+		strike_point_location = point_toroidal_to_cartesian(strike_point_location)
+		strike_point_location = find_location_on_foil(strike_point_location)
+		all_time_strike_points_location.append(absolute_position_on_foil_to_foil_coord(strike_point_location))
+	all_time_strike_points_location_rot = []
+	for time in range(len(efit_reconstruction.time)):
+		temp = []
+		for __i in range(len(efit_reconstruction.strikepointR[time])):
+			strike_point_location = np.array([[efit_reconstruction.strikepointR[time][__i]]*resolution,[-np.abs(efit_reconstruction.strikepointZ[time][__i])]*resolution,np.linspace(0,360,resolution)]).T
+			strike_point_location = point_toroidal_to_cartesian(strike_point_location)
+			strike_point_location = find_location_on_foil(strike_point_location)
+			temp.append(absolute_position_on_foil_to_foil_coord(strike_point_location))
+		all_time_strike_points_location_rot.append(temp)
+	return all_time_strike_points_location,all_time_strike_points_location_rot
+
+def return_all_time_separatrix(efit_reconstruction,all_time_sep_r,all_time_sep_z,r_fine,z_fine,ref_angle=60):
+	all_time_separatrix = []
+	for time in range(len(efit_reconstruction.time)):
+		separatrix = []
+		for i in range(len(all_time_sep_r[time])):
+			point_location = np.array([r_fine[all_time_sep_r[time][i]],z_fine[all_time_sep_z[time][i]],[ref_angle]*len(all_time_sep_z[time][i])]).T
+			point_location = point_toroidal_to_cartesian(point_location)
+			point_location = find_location_on_foil(point_location)
+			separatrix.append(absolute_position_on_foil_to_foil_coord(point_location))
+		all_time_separatrix.append(separatrix)
+	return all_time_separatrix
+
+
+def movie_from_data(data,framerate,integration=1,xlabel=(),ylabel=(),barlabel=(),cmap='rainbow',timesteps='auto',extvmin='auto',extvmax='auto',mask=[0],mask_alpha=0.2,time_offset=0,prelude='',vline=None,hline=None,EFIT_path=EFIT_path_default,include_EFIT=False,pulse_ID=None,overlay_x_point=False,overlay_mag_axis=False,overlay_structure=False,overlay_strike_points=False,overlay_separatrix=False,structure_alpha=0.5,foil_size=foil_size):
 	import matplotlib.animation as animation
 	import numpy as np
 
@@ -840,33 +913,38 @@ def movie_from_data(data,framerate,integration=1,xlabel=(),ylabel=(),barlabel=()
 		im2 = ax.imshow(masked, 'gray', interpolation='none', alpha=mask_alpha,origin='lower',extent = [0,np.shape(cv0)[1]-1,0,np.shape(cv0)[0]-1])
 
 	if include_EFIT:
-		print('reading '+EFIT_path+'/epm0'+str(pulse_ID)+'.nc')
-		efit_reconstruction = mclass(EFIT_path+'/epm0'+str(pulse_ID)+'.nc')
-		if overlay_x_point:
-			all_time_x_point_location = []
-			resolution = 1000
-			for time in range(len(efit_reconstruction.time)):
-				x_point_location = np.array([[efit_reconstruction.lower_xpoint_r[time]]*resolution,[efit_reconstruction.lower_xpoint_z[time]]*resolution,np.linspace(0,360,resolution)]).T
-				x_point_location = point_toroidal_to_cartesian(x_point_location)
-				x_point_location = find_location_on_foil(x_point_location)
-				all_time_x_point_location.append(absolute_position_on_foil_to_foil_coord(x_point_location))
-
-			all_time_x_point_location = np.array(all_time_x_point_location)
+		try:
+			print('reading '+EFIT_path+'/epm0'+str(pulse_ID)+'.nc')
+			efit_reconstruction = mclass(EFIT_path+'/epm0'+str(pulse_ID)+'.nc')
 			EFIT_dt = np.median(np.diff(efit_reconstruction.time))
+		except Exception as e:
+			print('reading '+EFIT_path+'/epm0'+str(pulse_ID)+'.nc failed')
+			logging.exception('with error: ' + str(e))
+			include_EFIT=False
+			overlay_x_point=False
+			overlay_mag_axis=False
+			overlay_separatrix=False
+			overlay_strike_points=False
+			overlay_separatrix=False
+		if overlay_x_point:
+			all_time_x_point_location = return_all_time_x_point_location(efit_reconstruction)
 			plot1 = ax.plot(0,0,'-r', alpha=1)[0]
 		if overlay_mag_axis:
-			all_time_mag_axis_location = []
-			resolution = 1000
-			for time in range(len(efit_reconstruction.time)):
-				mag_axis_location = np.array([[efit_reconstruction.mag_axis_r[time]]*resolution,[efit_reconstruction.mag_axis_z[time]]*resolution,np.linspace(0,360,resolution)]).T
-				mag_axis_location = point_toroidal_to_cartesian(mag_axis_location)
-				mag_axis_location = find_location_on_foil(mag_axis_location)
-				all_time_mag_axis_location.append(absolute_position_on_foil_to_foil_coord(mag_axis_location))
-
-			all_time_mag_axis_location = np.array(all_time_mag_axis_location)
-			EFIT_dt = np.median(np.diff(efit_reconstruction.time))
+			all_time_mag_axis_location = return_all_time_mag_axis_location(efit_reconstruction)
 			plot2 = ax.plot(0,0,'--r', alpha=1)[0]
-
+		if overlay_separatrix or overlay_strike_points:
+			all_time_sep_r,all_time_sep_z,r_fine,z_fine = efit_reconstruction_to_separatrix_on_foil(efit_reconstruction)
+		if overlay_strike_points:
+			plot3 = ax.plot(0,0,'xr',markersize=20, alpha=1)[0]
+			plot4 = []
+			for __i in range(len(efit_reconstruction.strikepointR[time])):
+				plot4.append(ax.plot(0,0,'-r', alpha=1)[0])
+			all_time_strike_points_location,all_time_strike_points_location_rot = return_all_time_strike_points_location(efit_reconstruction,all_time_sep_r,all_time_sep_z,r_fine,z_fine)
+		if overlay_separatrix:
+			all_time_separatrix = return_all_time_separatrix(efit_reconstruction,all_time_sep_r,all_time_sep_z,r_fine,z_fine)
+			plot5 = []
+			for __i in range(len(all_time_separatrix[0])):
+				plot5.append(ax.plot(0,0,'--b', alpha=1)[0])
 	if overlay_structure:
 		for i in range(len(fueling_point_location_on_foil)):
 			ax.plot(np.array(fueling_point_location_on_foil[i][:,0])*(np.shape(cv0)[1]-1)/foil_size[0],np.array(fueling_point_location_on_foil[i][:,1])*(np.shape(cv0)[0]-1)/foil_size[1],'+k',markersize=40,alpha=structure_alpha)
@@ -932,18 +1010,38 @@ def movie_from_data(data,framerate,integration=1,xlabel=(),ylabel=(),barlabel=()
 					plot1.set_data(([],[]))
 				if overlay_mag_axis:
 					plot2.set_data(([],[]))
+				if overlay_strike_points:
+					plot3.set_data(([],[]))
+					for __i in range(len(plot4)):
+						plot4[__i].set_data(([],[]))
+				if overlay_separatrix:
+					for __i in range(len(plot5)):
+						plot5[__i].set_data(([],[]))
 			else:
 				i_time = np.abs(time_int-efit_reconstruction.time).argmin()
 				if overlay_x_point:
 					if np.sum(np.isnan(all_time_x_point_location[i_time]))>=len(all_time_x_point_location[i_time]):	# means that all the points calculated are outside the foil
 						plot1.set_data(([],[]))
 					else:
-						plot1.set_data((all_time_x_point_location[i_time][:,0]*(np.shape(cv0)[1]-1)/foil_size[0],all_time_x_point_location[i_time][:,1]*(np.shape(cv0)[0]-1)/foil_size[1]))	# UP TO HERE!!!
+						plot1.set_data((all_time_x_point_location[i_time][:,0]*(np.shape(cv0)[1]-1)/foil_size[0],all_time_x_point_location[i_time][:,1]*(np.shape(cv0)[0]-1)/foil_size[1]))
 				if overlay_mag_axis:
-					if np.sum(np.isnan(all_time_mag_axis_location[i_time]))>=len(all_time_mag_axis_location[i_time]):	# means that all the points calculated are outside the foil
-						plot2.set_data(([],[]))
-					else:
-						plot2.set_data((all_time_mag_axis_location[i_time][:,0]*(np.shape(cv0)[1]-1)/foil_size[0],all_time_mag_axis_location[i_time][:,1]*(np.shape(cv0)[0]-1)/foil_size[1]))	# UP TO HERE!!!
+					# if np.sum(np.isnan(all_time_mag_axis_location[i_time]))>=len(all_time_mag_axis_location[i_time]):	# means that all the points calculated are outside the foil
+					# 	plot2.set_data(([],[]))
+					# else:
+					plot2.set_data((all_time_mag_axis_location[i_time][:,0]*(np.shape(cv0)[1]-1)/foil_size[0],all_time_mag_axis_location[i_time][:,1]*(np.shape(cv0)[0]-1)/foil_size[1]))
+				if overlay_strike_points:
+					# if np.sum(np.isnan(all_time_mag_axis_location[i_time]))>=len(all_time_mag_axis_location[i_time]):	# means that all the points calculated are outside the foil
+					# 	plot3.set_data(([],[]))
+					# 	for __i in range(len(plot4)):
+					# 		plot4[__i].set_data(([],[]))
+					# else:
+					plot3.set_data((all_time_strike_points_location[i_time][:,0]*(np.shape(cv0)[1]-1)/foil_size[0],all_time_strike_points_location[i_time][:,1]*(np.shape(cv0)[0]-1)/foil_size[1]))
+					for __i in range(len(plot4)):
+						plot4[__i].set_data((all_time_strike_points_location_rot[i_time][__i][:,0]*(np.shape(cv0)[1]-1)/foil_size[0],all_time_strike_points_location_rot[i_time][__i][:,1]*(np.shape(cv0)[0]-1)/foil_size[1]))
+				if overlay_separatrix:
+					# if np.sum(np.isnan(all_time_mag_axis_location[i_time]))>=len(all_time_mag_axis_location[i_time]):	# means that all the points calculated are outside the foil
+					for __i in range(len(plot5)):
+						plot5[__i].set_data((all_time_separatrix[i_time][__i][:,0]*(np.shape(cv0)[1]-1)/foil_size[0],all_time_separatrix[i_time][__i][:,1]*(np.shape(cv0)[0]-1)/foil_size[1]))
 			# 	masked = np.ma.masked_where(mask == 0, mask)
 			# 	ax.imshow(masked, 'gray', interpolation='none', alpha=0.2,origin='lower',extent = [0,np.shape(data)[0]-1,0,np.shape(data)[1]-1])
 
@@ -4192,6 +4290,8 @@ class mclass:
 			self.r_axis = f[file_prefix+'/output']['globalParameters']['magneticAxis'][:]['R']
 			self.z_axis = f[file_prefix+'/output']['globalParameters']['magneticAxis'][:]['Z']
 			self.shotnumber = f.pulseNumber
+			self.strikepointR = f[file_prefix+'/output']['separatrixGeometry']['strikepointCoords'][:]['R']
+			self.strikepointZ = f[file_prefix+'/output']['separatrixGeometry']['strikepointCoords'][:]['Z']
 		except IndexError:
 			self.R = f[file_prefix+'/output']['profiles2D']['r'][:].data
 			self.Z = f[file_prefix+'/output']['profiles2D']['z'][:].data
@@ -4199,6 +4299,8 @@ class mclass:
 			self.r_axis = f[file_prefix+'/output']['globalParameters']['magneticAxis']['R'][:]
 			self.z_axis = f[file_prefix+'/output']['globalParameters']['magneticAxis']['Z'][:]
 			self.shotnumber = f.shot
+			self.strikepointR = f[file_prefix+'/output']['separatrixGeometry']['strikepointR'][:].data
+			self.strikepointZ = f[file_prefix+'/output']['separatrixGeometry']['strikepointZ'][:].data
 
 		self.psi_bnd = f[file_prefix+'/output']['globalParameters']['psiBoundary'][:].data
 		self.psi_axis = f[file_prefix+'/output']['globalParameters']['psiAxis'][:].data
@@ -4286,8 +4388,10 @@ class mclass:
 
 					zcr = self.zcd(mp_p_arr-self.psi_bnd[i])
 
-					if len(zcr) > 2:
-						zcr = zcr[-2:]
+					# if len(zcr) > 2:	# it should literally have no effect
+					# 	zcr = zcr[-2:]
+					if len(zcr) < 2:	# made to prevent the error when there is only one zero in (mp_p_arr-self.psi_bnd[i])
+						zcr.append(zcr[0])
 
 					self.inner_sep_r[i] = mp_r_arr[zcr[0]]
 					self.outer_sep_r[i] = mp_r_arr[zcr[1]]
@@ -4548,6 +4652,17 @@ def proper_homo_binning_t_2D(data,shrink_factor_t,shrink_factor_x,type='mean'):
 	nan_ROI_mask = np.isfinite(np.nanmedian(data_binned[:10],axis=0))
 	return data_binned,nan_ROI_mask
 
+def proper_homo_binning_2D(data,shrink_factor_x,type='mean'):
+	old_shape = np.array(np.shape(data))
+	new_shape=np.array([int(np.ceil(old_shape[0]/shrink_factor_x)),int(np.ceil(old_shape[1]/shrink_factor_x))]).astype(int)
+	to_pad=np.array([(shrink_factor_x-old_shape[0]%shrink_factor_x)*(old_shape[0]%shrink_factor_x>0),(shrink_factor_x-old_shape[1]%shrink_factor_x)*(old_shape[1]%shrink_factor_x>0)]).astype(int)
+	to_pad_right = to_pad//2
+	to_pad_left = to_pad - to_pad_right
+	to_pad = np.array([to_pad_left,to_pad_right]).T
+	data_binned = np.pad(data,to_pad,mode='mean',stat_length=((max(1,shrink_factor_x//2),max(1,shrink_factor_x//2)),(max(1,shrink_factor_x//2),max(1,shrink_factor_x//2))))
+	data_binned = bin_ndarray(data_binned, new_shape=new_shape, operation=type)
+	return data_binned
+
 def proper_homo_binning_t(time,shrink_factor_t,type='mean'):
 	old_shape = np.array(np.shape(time))
 	new_shape=np.array([int(np.ceil(old_shape[0]/shrink_factor_t))]).astype(int)
@@ -4560,3 +4675,233 @@ def proper_homo_binning_t(time,shrink_factor_t,type='mean'):
 	time_binned[0] = time_binned[1] - np.median(np.diff(time_binned[1:-1]))
 	time_binned[-1] = time_binned[-2] + np.median(np.diff(time_binned[1:-1]))
 	return time_binned
+
+def efit_reconstruction_to_separatrix_on_foil(efit_reconstruction):
+	from scipy.signal import find_peaks, peak_prominences as get_proms
+	from scipy.interpolate import interp2d
+	all_time_sep_r = []
+	all_time_sep_z = []
+	for time in range(len(efit_reconstruction.time)):
+		gna = efit_reconstruction.psidat[time]
+		sep_up = efit_reconstruction.upper_xpoint_p[time]
+		sep_low = efit_reconstruction.lower_xpoint_p[time]
+		x_point_z_proximity = np.abs(np.nanmin([efit_reconstruction.upper_xpoint_z[time],efit_reconstruction.lower_xpoint_z[time],-0.573-0.2]))-0.2	# -0.573 is an arbitrary treshold in case both are nan
+
+		psi_interpolator = interp2d(efit_reconstruction.R,efit_reconstruction.Z,gna)
+		refinement = 1000
+		r_fine = np.linspace(efit_reconstruction.R.min(),efit_reconstruction.R.max(),refinement)
+		z_fine = np.linspace(efit_reconstruction.Z.min(),efit_reconstruction.Z.max(),refinement)
+		psi = psi_interpolator(r_fine,z_fine)
+		psi_up = -np.abs(psi-sep_up)
+		psi_low = -np.abs(psi-sep_low)
+		all_peaks_up = []
+		all_z_up = []
+		all_peaks_low = []
+		all_z_low = []
+		for i_z,z in enumerate(z_fine):
+			# psi_z = psi[i_z]
+			peaks = find_peaks(psi_up[i_z])[0]
+			all_peaks_up.append(peaks)
+			all_z_up.append([i_z]*len(peaks))
+			peaks = find_peaks(psi_low[i_z])[0]
+			all_peaks_low.append(peaks)
+			all_z_low.append([i_z]*len(peaks))
+		all_peaks_up = np.concatenate(all_peaks_up).astype(int)
+		all_z_up = np.concatenate(all_z_up).astype(int)
+		found_psi_up = np.abs(psi_up[all_z_up,all_peaks_up])
+		all_peaks_low = np.concatenate(all_peaks_low).astype(int)
+		all_z_low = np.concatenate(all_z_low).astype(int)
+		found_psi_low = np.abs(psi_low[all_z_low,all_peaks_low])
+
+		# plt.figure()
+		# plt.plot(all_z[found_points<(gna.max()-gna.min())/500],all_peaks[found_points<(gna.max()-gna.min())/500],'+b')
+		all_peaks_up = all_peaks_up[found_psi_up<(gna.max()-gna.min())/500]
+		all_z_up = all_z_up[found_psi_up<(gna.max()-gna.min())/500]
+		all_peaks_low = all_peaks_low[found_psi_low<(gna.max()-gna.min())/500]
+		all_z_low = all_z_low[found_psi_low<(gna.max()-gna.min())/500]
+
+		left_up = []
+		right_up = []
+		left_up_z = []
+		right_up_z = []
+		left_low = []
+		right_low = []
+		left_low_z = []
+		right_low_z = []
+		for i_z,z in enumerate(z_fine):
+			if i_z in all_z_up:
+				temp = all_peaks_up[all_z_up==i_z]
+				if len(temp) == 1:
+					right_up.append(temp[0])
+					right_up_z.append(i_z)
+				elif len(temp) == 2:
+					if r_fine[temp.min()]>R_centre_column or np.abs(z_fine[i_z])<x_point_z_proximity:
+						left_up.append(temp.min())
+						left_up_z.append(i_z)
+					right_up.append(temp.max())
+					right_up_z.append(i_z)
+				elif len(temp) == 3:
+					left_up.append(np.sort(temp)[1])
+					left_up_z.append(i_z)
+					right_up.append(temp.max())
+					right_up_z.append(i_z)
+				elif len(temp) == 4:
+					left_up.append(np.sort(temp)[1])
+					left_up_z.append(i_z)
+					right_up.append(np.sort(temp)[2])
+					right_up_z.append(i_z)
+			if i_z in all_z_low:
+				temp = all_peaks_low[all_z_low==i_z]
+				if len(temp) == 1:
+					right_low.append(temp[0])
+					right_low_z.append(i_z)
+				elif len(temp) == 2:
+					if r_fine[temp.min()]>R_centre_column or np.abs(z_fine[i_z])<x_point_z_proximity:
+						left_low.append(temp.min())
+						left_low_z.append(i_z)
+					right_low.append(temp.max())
+					right_low_z.append(i_z)
+				elif len(temp) == 3:
+					left_low.append(np.sort(temp)[1])
+					left_low_z.append(i_z)
+					right_low.append(temp.max())
+					right_low_z.append(i_z)
+				elif len(temp) == 4:
+					left_low.append(np.sort(temp)[1])
+					left_low_z.append(i_z)
+					right_low.append(np.sort(temp)[2])
+					right_low_z.append(i_z)
+		# sep_r = [left_up,right_up,left_low,right_low]
+		# sep_z = [left_up_z,right_up_z,left_low_z,right_low_z]
+		all_time_sep_r.append([left_up,right_up,left_low,right_low])
+		all_time_sep_z.append([left_up_z,right_up_z,left_low_z,right_low_z])
+	return all_time_sep_r,all_time_sep_z,r_fine,z_fine
+
+
+##########################################################################################################################################################################
+
+def get_rotation_crop_parameters(testrot,foil_position_dict,laser_to_analyse,plasma_data_array,plasma_data_array_time,foilhorizw=0.09,foilvertw=0.07):
+	# Created 2021/07/23 only to obtain the rotation / cropping parameters
+	from scipy.ndimage.filters import generic_filter
+
+	rotangle = foil_position_dict['angle'] #in degrees
+	foilrot=rotangle*2*np.pi/360
+	foilrotdeg=rotangle
+	foilcenter = foil_position_dict['foilcenter']
+	foilhorizwpixel = foil_position_dict['foilhorizwpixel']
+	foilvertwpixel=int((foilhorizwpixel*foilvertw)//foilhorizw)
+	r=((foilhorizwpixel**2+foilvertwpixel**2)**0.5)/2  # HALF DIAGONAL
+	a=foilvertwpixel/np.cos(foilrot)
+	tgalpha=np.tan(foilrot)
+	delta=-(a**2)/4+(1+tgalpha**2)*(r**2)
+	foilx=np.add(foilcenter[0],[(-0.5*a*tgalpha+delta**0.5)/(1+tgalpha**2),(-0.5*a*tgalpha-delta**0.5)/(1+tgalpha**2),(0.5*a*tgalpha-delta**0.5)/(1+tgalpha**2),(0.5*a*tgalpha+delta**0.5)/(1+tgalpha**2),(-0.5*a*tgalpha+delta**0.5)/(1+tgalpha**2)])
+	foily=np.add(foilcenter[1]-tgalpha*foilcenter[0],[tgalpha*foilx[0]+a/2,tgalpha*foilx[1]+a/2,tgalpha*foilx[2]-a/2,tgalpha*foilx[3]-a/2,tgalpha*foilx[0]+a/2])
+	foilxint=(np.rint(foilx)).astype('int')
+	foilyint=(np.rint(foily)).astype('int')
+
+	plt.figure(figsize=(20, 10))
+	plt.title('Foil search in '+laser_to_analyse+'\nFoil center '+str(foilcenter)+', foil rot '+str(foilrotdeg)+'deg, foil size '+str([foilhorizwpixel,foilvertwpixel])+'pixel')
+	plt.imshow(testrot,'rainbow',origin='lower')
+	plt.ylabel('Horizontal axis [pixles]')
+	plt.xlabel('Vertical axis [pixles]')
+	temp = np.sort(testrot[testrot>0])
+	plt.clim(vmin=np.nanmean(temp[:max(20,int(len(temp)/20))]), vmax=np.nanmean(temp[-max(20,int(len(temp)/20)):]))
+	# plt.clim(vmax=27.1,vmin=26.8)
+	# plt.clim(vmin=np.nanmin(testrot[testrot>0]), vmax=np.nanmax(testrot))
+	plt.colorbar().set_label('counts [au]')
+	plt.plot(foilx,foily,'r')
+	plt.plot(foilcenter[0],foilcenter[1],'k+',markersize=30)
+	plt.savefig(laser_to_analyse[:-4]+'_foil_fit.eps', bbox_inches='tight')
+	plt.close('all')
+
+	plt.figure(figsize=(20, 10))
+	temp = np.max(plasma_data_array[:,:,:200],axis=(-1,-2)).argmax()
+	plt.title('Foil search in '+laser_to_analyse+'\nFoil center '+str(foilcenter)+', foil rot '+str(foilrotdeg)+'deg, foil size '+str([foilhorizwpixel,foilvertwpixel])+'pixel\nhottest frame at %.4gsec' %(plasma_data_array_time[temp]))
+	plt.imshow(plasma_data_array[temp],'rainbow',origin='lower',vmax=np.max(plasma_data_array[:,:,:200],axis=(-1,-2))[temp])
+	plt.ylabel('Horizontal axis [pixles]')
+	plt.xlabel('Vertical axis [pixles]')
+	plt.clim(vmax=np.max(plasma_data_array[:,:,:200],axis=(-1,-2))[temp])
+	plt.colorbar().set_label('count increase [au]')
+	plt.plot(foilx,foily,'r')
+	plt.plot(foilcenter[0],foilcenter[1],'k+',markersize=30)
+	plt.savefig(laser_to_analyse[:-4]+'_foil_fit_plasma.eps', bbox_inches='tight')
+	plt.close('all')
+	testrotback=rotate(testrot,foilrotdeg,axes=(-1,-2))
+	precisionincrease=10
+	dummy=np.ones(np.multiply(np.shape(testrot),precisionincrease))
+	dummy[foilcenter[1]*precisionincrease,foilcenter[0]*precisionincrease]=2
+	dummy[int(foily[0]*precisionincrease),int(foilx[0]*precisionincrease)]=3
+	dummy[int(foily[1]*precisionincrease),int(foilx[1]*precisionincrease)]=4
+	dummy[int(foily[2]*precisionincrease),int(foilx[2]*precisionincrease)]=5
+	dummy[int(foily[3]*precisionincrease),int(foilx[3]*precisionincrease)]=6
+	dummy2=rotate(dummy,foilrotdeg,axes=(-1,-2),order=0)
+	foilcenterrot=(np.rint([np.where(dummy2==2)[1][0]/precisionincrease,np.where(dummy2==2)[0][0]/precisionincrease])).astype('int')
+	foilxrot=(np.rint([np.where(dummy2==3)[1][0]/precisionincrease,np.where(dummy2==4)[1][0]/precisionincrease,np.where(dummy2==5)[1][0]/precisionincrease,np.where(dummy2==6)[1][0]/precisionincrease,np.where(dummy2==3)[1][0]/precisionincrease])).astype('int')
+	foilyrot=(np.rint([np.where(dummy2==3)[0][0]/precisionincrease,np.where(dummy2==4)[0][0]/precisionincrease,np.where(dummy2==5)[0][0]/precisionincrease,np.where(dummy2==6)[0][0]/precisionincrease,np.where(dummy2==3)[0][0]/precisionincrease])).astype('int')
+	# plt.plot(foilcenterrot[0],foilcenterrot[1],'k+',markersize=30)
+	# plt.plot(foilxrot,foilyrot,'r')
+	# plt.title('Foil center '+str(foilcenterrot)+', foil rot '+str(0)+'deg, foil size '+str([foilhorizwpixel,foilvertwpixel])+'pixel',size=9)
+	# plt.colorbar().set_label('counts [au]')
+	# plt.pause(0.01)
+
+	foillx=min(foilxrot)
+	foilrx=max(foilxrot)
+	foilhorizwpixel=foilrx-foillx
+	foildw=min(foilyrot)
+	foilup=max(foilyrot)
+	foilvertwpixel=foilup-foildw
+
+	out_of_ROI_mask = np.ones_like(testrotback)
+	out_of_ROI_mask[testrotback<np.nanmin(testrot[testrot>0])]=np.nan
+	out_of_ROI_mask[testrotback>np.nanmax(testrot[testrot>0])]=np.nan
+	a = generic_filter((testrotback),np.std,size=[19,19])
+	out_of_ROI_mask[a>np.mean(a)]=np.nan
+
+	return foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx
+
+
+def MASTU_pulse_process_FAST(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,height,width):
+	# created 2021/07/23
+	# Here I do a fast analysis of the unfiltered data so I can look at it during experiments
+	max_ROI = [[0,255],[0,319]]
+	foil_position_dict = dict([('angle',0.5),('foilcenter',[158,136]),('foilhorizwpixel',241)])	# fixed orientation, for now, this is from 2021-06-04/44168
+	temp_ref_counts = []
+	temp_counts_minus_background = []
+	time_partial = []
+	timesteps = np.inf
+	for i in range(len(laser_digitizer_ID)):
+		time_of_experiment_digitizer_ID_seconds = (time_of_experiment_digitizer_ID[i]-time_of_experiment[0])*1e-6-start_time_of_pulse
+		if external_clock_marker:
+			time_of_experiment_digitizer_ID_seconds = time_of_experiment_digitizer_ID_seconds-np.mean(aggregated_correction_coefficients[:,4])	# I use the mean of the coefficients because I want to avoid small unpredictable differences between the digitisers
+		temp_ref_counts.append(np.mean(laser_counts_corrected[i][-int(seconds_for_reference_frame*laser_framerate/len(laser_digitizer_ID)):],axis=0))
+		select_time = np.logical_and(time_of_experiment_digitizer_ID_seconds>=0,time_of_experiment_digitizer_ID_seconds<=1.5)
+		temp_counts_minus_background.append(laser_counts_corrected[i][select_time]-temp_ref_counts[-1])
+		time_partial.append(time_of_experiment_digitizer_ID_seconds[select_time])
+		timesteps = min(timesteps,len(temp_counts_minus_background[-1]))
+
+	for i in range(len(laser_digitizer_ID)):
+		temp_counts_minus_background[i] = temp_counts_minus_background[i][:timesteps]
+		time_partial[i] = time_partial[i][:timesteps]
+	temp_counts_minus_background = np.nanmean(temp_counts_minus_background,axis=0)
+	temp_ref_counts = np.nanmean(temp_ref_counts,axis=0)
+	FAST_counts_minus_background_crop_time = np.nanmean(time_partial,axis=0)
+
+	# I'm going to use the reference frames for foil position
+	foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx = get_rotation_crop_parameters(temp_ref_counts,foil_position_dict,laser_to_analyse,temp_counts_minus_background,FAST_counts_minus_background_crop_time)
+
+	# rotation and crop
+	temp_counts_minus_background_rot=rotate(temp_counts_minus_background,foilrotdeg,axes=(-1,-2))
+	if not (height==max_ROI[0][1]+1 and width==max_ROI[1][1]+1):
+		temp_counts_minus_background_rot*=out_of_ROI_mask
+		temp_counts_minus_background_rot[np.logical_and(temp_counts_minus_background_rot<np.nanmin(temp_counts_minus_background[i]),temp_counts_minus_background_rot>np.nanmax(temp_counts_minus_background[i]))]=0
+	FAST_counts_minus_background_crop = temp_counts_minus_background_rot[:,foildw:foilup,foillx:foilrx]
+
+	temp = FAST_counts_minus_background_crop[:,:,:int(np.shape(FAST_counts_minus_background_crop)[2]*0.75)]
+	temp = np.sort(temp[np.max(temp,axis=(1,2)).argmax()].flatten())
+	ani = movie_from_data(np.array([np.flip(np.transpose(FAST_counts_minus_background_crop,(0,2,1)),axis=2)]), laser_framerate/len(laser_digitizer_ID),integration=laser_int_time/1000,time_offset=FAST_counts_minus_background_crop_time[0],extvmin=0,extvmax=np.nanmean(temp[-len(temp)//60:]),xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='Power on foil [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4]+'\n',overlay_structure=True,include_EFIT=True,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True)
+	ani.save(laser_to_analyse[:-4]+ '_FAST_count_increase.mp4', fps=5*laser_framerate/len(laser_digitizer_ID)/383, writer='ffmpeg',codec='mpeg4')
+	plt.close('all')
+
+	print('completed FAST rotating/cropping ' + laser_to_analyse)
+
+	return foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,FAST_counts_minus_background_crop_time

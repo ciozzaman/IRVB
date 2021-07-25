@@ -11,6 +11,7 @@ exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_import_pc.py").
 # to show the line where it fails
 import sys, traceback, logging
 logging.basicConfig(level=logging.ERROR)
+from scipy.signal import find_peaks, peak_prominences as get_proms
 
 #this is for importing all the variables names and which are the files
 exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_indexing.py").read())
@@ -117,7 +118,8 @@ sample_properties['thickness'] = 2.093616658223934e-06
 sample_properties['emissivity'] = 1
 sample_properties['diffusivity'] = 1.03*1e-5
 # BBtreshold = 0.06
-BBtreshold = 0.13
+# BBtreshold = 0.13
+BBtreshold = 0.2
 
 def function_a(index):
 	from uncertainties.unumpy import nominal_values,std_devs
@@ -647,6 +649,44 @@ def function_a(index):
 		# except:
 		# 	tries+=1
 
+	# this correction isnecessay to avoid negative BB components when the temperature is even slightly lower then the reference.
+	limit = 500
+	test=0
+	while True:
+		select1 = (((horizontal_coord-horizontal_loc)**2 + (vertical_coord-vertical_loc)**2)>(limit)**2)
+		if np.nansum(nan_ROI_mask[select1])>200:
+			break
+		else:
+			limit -= 10
+	frames_for_one_pulse = laser_framerate/experimental_laser_frequency
+	minimum_ON_period = 2	# seconds
+	time_ON_after_SS = int(frames_for_one_pulse*experimental_laser_duty - minimum_ON_period*laser_framerate)
+	ref_footprint = int(np.max([time_ON_after_SS,min(np.ceil(frames_for_one_pulse*(1-experimental_laser_duty)/3),4)]))
+	footprint = np.concatenate([np.ones((ref_footprint)),np.zeros((ref_footprint))])
+	peak_temp_filtered_1 = generic_filter(np.nanmax(laser_temperature_minus_background_crop,axis=(-1,-2)),np.mean,footprint=footprint)
+	peaks = find_peaks(peak_temp_filtered_1,distance=frames_for_one_pulse*0.9)[0]
+	peaks_n = find_peaks(-peak_temp_filtered_1,distance=frames_for_one_pulse*0.9)[0]
+	best_peak_n = peaks_n[np.abs(peaks_n-len(laser_temperature_minus_background_crop)//2).argmin()]
+	select_ref_time = np.logical_and(np.arange(len(laser_temperature_minus_background_crop))<=best_peak_n,np.arange(len(laser_temperature_minus_background_crop))>best_peak_n-ref_footprint)
+	ref_laser_temperature_minus_background_crop = np.mean(laser_temperature_minus_background_crop[select_ref_time],axis=0)
+	test = []
+	for value in np.arange(5,limit-10):
+		select1 = (((horizontal_coord-horizontal_loc)**2 + (vertical_coord-vertical_loc)**2)>value**2)
+		select2 = np.logical_and( (((horizontal_coord-horizontal_loc)**2 + (vertical_coord-vertical_loc)**2)<=(value+4)**2) , select1 )
+		test.append(np.nanmean(ref_laser_temperature_minus_background_crop[select1]))
+	rise_of_absolute_temperature_difference = -np.nanmin(test)
+	plt.figure(figsize=(20, 10))
+	plt.plot(np.arange(5,limit-10),test)
+	plt.axhline(y=np.nanmin(test),linestyle='--',color='k')
+	plt.grid()
+	plt.title(preamble_4_prints+'search for the temperature factor to add or subtract to have positive BB power\n %.3gK found' %(rise_of_absolute_temperature_difference))
+	plt.xlabel('pixels fron the center of the laser spot [pixels]')
+	plt.ylabel('average temperature increase\nin a ring 4 pixels wide [K]')
+	figure_index+=1
+	plt.savefig(path_to_save_figures+laser_to_analyse[-6:] + path_to_save_figures2 + 'FIG'+str(figure_index)+'.eps', bbox_inches='tight')
+	plt.close('all')
+	laser_temperature_minus_background_crop += rise_of_absolute_temperature_difference
+
 
 	# basetemp=np.nanmean(datatempcrop[0,frame-7:frame+7,1:-1,1:-1],axis=0)
 	if laser_framerate>500:
@@ -687,9 +727,9 @@ def function_a(index):
 	del d2Tdx2_std,d2Tdy2_std
 	negd2Tdxy=np.multiply(-1,d2Tdxy)
 	negd2Tdxy_std=d2Tdxy_std
-	T4=(laser_temperature_minus_background_crop[1:-1,1:-1,1:-1]+np.nanmean(reference_background_temperature_crop)+zeroC)**4
+	T4=(laser_temperature_minus_background_crop[1:-1,1:-1,1:-1]+reference_background_temperature_crop[1:-1,1:-1]+zeroC)**4
 	T4_std=T4**(3/4) *4 *laser_temperature_std_minus_background_crop[1:-1,1:-1,1:-1]	# the error resulting from doing the average on the whole ROI is completely negligible
-	T04=(np.nanmean(reference_background_temperature_crop)+zeroC)**4 *np.ones_like(laser_temperature_minus_background_crop[1:-1,1:-1,1:-1])
+	T04=(reference_background_temperature_crop[1:-1,1:-1]+zeroC)**4 *np.ones_like(laser_temperature_minus_background_crop[1:-1,1:-1,1:-1])
 	T04_std=0
 	T4_T04 = np.ones_like(dTdt).astype(np.float32)*np.nan
 	T4_T04[:,nan_ROI_mask[1:-1,1:-1]] = (T4[:,nan_ROI_mask[1:-1,1:-1]]-T04[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
@@ -729,7 +769,6 @@ def function_a(index):
 	temp_powernoback = (sample_properties['thickness']*temp_diffusion + (1/sample_properties['diffusivity'])*sample_properties['thickness']*temp_timevariation + sample_properties['emissivity']*temp_BBrad).astype(np.float32)
 	del dTdt,dTdt_std,d2Tdxy,d2Tdxy_std,negd2Tdxy,negd2Tdxy_std,T4,T4_std,T04,T04_std
 
-	frames_for_one_pulse = laser_framerate/experimental_laser_frequency
 	def power_vs_space_sampling_explorer():
 		from uncertainties import ufloat
 		area_multiplier = np.flip(np.array([4,3,2.5,2,1.7,1.5,1.3,1.15,1,0.9,0.8,0.7,0.6,0.55,0.5,0.4,0.3,0.25,0.2,0.15,0.1,0.08]),axis=0)
@@ -763,6 +802,7 @@ def function_a(index):
 		# dr_total_power = 16
 		dr_total_power_minimum = 25
 
+
 	limit = 110
 	test=0
 	while True:
@@ -771,14 +811,19 @@ def function_a(index):
 			break
 		else:
 			limit -= 10
+	footprint = np.concatenate([np.ones((ref_footprint)),np.zeros((ref_footprint))])
+	peak_temp_filtered_1 = generic_filter(np.nanmax(laser_temperature_minus_background_crop,axis=(-1,-2)),np.mean,footprint=footprint)
+	peaks = find_peaks(peak_temp_filtered_1,distance=frames_for_one_pulse*0.9)[0]
+	best_peak = peaks[np.abs(peaks-len(peak_temp_filtered_1)).argmin()]-1
+	select_ref_time = np.logical_and(np.arange(len(temp_BBrad))<=best_peak,np.arange(len(temp_BBrad))>best_peak-ref_footprint)
 	fig, ax = plt.subplots( 2,1,figsize=(10, 14), squeeze=False, sharex=True)
-	time_averaged_BBrad_over_duty = np.nanmean(temp_BBrad[:int(len(temp_BBrad)//frames_for_one_pulse*frames_for_one_pulse)],axis=0)
+	time_averaged_BBrad_over_duty = np.nanmean(temp_BBrad[select_ref_time],axis=0)
 	test = []
-	for value in np.arange(5,limit-10):
+	for value in np.arange(2,limit-10):
 		select2 = np.logical_and( (((horizontal_coord-horizontal_loc)**2 + (vertical_coord-vertical_loc)**2)<=(value+2)**2)[1:-1,1:-1] , (((horizontal_coord-horizontal_loc)**2 + (vertical_coord-vertical_loc)**2)>value**2)[1:-1,1:-1] )
 		test.append(np.nanmean(time_averaged_BBrad_over_duty[select2])-np.nanmean(time_averaged_BBrad_over_duty[select1]))
-	dr_total_power_BB = np.arange(5,limit-10)[np.abs(np.array(test)-BBtreshold).argmin()]
-	ax[0,0].plot(np.arange(5,limit-10)*dx,test)
+	dr_total_power_BB = np.arange(2,limit-10)[np.abs(np.array(test)-BBtreshold).argmin()]
+	ax[0,0].plot(np.arange(2,limit-10)*dx,test)
 	ax[0,0].axhline(y=BBtreshold,linestyle='--',color='k',label='treshold')
 	ax[0,0].axvline(x=dr_total_power_BB*dx,linestyle='--',color='r',label='detected')
 	ax[0,0].axvline(x=dr_total_power_minimum*dx,linestyle='--',color='b',label='minimum')
@@ -787,15 +832,15 @@ def function_a(index):
 	ax[0,0].set_ylabel('black body')
 	ax[0,0].legend(loc='best', fontsize='x-small')
 	ax[0,0].grid()
-	temp = np.nanmax(laser_temperature_minus_background_crop[1:-1],axis=(1,2))
-	time_averaged_diffusion_over_duty = np.nanmean(temp_diffusion[temp>np.sort(temp)[-int(len(temp)*experimental_laser_duty)]],axis=0)
+	# temp = np.nanmax(laser_temperature_minus_background_crop[1:-1],axis=(1,2))
+	time_averaged_diffusion_over_duty = np.nanmean(temp_diffusion[select_ref_time],axis=0)
 	test = []
-	for value in np.arange(5,limit-10):
+	for value in np.arange(2,limit-10):
 		select1 = (((horizontal_coord-horizontal_loc)**2 + (vertical_coord-vertical_loc)**2)>(value)**2)[1:-1,1:-1]
 		select2 = np.logical_and( (((horizontal_coord-horizontal_loc)**2 + (vertical_coord-vertical_loc)**2)<=(value+4)**2)[1:-1,1:-1] , (((horizontal_coord-horizontal_loc)**2 + (vertical_coord-vertical_loc)**2)>value**2)[1:-1,1:-1] )
 		test.append(np.nanmean(time_averaged_diffusion_over_duty[select1]))
-	dr_total_power_diff = np.arange(5,limit-10)[np.abs((test[:40]+2*np.max(np.abs(test[40:])))).argmin()]
-	ax[1,0].plot(np.arange(5,limit-10)*dx,test)
+	dr_total_power_diff = np.arange(2,limit-10)[np.abs((test[:40]+2*np.max(np.abs(test[40:])))).argmin()]
+	ax[1,0].plot(np.arange(2,limit-10)*dx,test)
 	ax[1,0].axhline(y=-2*np.nanmax(np.abs(test[40:])),linestyle='--',color='k')
 	ax[1,0].axvline(x=dr_total_power_diff*dx,linestyle='--',color='r')
 	ax[1,0].axvline(x=dr_total_power_minimum*dx,linestyle='--',color='b')
@@ -809,7 +854,7 @@ def function_a(index):
 	# dr_total_power = (power_vs_space_sampling['all_dr'][temp])[nominal_values(power_vs_space_sampling['fitted_powers'][:,1][temp]).argmin()]
 	# dr_total_power = dr*2
 	select = (((horizontal_coord-horizontal_loc)**2 + (vertical_coord-vertical_loc)**2)<=dr_total_power**2)[1:-1,1:-1]
-	fig.suptitle(preamble_4_prints+'Search for power sum size in '+laser_to_analyse+'\nfound %.3gmm' %(dr_total_power*dx))
+	fig.suptitle(preamble_4_prints+'Search for power sum size in '+laser_to_analyse+'\nfound %.3gmm with  %.3gK rise of absolute temperature difference' %(dr_total_power*dx,rise_of_absolute_temperature_difference))
 	figure_index+=1
 	plt.savefig(path_to_save_figures+laser_to_analyse[-6:] + path_to_save_figures2 + 'FIG'+str(figure_index)+'.eps', bbox_inches='tight')
 	plt.close('all')
@@ -924,7 +969,6 @@ def function_a(index):
 	plt.close('all')
 
 	plt.figure(figsize=(20, 10))
-	time_averaged_diffusion_over_duty = np.nanmean(temp_diffusion[temp>np.sort(temp)[-int(len(temp)*experimental_laser_duty)]],axis=0)
 	plt.pcolor(h_coordinates,v_coordinates,generic_filter(time_averaged_diffusion_over_duty,np.mean,size=[3,3]),cmap='rainbow',vmax=0)#vmin=np.nanmin(time_averaged_diff_over_duty[select]),vmax=np.nanmax(time_averaged_diff_over_duty[select]))
 	plt.colorbar().set_label('Power [W/m2]')
 	# plt.errorbar(horizontal_loc*dx,vertical_loc*dx,xerr=dhorizontal_loc/2*dx,yerr=dvertical_loc/2*dx,color='k',linestyle='--')
@@ -942,7 +986,6 @@ def function_a(index):
 	del temp_diffusion
 
 	plt.figure(figsize=(20, 10))
-	time_averaged_BBrad_over_duty = np.nanmean(temp_BBrad[:int(len(temp_BBrad)//frames_for_one_pulse*frames_for_one_pulse)],axis=0)
 	plt.pcolor(h_coordinates,v_coordinates,time_averaged_BBrad_over_duty,cmap='rainbow',vmax=BBtreshold*5)
 	plt.colorbar().set_label('Power [W/m2]')
 	# plt.errorbar(horizontal_loc*dx,vertical_loc*dx,xerr=dhorizontal_loc/2*dx,yerr=dvertical_loc/2*dx,color='k',linestyle='--')
