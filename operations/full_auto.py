@@ -43,13 +43,9 @@ for (dirpath,dirnames,filenames) in os.walk(upper_file_path):
 	f.append(dirnames)
 	break
 
+target_folder = f[0][-1]
 file_path = upper_file_path+'\\'+f[0][-1]
 print('Monitoring '+ file_path)
-
-target_folder = f[0][-1]
-target_file_path = target_upper_file_path+'\\'+target_folder
-if not os.path.exists(target_file_path):
-	os.mkdir(target_file_path)
 
 test = input('is this the right folder? if OK enter "k" otherwise the right folder')
 if test!='k':
@@ -57,6 +53,10 @@ if test!='k':
 	file_path = upper_file_path + '\\' + test
 	target_file_path = target_upper_file_path + '\\' + test
 	print('Monitoring '+ file_path)
+
+target_file_path = target_upper_file_path+'\\'+target_folder
+if not os.path.exists(target_file_path):
+	os.mkdir(target_file_path)
 
 f = []
 for (dirpath,dirnames,filenames) in os.walk(file_path):
@@ -94,34 +94,61 @@ else:
 	print('only '+str(changed_pixels)+' pixels changed, so no action taken')
 # this will leave the camera in external clocks in the camera page, but with recording activated
 
-# read last pulse
-subprocess.call([r'D:\\IRVB\\getshotno.bat'])
-f = open('mshot.dat', 'r')
-last_mshot = str(f.read())
-f.close()
-last_pulse = int(last_mshot[1:6])
-last_time_updated = last_mshot[8:-1]
-next_pulse = cp.deepcopy(last_pulse)
-print('last pulse '+str(last_pulse))
-
+if False:	# using a location deep into MAST-U system that I should really not do. This also does not return the machine states
+	# read last pulse
+	subprocess.call([r'D:\\IRVB\\getshotno.bat'])
+	f = open('mshot.dat', 'r')
+	last_mshot = str(f.read())
+	f.close()
+	last_pulse = int(last_mshot[1:6])
+	# last_time_updated = last_mshot[8:-1]
+	next_pulse = cp.deepcopy(last_pulse)
+	print('last pulse '+str(last_pulse))
+else:
+	DAProxy_path = 'D:\\IRVB\\mastda\\DAProxy'
+	DAProxy_file = 'prx' + target_folder.translate({ord('-'):None})[2:] + '.log'
+	DAProxy_full_path = DAProxy_path+'\\log\\'+DAProxy_file
+	while not os.path.exists(DAProxy_full_path):
+		test = input('the log file '+DAProxy_full_path+" doesn't exists. r to rety or input the full path to the log file (including log file name)")
+		if test == 'r':
+			continue
+		else:
+			DAProxy_full_path = test
+	def return_shot_and_state(DAProxy_full_path=DAProxy_full_path):
+		f = open(DAProxy_full_path,'r')
+		for row in f:
+			None
+		last_pulse = int(row[row.find('shot=') + len('shot='):row.find('&state')])
+		MASTU_state = int(row[row.find('state=') + len('state='):row.find('&)\n')])
+		return last_pulse,MASTU_state
+	last_pulse,MASTU_state = return_shot_and_state()
+	next_pulse = cp.deepcopy(last_pulse)
+	print('last pulse '+str(last_pulse))
 
 try:
 	while tm.gmtime().tm_hour+1<21:#18:
 		# check if a new shot is initiated
 		waiting_for_new_shot = True
+		useless_counter = 0
 		while waiting_for_new_shot:
 			move(int(np.random.random()*10000),int(np.random.random()*10000))
-			tm.sleep(10)
-			subprocess.call([r'D:\\IRVB\\getshotno.bat'],stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
-			f = open('mshot.dat', 'r')
-			next_mshot = str(f.read())
-			f.close()
-			next_pulse = int(next_mshot[1:6])
-			# next_time_updated = next_mshot[8:-1]
+			tm.sleep(1)
+			useless_counter +=1
+			if False:
+				subprocess.call([r'D:\\IRVB\\getshotno.bat'],stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
+				f = open('mshot.dat', 'r')
+				next_mshot = str(f.read())
+				f.close()
+				next_pulse = int(next_mshot[1:6])
+				# next_time_updated = next_mshot[8:-1]
+			else:
+				next_pulse,MASTU_state = return_shot_and_state()
+
 			if next_pulse!=last_pulse:
 				waiting_for_new_shot = False
 			else:
-				print('still on '+str(next_pulse))
+				if useless_counter%10==0:
+					print('still on '+str(next_pulse))
 		print('next pulse '+str(next_pulse))
 		# last_pulse = cp.deepcopy(next_pulse)
 		# exit when new pulse initiated
@@ -132,86 +159,134 @@ try:
 		print('back to internal trigger')
 
 		waiting_for_new_file = True
+		abort_detected = False
+		useless_counter = 0
 		while waiting_for_new_file:
+			useless_counter +=1
 			move(int(np.random.random()*10000),int(np.random.random()*10000))
 			f = []
 			for (dirpath,dirnames,filenames) in os.walk(file_path):
 				f.append(filenames)
 				break
-
 			new_number_of_files = len(f[0])
 			new_files = f[0]
 
-			print(str(new_number_of_files)+' files present')
-			print('wait '+str(min_to_wait)+'min')
-			wait_while_moving_mouse(min_to_wait)
+			if useless_counter%10==0:
+				print(str(new_number_of_files)+' files present')
+			wait_while_moving_mouse(2/60,wait_for_move=1)
+			trash,MASTU_state = return_shot_and_state()
+			if MASTU_state==11:
+				abort_detected = True
+				break
+
 			# tm.sleep(5*3)
 			if new_number_of_files!=old_number_of_files:
+				print(str(new_number_of_files)+' files present')
 				waiting_for_new_file = False
 			else:
-				print('no action required')
-		print('clicking sart recording')
-		# click(360,55)	# position for ResearchIR
-		# click(80,490)	# position for minimised Altair
-		click(320,1125)	# select the "recorder" sheet
-		tm.sleep(0.1)
-		click(550,1070)	# position for full screen Altair, start record
-		print('new recording started')
-		# print('wait '+str(min_to_wait)+'min')
-
-		tm.sleep(0.1)
-		print('reset of visual range')
-		click(640,60)	# reset the range of the frame visualisation
-		print('visual range reset')
-
-		# I need to reset the last pulse here to adapt to aborts
-		subprocess.call([r'D:\\IRVB\\getshotno.bat'],stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
-		f = open('mshot.dat', 'r')
-		next_mshot = str(f.read())
-		f.close()
-		last_pulse = cp.deepcopy(int(next_mshot[1:6]))
-
-		tm.sleep(10)
-		changed_pixels = check_screen_change()
-		if changed_pixels>1000:	# arbitrary threshold for camera in internal clocks
-			print(str(changed_pixels)+' pixels changed\ncamera assumed to be in internal clocks\ntherefore changed to external')
-			click(195,1125)	# select the "camera" sheet
+				if useless_counter%10==0:
+					print('no action required')
+		if 	abort_detected==False:
+			tm.sleep(10)	# time to allow to finish finish saving files
+			print('clicking start recording')
+			# click(360,55)	# position for ResearchIR
+			# click(80,490)	# position for minimised Altair
+			click(320,1125)	# select the "recorder" sheet
 			tm.sleep(0.1)
-			click(185,1070)	# select external clocks
-		else:
-			print('only '+str(changed_pixels)+' pixels changed, so no action taken')
-		# camera left in record activated and external clocks
+			click(550,1070)	# position for full screen Altair, start record
+			print('new recording started')
+			# print('wait '+str(min_to_wait)+'min')
 
-		tm.sleep(0.1)
-		for file in new_files:
-			if not (file in old_files):
-				new_file = file
-		print('copying '+new_file)
-		shutil.copyfile(file_path+'\\'+new_file, target_file_path+'\\'+new_file)
-		print('just copied')
+			tm.sleep(0.1)
+			print('reset of visual range')
+			click(640,60)	# reset the range of the frame visualisation
+			print('visual range reset')
 
-		try:
-			if not os.path.exists(target_upper_file_path+'\\'+'last_pulse.npz'):
-				last_pulse_dict = dict([])
-				last_pulse_dict['location'] = [target_folder]
-				last_pulse_dict['filename'] = [new_file]
+			if False:	# I'm not sure I still need to do it, but I keep it
+				# I need to reset the last pulse here to adapt to aborts
+				subprocess.call([r'D:\\IRVB\\getshotno.bat'],stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
+				f = open('mshot.dat', 'r')
+				next_mshot = str(f.read())
+				f.close()
+				last_pulse = cp.deepcopy(int(next_mshot[1:6]))
 			else:
-				last_pulse_dict = dict(np.load(target_upper_file_path+'\\'+'last_pulse.npz'))
-				temp = list(last_pulse_dict['location'])
-				temp.append(target_folder)
-				last_pulse_dict['location'] = temp
-				temp = list(last_pulse_dict['filename'])
-				temp.append(new_file)
-				last_pulse_dict['filename'] = temp
-			np.savez_compressed(target_upper_file_path+'\\'+'last_pulse',**last_pulse_dict)
-			print(target_upper_file_path+'\\'+'last_pulse.npz updated')
+				last_pulse,MASTU_state = return_shot_and_state()
 
-			os.system('putty -ssh ffederic@freia023.hpc.l -pw Ooup313313 -m F:\\work\\analysis_scripts\\scripts\\operations\\pulse_processor_launcher.sh')
-			print('Freia job submitted')
-		except:
-			print('something is wrong with launching the FREIA job')
-		old_number_of_files = new_number_of_files
-		old_files = new_files
+			tm.sleep(10)	# time to allow to finish resetting the range
+			changed_pixels = check_screen_change()
+			if changed_pixels>1000:	# arbitrary threshold for camera in internal clocks
+				print(str(changed_pixels)+' pixels changed\ncamera assumed to be in internal clocks\ntherefore changed to external')
+				click(195,1125)	# select the "camera" sheet
+				tm.sleep(0.1)
+				click(185,1070)	# select external clocks
+			else:
+				print('only '+str(changed_pixels)+' pixels changed, so no action taken')
+			# camera left in record activated and external clocks
+
+			tm.sleep(0.1)
+			for file in new_files:
+				if not (file in old_files):
+					new_file = file
+			print('copying '+new_file)
+			shutil.copyfile(file_path+'\\'+new_file, target_file_path+'\\'+new_file)
+			print('just copied')
+
+			try:
+				if not os.path.exists(target_upper_file_path+'\\'+'last_pulse.npz'):
+					last_pulse_dict = dict([])
+					last_pulse_dict['location'] = [target_folder]
+					last_pulse_dict['filename'] = [new_file]
+				else:
+					last_pulse_dict = dict(np.load(target_upper_file_path+'\\'+'last_pulse.npz'))
+					temp = list(last_pulse_dict['location'])
+					temp.append(target_folder)
+					last_pulse_dict['location'] = temp
+					temp = list(last_pulse_dict['filename'])
+					temp.append(new_file)
+					last_pulse_dict['filename'] = temp
+				np.savez_compressed(target_upper_file_path+'\\'+'last_pulse',**last_pulse_dict)
+				print(target_upper_file_path+'\\'+'last_pulse.npz updated')
+
+				os.system('putty -ssh ffederic@freia023.hpc.l -pw Ooup313313 -m F:\\work\\analysis_scripts\\scripts\\operations\\pulse_processor_launcher.sh')
+				print('Freia job submitted')
+			except:
+				print('something is wrong with launching the FREIA job')
+			old_number_of_files = new_number_of_files
+			old_files = new_files
+		else:
+			print('clicking stop recording')
+			click(320,1125)	# select the "recorder" sheet
+			tm.sleep(0.1)
+			click(600,1070)	# position for full screen Altair, stop record
+			print('recording stopped')
+
+			# now the number of the shot inside altair should advance by one
+
+			print('clicking start recording')
+			click(320,1125)	# select the "recorder" sheet
+			tm.sleep(0.1)
+			click(550,1070)	# position for full screen Altair, start record
+			print('new recording started')
+			# print('wait '+str(min_to_wait)+'min')
+
+			tm.sleep(0.1)
+			print('reset of visual range')
+			click(640,60)	# reset the range of the frame visualisation
+			print('visual range reset')
+
+			tm.sleep(10)
+			changed_pixels = check_screen_change()
+			if changed_pixels>1000:	# arbitrary threshold for camera in internal clocks
+				print(str(changed_pixels)+' pixels changed\ncamera assumed to be in internal clocks\ntherefore changed to external')
+				click(195,1125)	# select the "camera" sheet
+				tm.sleep(0.1)
+				click(185,1070)	# select external clocks
+			else:
+				print('only '+str(changed_pixels)+' pixels changed, so no action taken')
+			# camera left in record activated and external clocks
+
+			old_number_of_files = new_number_of_files
+			old_files = new_files
 
 	print('Now is\n'+tm.ctime()+'\nso operations, and this script, terminate')
 except KeyboardInterrupt:

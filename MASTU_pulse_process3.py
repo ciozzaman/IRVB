@@ -180,4 +180,11 @@ full_saved_file_dict['only_foil']['nan_ROI_mask'] = nan_ROI_mask
 
 np.savez_compressed(laser_to_analyse[:-4],**full_saved_file_dict)
 
+try:
+	del laser_temperature_no_dead_pixels_crop,laser_temperature_std_no_dead_pixels_crop,laser_temperature_no_dead_pixels,laser_temperature_std_no_dead_pixels
+	del laser_temperature,laser_temperature_std,laser_temperature_minus_background,laser_temperature_std_minus_background,laser_temperature_full
+	del laser_temperature_std_full,laser_temperature_minus_background_full,laser_temperature_std_minus_background_full,laser_counts_filtered
+except:
+	print('wrong memory cleaning')
+
 print('completed rotating/cropping ' + laser_to_analyse)

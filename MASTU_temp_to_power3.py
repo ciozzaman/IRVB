@@ -22,9 +22,13 @@ foil_size = [0.07,0.09]
 
 foil_position_dict = dict([('angle',0.5),('foilcenter',[158,136]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',241)])	# fixed orientation, for now, this is from 2021-06-04/44168
 flat_foil_properties = dict([])
-flat_foil_properties['thickness'] = 2.093616658223934e-06
-flat_foil_properties['emissivity'] = 1
-flat_foil_properties['diffusivity'] = 1.03*1e-5
+# flat_foil_properties['thickness'] = 1.4214e-06
+# flat_foil_properties['emissivity'] = 0.89
+# flat_foil_properties['diffusivity'] = 1.03e-5
+# changed 30/07/2021
+flat_foil_properties['thickness'] = 1.4e-6
+flat_foil_properties['emissivity'] = 0.9309305250670584
+flat_foil_properties['diffusivity'] = 9.999999999999999e-06
 
 
 print('starting power analysis' + laser_to_analyse)
@@ -104,8 +108,28 @@ for i in range(len(laser_digitizer_ID)):
 nan_ROI_mask = laser_dict['only_foil'].all()['nan_ROI_mask']
 time_full = laser_dict['full_frame'].all()['time_full']
 
+# problem: apparently I have a significant amount of pixels with negative counts.
+# I need to fix this to calculate properly the BB component
+for i in range(len(laser_digitizer_ID)):
+	plt.figure(figsize=(20, 10))
+	if flag_use_of_first_frames_as_reference:
+		plt.title('NOT USED\nMinimum relative temperature correction in '+laser_to_analyse+' dig '+str(laser_digitizer_ID[i]))
+	else:
+		plt.title('Minimum relative temperature correction in '+laser_to_analyse+' dig '+str(laser_digitizer_ID[i]))
+	correction = np.min(generic_filter(laser_temperature_no_dead_pixels_crop[i]-reference_background_temperature_crop[i],np.mean,size=[6,10,10]),axis=0)	# I need some smoothing so I do this
+	plt.imshow(np.flip(np.transpose(correction,(1,0)),axis=1),'rainbow',interpolation='none',origin='lower')#,origin='lower',vmax=np.max(laser_temperature_minus_background_crop_binned[:,:,:180],axis=(-1,-2))[temp])
+	plt.colorbar().set_label('temp increase [K]')
+	plt.xlabel('Horizontal axis [pixles]')
+	plt.ylabel('Vertical axis [pixles]')
+	# plt.clim(vmax=np.max(laser_temperature_minus_background_crop_binned[:,:,:180],axis=(-1,-2))[temp])
+	plt.savefig(path_power_output + '/min_temp_correction_dig_'+ str(laser_digitizer_ID[i]) +'.eps', bbox_inches='tight')
+	plt.close('all')
+	if not flag_use_of_first_frames_as_reference:
+		laser_temperature_no_dead_pixels_crop[i] -= correction
+
+
 for shrink_factor_t in [1,2,3]:
-	for shrink_factor_x in [1,5,10]:
+	for shrink_factor_x in [1,3,5,10]:
 		binning_type = 'bin' + str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x)
 		print('working on binning \n'+binning_type)
 		seconds_for_reference_frame = 1	# s
@@ -223,17 +247,17 @@ for shrink_factor_t in [1,2,3]:
 			plt.figure(figsize=(20, 10))
 			temp = np.max(laser_temperature_minus_background_crop_binned,axis=(-1,-2)).argmax()
 			plt.title('Foil search in '+laser_to_analyse+'\nhottest frame at %.4gsec' %(time_partial_binned[temp]) + ' binned ' +str([shrink_factor_t,shrink_factor_x,shrink_factor_x]) +' with mask from Calcam'  + '\ngas injection points at R=0.261m, Z=-0.264m, '+r'$theta$'+'=105°(LX), 195°(DX)')
-			plt.imshow(np.flip(np.transpose(laser_temperature_minus_background_crop_binned[temp],(1,0)),axis=1),'rainbow',interpolation='none')#,origin='lower',vmax=np.max(laser_temperature_minus_background_crop_binned[:,:,:180],axis=(-1,-2))[temp])
+			plt.imshow(np.flip(np.transpose(laser_temperature_minus_background_crop_binned[temp],(1,0)),axis=1),'rainbow',interpolation='none',origin='lower')#,origin='lower',vmax=np.max(laser_temperature_minus_background_crop_binned[:,:,:180],axis=(-1,-2))[temp])
 			# MASTU_wireframe_resize = MASTU_wireframe.resize(np.shape(laser_temperature_minus_background_crop_binned[temp]))
 			# MASTU_wireframe_resize[MASTU_wireframe_resize==0] = np.nan
 			plt.colorbar().set_label('temp increase [K]')
 			# plt.imshow(masked, 'gray', interpolation='none', alpha=0.4,origin='lower',extent = [0,np.shape(laser_temperature_minus_background_crop_binned[temp])[0]-1,0,np.shape(laser_temperature_minus_background_crop_binned[temp])[1]-1])
 			temp2 = laser_temperature_minus_background_crop_binned[0]
 			for __i in range(len(fueling_point_location_on_foil)):
-				plt.plot(np.array(fueling_point_location_on_foil[__i][:,0])*(np.shape(temp2)[1]-1)/foil_size[0],np.array(fueling_point_location_on_foil[__i][:,1])*(np.shape(temp2)[0]-1)/foil_size[1],'+k',markersize=40,alpha=0.5)
-				plt.plot(np.array(fueling_point_location_on_foil[__i][:,0])*(np.shape(temp2)[1]-1)/foil_size[0],np.array(fueling_point_location_on_foil[__i][:,1])*(np.shape(temp2)[0]-1)/foil_size[1],'ok',markersize=5,alpha=0.5)
+				plt.plot(np.array(fueling_point_location_on_foil[__i][:,0])*(np.shape(temp2)[1]-1)/foil_size[1],np.array(fueling_point_location_on_foil[__i][:,1])*(np.shape(temp2)[0]-1)/foil_size[0],'+k',markersize=40,alpha=0.5)
+				plt.plot(np.array(fueling_point_location_on_foil[__i][:,0])*(np.shape(temp2)[1]-1)/foil_size[1],np.array(fueling_point_location_on_foil[__i][:,1])*(np.shape(temp2)[0]-1)/foil_size[0],'ok',markersize=5,alpha=0.5)
 			for __i in range(len(structure_point_location_on_foil)):
-				plt.plot(np.array(structure_point_location_on_foil[__i][:,0])*(np.shape(temp2)[1]-1)/foil_size[0],np.array(structure_point_location_on_foil[__i][:,1])*(np.shape(temp2)[0]-1)/foil_size[1],'--k',alpha=0.5)
+				plt.plot(np.array(structure_point_location_on_foil[__i][:,0])*(np.shape(temp2)[1]-1)/foil_size[1],np.array(structure_point_location_on_foil[__i][:,1])*(np.shape(temp2)[0]-1)/foil_size[0],'--k',alpha=0.5)
 			plt.xlabel('Horizontal axis [pixles]')
 			plt.ylabel('Vertical axis [pixles]')
 			# plt.clim(vmax=np.max(laser_temperature_minus_background_crop_binned[:,:,:180],axis=(-1,-2))[temp])
@@ -247,6 +271,14 @@ for shrink_factor_t in [1,2,3]:
 			plt.ylabel('Vertical axis [pixles]')
 			# plt.clim(vmax=np.max(laser_temperature_minus_background_crop_binned[:,:,:180],axis=(-1,-2))[temp])
 			plt.savefig(path_power_output + '/' + str(shot_number)+'_bin' + str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x) + '_dig_'+ str(laser_digitizer_ID[i]) +'_temp.eps', bbox_inches='tight')
+			plt.close()
+			plt.title('Foil search in '+laser_to_analyse+'\nreference background binned '+str([shrink_factor_t,shrink_factor_x,shrink_factor_x]))
+			plt.imshow(np.flip(np.transpose(reference_background_temperature_crop_binned,(1,0)),axis=1),'rainbow',interpolation='none',origin='lower')#,vmax=np.max(laser_temperature_minus_background_crop_binned[:,:,:180],axis=(-1,-2))[temp])
+			plt.colorbar().set_label('temp increase [K]')
+			plt.xlabel('Horizontal axis [pixles]')
+			plt.ylabel('Vertical axis [pixles]')
+			# plt.clim(vmax=np.max(laser_temperature_minus_background_crop_binned[:,:,:180],axis=(-1,-2))[temp])
+			plt.savefig(path_power_output + '/' + str(shot_number)+'_bin' + str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x) + '_dig_'+ str(laser_digitizer_ID[i]) +'_reference.eps', bbox_inches='tight')
 			plt.close()
 
 			# FOIL PROPERTY ADJUSTMENT
@@ -415,23 +447,24 @@ for shrink_factor_t in [1,2,3]:
 		ani.save(path_power_output + '/' + str(shot_number)+'_bin' + str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x) + '_brightness.mp4', fps=5*laser_framerate_binned/383, writer='ffmpeg',codec='mpeg4')
 		plt.close('all')
 
-		temp = BBrad_full[:,:,:int(np.shape(BBrad_full)[2]*0.75)]
-		temp = np.sort(temp[np.max(temp,axis=(1,2)).argmax()].flatten())
-		ani = coleval.movie_from_data(np.array([np.flip(np.transpose(BBrad_full,(0,2,1)),axis=2)]), laser_framerate_binned,integration=laser_int_time/1000,time_offset=time_full_binned[1],extvmin=0,extvmax=np.nanmean(temp[-len(temp)//60:]),xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='Power BB on foil [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4] + '\n'+binning_type+'\n',overlay_structure=True,include_EFIT=True,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True)
-		ani.save(path_power_output + '/' + str(shot_number)+'_bin' + str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x) + '_power_BB.mp4', fps=5*laser_framerate_binned/383, writer='ffmpeg',codec='mpeg4')
-		plt.close('all')
+		if False:	# I speed up the process by not doing these. i have the GUI is I want to take a closer look
+			temp = BBrad_full[:,:,:int(np.shape(BBrad_full)[2]*0.75)]
+			temp = np.sort(temp[np.max(temp,axis=(1,2)).argmax()].flatten())
+			ani = coleval.movie_from_data(np.array([np.flip(np.transpose(BBrad_full,(0,2,1)),axis=2)]), laser_framerate_binned,integration=laser_int_time/1000,time_offset=time_full_binned[1],extvmin=0,extvmax=np.nanmean(temp[-len(temp)//60:]),xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='Power BB on foil [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4] + '\n'+binning_type+'\n',overlay_structure=True,include_EFIT=True,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True)
+			ani.save(path_power_output + '/' + str(shot_number)+'_bin' + str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x) + '_power_BB.mp4', fps=5*laser_framerate_binned/383, writer='ffmpeg',codec='mpeg4')
+			plt.close('all')
 
-		temp = diffusion_full[:,:,:int(np.shape(diffusion_full)[2]*0.75)]
-		temp = np.sort(temp[np.max(temp,axis=(1,2)).argmax()].flatten())
-		ani = coleval.movie_from_data(np.array([np.flip(np.transpose(diffusion_full,(0,2,1)),axis=2)]), laser_framerate_binned,integration=laser_int_time/1000,time_offset=time_full_binned[1],extvmin=0,extvmax=np.nanmean(temp[-len(temp)//60:]),xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='Power on foil [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4] + '\n'+binning_type+'\n',overlay_structure=True,include_EFIT=True,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True)
-		ani.save(path_power_output + '/' + str(shot_number)+'_bin' + str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x) + '_power_diff.mp4', fps=5*laser_framerate_binned/383, writer='ffmpeg',codec='mpeg4')
-		plt.close('all')
+			temp = diffusion_full[:,:,:int(np.shape(diffusion_full)[2]*0.75)]
+			temp = np.sort(temp[np.max(temp,axis=(1,2)).argmax()].flatten())
+			ani = coleval.movie_from_data(np.array([np.flip(np.transpose(diffusion_full,(0,2,1)),axis=2)]), laser_framerate_binned,integration=laser_int_time/1000,time_offset=time_full_binned[1],extvmin=0,extvmax=np.nanmean(temp[-len(temp)//60:]),xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='Power on foil [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4] + '\n'+binning_type+'\n',overlay_structure=True,include_EFIT=True,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True)
+			ani.save(path_power_output + '/' + str(shot_number)+'_bin' + str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x) + '_power_diff.mp4', fps=5*laser_framerate_binned/383, writer='ffmpeg',codec='mpeg4')
+			plt.close('all')
 
-		temp = timevariation_full[:,:,:int(np.shape(timevariation_full)[2]*0.75)]
-		temp = np.sort(temp[np.max(temp,axis=(1,2)).argmax()].flatten())
-		ani = coleval.movie_from_data(np.array([np.flip(np.transpose(timevariation_full,(0,2,1)),axis=2)]), laser_framerate_binned,integration=laser_int_time/1000,time_offset=time_full_binned[1],extvmin=0,extvmax=np.nanmean(temp[-len(temp)//60:]),xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='Power time deriv. diffusion on foil [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4] + '\n'+binning_type+'\n',overlay_structure=True,include_EFIT=True,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True)
-		ani.save(path_power_output + '/' + str(shot_number)+'_bin' + str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x) + '_power_dt.mp4', fps=5*laser_framerate_binned/383, writer='ffmpeg',codec='mpeg4')
-		plt.close('all')
+			temp = timevariation_full[:,:,:int(np.shape(timevariation_full)[2]*0.75)]
+			temp = np.sort(temp[np.max(temp,axis=(1,2)).argmax()].flatten())
+			ani = coleval.movie_from_data(np.array([np.flip(np.transpose(timevariation_full,(0,2,1)),axis=2)]), laser_framerate_binned,integration=laser_int_time/1000,time_offset=time_full_binned[1],extvmin=0,extvmax=np.nanmean(temp[-len(temp)//60:]),xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='Power time deriv. diffusion on foil [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4] + '\n'+binning_type+'\n',overlay_structure=True,include_EFIT=True,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True)
+			ani.save(path_power_output + '/' + str(shot_number)+'_bin' + str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x) + '_power_dt.mp4', fps=5*laser_framerate_binned/383, writer='ffmpeg',codec='mpeg4')
+			plt.close('all')
 np.savez_compressed(laser_to_analyse[:-4]+'_short',**saved_file_dict_short)
 # 	shrink_factor = 20
 # 	temp = generic_filter(powernoback,np.nanmean,size=[1,shrink_factor,shrink_factor])

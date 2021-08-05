@@ -119,7 +119,7 @@ sample_properties['emissivity'] = 1
 sample_properties['diffusivity'] = 1.03*1e-5
 # BBtreshold = 0.06
 # BBtreshold = 0.13
-BBtreshold = 0.2
+BBtreshold = 0.1
 
 def function_a(index):
 	from uncertainties.unumpy import nominal_values,std_devs
@@ -792,15 +792,15 @@ def function_a(index):
 		dr_total_power_minimum = 5
 		# dr_total_power = 17
 	elif focus_status == 'partially_defocused':
-		dr_total_power_minimum = 7
+		dr_total_power_minimum = 8
 		# dr_total_power = 20
 	elif focus_status == 'fully_defocused':
-		dr_total_power_minimum = 10
+		dr_total_power_minimum = 13
 		# dr_total_power = 25
 	else:
 		print('focus type '+focus_status+" unknown, used 'fully_defocused' settings")
 		# dr_total_power = 16
-		dr_total_power_minimum = 25
+		dr_total_power_minimum = 13
 
 
 	limit = 110
@@ -854,6 +854,7 @@ def function_a(index):
 	# dr_total_power = (power_vs_space_sampling['all_dr'][temp])[nominal_values(power_vs_space_sampling['fitted_powers'][:,1][temp]).argmin()]
 	# dr_total_power = dr*2
 	select = (((horizontal_coord-horizontal_loc)**2 + (vertical_coord-vertical_loc)**2)<=dr_total_power**2)[1:-1,1:-1]
+	select_small = (((horizontal_coord-horizontal_loc)**2 + (vertical_coord-vertical_loc)**2)<=dr_total_power_minimum**2)[1:-1,1:-1]
 	fig.suptitle(preamble_4_prints+'Search for power sum size in '+laser_to_analyse+'\nfound %.3gmm with  %.3gK rise of absolute temperature difference' %(dr_total_power*dx,rise_of_absolute_temperature_difference))
 	figure_index+=1
 	plt.savefig(path_to_save_figures+laser_to_analyse[-6:] + path_to_save_figures2 + 'FIG'+str(figure_index)+'.eps', bbox_inches='tight')
@@ -880,6 +881,12 @@ def function_a(index):
 	partial_diffusion_std=np.nansum(temp_diffusion_std[:,select]**2,axis=(-1))**0.5*(dx**2)
 	partial_timevariation=np.multiply(np.nansum(temp_timevariation[:,select],axis=(-1)),dx**2)
 	partial_timevariation_std=np.nansum(temp_timevariation_std[:,select]**2,axis=(-1))**0.5*(dx**2)
+	partial_BBrad_small=np.multiply(np.nansum(temp_BBrad[:,select_small],axis=(-1)),dx**2)
+	partial_BBrad_std_small=np.nansum(temp_BBrad_std[:,select_small]**2,axis=(-1))**0.5*(dx**2)
+	partial_diffusion_small=np.multiply(np.nansum(temp_diffusion[:,select_small],axis=(-1)),dx**2)
+	partial_diffusion_std_small=np.nansum(temp_diffusion_std[:,select_small]**2,axis=(-1))**0.5*(dx**2)
+	partial_timevariation_small=np.multiply(np.nansum(temp_timevariation[:,select_small],axis=(-1)),dx**2)
+	partial_timevariation_std_small=np.nansum(temp_timevariation_std[:,select_small]**2,axis=(-1))**0.5*(dx**2)
 	negative_partial_BBrad=temp_BBrad*(dx**2)
 	negative_partial_BBrad_time_mean = np.nanmean(negative_partial_BBrad,axis=0)
 	negative_partial_BBrad_time_std = np.nanstd(negative_partial_BBrad,axis=0)
@@ -960,6 +967,8 @@ def function_a(index):
 	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10,dr/10))*dx,(vertical_loc - np.abs(dr**2-np.arange(-dr,+dr+dr/10,dr/10)**2)**0.5)*dx,'r--')
 	plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10))*dx,(vertical_loc + np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10)**2)**0.5)*dx,'k--',label='area accounted for sum')
 	plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10))*dx,(vertical_loc - np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10)**2)**0.5)*dx,'k--')
+	plt.plot((horizontal_loc + np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10,dr_total_power_minimum/10))*dx,(vertical_loc + np.abs(dr_total_power_minimum**2-np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10,dr_total_power_minimum/10)**2)**0.5)*dx,'k--')
+	plt.plot((horizontal_loc + np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10,dr_total_power_minimum/10))*dx,(vertical_loc - np.abs(dr_total_power_minimum**2-np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10,dr_total_power_minimum/10)**2)**0.5)*dx,'k--')
 	plt.title(preamble_4_prints+'Power source shape in '+laser_to_analyse+'\n foil size '+str([foilhorizwpixel,foilvertwpixel])+'pixels, [%.3g,%.3g]mm\n laser located at [%.3g,%.3g]mm laser radious %.3gmm' %(foilhorizwpixel*dx*1e3,foilvertwpixel*dx*1e3,horizontal_loc*dx*1e3,vertical_loc*dx*1e3,dr*dx*1e3))
 	plt.xlabel('Horizontal axis [mm]')
 	plt.ylabel('Vertical axis [mm]')
@@ -976,6 +985,8 @@ def function_a(index):
 	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10,dr/10))*dx,(vertical_loc - np.abs(dr**2-np.arange(-dr,+dr+dr/10,dr/10)**2)**0.5)*dx,'r--')
 	plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10))*dx,(vertical_loc + np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10)**2)**0.5)*dx,'k--',label='area accounted for sum')
 	plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10))*dx,(vertical_loc - np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10)**2)**0.5)*dx,'k--')
+	plt.plot((horizontal_loc + np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10,dr_total_power_minimum/10))*dx,(vertical_loc + np.abs(dr_total_power_minimum**2-np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10,dr_total_power_minimum/10)**2)**0.5)*dx,'k--')
+	plt.plot((horizontal_loc + np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10,dr_total_power_minimum/10))*dx,(vertical_loc - np.abs(dr_total_power_minimum**2-np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10,dr_total_power_minimum/10)**2)**0.5)*dx,'k--')
 	plt.title(preamble_4_prints+'Diffusion component shape in '+laser_to_analyse+'\n foil size '+str([foilhorizwpixel,foilvertwpixel])+'pixels, [%.3g,%.3g]mm\n laser located at [%.3g,%.3g]mm laser radious %.3gmm' %(foilhorizwpixel*dx*1e3,foilvertwpixel*dx*1e3,horizontal_loc*dx*1e3,vertical_loc*dx*1e3,dr*dx*1e3))
 	plt.xlabel('Horizontal axis [mm]')
 	plt.ylabel('Vertical axis [mm]')
@@ -993,6 +1004,8 @@ def function_a(index):
 	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10,dr/10))*dx,(vertical_loc - np.abs(dr**2-np.arange(-dr,+dr+dr/10,dr/10)**2)**0.5)*dx,'r--')
 	plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10))*dx,(vertical_loc + np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10)**2)**0.5)*dx,'k--',label='area accounted for sum')
 	plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10))*dx,(vertical_loc - np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10)**2)**0.5)*dx,'k--')
+	plt.plot((horizontal_loc + np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10,dr_total_power_minimum/10))*dx,(vertical_loc + np.abs(dr_total_power_minimum**2-np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10,dr_total_power_minimum/10)**2)**0.5)*dx,'k--')
+	plt.plot((horizontal_loc + np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10,dr_total_power_minimum/10))*dx,(vertical_loc - np.abs(dr_total_power_minimum**2-np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10,dr_total_power_minimum/10)**2)**0.5)*dx,'k--')
 	plt.title(preamble_4_prints+'BB component shape in '+laser_to_analyse+'\n foil size '+str([foilhorizwpixel,foilvertwpixel])+'pixels, [%.3g,%.3g]mm\n laser located at [%.3g,%.3g]mm laser radious %.3gmm' %(foilhorizwpixel*dx*1e3,foilvertwpixel*dx*1e3,horizontal_loc*dx*1e3,vertical_loc*dx*1e3,dr*dx*1e3))
 	plt.xlabel('Horizontal axis [mm]')
 	plt.ylabel('Vertical axis [mm]')
@@ -1114,6 +1127,12 @@ def function_a(index):
 	full_saved_file_dict['partial_diffusion_std']=partial_diffusion_std
 	full_saved_file_dict['partial_timevariation']=partial_timevariation
 	full_saved_file_dict['partial_timevariation_std']=partial_timevariation_std
+	full_saved_file_dict['partial_BBrad_small']=partial_BBrad_small
+	full_saved_file_dict['partial_BBrad_std_small']=partial_BBrad_std_small
+	full_saved_file_dict['partial_diffusion_small']=partial_diffusion_small
+	full_saved_file_dict['partial_diffusion_std_small']=partial_diffusion_std_small
+	full_saved_file_dict['partial_timevariation_small']=partial_timevariation_small
+	full_saved_file_dict['partial_timevariation_std_small']=partial_timevariation_std_small
 	full_saved_file_dict['laser_location']=[horizontal_loc,dhorizontal_loc,vertical_loc,dvertical_loc,dr]
 	full_saved_file_dict['negative_partial_BBrad_time_mean']=negative_partial_BBrad_time_mean
 	full_saved_file_dict['negative_partial_BBrad_time_std']=negative_partial_BBrad_time_std

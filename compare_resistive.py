@@ -1,4 +1,4 @@
-# Created 25/07/2020
+# Created 27/07/2021
 # Fabio Federici
 
 
@@ -16,6 +16,138 @@ number_cpu_available = 8
 # to show the line where it fails
 import sys, traceback, logging
 logging.basicConfig(level=logging.ERROR)
+
+import netCDF4
+
+path = '/common/uda-scratch/jlovell/abm044308.nc'
+f = netCDF4.Dataset(path)
+
+core_res_bolometer = f['abm']['core']['brightness'][:].data
+time = f['abm']['core']['time'][:].data
+
+plt.figure()
+plt.imshow(core_res_bolometer[np.logical_and(time>0,time<1)],'rainbow',extent=[1,core_res_bolometer.shape[1],0,1],vmin=0,vmax=2e5)
+plt.axes().set_aspect(10)
+plt.colorbar()
+plt.pause(0.01)
+
+plt.figure()
+plt.plot(time,core_res_bolometer[:,7])
+plt.plot(time,core_res_bolometer[:,8])
+plt.pause(0.01)
+
+
+midplane = core_res_bolometer[:,8]
+
+EFIT_path_default = '/common/uda-scratch/lkogan/efitpp_eshed'
+print('reading '+EFIT_path_default+'/epm044308.nc')
+efit_reconstruction = coleval.mclass(EFIT_path_default+'/epm044377.nc')
+
+efit_reconstruction.mag_axis_r
+
+
+core_tangential_common_point = [-0.2165,1.734,0]	# x,y,z	17 to 28
+core_tangential_arrival = []
+core_tangential_arrival.append([-1.99,0.196,0])
+core_tangential_arrival.append([np.nan]*3)
+core_tangential_arrival.append([np.nan]*3)
+core_tangential_arrival.append([-1.903,-0.615,0])
+core_tangential_arrival.append([-1.806,-0.861,0])
+core_tangential_arrival.append([-1.665,-1.108,0])
+core_tangential_arrival.append([np.nan]*3)
+core_tangential_arrival.append([np.nan]*3)
+core_tangential_arrival.append([-1.064,-1.694,0])
+core_tangential_arrival.append([-0.808,-1.829,0])
+core_tangential_arrival.append([-0.533,-1.928,0])
+core_tangential_arrival.append([-0.23,0.123,0])
+core_tangential_arrival = np.array(core_tangential_arrival)
+
+resolution = 10000
+core_tangential_location_on_foil = []
+for i in range(len(core_tangential_arrival)):
+	point_location = np.array([np.linspace(core_tangential_arrival[i][0],core_tangential_common_point[0],resolution),np.linspace(core_tangential_arrival[i][1],core_tangential_common_point[1],resolution),[core_tangential_arrival[i][2]]*resolution]).T
+	point_location = coleval.find_location_on_foil(point_location)
+	core_tangential_location_on_foil.append(coleval.absolute_position_on_foil_to_foil_coord(point_location))
+
+core_poloidal_common_point = [1.755,0,90]	# r,z,teta	01 to 16
+core_poloidal_arrival = []
+core_poloidal_arrival.append([0.417,1.424,90])
+core_poloidal_arrival.append([0.335,1.311,90])
+core_poloidal_arrival.append([0.335,1.093,90])
+core_poloidal_arrival.append([0.311,0.921,90])
+core_poloidal_arrival.append([0.285,0.703,90])
+core_poloidal_arrival.append([0.261,0.493,90])
+core_poloidal_arrival.append([0.261,0.285,90])
+core_poloidal_arrival.append([0.261,0.09,90])
+core_poloidal_arrival.append([0.261,-0.09,90])
+core_poloidal_arrival.append([0.261,-0.285,90])
+core_poloidal_arrival.append([0.261,-0.493,90])
+core_poloidal_arrival.append([0.285,-0.703,90])
+core_poloidal_arrival.append([0.311,-0.921,90])
+core_poloidal_arrival.append([0.333,-1.095,90])
+core_poloidal_arrival.append([0.335,-1.311,90])
+core_poloidal_arrival.append([0.417,-1.424,90])
+core_poloidal_arrival = np.array(core_poloidal_arrival)
+
+resolution = 10000
+core_poloidal_location_on_foil = []
+for i in range(len(core_poloidal_arrival)):
+	point_location = np.array([np.linspace(core_poloidal_arrival[i][0],core_poloidal_common_point[0],resolution),np.linspace(core_poloidal_arrival[i][1],core_poloidal_common_point[1],resolution),[core_poloidal_arrival[i][2]]*resolution]).T
+	point_location = coleval.point_toroidal_to_cartesian(point_location)
+	point_location = coleval.find_location_on_foil(point_location)
+	core_poloidal_location_on_foil.append(coleval.absolute_position_on_foil_to_foil_coord(point_location))
+
+divertor_poloidal_common_point = [1.846,-1.564,90]	# r,z,teta	01 to 16
+divertor_poloidal_arrival = []
+divertor_poloidal_arrival.append([1.32,-2.066,90])
+divertor_poloidal_arrival.append([1.27,-2.066,90])
+divertor_poloidal_arrival.append([1.213,-2.066,90])
+divertor_poloidal_arrival.append([1.115,-2.066,90])
+divertor_poloidal_arrival.append([1.09,-2.066,90])
+divertor_poloidal_arrival.append([1.05,-2.03,90])
+divertor_poloidal_arrival.append([1.02,-2,90])
+divertor_poloidal_arrival.append([0.985,-1.965,90])
+divertor_poloidal_arrival.append([0.95,-1.93,90])
+divertor_poloidal_arrival.append([0.92,-1.9,90])
+divertor_poloidal_arrival.append([0.88,-1.86,90])
+divertor_poloidal_arrival.append([0.855,-1.82,90])
+divertor_poloidal_arrival.append([0.8,-1.78,90])
+divertor_poloidal_arrival.append([0.76,-1.74,90])
+divertor_poloidal_arrival.append([0.715,-1.69,90])
+divertor_poloidal_arrival.append([0.665,-1.645,90])
+divertor_poloidal_arrival = np.array(divertor_poloidal_arrival)
+
+resolution = 10000
+divertor_poloidal_location_on_foil = []
+for i in range(len(divertor_poloidal_arrival)):
+	point_location = np.array([np.linspace(divertor_poloidal_arrival[i][0],divertor_poloidal_common_point[0],resolution),np.linspace(divertor_poloidal_arrival[i][1],divertor_poloidal_common_point[1],resolution),[divertor_poloidal_arrival[i][2]]*resolution]).T
+	point_location = coleval.point_toroidal_to_cartesian(point_location)
+	point_location = coleval.find_location_on_foil(point_location)
+	divertor_poloidal_location_on_foil.append(coleval.absolute_position_on_foil_to_foil_coord(point_location))
+
+
+
+plt.figure()
+for i in range(len(core_tangential_location_on_foil)):
+	if np.sum(np.isfinite(np.max(core_tangential_location_on_foil[i],axis=1)))!=0:
+		plt.plot(core_tangential_location_on_foil[i][:,0],core_tangential_location_on_foil[i][:,1],label=str(i+17))
+
+for i in range(len(core_poloidal_location_on_foil)):
+	if np.sum(np.isfinite(np.max(core_poloidal_location_on_foil[i],axis=1)))!=0:
+		plt.plot(core_poloidal_location_on_foil[i][:,0],core_poloidal_location_on_foil[i][:,1],label=str(i+1))
+
+for i in range(len(divertor_poloidal_location_on_foil)):
+	if np.sum(np.isfinite(np.max(divertor_poloidal_location_on_foil[i],axis=1)))!=0:
+		plt.plot(divertor_poloidal_location_on_foil[i][:,0],divertor_poloidal_location_on_foil[i][:,1],'--',label=str(i+1))
+
+plt.legend(loc='best',fontsize='xx-small')
+plt.plot([0,0.07,0.07,0,0],[0,0,0.09,0.09,0],'k')
+plt.pause(0.01)
+
+
+
+
+
 
 
 
@@ -40,9 +172,8 @@ flat_foil_properties = dict([])
 flat_foil_properties['thickness'] = 2.093616658223934e-06
 flat_foil_properties['emissivity'] = 1
 flat_foil_properties['diffusivity'] = 1.03*1e-5
-color = ['b', 'r', 'm', 'y', 'g', 'c', 'k', 'slategrey', 'darkorange', 'lime', 'pink', 'gainsboro', 'paleturquoise', 'teal', 'olive','blueviolet','tan','skyblue','brown','dimgray','hotpink']
 
-laser_to_analyse = '/home/ffederic/work/irvb/MAST-U/2021-06-24/IRVB-MASTU_shot-44308.npz'
+laser_to_analyse = '/home/ffederic/work/irvb/MAST-U/2021-07-15/IRVB-MASTU_shot-44492.npz'
 print('starting power analysis' + laser_to_analyse)
 
 laser_dict = np.load(laser_to_analyse[:-4]+'.npz')
@@ -312,12 +443,7 @@ plane_equation = np.array([1,-1,0,2**0.5 * Rf])
 pinhole_location = np.array([-1.04087,1.068856,-0.7198])
 centre_of_foil = np.array([-1.095782166, 1.095782166, -0.7])
 foil_size = [0.07,0.09]
-# R_centre_column = 0.261	# m
-
-MASTU_silouette_r = [0.906,0.539,0.333,0.333,0.305,0.270,0.261,0.261,0.261]
-MASTU_silouette_z = [-1.881,-1.505,-1.304,-1.103,-0.853,-0.573,-0.505,-0.271,-0.147]
-R_centre_column_interpolator = interp1d(MASTU_silouette_z,MASTU_silouette_r)
-R_centre_column = R_centre_column_interpolator(pinhole_location[2])
+R_centre_column = 0.261	# m
 
 pixels_location = np.array([centre_of_foil]*len(brightness_full_horizontal[0]))
 pixels_location[:,2] -= horizontal_coord[:,peak_horizontal].min()

@@ -67,4 +67,5 @@ np.savez_compressed(last_pulse_path+'last_pulse',**last_pulse_dict)
 laser_to_analyse=last_pulse_path+day+'/'+name
 path = last_pulse_path
 
-exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_pulse_process.py").read())
+# exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_pulse_process.py").read())
+exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_pulse_process2.py").read())

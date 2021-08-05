@@ -1,6 +1,7 @@
-# Created 28/06/2021
+# Created 02/07/2021
 # Fabio Federici
-# I start from Laser_data_analysis2, but I want to start from the steady state, that gives me emissivity and diffusivity
+# like Laser_data_analysis3, but I want to process 2 points on the foil at the same time
+#  I need to calculate 2 different foil properties with same window attenuation and focussed/defocused factor
 
 #this is if working on a pc, use pc printer
 exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_import_pc.py").read())
@@ -101,9 +102,11 @@ minimum_ON_period_list = [2,0.1]	# seconds
 # cases_to_include = ['laser22','laser25','laser33','laser30']	# FR ~383Hz
 # cases_to_include = ['laser15','laser16','laser23','laser21']	# FR ~1kHz
 # cases_to_include = ['laser24','laser26','laser27','laser31','laser28','laser29']	# FR ~2kHz
-all_cases_to_include = [['laser22','laser25','laser33','laser30'] , ['laser15','laser16','laser23','laser21'] , ['laser24','laser26','laser27','laser31','laser28','laser29'],['laser22','laser25','laser33','laser30','laser15','laser16','laser23','laser21','laser24','laser26','laser27','laser31','laser28','laser29']]
-all_cases_to_include = [['laser34','laser35'], ['laser38','laser36'] , ['laser39','laser37'], ['laser34','laser35','laser38','laser36','laser39','laser37']]
+# all_cases_to_include = [['laser22','laser25','laser33','laser30'] , ['laser15','laser16','laser23','laser21'] , ['laser24','laser26','laser27','laser31','laser28','laser29'],['laser22','laser25','laser33','laser30','laser15','laser16','laser23','laser21','laser24','laser26','laser27','laser31','laser28','laser29']]
+# all_cases_to_include = [['laser34','laser35'], ['laser38','laser36'] , ['laser39','laser37'], ['laser34','laser35','laser38','laser36','laser39','laser37']]
 all_cases_to_include = [['laser22','laser25','laser33','laser30','laser34','laser35']]
+location_1 = ['laser22','laser25','laser33','laser30']
+location_2 = ['laser34','laser35']
 for cases_to_include in all_cases_to_include:
 	figure_index = 0
 	coefficients = []
@@ -255,12 +258,16 @@ for cases_to_include in all_cases_to_include:
 	# sharpness_degradation_high_frequency = np.array(sharpness_degradation_high_frequency)
 
 	# power_reduction_window = 0.9
-	def calculate_laser_power_given_parameters_1(trash,search_emissivity,search_thickness_over_diffusivity,power_reduction_window,search_defocused_to_focused_power):
-		print([search_emissivity,search_thickness_over_diffusivity,power_reduction_window,search_defocused_to_focused_power])
+	def calculate_laser_power_given_parameters_1(trash,search_emissivity_1,search_thickness_over_diffusivity_1,search_emissivity_2,search_thickness_over_diffusivity_2,power_reduction_window,search_defocused_to_focused_power):
+		print([search_emissivity_1,search_thickness_over_diffusivity_1,search_emissivity_2,search_thickness_over_diffusivity_2,power_reduction_window,search_defocused_to_focused_power])
 		# search_diffusivity = Ptthermaldiffusivity
 		all_fitted_power = []
 		all_fitted_zero_power = []
 		for index in range(len(all_laser_to_analyse_power_end)):
+			if all_case_ID_end[index] in location_1:
+				 search_emissivity,search_thickness_over_diffusivity = search_emissivity_1,search_thickness_over_diffusivity_1
+			else:
+				 search_emissivity,search_thickness_over_diffusivity = search_emissivity_2,search_thickness_over_diffusivity_2
 			time_of_experiment = all_time_of_experiment[index]
 			partial_BBrad = all_partial_BBrad[index]
 			# partial_BBrad_std = all_partial_BBrad_std[index]
@@ -323,12 +330,12 @@ for cases_to_include in all_cases_to_include:
 	# sigma = np.ones_like(y)
 	sigma = (np.abs(all_laser_to_analyse_power_end-all_laser_to_analyse_power_end.max()) + all_laser_to_analyse_power_end.max())/np.array(all_laser_to_analyse_frequency_end)
 	sigma = np.array([sigma,sigma]).T.flatten()
-	bds = [[0.7,0.1*2.5e-6/Ptthermaldiffusivity,0.1,0.8],[1,10*2.5e-6/Ptthermaldiffusivity,1,1.2]]
-	guess=[0.98,1.5*2.5e-6/Ptthermaldiffusivity,0.95,1]
-	fit = curve_fit(calculate_laser_power_given_parameters_1, x, y, sigma=sigma, p0=guess,bounds=bds,maxfev=int(1e6),verbose=2,diff_step=[0.00001,guess[0]/10000,0.00001,0.0001])
+	bds = [[0.7,0.1*2.5e-6/Ptthermaldiffusivity,0.7,0.1*2.5e-6/Ptthermaldiffusivity,0.1,0.8],[1,10*2.5e-6/Ptthermaldiffusivity,1,10*2.5e-6/Ptthermaldiffusivity,1,1.2]]
+	guess=[0.98,1.5*2.5e-6/Ptthermaldiffusivity,0.98,1.5*2.5e-6/Ptthermaldiffusivity,0.95,1]
+	fit = curve_fit(calculate_laser_power_given_parameters_1, x, y, sigma=sigma, p0=guess,bounds=bds,maxfev=int(1e6),verbose=2,diff_step=[0.00001,guess[0]/10000,0.00001,guess[0]/10000,0.00001,0.0001])
 	best_power = calculate_laser_power_given_parameters_1(1,*fit[0])
 	guess_best_power = calculate_laser_power_given_parameters_1(1,*guess)
-	emissivity_first_stage, thickness_over_diffusivity_first_stage,power_reduction_window_first_stage,defocused_to_focused_power_first_stage = fit[0]
+	emissivity_first_stage_1, thickness_over_diffusivity_first_stage_1,emissivity_first_stage_2, thickness_over_diffusivity_first_stage_2,power_reduction_window_first_stage,defocused_to_focused_power_first_stage = fit[0]
 	coefficients_first_stage.append(fit[0])
 	# all_sharpness_first.append(np.nanmean(best_sharpness))
 
@@ -429,12 +436,17 @@ for cases_to_include in all_cases_to_include:
 
 		print('FINISHED '+laser_to_analyse)
 
-	def calculate_laser_power_given_parameters(trash,search_thickness):
-		print([search_thickness])
-		search_emissivity = emissivity_first_stage
-		search_diffusivity = search_thickness/thickness_over_diffusivity_first_stage
+	def calculate_laser_power_given_parameters(trash,search_thickness_1,search_thickness_2):
+		print([search_thickness_1,search_thickness_2])
 		all_fitted_power = []
 		for index in range(len(all_laser_to_analyse_power_end)):
+			if all_case_ID_end[index] in location_1:
+				search_emissivity,thickness_over_diffusivity_first_stage = emissivity_first_stage_1,thickness_over_diffusivity_first_stage_1
+				search_thickness = search_thickness_1
+			else:
+				search_emissivity,thickness_over_diffusivity_first_stage = emissivity_first_stage_2,thickness_over_diffusivity_first_stage_2
+				search_thickness = search_thickness_2
+			search_diffusivity = search_thickness/thickness_over_diffusivity_first_stage
 			partial_BBrad = all_partial_BBrad[index]
 			# partial_BBrad_std = all_partial_BBrad_std[index]
 			partial_diffusion = all_partial_diffusion[index]
@@ -494,53 +506,43 @@ for cases_to_include in all_cases_to_include:
 	# sigma = np.ones_like(y)
 	sigma = (np.abs(np.array(all_laser_to_analyse_power_end)-np.max(all_laser_to_analyse_power_end)) + np.max(all_laser_to_analyse_power_end))/np.array(all_laser_to_analyse_frequency_end)
 	sigma = np.array([sigma,sigma]).T.flatten()
-	bds = [[0.1*2.5e-6],[10*2.5e-6]]
-	guess=[2.5e-6]
-	fit = curve_fit(calculate_laser_power_given_parameters, x, y, sigma=sigma, p0=guess,bounds=bds,maxfev=int(1e6),verbose=2,ftol=1e-12,xtol=1e-14,gtol=1e-12,diff_step=[guess[0]/10000])
+	bds = [[0.1*2.5e-6,0.1*2.5e-6],[10*2.5e-6,10*2.5e-6]]
+	guess=[2.5e-6,2.5e-6]
+	fit = curve_fit(calculate_laser_power_given_parameters, x, y, sigma=sigma, p0=guess,bounds=bds,maxfev=int(1e6),verbose=2,ftol=1e-12,xtol=1e-14,gtol=1e-12,diff_step=[guess[0]/10000,guess[0]/10000])
 	best_power = calculate_laser_power_given_parameters(1,*fit[0])
 	guess_best_power = calculate_laser_power_given_parameters(1,*guess)
-	thickness_second_stage = fit[0][0]
-	diffusivity_second_stage = thickness_second_stage/thickness_over_diffusivity_first_stage
+	thickness_second_stage_1,thickness_second_stage_2 = fit[0]
+	diffusivity_second_stage_1 = thickness_second_stage_1/thickness_over_diffusivity_first_stage_1
+	diffusivity_second_stage_2 = thickness_second_stage_2/thickness_over_diffusivity_first_stage_2
 	coefficients_first_stage.append(fit[0])
 
 
-	if cases_to_include==['laser22','laser25','laser33','laser30']:
-		diffusivity_second_stage = 1.03e-5	# this seems to work better. I'm fixing now the experiments in which there are breaks in time that mess up things.
-		thickness_over_diffusivity_first_stage = 0.138
-		thickness_second_stage = thickness_over_diffusivity_first_stage * diffusivity_second_stage
-		thickness_second_stage = 1.4214e-06
-		emissivity_first_stage = 0.9
-		# 30/07/2021
-		thickness_second_stage = 1.4e-6
-		thickness_over_diffusivity_first_stage = 0.14
-		diffusivity_second_stage = thickness_second_stage/thickness_over_diffusivity_first_stage
-		diffusivity_second_stage = 9.999999999999999e-06
-		emissivity_first_stage = 0.9309305250670584
-		power_reduction_window_first_stage = 0.661929291722
-		defocused_to_focused_power_first_stage = 0.9848667669291
-
-	if cases_to_include==['laser34', 'laser35']:
-		thickness_second_stage = 1.3049864435145467e-06
-		thickness_over_diffusivity_first_stage = 0.13252759942388878
-		diffusivity_second_stage = thickness_second_stage/thickness_over_diffusivity_first_stage
-		diffusivity_second_stage = 9.846903204973591e-06
-		emissivity_first_stage = 0.9414416749592672
-		power_reduction_window_first_stage = 0.7465815303506824
-		defocused_to_focused_power_first_stage = 0.842722625237396
-
 	if cases_to_include==['laser22', 'laser25', 'laser33', 'laser30', 'laser34', 'laser35']:
-		thickness_second_stage = 1.4859095354482858e-06
-		thickness_over_diffusivity_first_stage = 0.14206991283832196
-		diffusivity_second_stage = thickness_second_stage/thickness_over_diffusivity_first_stage
-		diffusivity_second_stage = 1.045900223180454e-05
-		emissivity_first_stage = 0.9884061389741369
-		power_reduction_window_first_stage = 0.759872877154181
-		defocused_to_focused_power_first_stage = 0.9538493914211571
+		thickness_second_stage_1 = 1.4241252113128753e-06
+		thickness_second_stage_2 = 1.3013798466886807e-06
+		thickness_over_diffusivity_first_stage_1 = 0.142
+		thickness_over_diffusivity_first_stage_2 = 0.135
+		diffusivity_second_stage_1 = thickness_second_stage_1/thickness_over_diffusivity_first_stage_1
+		diffusivity_second_stage_2 = thickness_second_stage_2/thickness_over_diffusivity_first_stage_2
+		diffusivity_second_stage_1 = 1.0391508721611927e-05
+		diffusivity_second_stage_2 = 1.0230047412229985e-05
+		emissivity_first_stage_1 = 0.9999142706326141
+		emissivity_first_stage_2 = 0.9065613462675369
+		power_reduction_window_first_stage = 0.712060276888852
+		defocused_to_focused_power_first_stage = 0.9651463549632364
 
 
 	for index in np.arange(len(all_laser_to_analyse_power_end)):
 		# index=2
 		# index=len(all_case_ID_end)-1
+		if all_case_ID_end[index] in location_1:
+			emissivity_first_stage = emissivity_first_stage_1
+			thickness_second_stage = thickness_second_stage_1
+			diffusivity_second_stage = diffusivity_second_stage_1
+		else:
+			emissivity_first_stage = emissivity_first_stage_2
+			thickness_second_stage = thickness_second_stage_2
+			diffusivity_second_stage = diffusivity_second_stage_2
 		case_ID = all_case_ID_end[index]
 		laser_to_analyse = all_laser_to_analyse_end[index]
 		partial_BBrad = all_partial_BBrad[index]
