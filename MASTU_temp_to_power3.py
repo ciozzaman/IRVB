@@ -5,6 +5,8 @@ MASTU_wireframe_resize[MASTU_wireframe_resize>0] = 1
 MASTU_wireframe_resize = np.flip(MASTU_wireframe_resize,axis=0)
 masked = np.ma.masked_where(MASTU_wireframe_resize == 0, MASTU_wireframe_resize)
 
+efit_reconstruction = None
+
 exec(open("/home/ffederic/work/analysis_scripts/scripts/python_library/collect_and_eval/collect_and_eval/MASTU_structure.py").read())
 structure_point_location_on_foil = []
 for time in range(len(stucture_r)):
@@ -25,10 +27,18 @@ flat_foil_properties = dict([])
 # flat_foil_properties['thickness'] = 1.4214e-06
 # flat_foil_properties['emissivity'] = 0.89
 # flat_foil_properties['diffusivity'] = 1.03e-5
+# # changed 30/07/2021
+# flat_foil_properties['thickness'] = 1.4e-6
+# flat_foil_properties['emissivity'] = 0.9309305250670584
+# flat_foil_properties['diffusivity'] = 9.999999999999999e-06
 # changed 30/07/2021
-flat_foil_properties['thickness'] = 1.4e-6
-flat_foil_properties['emissivity'] = 0.9309305250670584
-flat_foil_properties['diffusivity'] = 9.999999999999999e-06
+flat_foil_properties['thickness'] = 1.4859095354482858e-06
+flat_foil_properties['emissivity'] = 0.9884061389741369
+flat_foil_properties['diffusivity'] = 1.045900223180454e-05
+# directly and blindly copied from Matt
+flat_foil_properties['thickness'] = 1.94e-6
+flat_foil_properties['emissivity'] = 0.85
+flat_foil_properties['diffusivity'] = 10.9e-6
 
 
 print('starting power analysis' + laser_to_analyse)
@@ -116,7 +126,7 @@ for i in range(len(laser_digitizer_ID)):
 		plt.title('NOT USED\nMinimum relative temperature correction in '+laser_to_analyse+' dig '+str(laser_digitizer_ID[i]))
 	else:
 		plt.title('Minimum relative temperature correction in '+laser_to_analyse+' dig '+str(laser_digitizer_ID[i]))
-	correction = np.min(generic_filter(laser_temperature_no_dead_pixels_crop[i]-reference_background_temperature_crop[i],np.mean,size=[6,10,10]),axis=0)	# I need some smoothing so I do this
+	correction = np.min(generic_filter(laser_temperature_no_dead_pixels_crop[i][time_partial[i]<0.2]-reference_background_temperature_crop[i],np.mean,size=[6,1,1]),axis=0)	# I need some smoothing so I do this
 	plt.imshow(np.flip(np.transpose(correction,(1,0)),axis=1),'rainbow',interpolation='none',origin='lower')#,origin='lower',vmax=np.max(laser_temperature_minus_background_crop_binned[:,:,:180],axis=(-1,-2))[temp])
 	plt.colorbar().set_label('temp increase [K]')
 	plt.xlabel('Horizontal axis [pixles]')
@@ -127,8 +137,22 @@ for i in range(len(laser_digitizer_ID)):
 	if not flag_use_of_first_frames_as_reference:
 		laser_temperature_no_dead_pixels_crop[i] -= correction
 
+	if False:
+		plt.figure(figsize=(20, 10))
+		plt.imshow(np.flip(np.transpose(laser_temperature_no_dead_pixels_crop[i][0]-reference_background_temperature_crop[i],(1,0)),axis=1),'rainbow',interpolation='none',origin='lower')#,origin='lower',vmax=np.max(laser_temperature_minus_background_crop_binned[:,:,:180],axis=(-1,-2))[temp])
+		plt.colorbar().set_label('temp increase [K]')
+		plt.xlabel('Horizontal axis [pixles]')
+		plt.ylabel('Vertical axis [pixles]')
+		plt.pause(0.01)
 
-for shrink_factor_t in [1,2,3]:
+		plt.figure(figsize=(20, 10))
+		plt.imshow(np.flip(np.transpose(laser_temperature_no_dead_pixels_crop[i][0]-correction-reference_background_temperature_crop[i],(1,0)),axis=1),'rainbow',interpolation='none',origin='lower')#,origin='lower',vmax=np.max(laser_temperature_minus_background_crop_binned[:,:,:180],axis=(-1,-2))[temp])
+		plt.colorbar().set_label('temp increase [K]')
+		plt.xlabel('Horizontal axis [pixles]')
+		plt.ylabel('Vertical axis [pixles]')
+		plt.pause(0.01)
+
+for shrink_factor_t in [1,2,3,5]:
 	for shrink_factor_x in [1,3,5,10]:
 		binning_type = 'bin' + str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x)
 		print('working on binning \n'+binning_type)
@@ -272,6 +296,7 @@ for shrink_factor_t in [1,2,3]:
 			# plt.clim(vmax=np.max(laser_temperature_minus_background_crop_binned[:,:,:180],axis=(-1,-2))[temp])
 			plt.savefig(path_power_output + '/' + str(shot_number)+'_bin' + str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x) + '_dig_'+ str(laser_digitizer_ID[i]) +'_temp.eps', bbox_inches='tight')
 			plt.close()
+			plt.figure(figsize=(20, 10))
 			plt.title('Foil search in '+laser_to_analyse+'\nreference background binned '+str([shrink_factor_t,shrink_factor_x,shrink_factor_x]))
 			plt.imshow(np.flip(np.transpose(reference_background_temperature_crop_binned,(1,0)),axis=1),'rainbow',interpolation='none',origin='lower')#,vmax=np.max(laser_temperature_minus_background_crop_binned[:,:,:180],axis=(-1,-2))[temp])
 			plt.colorbar().set_label('temp increase [K]')
@@ -297,8 +322,8 @@ for shrink_factor_t in [1,2,3]:
 			# dt=1/laser_framerate/shrink_factor_t
 			dt = time_partial_binned[2:]-time_partial_binned[:-2]
 			dx=foilhorizw/foilhorizwpixel*shrink_factor_x
-			dTdt=np.divide((laser_temperature_crop_binned[2:,1:-1,1:-1]-laser_temperature_crop_binned[:-2,1:-1,1:-1]).T,2*dt).T.astype(np.float32)
-			dTdt_std=np.divide((laser_temperature_std_crop_binned[2:,1:-1,1:-1]**2 + laser_temperature_std_crop_binned[:-2,1:-1,1:-1]**2).T**0.5,2*dt).T.astype(np.float32)
+			dTdt=np.divide((laser_temperature_crop_binned[2:,1:-1,1:-1]-laser_temperature_crop_binned[:-2,1:-1,1:-1]).T,dt).T.astype(np.float32)
+			dTdt_std=np.divide((laser_temperature_std_crop_binned[2:,1:-1,1:-1]**2 + laser_temperature_std_crop_binned[:-2,1:-1,1:-1]**2).T**0.5,dt).T.astype(np.float32)
 			d2Tdx2=np.divide(laser_temperature_minus_background_crop_binned[1:-1,1:-1,2:]-np.multiply(2,laser_temperature_minus_background_crop_binned[1:-1,1:-1,1:-1])+laser_temperature_minus_background_crop_binned[1:-1,1:-1,:-2],dx**2).astype(np.float32)
 			d2Tdx2_std=np.divide((laser_temperature_std_minus_background_crop_binned[1:-1,1:-1,2:]**2+np.multiply(2,laser_temperature_std_minus_background_crop_binned[1:-1,1:-1,1:-1])**2+laser_temperature_std_minus_background_crop_binned[1:-1,1:-1,:-2]**2)**0.5,dx**2).astype(np.float32)
 			d2Tdy2=np.divide(laser_temperature_minus_background_crop_binned[1:-1,2:,1:-1]-np.multiply(2,laser_temperature_minus_background_crop_binned[1:-1,1:-1,1:-1])+laser_temperature_minus_background_crop_binned[1:-1,:-2,1:-1],dx**2).astype(np.float32)
@@ -433,7 +458,7 @@ for shrink_factor_t in [1,2,3]:
 
 		temp = powernoback_full[:,:,:int(np.shape(powernoback_full)[2]*0.75)]
 		temp = np.sort(temp[np.max(temp,axis=(1,2)).argmax()].flatten())
-		ani = coleval.movie_from_data(np.array([np.flip(np.transpose(powernoback_full,(0,2,1)),axis=2)]), laser_framerate_binned,integration=laser_int_time/1000,time_offset=time_full_binned[1],extvmin=0,extvmax=np.nanmean(temp[-len(temp)//60:]),xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='Power on foil [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4] + '\n'+binning_type+'\n',overlay_structure=True,include_EFIT=True,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True)
+		ani,efit_reconstruction = coleval.movie_from_data(np.array([np.flip(np.transpose(powernoback_full,(0,2,1)),axis=2)]), laser_framerate_binned,integration=laser_int_time/1000,time_offset=time_full_binned[0],extvmin=0,extvmax=np.nanmean(temp[-len(temp)//60:]),xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='Power on foil [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4] + '\n'+binning_type+'\n',overlay_structure=True,include_EFIT=True,EFIT_output_requested=True,efit_reconstruction=efit_reconstruction,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True)
 		ani.save(path_power_output + '/' + str(shot_number)+'_bin' + str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x) + '_power.mp4', fps=5*laser_framerate_binned/383, writer='ffmpeg',codec='mpeg4')
 		plt.close('all')
 
@@ -443,43 +468,43 @@ for shrink_factor_t in [1,2,3]:
 		saved_file_dict_short[binning_type]['brightness_std_full'] = np.float32(brightness_std_full)
 		temp = brightness_full[:,:,:int(np.shape(brightness_full)[2]*0.75)]
 		temp = np.sort(temp[np.max(temp,axis=(1,2)).argmax()].flatten())
-		ani = coleval.movie_from_data(np.array([np.flip(np.transpose(brightness_full,(0,2,1)),axis=2)]), laser_framerate_binned,integration=laser_int_time/1000,time_offset=time_full_binned[1],extvmin=0,extvmax=np.nanmean(temp[-len(temp)//60:]),xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='Brightness [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4] + '\n'+binning_type+'\n',overlay_structure=True,include_EFIT=True,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True)
+		ani,efit_reconstruction = coleval.movie_from_data(np.array([np.flip(np.transpose(brightness_full,(0,2,1)),axis=2)]), laser_framerate_binned,integration=laser_int_time/1000,time_offset=time_full_binned[0],extvmin=0,extvmax=np.nanmean(temp[-len(temp)//60:]),xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='Brightness [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4] + '\n'+binning_type+'\n',overlay_structure=True,include_EFIT=True,EFIT_output_requested=True,efit_reconstruction=efit_reconstruction,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True)
 		ani.save(path_power_output + '/' + str(shot_number)+'_bin' + str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x) + '_brightness.mp4', fps=5*laser_framerate_binned/383, writer='ffmpeg',codec='mpeg4')
 		plt.close('all')
 
 		if False:	# I speed up the process by not doing these. i have the GUI is I want to take a closer look
 			temp = BBrad_full[:,:,:int(np.shape(BBrad_full)[2]*0.75)]
 			temp = np.sort(temp[np.max(temp,axis=(1,2)).argmax()].flatten())
-			ani = coleval.movie_from_data(np.array([np.flip(np.transpose(BBrad_full,(0,2,1)),axis=2)]), laser_framerate_binned,integration=laser_int_time/1000,time_offset=time_full_binned[1],extvmin=0,extvmax=np.nanmean(temp[-len(temp)//60:]),xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='Power BB on foil [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4] + '\n'+binning_type+'\n',overlay_structure=True,include_EFIT=True,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True)
+			ani,efit_reconstruction = coleval.movie_from_data(np.array([np.flip(np.transpose(BBrad_full,(0,2,1)),axis=2)]), laser_framerate_binned,integration=laser_int_time/1000,time_offset=time_full_binned[0],extvmin=0,extvmax=np.nanmean(temp[-len(temp)//60:]),xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='Power BB on foil [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4] + '\n'+binning_type+'\n',overlay_structure=True,include_EFIT=True,EFIT_output_requested=True,efit_reconstruction=efit_reconstruction,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True)
 			ani.save(path_power_output + '/' + str(shot_number)+'_bin' + str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x) + '_power_BB.mp4', fps=5*laser_framerate_binned/383, writer='ffmpeg',codec='mpeg4')
 			plt.close('all')
 
 			temp = diffusion_full[:,:,:int(np.shape(diffusion_full)[2]*0.75)]
 			temp = np.sort(temp[np.max(temp,axis=(1,2)).argmax()].flatten())
-			ani = coleval.movie_from_data(np.array([np.flip(np.transpose(diffusion_full,(0,2,1)),axis=2)]), laser_framerate_binned,integration=laser_int_time/1000,time_offset=time_full_binned[1],extvmin=0,extvmax=np.nanmean(temp[-len(temp)//60:]),xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='Power on foil [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4] + '\n'+binning_type+'\n',overlay_structure=True,include_EFIT=True,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True)
+			ani,efit_reconstruction = coleval.movie_from_data(np.array([np.flip(np.transpose(diffusion_full,(0,2,1)),axis=2)]), laser_framerate_binned,integration=laser_int_time/1000,time_offset=time_full_binned[0],extvmin=0,extvmax=np.nanmean(temp[-len(temp)//60:]),xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='Power on foil [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4] + '\n'+binning_type+'\n',overlay_structure=True,include_EFIT=True,EFIT_output_requested=True,efit_reconstruction=efit_reconstruction,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True)
 			ani.save(path_power_output + '/' + str(shot_number)+'_bin' + str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x) + '_power_diff.mp4', fps=5*laser_framerate_binned/383, writer='ffmpeg',codec='mpeg4')
 			plt.close('all')
 
 			temp = timevariation_full[:,:,:int(np.shape(timevariation_full)[2]*0.75)]
 			temp = np.sort(temp[np.max(temp,axis=(1,2)).argmax()].flatten())
-			ani = coleval.movie_from_data(np.array([np.flip(np.transpose(timevariation_full,(0,2,1)),axis=2)]), laser_framerate_binned,integration=laser_int_time/1000,time_offset=time_full_binned[1],extvmin=0,extvmax=np.nanmean(temp[-len(temp)//60:]),xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='Power time deriv. diffusion on foil [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4] + '\n'+binning_type+'\n',overlay_structure=True,include_EFIT=True,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True)
+			ani,efit_reconstruction = coleval.movie_from_data(np.array([np.flip(np.transpose(timevariation_full,(0,2,1)),axis=2)]), laser_framerate_binned,integration=laser_int_time/1000,time_offset=time_full_binned[0],extvmin=0,extvmax=np.nanmean(temp[-len(temp)//60:]),xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='Power time deriv. diffusion on foil [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4] + '\n'+binning_type+'\n',overlay_structure=True,include_EFIT=True,EFIT_output_requested=True,efit_reconstruction=efit_reconstruction,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True)
 			ani.save(path_power_output + '/' + str(shot_number)+'_bin' + str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x) + '_power_dt.mp4', fps=5*laser_framerate_binned/383, writer='ffmpeg',codec='mpeg4')
 			plt.close('all')
 np.savez_compressed(laser_to_analyse[:-4]+'_short',**saved_file_dict_short)
 # 	shrink_factor = 20
 # 	temp = generic_filter(powernoback,np.nanmean,size=[1,shrink_factor,shrink_factor])
-# 	ani = coleval.movie_from_data(np.array([np.flip(np.transpose(temp,(0,2,1)),axis=2)]), laser_framerate/shrink_factor_t,mask=masked, integration=laser_int_time/1000,time_offset=time_full_binned[1],extvmax=temp[:,:,180].max(),extvmin=0,xlabel='horizontal coord [pixels]',ylabel='vertical coord [pixels]',barlabel='Power on foil [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4] + '\nsmoothed spatially '+str([shrink_factor,shrink_factor]) + '\n', include_EFIT=True, pulse_ID=laser_to_analyse[-9:-4], overlay_x_point=True, overlay_mag_axis=True)
+# 	ani = coleval.movie_from_data(np.array([np.flip(np.transpose(temp,(0,2,1)),axis=2)]), laser_framerate/shrink_factor_t,mask=masked, integration=laser_int_time/1000,time_offset=time_full_binned[0],extvmax=temp[:,:,180].max(),extvmin=0,xlabel='horizontal coord [pixels]',ylabel='vertical coord [pixels]',barlabel='Power on foil [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4] + '\nsmoothed spatially '+str([shrink_factor,shrink_factor]) + '\n', include_EFIT=True, pulse_ID=laser_to_analyse[-9:-4], overlay_x_point=True, overlay_mag_axis=True)
 # 	ani.save(laser_to_analyse[:-4]+ '_power_smooth1.mp4', fps=5, writer='ffmpeg',codec='mpeg4')
 # 	plt.close('all')
 # 	saved_file_dict_short['power_data']['smooth_'+str(1) + 'x' + str(shrink_factor) + 'x' + str(shrink_factor)] = temp
 # 	temp = generic_filter(4*np.pi*powernoback/etendue,np.nanmean,size=[1,shrink_factor,shrink_factor])
-# 	ani = coleval.movie_from_data(np.array([np.flip(np.transpose(temp,(0,2,1)),axis=2)]), laser_framerate/shrink_factor_t, integration=laser_int_time/1000,time_offset=time_full_binned[1],extvmax=temp[:,:,180].max(),extvmin=0,xlabel='horizontal coord [pixels]',ylabel='vertical coord [pixels]',barlabel='Brightness [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4] + '\nsmoothed spatially '+str([shrink_factor,shrink_factor]) + '\n')
+# 	ani = coleval.movie_from_data(np.array([np.flip(np.transpose(temp,(0,2,1)),axis=2)]), laser_framerate/shrink_factor_t, integration=laser_int_time/1000,time_offset=time_full_binned[0],extvmax=temp[:,:,180].max(),extvmin=0,xlabel='horizontal coord [pixels]',ylabel='vertical coord [pixels]',barlabel='Brightness [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4] + '\nsmoothed spatially '+str([shrink_factor,shrink_factor]) + '\n')
 # 	ani.save(laser_to_analyse[:-4]+ '_brightness_smooth1.mp4', fps=5, writer='ffmpeg',codec='mpeg4')
 # 	plt.close('all')
 # 	shrink_factor_t = 13
 # 	shrink_factor_x = 10
 # 	temp = generic_filter(powernoback,np.nanmean,size=[shrink_factor_t,shrink_factor_x,shrink_factor_x])
-# 	ani = coleval.movie_from_data(np.array([np.flip(np.transpose(temp,(0,2,1)),axis=2)]), laser_framerate/shrink_factor_t,mask=masked, integration=laser_int_time/1000,time_offset=time_full_binned[1],extvmax=temp[:,:,180].max(),extvmin=0,xlabel='horizontal coord [pixels]',ylabel='vertical coord [pixels]',barlabel='Power on foil [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4] + '\nsmoothed '+str([shrink_factor_t,shrink_factor_x,shrink_factor_x]) + '\n', include_EFIT=True, pulse_ID=laser_to_analyse[-9:-4], overlay_x_point=True, overlay_mag_axis=True)
+# 	ani = coleval.movie_from_data(np.array([np.flip(np.transpose(temp,(0,2,1)),axis=2)]), laser_framerate/shrink_factor_t,mask=masked, integration=laser_int_time/1000,time_offset=time_full_binned[0],extvmax=temp[:,:,180].max(),extvmin=0,xlabel='horizontal coord [pixels]',ylabel='vertical coord [pixels]',barlabel='Power on foil [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4] + '\nsmoothed '+str([shrink_factor_t,shrink_factor_x,shrink_factor_x]) + '\n', include_EFIT=True, pulse_ID=laser_to_analyse[-9:-4], overlay_x_point=True, overlay_mag_axis=True)
 # 	ani.save(laser_to_analyse[:-4]+ '_power_smooth2.mp4', fps=5, writer='ffmpeg',codec='mpeg4')
 # 	plt.close('all')
 # 	saved_file_dict_short['power_data']['smooth_'+str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x)] = temp
@@ -508,7 +533,7 @@ np.savez_compressed(laser_to_analyse[:-4]+'_short',**saved_file_dict_short)
 # 	plt.close('all')
 #
 # 	temp = generic_filter(4*np.pi*powernoback/etendue,np.nanmean,size=[shrink_factor_t,shrink_factor_x,shrink_factor_x])
-# 	ani = coleval.movie_from_data(np.array([np.flip(np.transpose(temp,(0,2,1)),axis=2)]), laser_framerate/shrink_factor_t, integration=laser_int_time/1000,time_offset=time_full_binned[1],extvmax=temp[:,:,180].max(),extvmin=0,xlabel='horizontal coord [pixels]',ylabel='vertical coord [pixels]',barlabel='Brightness [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4] + '\nsmoothed '+str([shrink_factor_t,shrink_factor_x,shrink_factor_x]) + '\n')
+# 	ani = coleval.movie_from_data(np.array([np.flip(np.transpose(temp,(0,2,1)),axis=2)]), laser_framerate/shrink_factor_t, integration=laser_int_time/1000,time_offset=time_full_binned[0],extvmax=temp[:,:,180].max(),extvmin=0,xlabel='horizontal coord [pixels]',ylabel='vertical coord [pixels]',barlabel='Brightness [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4] + '\nsmoothed '+str([shrink_factor_t,shrink_factor_x,shrink_factor_x]) + '\n')
 # 	ani.save(laser_to_analyse[:-4]+ '_brightness_smooth2.mp4', fps=5, writer='ffmpeg',codec='mpeg4')
 # 	plt.close('all')
 #

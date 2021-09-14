@@ -108,7 +108,9 @@ else:
 	DAProxy_path = 'D:\\IRVB\\mastda\\DAProxy'
 	DAProxy_file = 'prx' + target_folder.translate({ord('-'):None})[2:] + '.log'
 	DAProxy_full_path = DAProxy_path+'\\log\\'+DAProxy_file
+	print('checking file '+DAProxy_full_path)
 	while not os.path.exists(DAProxy_full_path):
+		print('checking file '+DAProxy_full_path)
 		test = input('the log file '+DAProxy_full_path+" doesn't exists. r to rety or input the full path to the log file (including log file name)")
 		if test == 'r':
 			continue
@@ -227,9 +229,12 @@ try:
 			for file in new_files:
 				if not (file in old_files):
 					new_file = file
-			print('copying '+new_file)
-			shutil.copyfile(file_path+'\\'+new_file, target_file_path+'\\'+new_file)
-			print('just copied')
+			try:
+				print('copying '+new_file)
+				shutil.copyfile(file_path+'\\'+new_file, target_file_path+'\\'+new_file)
+				print('just copied')
+			except:
+				print('WARNING: Copy failed. continuing')
 
 			try:
 				if not os.path.exists(target_upper_file_path+'\\'+'last_pulse.npz'):
@@ -244,16 +249,20 @@ try:
 					temp = list(last_pulse_dict['filename'])
 					temp.append(new_file)
 					last_pulse_dict['filename'] = temp
-				np.savez_compressed(target_upper_file_path+'\\'+'last_pulse',**last_pulse_dict)
-				print(target_upper_file_path+'\\'+'last_pulse.npz updated')
 
-				os.system('putty -ssh ffederic@freia023.hpc.l -pw Ooup313313 -m F:\\work\\analysis_scripts\\scripts\\operations\\pulse_processor_launcher.sh')
-				print('Freia job submitted')
+				# actually don't do it for now
+				if True:
+					np.savez_compressed(target_upper_file_path+'\\'+'last_pulse',**last_pulse_dict)
+					print(target_upper_file_path+'\\'+'last_pulse.npz updated')
+
+					os.system('putty -ssh ffederic@freia023.hpc.l -pw Ooup313313 -m F:\\work\\analysis_scripts\\scripts\\operations\\pulse_processor_launcher.sh')
+					print('Freia job submitted')
 			except:
 				print('something is wrong with launching the FREIA job')
 			old_number_of_files = new_number_of_files
 			old_files = new_files
 		else:
+			print('Abort detected')
 			print('clicking stop recording')
 			click(320,1125)	# select the "recorder" sheet
 			tm.sleep(0.1)
@@ -285,6 +294,7 @@ try:
 				print('only '+str(changed_pixels)+' pixels changed, so no action taken')
 			# camera left in record activated and external clocks
 
+			last_pulse,MASTU_state = return_shot_and_state()
 			old_number_of_files = new_number_of_files
 			old_files = new_files
 

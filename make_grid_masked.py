@@ -1216,4 +1216,3 @@ for averaging in [7,8,9,10,15]:
 		#
 		# scipy.sparse.save_npz(path_sensitivity + '/sensitivity_masked3.npz', scipy.sparse.csr_matrix(sensitivities_masked3))
 		#
-

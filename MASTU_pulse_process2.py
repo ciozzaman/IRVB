@@ -241,16 +241,13 @@ try:
 	# plt.pause(0.01)
 
 	try:
-		test = full_saved_file_dict['only_foil'].all()['FAST_counts_minus_background_crop']['gnagna']	# I want them all
+		if overwrite_oscillation_filter==True:
+			test = np.load(laser_to_analyse[:-4]+'_FAST.npz')['gnagna']	# I want them all
+		else:
+			test = np.load(laser_to_analyse[:-4]+'_FAST.npz')
 		test = full_saved_file_dict['only_foil'].all()[str(laser_digitizer_ID[0])]['laser_temperature_no_dead_pixels_crop_minus_median']
 		time_full = full_saved_file_dict['full_frame'].all()['time_full_full']
 	except:
-		full_saved_file_dict['only_foil'] = dict([])
-		foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,FAST_counts_minus_background_crop_time = coleval.MASTU_pulse_process_FAST(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,laser_dict['height'],laser_dict['width'],flag_use_of_first_frames_as_reference)
-		full_saved_file_dict['only_foil']['FAST_counts_minus_background_crop'] = np.float32(FAST_counts_minus_background_crop)
-		full_saved_file_dict['only_foil']['FAST_counts_minus_background_crop_time'] = FAST_counts_minus_background_crop_time
-		np.savez_compressed(laser_to_analyse[:-4],**full_saved_file_dict)
-
 		temp = np.abs(parameters_available_int_time-laser_int_time/1000)<0.1
 		framerate = np.array(parameters_available_framerate)[temp][np.abs(parameters_available_framerate[temp]-laser_framerate).argmin()]
 		int_time = np.array(parameters_available_int_time)[temp][np.abs(parameters_available_framerate[temp]-laser_framerate).argmin()]
@@ -264,6 +261,21 @@ try:
 		params_dict.allow_pickle=True
 		params = params_dict['coeff']
 		errparams = params_dict['errcoeff']
+
+		full_saved_file_dict['only_foil'] = dict([])
+		full_saved_file_dict_FAST = dict([])
+		# foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,FAST_counts_minus_background_crop_time = coleval.MASTU_pulse_process_FAST(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,laser_dict['height'],laser_dict['width'],flag_use_of_first_frames_as_reference)
+		foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,time_binned,powernoback,brightness,binning_type = coleval.MASTU_pulse_process_FAST2(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,laser_dict['height'],laser_dict['width'],flag_use_of_first_frames_as_reference,params)
+		full_saved_file_dict_FAST['FAST_counts_minus_background_crop'] = np.float16(FAST_counts_minus_background_crop)
+		full_saved_file_dict_FAST['FAST_powernoback'] = np.float16(powernoback)
+		full_saved_file_dict_FAST['FAST_brightness'] = np.float32(brightness)
+		full_saved_file_dict_FAST['FAST_time_binned'] = time_binned
+		full_saved_file_dict_FAST['FAST_binning_type'] = binning_type
+		np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
+
+		if continue_after_FAST == False:
+			print('analysis halted to save memory')
+			exit()
 
 		temp_counts = []
 		temp_counts_full = []
@@ -418,8 +430,67 @@ try:
 			# ax[1,0].plot(time_of_experiment_digitizer_ID_seconds,full_average,'k--')
 
 			if flag_use_of_first_frames_as_reference:
-				temp_ref_counts.append(np.mean(laser_counts_filtered[time_of_experiment_digitizer_ID_seconds<0],axis=0))
-				temp_ref_counts_std.append(np.std(laser_counts_filtered[time_of_experiment_digitizer_ID_seconds<0],axis=0))
+				if False:	# from following plots it's clear that it's absolutely arbitrary the length of the interval to consider for the average. I pick 0.5 seconds just to be close to t=0
+					plt.figure()
+					plt.imshow(np.flip(np.transpose(np.mean(laser_counts_filtered[time_of_experiment_digitizer_ID_seconds<0],axis=0),(1,0)),axis=1),'rainbow',interpolation='none',origin='lower')#,origin='lower',vmax=np.max(laser_temperature_minus_background_crop_binned[:,:,:180],axis=(-1,-2))[temp])
+					plt.colorbar().set_label('counts [au]')
+					plt.xlabel('Horizontal axis [pixles]')
+					plt.ylabel('Vertical axis [pixles]')
+					plt.pause(0.01)
+
+					temp0 = np.mean(laser_counts_filtered[time_of_experiment_digitizer_ID_seconds<0],axis=0)
+					temp1 = np.mean(laser_counts_filtered[np.logical_and(time_of_experiment_digitizer_ID_seconds<0,time_of_experiment_digitizer_ID_seconds>-0.5)],axis=0)
+					temp2 = np.mean(laser_counts_filtered[np.logical_and(time_of_experiment_digitizer_ID_seconds<-0.1,time_of_experiment_digitizer_ID_seconds>-0.6)],axis=0)
+					temp3 = np.mean(laser_counts_filtered[np.logical_and(time_of_experiment_digitizer_ID_seconds<-1,time_of_experiment_digitizer_ID_seconds>-1.5)],axis=0)
+					plt.figure()
+					plt.imshow(np.flip(np.transpose( coleval.proper_homo_binning_2D(np.mean(laser_counts_filtered[time_of_experiment_digitizer_ID_seconds<0],axis=0)-np.mean(laser_counts_filtered[np.logical_and(time_of_experiment_digitizer_ID_seconds<-0.5,time_of_experiment_digitizer_ID_seconds>-1)],axis=0),10),(1,0)),axis=1),'rainbow',interpolation='none',origin='lower')#,origin='lower',vmax=np.max(laser_temperature_minus_background_crop_binned[:,:,:180],axis=(-1,-2))[temp])
+					plt.colorbar().set_label('counts [au]')
+					plt.xlabel('Horizontal axis [pixles]')
+					plt.ylabel('Vertical axis [pixles]')
+					plt.pause(0.01)
+
+
+					gna = coleval.proper_homo_binning_2D( temp1-temp2 ,10)
+					foil_shape = np.shape(gna)
+					ROI = np.array([[0.2,0.85],[0.1,0.9]])
+					ROI = np.round((ROI.T*foil_shape).T).astype(int)
+					plt.figure()
+					plt.imshow(np.flip(np.transpose( gna,(1,0)),axis=1),'rainbow',interpolation='none',origin='lower')#,origin='lower',vmax=np.max(laser_temperature_minus_background_crop_binned[:,:,:180],axis=(-1,-2))[temp])
+					plt.plot([ROI[0,0]-0.5,ROI[0,1]-0.5,ROI[0,1]-0.5,ROI[0,0]-0.5,ROI[0,0]-0.5],[ROI[1,0]-0.5,ROI[1,0]-0.5,ROI[1,1]-0.5,ROI[1,1]-0.5,ROI[1,0]-0.5],'k')
+					plt.colorbar().set_label('counts [au]')
+					plt.xlabel('Horizontal axis [pixles]')
+					plt.ylabel('Vertical axis [pixles]')
+					plt.pause(0.01)
+
+					plt.figure()
+					temp = generic_filter(np.mean(laser_counts_filtered[:,100:110,170:180],axis=(1,2)),np.mean,footprint=np.concatenate([np.ones((100))/100,np.zeros((100))]))
+					plt.plot(time_of_experiment_digitizer_ID_seconds,temp-temp.min())
+					temp = generic_filter(np.mean(laser_counts_filtered[:,100:110,170-100:180-100],axis=(1,2)),np.mean,footprint=np.concatenate([np.ones((100))/100,np.zeros((100))]))
+					plt.plot(time_of_experiment_digitizer_ID_seconds,temp-temp.min())
+					temp = generic_filter(np.mean(laser_counts_filtered[:,100:110,170+100:180+100],axis=(1,2)),np.mean,footprint=np.concatenate([np.ones((100))/100,np.zeros((100))]))
+					plt.plot(time_of_experiment_digitizer_ID_seconds,temp-temp.min())
+					plt.grid()
+					plt.pause(0.01)
+
+					plt.figure()
+					plt.imshow(np.flip(np.transpose(coleval.proper_homo_binning_2D(temp1-np.mean(laser_counts_filtered[np.logical_and(time_of_experiment_digitizer_ID_seconds<0.1,time_of_experiment_digitizer_ID_seconds>-0.4)],axis=0),5),(1,0)),axis=1),'rainbow',interpolation='none',origin='lower',vmin=-2)#,origin='lower',vmax=np.max(laser_temperature_minus_background_crop_binned[:,:,:180],axis=(-1,-2))[temp])
+					plt.colorbar().set_label('counts [au]')
+					plt.xlabel('Horizontal axis [pixles]')
+					plt.ylabel('Vertical axis [pixles]')
+					plt.pause(0.01)
+
+					plt.figure()
+					plt.imshow(np.flip(np.transpose(params[0,:,:,2],(1,0)),axis=1),'rainbow',interpolation='none',origin='lower')#,origin='lower',vmax=np.max(laser_temperature_minus_background_crop_binned[:,:,:180],axis=(-1,-2))[temp])
+					plt.colorbar().set_label('counts [au]')
+					plt.xlabel('Horizontal axis [pixles]')
+					plt.ylabel('Vertical axis [pixles]')
+					plt.pause(0.01)
+				elif False:
+					2
+				# temp_ref_counts.append(np.mean(laser_counts_filtered[time_of_experiment_digitizer_ID_seconds<0],axis=0))
+				temp_ref_counts.append(np.mean(laser_counts_filtered[np.logical_and(time_of_experiment_digitizer_ID_seconds<0,time_of_experiment_digitizer_ID_seconds>-0.5)],axis=0))
+				# temp_ref_counts_std.append(np.std(laser_counts_filtered[time_of_experiment_digitizer_ID_seconds<0],axis=0))
+				temp_ref_counts_std.append(np.std(laser_counts_filtered[np.logical_and(time_of_experiment_digitizer_ID_seconds<0,time_of_experiment_digitizer_ID_seconds>-0.5)],axis=0))
 			else:
 				temp_ref_counts.append(np.mean(laser_counts_filtered[-int(seconds_for_reference_frame*laser_framerate/len(laser_digitizer_ID)):],axis=0))
 				temp_ref_counts_std.append(np.std(laser_counts_filtered[-int(seconds_for_reference_frame*laser_framerate/len(laser_digitizer_ID)):],axis=0))

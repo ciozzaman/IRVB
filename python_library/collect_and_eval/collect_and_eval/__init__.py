@@ -43,18 +43,18 @@ logging.basicConfig(level=logging.ERROR)
 
 
 def is_number(s):
-    """ Returns True is string is a number. """
-    try:
-        float(s)
-        return True
-    except ValueError:
-        return False
+	""" Returns True is string is a number. """
+	try:
+		float(s)
+		return True
+	except ValueError:
+		return False
 
 def rsquared(x, y):
-    """ Return R^2 where x and y are array-like."""
+	""" Return R^2 where x and y are array-like."""
 
-    slope, intercept, r_value, p_value, std_err = scipy.stats.linregress(x, y)
-    return r_value**2
+	slope, intercept, r_value, p_value, std_err = scipy.stats.linregress(x, y)
+	return r_value**2
 
 
 #This function will generate a polinomial of n order GOOD FOR WHOLE FRAMES
@@ -689,7 +689,7 @@ def movie(extpath,framerate,integration,xlabel=(),ylabel=(),barlabel=(),cmap='ra
 	# cax = div.append_axes('right', '5%', '5%')
 
 	# def f(x, y):
-	#     return np.exp(x) + np.sin(y)
+	#	 return np.exp(x) + np.sin(y)
 
 	# x = np.linspace(0, 1, 120)
 	# y = np.linspace(0, 2 * np.pi, 100).reshape(-1, 1)
@@ -699,9 +699,9 @@ def movie(extpath,framerate,integration,xlabel=(),ylabel=(),barlabel=(),cmap='ra
 	frames[0]=data[0,0]
 
 	for i in range(len(data[0])):
-	    # x       += 1
-	    # curVals  = f(x, y)
-	    frames[i]=(data[0,i])
+		# x	   += 1
+		# curVals  = f(x, y)
+		frames[i]=(data[0,i])
 
 	cv0 = frames[0]
 	im = ax.imshow(cv0,cmap, origin='lower') # Here make an AxesImage rather than contour
@@ -773,6 +773,8 @@ pinhole_location = np.array([-1.04087,1.068856,-0.7198])
 centre_of_foil = np.array([-1.095782166, 1.095782166, -0.7])
 foil_size = [0.07,0.09]
 R_centre_column = 0.261	# m
+pinhole_relative_location = np.array(foil_size)/2 + 0.0198
+pinhole_radious = 0.004/2	# m
 
 def point_toroidal_to_cartesian(coords):	# r,z,teta deg	to	x,y,z
 	out = np.zeros_like(coords).astype(float)
@@ -800,6 +802,8 @@ for time in range(len(stucture_r)):
 	point_location = point_toroidal_to_cartesian(point_location)
 	point_location = find_location_on_foil(point_location)
 	structure_point_location_on_foil.append(absolute_position_on_foil_to_foil_coord(point_location))
+structure_point_location_on_foil.append(np.array([pinhole_relative_location[0] + np.arange(-pinhole_radious,+pinhole_radious+pinhole_radious/10/2,pinhole_radious/10),pinhole_relative_location[1] + np.abs(pinhole_radious**2-np.arange(-pinhole_radious,+pinhole_radious+pinhole_radious/10/2,pinhole_radious/10)**2)**0.5]).T)
+structure_point_location_on_foil.append(np.array([pinhole_relative_location[0] + np.arange(-pinhole_radious,+pinhole_radious+pinhole_radious/10/2,pinhole_radious/10),pinhole_relative_location[1] - np.abs(pinhole_radious**2-np.arange(-pinhole_radious,+pinhole_radious+pinhole_radious/10/2,pinhole_radious/10)**2)**0.5]).T)
 
 def return_structure_point_location_on_foil():
 	return structure_point_location_on_foil
@@ -911,7 +915,7 @@ def return_divertor_poloidal_location_on_foil(angle=60,resolution = 10000):
 		divertor_poloidal_location_on_foil.append(absolute_position_on_foil_to_foil_coord(point_location))
 	return divertor_poloidal_location_on_foil
 
-def movie_from_data(data,framerate,integration=1,xlabel=(),ylabel=(),barlabel=(),cmap='rainbow',timesteps='auto',extvmin='auto',extvmax='auto',mask=[0],mask_alpha=0.2,time_offset=0,prelude='',vline=None,hline=None,EFIT_path=EFIT_path_default,include_EFIT=False,pulse_ID=None,overlay_x_point=False,overlay_mag_axis=False,overlay_structure=False,overlay_strike_points=False,overlay_separatrix=False,structure_alpha=0.5,foil_size=foil_size):
+def movie_from_data(data,framerate,integration=1,xlabel=(),ylabel=(),barlabel=(),cmap='rainbow',timesteps='auto',extvmin='auto',extvmax='auto',mask=[0],mask_alpha=0.2,time_offset=0,prelude='',vline=None,hline=None,EFIT_path=EFIT_path_default,include_EFIT=False,efit_reconstruction=None,EFIT_output_requested = False,pulse_ID=None,overlay_x_point=False,overlay_mag_axis=False,overlay_structure=False,overlay_strike_points=False,overlay_separatrix=False,structure_alpha=0.5,foil_size=foil_size):
 	import matplotlib.animation as animation
 	import numpy as np
 
@@ -924,7 +928,7 @@ def movie_from_data(data,framerate,integration=1,xlabel=(),ylabel=(),barlabel=()
 	# cax = div.append_axes('right', '5%', '5%')
 
 	# def f(x, y):
-	#     return np.exp(x) + np.sin(y)
+	#	 return np.exp(x) + np.sin(y)
 
 	# x = np.linspace(0, 1, 120)
 	# y = np.linspace(0, 2 * np.pi, 100).reshape(-1, 1)
@@ -934,9 +938,9 @@ def movie_from_data(data,framerate,integration=1,xlabel=(),ylabel=(),barlabel=()
 	frames[0]=data[0,0]
 
 	for i in range(len(data[0])):
-	    # x       += 1
-	    # curVals  = f(x, y)
-	    frames[i]=(data[0,i])
+		# x	   += 1
+		# curVals  = f(x, y)
+		frames[i]=(data[0,i])
 
 	cv0 = frames[0]
 	im = ax.imshow(cv0,cmap, origin='lower', interpolation='none') # Here make an AxesImage rather than contour
@@ -949,8 +953,11 @@ def movie_from_data(data,framerate,integration=1,xlabel=(),ylabel=(),barlabel=()
 
 	if include_EFIT:
 		try:
-			print('reading '+EFIT_path+'/epm0'+str(pulse_ID)+'.nc')
-			efit_reconstruction = mclass(EFIT_path+'/epm0'+str(pulse_ID)+'.nc')
+			if efit_reconstruction == None:
+				print('reading '+EFIT_path+'/epm0'+str(pulse_ID)+'.nc')
+				efit_reconstruction = mclass(EFIT_path+'/epm0'+str(pulse_ID)+'.nc')
+			else:
+				print('EFIT reconstruction externally supplied')
 			EFIT_dt = np.median(np.diff(efit_reconstruction.time))
 		except Exception as e:
 			print('reading '+EFIT_path+'/epm0'+str(pulse_ID)+'.nc failed')
@@ -961,6 +968,7 @@ def movie_from_data(data,framerate,integration=1,xlabel=(),ylabel=(),barlabel=()
 			overlay_separatrix=False
 			overlay_strike_points=False
 			overlay_separatrix=False
+			efit_reconstruction = None
 		if overlay_x_point:
 			all_time_x_point_location = return_all_time_x_point_location(efit_reconstruction)
 			plot1 = ax.plot(0,0,'-r', alpha=1)[0]
@@ -1080,8 +1088,8 @@ def movie_from_data(data,framerate,integration=1,xlabel=(),ylabel=(),barlabel=()
 			# 	masked = np.ma.masked_where(mask == 0, mask)
 			# 	ax.imshow(masked, 'gray', interpolation='none', alpha=0.2,origin='lower',extent = [0,np.shape(data)[0]-1,0,np.shape(data)[1]-1])
 
-		    # In this version you don't have to do anything to the colorbar,
-		    # it updates itself when the mappable it watches (im) changes
+			# In this version you don't have to do anything to the colorbar,
+			# it updates itself when the mappable it watches (im) changes
 	# else:
 	# 	def animate(i):
 	# 		arr = frames[i]
@@ -1108,7 +1116,11 @@ def movie_from_data(data,framerate,integration=1,xlabel=(),ylabel=(),barlabel=()
 
 	ani = animation.FuncAnimation(fig, animate, frames=len(data[0]))
 
-	return ani
+	if EFIT_output_requested == False:
+		return ani
+	else:
+		return ani,efit_reconstruction
+
 
 
 ######################################################################################################
@@ -1284,6 +1296,9 @@ def all_file_names(extpath,type):
 		# print(filenames[index])
 		if filenames[index][-typelen:]==type:
 			temp.append(filenames[index])
+		elif filenames[index][:typelen]==type:
+			temp.append(filenames[index])
+
 			# filenames=np.delete(filenames,index)
 			# print('suca')
 	filenames=temp
@@ -5141,8 +5156,8 @@ def count_to_temp_poly_multi_digitizer(counts,params,errparams,digitizer_ID,numb
 
 def print_all_properties(obj):
 	# created 29/09/2020 function that prints all properties of an object
-  for attr in dir(obj):
-    print("object.%s = %r" % (attr, getattr(obj, attr)))
+	for attr in dir(obj):
+		print("object.%s = %r" % (attr, getattr(obj, attr)))
 
 ####################################################################################################################################################################################################################################################
 
@@ -5291,7 +5306,9 @@ class mclass:
 
 					# if len(zcr) > 2:	# it should literally have no effect
 					# 	zcr = zcr[-2:]
-					if len(zcr) < 2:	# made to prevent the error when there is only one zero in (mp_p_arr-self.psi_bnd[i])
+					if len(zcr) < 1:
+						zcr = [0,0]
+					elif len(zcr) < 2:	# made to prevent the error when there is only one zero in (mp_p_arr-self.psi_bnd[i])
 						zcr.append(zcr[0])
 
 					self.inner_sep_r[i] = mp_r_arr[zcr[0]]
@@ -5506,75 +5523,100 @@ class mclass:
 ############################################################################################################################################################################################################################################################################
 # from https://gist.github.com/derricw/95eab740e1b08b78c03f
 def bin_ndarray(ndarray, new_shape, operation='sum'):
-    """
-    Bins an ndarray in all axes based on the target shape, by summing or
-        averaging.
+	"""
+	Bins an ndarray in all axes based on the target shape, by summing or
+		averaging.
 
-    Number of output dimensions must match number of input dimensions and
-        new axes must divide old ones.
+	Number of output dimensions must match number of input dimensions and
+		new axes must divide old ones.
 
-    Example
-    -------
-    >>> m = np.arange(0,100,1).reshape((10,10))
-    >>> n = bin_ndarray(m, new_shape=(5,5), operation='sum')
-    >>> print(n)
+	Example
+	-------
+	>>> m = np.arange(0,100,1).reshape((10,10))
+	>>> n = bin_ndarray(m, new_shape=(5,5), operation='sum')
+	>>> print(n)
 
-    [[ 22  30  38  46  54]
-     [102 110 118 126 134]
-     [182 190 198 206 214]
-     [262 270 278 286 294]
-     [342 350 358 366 374]]
+	[[ 22  30  38  46  54]
+	 [102 110 118 126 134]
+	 [182 190 198 206 214]
+	 [262 270 278 286 294]
+	 [342 350 358 366 374]]
 
-    """
-    operation = operation.lower()
-    if not operation in ['sum', 'mean']:
-        raise ValueError("Operation not supported.")
-    if ndarray.ndim != len(new_shape):
-        raise ValueError("Shape mismatch: {} -> {}".format(ndarray.shape,
-                                                           new_shape))
-    compression_pairs = [(d, c//d) for d,c in zip(new_shape,
-                                                  ndarray.shape)]
-    flattened = [l for p in compression_pairs for l in p]
-    ndarray = ndarray.reshape(flattened)
-    for i in range(len(new_shape)):
-        op = getattr(ndarray, operation)
-        ndarray = op(-1*(i+1))
-    return ndarray
+	"""
+	# if operation=='np.nanmean':
+	# 	operation='mean'
+	# if operation=='np.nansum':
+	# 	operation='sum'
 
-def proper_homo_binning_t_2D(data,shrink_factor_t,shrink_factor_x,type='mean'):
+	operation = operation.lower()
+	if not operation in ['sum', 'mean','np.nansum','np.nanmean']:
+		raise ValueError("Operation not supported.")
+	if ndarray.ndim != len(new_shape):
+		raise ValueError("Shape mismatch: {} -> {}".format(ndarray.shape,
+														   new_shape))
+	compression_pairs = [(d, c//d) for d,c in zip(new_shape,
+												  ndarray.shape)]
+	flattened = [l for p in compression_pairs for l in p]
+	ndarray = ndarray.reshape(flattened)
+	for i in range(len(new_shape)):
+		if operation in ['mean','sum']:
+			op = getattr(ndarray, operation)
+			ndarray = op(-1*(i+1))
+		elif operation == 'np.nanmean':
+			ndarray = np.nanmean(ndarray, axis=-1*(i+1) )
+		elif operation == 'np.nansum':
+			ndarray = np.nansum(ndarray, axis=-1*(i+1) )
+	return ndarray
+
+def proper_homo_binning_t_2D(data,shrink_factor_t,shrink_factor_x,type='np.nanmean'):
 	old_shape = np.array(np.shape(data))
 	new_shape=np.array([int(np.ceil(old_shape[0]/shrink_factor_t)),int(np.ceil(old_shape[1]/shrink_factor_x)),int(np.ceil(old_shape[2]/shrink_factor_x))]).astype(int)
 	to_pad=np.array([(shrink_factor_t-old_shape[0]%shrink_factor_t)*(old_shape[0]%shrink_factor_t>0),(shrink_factor_x-old_shape[1]%shrink_factor_x)*(old_shape[1]%shrink_factor_x>0),(shrink_factor_x-old_shape[2]%shrink_factor_x)*(old_shape[2]%shrink_factor_x>0)]).astype(int)
 	to_pad_right = to_pad//2
 	to_pad_left = to_pad - to_pad_right
 	to_pad = np.array([to_pad_left,to_pad_right]).T
-	data_binned = np.pad(data,to_pad,mode='mean',stat_length=((max(1,shrink_factor_t//2),max(1,shrink_factor_t//2)),(max(1,shrink_factor_x//2),max(1,shrink_factor_x//2)),(max(1,shrink_factor_x//2),max(1,shrink_factor_x//2))))
+	# data_binned = np.pad(data,to_pad,mode='mean',stat_length=((max(1,shrink_factor_t//2),max(1,shrink_factor_t//2)),(max(1,shrink_factor_x//2),max(1,shrink_factor_x//2)),(max(1,shrink_factor_x//2),max(1,shrink_factor_x//2))))
+	data_binned = np.pad(np.array(data).astype(float),to_pad,mode='constant',constant_values=np.nan)
 	data_binned = bin_ndarray(data_binned, new_shape=new_shape, operation=type)
 	nan_ROI_mask = np.isfinite(np.nanmedian(data_binned[:10],axis=0))
 	return data_binned,nan_ROI_mask
 
-def proper_homo_binning_2D(data,shrink_factor_x,type='mean'):
+def proper_homo_binning_2D(data,shrink_factor_x,type='np.nanmean'):
 	old_shape = np.array(np.shape(data))
 	new_shape=np.array([int(np.ceil(old_shape[0]/shrink_factor_x)),int(np.ceil(old_shape[1]/shrink_factor_x))]).astype(int)
 	to_pad=np.array([(shrink_factor_x-old_shape[0]%shrink_factor_x)*(old_shape[0]%shrink_factor_x>0),(shrink_factor_x-old_shape[1]%shrink_factor_x)*(old_shape[1]%shrink_factor_x>0)]).astype(int)
 	to_pad_right = to_pad//2
 	to_pad_left = to_pad - to_pad_right
 	to_pad = np.array([to_pad_left,to_pad_right]).T
-	data_binned = np.pad(data,to_pad,mode='mean',stat_length=((max(1,shrink_factor_x//2),max(1,shrink_factor_x//2)),(max(1,shrink_factor_x//2),max(1,shrink_factor_x//2))))
+	# data_binned = np.pad(data,to_pad,mode='mean',stat_length=((max(1,shrink_factor_x//2),max(1,shrink_factor_x//2)),(max(1,shrink_factor_x//2),max(1,shrink_factor_x//2))))
+	data_binned = np.pad(np.array(data).astype(float),to_pad,mode='constant',constant_values=np.nan)
 	data_binned = bin_ndarray(data_binned, new_shape=new_shape, operation=type)
 	return data_binned
 
-def proper_homo_binning_t(time,shrink_factor_t,type='mean'):
+def proper_homo_binning_1D_1D_1D(data,shrink_factor_x_1,shrink_factor_x_2,shrink_factor_v,type='np.nanmean'):	# v stands for voxel, because this will be used for the sensitivity matrix
+	old_shape = np.array(np.shape(data))
+	new_shape=np.array([int(np.ceil(old_shape[0]/shrink_factor_x_1)),int(np.ceil(old_shape[1]/shrink_factor_x_2)),int(np.ceil(old_shape[2]/shrink_factor_v))]).astype(int)
+	to_pad=np.array([(shrink_factor_x_1-old_shape[0]%shrink_factor_x_1)*(old_shape[0]%shrink_factor_x_1>0),(shrink_factor_x_2-old_shape[1]%shrink_factor_x_2)*(old_shape[1]%shrink_factor_x_2>0),(shrink_factor_v-old_shape[2]%shrink_factor_v)*(old_shape[2]%shrink_factor_v>0)]).astype(int)
+	to_pad_right = to_pad//2
+	to_pad_left = to_pad - to_pad_right
+	to_pad = np.array([to_pad_left,to_pad_right]).T
+	# data_binned = np.pad(data,to_pad,mode='mean',stat_length=((max(1,shrink_factor_x_1//2),max(1,shrink_factor_x_1//2)),(max(1,shrink_factor_x_2//2),max(1,shrink_factor_x_2//2)),(max(1,shrink_factor_v//2),max(1,shrink_factor_v//2))))
+	data_binned = np.pad(np.array(data).astype(float),to_pad,mode='constant',constant_values=np.nan)
+	data_binned = bin_ndarray(data_binned, new_shape=new_shape, operation=type)
+	return data_binned
+
+def proper_homo_binning_t(time,shrink_factor_t,type='np.nanmean'):
 	old_shape = np.array(np.shape(time))
 	new_shape=np.array([int(np.ceil(old_shape[0]/shrink_factor_t))]).astype(int)
 	to_pad=np.array([(shrink_factor_t-old_shape[0]%shrink_factor_t)*(old_shape[0]%shrink_factor_t>0)]).astype(int)
 	to_pad_right = to_pad//2
 	to_pad_left = to_pad - to_pad_right
 	to_pad = np.array([to_pad_left,to_pad_right]).T
-	time_binned = np.pad(time,to_pad,mode='mean',stat_length=((max(1,shrink_factor_t//2),max(1,shrink_factor_t//2))))
+	# time_binned = np.pad(time,to_pad,mode='mean',stat_length=((max(1,shrink_factor_t//2),max(1,shrink_factor_t//2))))
+	time_binned = np.pad(np.array(time).astype(float),to_pad,mode='constant',constant_values=np.nan)
 	time_binned = bin_ndarray(time_binned, new_shape=new_shape, operation=type)
-	time_binned[0] = time_binned[1] - np.median(np.diff(time_binned[1:-1]))
-	time_binned[-1] = time_binned[-2] + np.median(np.diff(time_binned[1:-1]))
+	# time_binned[0] = time_binned[1] - np.median(np.diff(time_binned[1:-1]))	# I'm not sure if it's proper to leave this lines, because with the binning it can actually be right that all dt are not the same. I remove it for now
+	# time_binned[-1] = time_binned[-2] + np.median(np.diff(time_binned[1:-1]))
 	return time_binned
 
 def efit_reconstruction_to_separatrix_on_foil(efit_reconstruction,refinement=1000):
@@ -5776,7 +5818,8 @@ def MASTU_pulse_process_FAST(laser_counts_corrected,time_of_experiment_digitizer
 		if external_clock_marker:
 			time_of_experiment_digitizer_ID_seconds = time_of_experiment_digitizer_ID_seconds-np.mean(aggregated_correction_coefficients[:,4])	# I use the mean of the coefficients because I want to avoid small unpredictable differences between the digitisers
 		if flag_use_of_first_frames_as_reference:
-			temp_ref_counts.append(np.mean(laser_counts_corrected[i][time_of_experiment_digitizer_ID_seconds<0],axis=0))
+			# temp_ref_counts.append(np.mean(laser_counts_corrected[i][time_of_experiment_digitizer_ID_seconds<0],axis=0))
+			temp_ref_counts.append(np.mean(laser_counts_corrected[i][np.logical_and(time_of_experiment_digitizer_ID_seconds<0,time_of_experiment_digitizer_ID_seconds>-0.5)],axis=0))
 		else:
 			temp_ref_counts.append(np.mean(laser_counts_corrected[i][-int(seconds_for_reference_frame*laser_framerate/len(laser_digitizer_ID)):],axis=0))
 		select_time = np.logical_and(time_of_experiment_digitizer_ID_seconds>=0,time_of_experiment_digitizer_ID_seconds<=1.5)
@@ -5803,10 +5846,167 @@ def MASTU_pulse_process_FAST(laser_counts_corrected,time_of_experiment_digitizer
 
 	temp = FAST_counts_minus_background_crop[:,:,:int(np.shape(FAST_counts_minus_background_crop)[2]*0.75)]
 	temp = np.sort(temp[np.max(temp,axis=(1,2)).argmax()].flatten())
-	ani = movie_from_data(np.array([np.flip(np.transpose(FAST_counts_minus_background_crop,(0,2,1)),axis=2)]), laser_framerate/len(laser_digitizer_ID),integration=laser_int_time/1000,time_offset=FAST_counts_minus_background_crop_time[0],extvmin=0,extvmax=np.nanmean(temp[-len(temp)//60:]),xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='Power on foil [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4]+'\n',overlay_structure=True,include_EFIT=True,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True)
+	ani = movie_from_data(np.array([np.flip(np.transpose(FAST_counts_minus_background_crop,(0,2,1)),axis=2)]), laser_framerate/len(laser_digitizer_ID),integration=laser_int_time/1000,time_offset=FAST_counts_minus_background_crop_time[0],extvmin=0,extvmax=np.nanmean(temp[-len(temp)//60:]),xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='Count increase [au]', prelude='shot ' + laser_to_analyse[-9:-4]+'\n',overlay_structure=True,include_EFIT=True,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True)
 	ani.save(laser_to_analyse[:-4]+ '_FAST_count_increase.mp4', fps=5*laser_framerate/len(laser_digitizer_ID)/383, writer='ffmpeg',codec='mpeg4')
 	plt.close('all')
 
 	print('completed FAST rotating/cropping ' + laser_to_analyse)
 
 	return foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,FAST_counts_minus_background_crop_time
+
+#######################################################################################################################################################################################################
+
+
+def MASTU_pulse_process_FAST2(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,height,width,flag_use_of_first_frames_as_reference,params):
+	# created 2021/09/10
+	# created modifying MASTU_pulse_process_FAST in order t have a quick power on the foil with a primitive filtering
+
+	from scipy.ndimage.filters import generic_filter
+
+	max_ROI = [[0,255],[0,319]]
+	foil_position_dict = dict([('angle',0.5),('foilcenter',[158,136]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',241)])	# fixed orientation, for now, this is from 2021-06-04/44168
+	temp_ref_counts = []
+	temp_counts_minus_background = []
+	time_partial = []
+	timesteps = np.inf
+	for i in range(len(laser_digitizer_ID)):
+		time_of_experiment_digitizer_ID_seconds = (time_of_experiment_digitizer_ID[i]-time_of_experiment[0])*1e-6-start_time_of_pulse
+		if external_clock_marker:
+			time_of_experiment_digitizer_ID_seconds = time_of_experiment_digitizer_ID_seconds-np.mean(aggregated_correction_coefficients[:,4])	# I use the mean of the coefficients because I want to avoid small unpredictable differences between the digitisers
+
+		# basic smoothing
+		spectra_orig=np.fft.fft(np.mean(laser_counts_corrected[i],axis=(-1,-2)))
+		magnitude = 2 * np.abs(spectra_orig) / len(spectra_orig)
+		freq = np.fft.fftfreq(len(magnitude), d=np.mean(np.diff(time_of_experiment_digitizer_ID_seconds)))
+		magnitude = np.array([y for _, y in sorted(zip(freq, magnitude))])
+		freq = np.sort(freq)
+		magnitude_smooth = generic_filter(np.log(magnitude),np.median,size=[7])
+		peak_oscillation = (magnitude-np.exp(magnitude_smooth))[np.logical_and(freq>10,freq<50)].argmax()
+		peak_oscillation_freq = freq[np.logical_and(freq>10,freq<50)][peak_oscillation]
+		frames_to_average = 1/peak_oscillation_freq/np.mean(np.diff(time_of_experiment_digitizer_ID_seconds))
+		laser_counts_corrected_filtered = real_mean_filter_agent(laser_counts_corrected[i],frames_to_average)
+
+		if flag_use_of_first_frames_as_reference:
+			# temp_ref_counts.append(np.mean(laser_counts_corrected_filtered[time_of_experiment_digitizer_ID_seconds<0],axis=0))
+			temp_ref_counts.append(np.mean(laser_counts_corrected_filtered[np.logical_and(time_of_experiment_digitizer_ID_seconds<0,time_of_experiment_digitizer_ID_seconds>-0.5)],axis=0))
+		else:
+			temp_ref_counts.append(np.mean(laser_counts_corrected_filtered[-int(seconds_for_reference_frame*laser_framerate/len(laser_digitizer_ID)):],axis=0))
+		select_time = np.logical_and(time_of_experiment_digitizer_ID_seconds>=0,time_of_experiment_digitizer_ID_seconds<=1.5)
+		temp_counts_minus_background.append(laser_counts_corrected_filtered[select_time]-temp_ref_counts[-1])
+		time_partial.append(time_of_experiment_digitizer_ID_seconds[select_time])
+		timesteps = min(timesteps,len(temp_counts_minus_background[-1]))
+
+	for i in range(len(laser_digitizer_ID)):
+		temp_counts_minus_background[i] = temp_counts_minus_background[i][:timesteps]
+		time_partial[i] = time_partial[i][:timesteps]
+	temp_counts_minus_background = np.nanmean(temp_counts_minus_background,axis=0)
+	temp_ref_counts = np.nanmean(temp_ref_counts,axis=0)
+	FAST_counts_minus_background_crop_time = np.nanmean(time_partial,axis=0)
+
+	# I'm going to use the reference frames for foil position
+	foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx = get_rotation_crop_parameters(temp_ref_counts,foil_position_dict,laser_to_analyse,temp_counts_minus_background,FAST_counts_minus_background_crop_time)
+
+	# rotation and crop
+	temp_counts_minus_background_rot=rotate(temp_counts_minus_background,foilrotdeg,axes=(-1,-2))
+	if not (height==max_ROI[0][1]+1 and width==max_ROI[1][1]+1):
+		temp_counts_minus_background_rot*=out_of_ROI_mask
+		temp_counts_minus_background_rot[np.logical_and(temp_counts_minus_background_rot<np.nanmin(temp_counts_minus_background),temp_counts_minus_background_rot>np.nanmax(temp_counts_minus_background))]=0
+	FAST_counts_minus_background_crop = temp_counts_minus_background_rot[:,foildw:foilup,foillx:foilrx]
+
+	temp = FAST_counts_minus_background_crop[:,:,:int(np.shape(FAST_counts_minus_background_crop)[2]*0.75)]
+	temp = np.sort(temp[np.max(temp,axis=(1,2)).argmax()].flatten())
+	ani = movie_from_data(np.array([np.flip(np.transpose(FAST_counts_minus_background_crop,(0,2,1)),axis=2)]), laser_framerate/len(laser_digitizer_ID),integration=laser_int_time/1000,time_offset=FAST_counts_minus_background_crop_time[0],extvmin=0,extvmax=np.nanmean(temp[-len(temp)//60:]),xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='Count increase [au]', prelude='shot ' + laser_to_analyse[-9:-4]+'\n',overlay_structure=True,include_EFIT=True,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True)
+	ani.save(laser_to_analyse[:-4]+ '_FAST_count_increase.mp4', fps=5*laser_framerate/len(laser_digitizer_ID)/383, writer='ffmpeg',codec='mpeg4')
+	plt.close('all')
+
+	print('completed FAST count rotating/cropping ' + laser_to_analyse)
+
+	params = np.mean(params,axis=(0))
+	temperature = params[:,:,-1] + params[:,:,-2] * (temp_counts_minus_background+temp_ref_counts) + params[:,:,-3] * ((temp_counts_minus_background+temp_ref_counts)**2)
+	temperature_ref = params[:,:,-1] + params[:,:,-2] * temp_ref_counts + params[:,:,-3] * (temp_ref_counts**2)
+
+	# rotation and crop
+	temperature_rot=rotate(temperature,foilrotdeg,axes=(-1,-2))
+	if not (height==max_ROI[0][1]+1 and width==max_ROI[1][1]+1):
+		temperature_rot*=out_of_ROI_mask
+		temperature_rot[np.logical_and(temperature_rot<np.nanmin(temperature),temperature_rot>np.nanmax(temperature))]=0
+	temperature_crop = temperature_rot[:,foildw:foilup,foillx:foilrx]
+
+	# rotation and crop
+	temperature_ref_rot=rotate(temperature_ref,foilrotdeg,axes=(-1,-2))
+	if not (height==max_ROI[0][1]+1 and width==max_ROI[1][1]+1):
+		temperature_ref_rot*=out_of_ROI_mask
+		temperature_ref_rot[np.logical_and(temperature_ref_rot<np.nanmin(temperature_ref),temperature_ref_rot>np.nanmax(temperature_ref))]=0
+	temperature_ref_crop = temperature_ref_rot[foildw:foilup,foillx:foilrx]
+
+	temperature_minus_background_crop = temperature_crop-temperature_ref_crop
+
+	shrink_factor_t = int(round(frames_to_average))
+	shrink_factor_x = 3	# with large time averaging this should be enough
+	binning_type = 'bin' + str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x)
+
+	FAST_counts_minus_background_crop_binned,nan_ROI_mask = proper_homo_binning_t_2D(FAST_counts_minus_background_crop,shrink_factor_t,shrink_factor_x)
+	temperature_crop_binned,nan_ROI_mask = proper_homo_binning_t_2D(temperature_crop,shrink_factor_t,shrink_factor_x)
+	temperature_minus_background_crop_binned,nan_ROI_mask = proper_homo_binning_t_2D(temperature_minus_background_crop,shrink_factor_t,shrink_factor_x)
+	temperature_ref_crop_binned = proper_homo_binning_2D(temperature_ref_crop,shrink_factor_x)
+	time_binned = proper_homo_binning_t(FAST_counts_minus_background_crop_time,shrink_factor_t)
+
+	# reference foil properties
+	thickness = 1.4859095354482858e-06
+	emissivity = 0.9884061389741369
+	diffusivity = 1.045900223180454e-05
+	Ptthermalconductivity=71.6 #[W/(m·K)]
+	zeroC=273.15 #K / C
+	sigmaSB=5.6704e-08 #[W/(m2 K4)]
+
+	foilemissivityscaled=emissivity*np.ones(np.array(temperature_ref_crop_binned.shape)-2)
+	foilthicknessscaled=thickness*np.ones(np.array(temperature_ref_crop_binned.shape)-2)
+	conductivityscaled=Ptthermalconductivity*np.ones(np.array(temperature_ref_crop_binned.shape)-2)
+	reciprdiffusivityscaled=(1/diffusivity)*np.ones(np.array(temperature_ref_crop_binned.shape)-2)
+
+	dt = time_binned[2:]-time_binned[:-2]
+	dx=foil_position_dict['foilhorizw']/foil_position_dict['foilhorizwpixel']*shrink_factor_x
+	dTdt=np.divide((temperature_crop_binned[2:,1:-1,1:-1]-temperature_crop_binned[:-2,1:-1,1:-1]).T,dt).T.astype(np.float32)
+	d2Tdx2=np.divide(temperature_minus_background_crop_binned[1:-1,1:-1,2:]-np.multiply(2,temperature_minus_background_crop_binned[1:-1,1:-1,1:-1])+temperature_minus_background_crop_binned[1:-1,1:-1,:-2],dx**2).astype(np.float32)
+	d2Tdy2=np.divide(temperature_minus_background_crop_binned[1:-1,2:,1:-1]-np.multiply(2,temperature_minus_background_crop_binned[1:-1,1:-1,1:-1])+temperature_minus_background_crop_binned[1:-1,:-2,1:-1],dx**2).astype(np.float32)
+	d2Tdxy = np.ones_like(dTdt).astype(np.float32)*np.nan
+	d2Tdxy[:,nan_ROI_mask[1:-1,1:-1]]=np.add(d2Tdx2[:,nan_ROI_mask[1:-1,1:-1]],d2Tdy2[:,nan_ROI_mask[1:-1,1:-1]])
+	del d2Tdx2,d2Tdy2
+	negd2Tdxy=np.multiply(-1,d2Tdxy)
+	T4=(temperature_minus_background_crop_binned[1:-1,1:-1,1:-1]+np.nanmean(temperature_ref_crop_binned)+zeroC)**4
+	T04=(np.nanmean(temperature_ref_crop_binned)+zeroC)**4 *np.ones_like(temperature_minus_background_crop_binned[1:-1,1:-1,1:-1])
+	T4_T04 = np.ones_like(dTdt).astype(np.float32)*np.nan
+	T4_T04[:,nan_ROI_mask[1:-1,1:-1]] = (T4[:,nan_ROI_mask[1:-1,1:-1]]-T04[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
+
+	BBrad = np.ones_like(dTdt).astype(np.float32)*np.nan
+	BBrad[:,nan_ROI_mask[1:-1,1:-1]] = (2*sigmaSB*T4_T04[:,nan_ROI_mask[1:-1,1:-1]] * foilemissivityscaled[nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
+	diffusion = np.ones_like(dTdt).astype(np.float32)*np.nan
+	diffusion[:,nan_ROI_mask[1:-1,1:-1]] = (Ptthermalconductivity*negd2Tdxy[:,nan_ROI_mask[1:-1,1:-1]]*foilthicknessscaled[nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
+	timevariation = np.ones_like(dTdt).astype(np.float32)*np.nan
+	timevariation[:,nan_ROI_mask[1:-1,1:-1]] = (Ptthermalconductivity*dTdt[:,nan_ROI_mask[1:-1,1:-1]]*foilthicknessscaled[nan_ROI_mask[1:-1,1:-1]]*reciprdiffusivityscaled[nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
+	powernoback = (diffusion + timevariation + BBrad).astype(np.float32)
+
+	horizontal_coord = np.arange(np.shape(powernoback[0])[1])
+	vertical_coord = np.arange(np.shape(powernoback[0])[0])
+	horizontal_coord,vertical_coord = np.meshgrid(horizontal_coord,vertical_coord)
+	horizontal_coord = (horizontal_coord+1+0.5)*dx	# +1 because in the process of calculating the power I eliminate the first and last pixel in spatial coordinates, +0.5 do be the centre of the pixel
+	vertical_coord = (vertical_coord+1+0.5)*dx
+	horizontal_coord -= foil_position_dict['foilhorizw']*0.5+0.0198
+	vertical_coord -= foil_position_dict['foilvertw']*0.5-0.0198
+	distance_from_vertical = (horizontal_coord**2+vertical_coord**2)**0.5
+	pinhole_to_foil_vertical = 0.008 + 0.003 + 0.002 + 0.045	# pinhole holder, washer, foil holder, standoff
+	pinhole_to_pixel_distance = (pinhole_to_foil_vertical**2 + distance_from_vertical**2)**0.5
+
+	etendue = np.ones_like(powernoback[0]) * (np.pi*(0.002**2)) / (pinhole_to_pixel_distance**2)	# I should include also the area of the pixel, but that is already in the w/m2 power
+	etendue *= (pinhole_to_foil_vertical/pinhole_to_pixel_distance)**2	 # cos(a)*cos(b). for pixels not directly under the pinhole both pinhole and pixel are tilted respect to the vertical, with same angle.
+	brightness = 4*np.pi*powernoback/etendue
+
+	temp = brightness[:,:,:int(np.shape(brightness)[2]*0.75)]
+	temp = np.sort(temp[np.max(temp,axis=(1,2)).argmax()].flatten())
+	ani = movie_from_data(np.array([np.flip(np.transpose(brightness,(0,2,1)),axis=2)]), 1/np.median(np.diff(time_binned)),integration=laser_int_time/1000,time_offset=time_binned[0],extvmin=0,extvmax=np.nanmean(temp[-len(temp)//60:]),xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='brightness [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4]+'\n'+binning_type+'\n',overlay_structure=True,include_EFIT=True,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True)
+	ani.save('/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+ '_FAST_brightness.mp4', fps=5*(1/np.mean(np.diff(time_binned)))/383, writer='ffmpeg',codec='mpeg4')
+	plt.close('all')
+
+	print('completed FAST power calculation ' + laser_to_analyse)
+
+	return foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop_binned,time_binned,powernoback,brightness,binning_type

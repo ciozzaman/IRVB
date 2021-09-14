@@ -6,11 +6,11 @@
 # exec(open("/home/ffederic/work/analysis_scripts/preamble_import_pc.py").read())
 
 #this is if working in batch, use predefined NOT visual printer
-exec(open("/home/ffederic/work/analysis_scripts/preamble_import_batch.py").read())
+exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_import_batch.py").read())
 
 
 #this is for importing all the variables names and which are the files
-exec(open("/home/ffederic/work/analysis_scripts/preamble_indexing.py").read())
+exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_indexing.py").read())
 import copy
 
 
@@ -22,7 +22,7 @@ from raysect.optical import World
 world = World()
 grid_type = 'core_res_4cm'
 # grid_type = 'core_high_res'
-core_voxel_grid = load_standard_voxel_grid(grid_type,parent=world)
+core_voxel_grid = load_standard_voxel_grid(grid_type,parent=world, path='/home/ffederic/work/cherab/cherab_mastu/cherab/mastu/bolometry/grid_construction')
 
 
 
@@ -185,7 +185,7 @@ pipeline='power'
 # def sensitivity(world,pinhole_target,pixel_h, pixel_v,ccd_centre,ccd_normal,ccd_y_axis,core_voxel_grid):
 
 
-if True:
+if False:
 	# Use this bit if you want to split the total number of processes
 	total_number = num_voxels
 	launch=6
@@ -198,13 +198,27 @@ if True:
 	intervals = end-start+1
 	# i=np.linspace(0,num_voxels-1,num_voxels,dtype=int)
 	i=np.linspace(start,end,intervals,dtype=int)
-	i_all=np.linspace(0,num_voxels-1,num_voxels,dtype=int)
-else:
+elif False:
 	# Use this for single process
+	i=np.linspace(0,num_voxels-1,num_voxels,dtype=int)
+else:
+	# use this to process only missing .npy files
+	filenames=coleval.all_file_names(path_sensitivity,'.npy')
+	done_ones = []
+	for filename in filenames:
+		done_ones.append(int(filename[filename.find('voxel')+5:filename.find('.')]))
 	i_all=np.linspace(0,num_voxels-1,num_voxels,dtype=int)
-	i=i_all
+	to_do = []
+	for value in i_all:
+		if not (value in done_ones):
+			to_do.append(value)
+	i = np.array(to_do)
+i_all=np.linspace(0,num_voxels-1,num_voxels,dtype=int)
 
-for index in i:
+
+
+# for index in i:
+for index in np.flip(i,axis=0):
 	index = int(index)
 	# def sensitivity(i):
 	# 	global world
@@ -378,4 +392,3 @@ plt.show()
 # plt.xlabel('Horizontal axis [pixles]')
 # plt.ylabel('Vertical axis [pixles]')
 # plt.show()
-

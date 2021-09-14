@@ -57,7 +57,7 @@ data = np.zeros((100,100,100))
 # data = np.load('/home/ffederic/work/irvb/MAST-U/2021-07-01/IRVB-MASTU_shot-44391.npz')['data']
 framerate = 383 # Hz
 shot_ID = '043979'
-time_aray = np.arange(len(data))*1/framerate
+time_array = np.arange(len(data))*1/framerate
 
 class RangeSlider(QWidget):
 	def __init__(self, minimum, maximum, parent=None):
@@ -98,7 +98,7 @@ class RangeSlider(QWidget):
 		self.maximum - self.minimum)
 		self.right = self.minimum + (float(value[2]) / (self.slider.maximum() - self.slider.minimum())) * (
 		self.maximum - self.minimum)
-		self.label.setText('shot '+str(self.shotID)+' from%.4g to %.4g ms : %.4g ms' %(1e3*time_aray[int(self.left)],1e3*time_aray[int(self.right)],1e3*time_aray[int(self.x)]))
+		self.label.setText('shot '+str(self.shotID)+' from%.4g to %.4g ms : %.4g ms' %(1e3*time_array[int(self.left)],1e3*time_array[int(self.right)],1e3*time_array[int(self.x)]))
 
 
 app = pg.mkQApp()
@@ -132,7 +132,7 @@ area.addDock(d7, 'right', d2)
 # range slider
 # horizontalLayout = QVBoxLayout()
 # w1 = Slider(0, len(data)-1)
-w2 = RangeSlider(0, len(time_aray)-1)
+w2 = RangeSlider(0, len(time_array)-1)
 d2.addWidget(w2)
 
 # main image
@@ -151,6 +151,9 @@ p5 = w5.addPlot()
 p5.addItem(image1)
 p5.setAspectLocked()
 # p5.invertX()
+image_frame = p5.plot([],[], pen='r')
+
+
 d5.addWidget(w5)
 curve = p5.plot(pen='r')
 
@@ -236,7 +239,7 @@ d6.addWidget(w6)
 
 
 
-
+quantity_options = {'counts [au]': 'counts', 'FAST counts [au]': 'FAST_counts_minus_background_crop', 'FAST power [W/m2]': 'FAST_powernoback', 'FAST brightness [W/m2]': 'FAST_brightness', "Temperature [°C]": 'laser_temperature_crop_binned_full', "Relative temp [K]": 'laser_temperature_minus_background_crop_binned_full', "tot power [W/m2]": 'powernoback_full', "BB power [W/m2]": 'BBrad_full', "diff power [W/m2]": 'diffusion_full', "dt power [W/m2]": 'timevariation_full', "brightness [W/m2]": 'brightness_full'}
 
 # creating all the flags and accessories needed
 params = [
@@ -251,21 +254,22 @@ params = [
 		{'name': 'ROI cyan ver', 'type': 'int', 'value': 10},
 		{'name': 'ROI cyan d ver', 'type': 'int', 'value': 10},
 		# {'name': 'ROI cyan angle', 'type': 'int', 'value': 0},
-		{'name': 'Time start [ms]', 'type': 'float', 'value': time_aray[int(w2.left)]*1e3, 'step': 1/framerate*1e3, 'finite': False},
-		{'name': 'Time end [ms]', 'type': 'float', 'value': time_aray[int(w2.right)]*1e3, 'step': 1/framerate*1e3, 'finite': False},
-		{'name': 'Time [ms]', 'type': 'float', 'value': time_aray[int(w2.x)]*1e3, 'step': 1/framerate*1e3, 'finite': False},
+		{'name': 'Time start [ms]', 'type': 'float', 'value': time_array[int(w2.left)]*1e3, 'step': 1/framerate*1e3, 'finite': False},
+		{'name': 'Time end [ms]', 'type': 'float', 'value': time_array[int(w2.right)]*1e3, 'step': 1/framerate*1e3, 'finite': False},
+		{'name': 'Time [ms]', 'type': 'float', 'value': time_array[int(w2.x)]*1e3, 'step': 1/framerate*1e3, 'finite': False},
 		{'name': 'Histogram auto', 'type': 'bool', 'value': True, 'tip': "This is a checkbox"},
 		{'name': 'Hist lev high', 'type': 'float', 'value': histogram_level_high, 'step': np.min(np.diff(np.sort(data.flatten()))), 'finite': False},
 		{'name': 'Hist lev low', 'type': 'float', 'value': histogram_level_low, 'step': np.min(np.diff(np.sort(data.flatten()))), 'finite': False},
 	]},
 	{'name': 'Set display', 'type': 'group', 'children': [
-		{'name': 'Quantity', 'type': 'list', 'values': {'counts': 'counts', 'FAST counts': 'FAST counts', "tepmerature": 'laser_temperature_crop_binned_full', "rel temp": 'laser_temperature_minus_background_crop_binned_full', "tot power": 'powernoback_full', "BB power": 'BBrad_full', "diff power": 'diffusion_full', "dt power": 'timevariation_full', "brightness": 'brightness_full'}, 'value': 'FAST counts'},
-		{'name': 'Binning', 'type': 'list', 'values': {'bin1x1x1': 'bin1x1x1', 'bin1x3x3': 'bin1x3x3', 'bin1x5x5': 'bin1x5x5', "bin1x10x10": 'bin1x10x10', "bin2x1x1": 'bin2x1x1', "bin2x3x3": 'bin2x3x3', "bin2x5x5": 'bin2x5x5', "bin2x10x10": 'bin2x10x10', "bin3x1x1": 'bin3x1x1', "bin3x3x3": 'bin3x3x3', "bin3x5x5": 'bin3x5x5', "bin3x10x10": 'bin3x10x10'}, 'value': 1},
+		{'name': 'Quantity', 'type': 'list', 'values': quantity_options, 'value': 'FAST_counts_minus_background_crop'},
+		{'name': 'Binning', 'type': 'list', 'values': {'bin1x1x1': 'bin1x1x1', 'bin1x3x3': 'bin1x3x3', 'bin1x5x5': 'bin1x5x5', "bin1x10x10": 'bin1x10x10', "bin2x1x1": 'bin2x1x1', "bin2x3x3": 'bin2x3x3', "bin2x5x5": 'bin2x5x5', "bin2x10x10": 'bin2x10x10', "bin3x1x1": 'bin3x1x1', "bin3x3x3": 'bin3x3x3', "bin3x5x5": 'bin3x5x5', "bin3x10x10": 'bin3x10x10', "bin5x1x1": 'bin5x1x1', "bin5x3x3": 'bin5x3x3', "bin5x5x5": 'bin5x5x5', "bin5x10x10": 'bin5x10x10'}, 'value': 1},
 		{'name': 'Load data', 'type': 'action'},
 		{'name': 'Load EFIT', 'type': 'action'},
 		{'name': 'Play', 'type': 'action'},
 		{'name': 'Rewind', 'type': 'action'},
 		{'name': 'Pause', 'type': 'action'},
+		{'name': 'Export video', 'type': 'action'},
 	]},
 	{'name': 'Overlays', 'type': 'group', 'children': [
 		{'name': 'Structure', 'type': 'bool', 'value': True, 'tip': "This is a checkbox"},
@@ -288,7 +292,7 @@ param_ext1 = Parameter.create(name='params', type='group', children=params1)
 
 ## If anything changes in the tree, print a message
 def change(param, changes):
-	global histogram_level_low,histogram_level_high,overlay_structure,overlay_fueling_point,overlay_x_point,overlay_mag_axis,overlay_strike_points_1,overlay_strike_points_2,overlay_separatrix,overlay_Core_Resistive_bol,overlay_Div_Resistive_bol,efit_reconstruction,all_time_mag_axis_location,all_time_x_point_location,all_time_strike_points_location,all_time_strike_points_location_rot,all_time_separatrix
+	global histogram_level_low,histogram_level_high,overlay_structure,overlay_fueling_point,overlay_x_point,overlay_mag_axis,overlay_strike_points_1,overlay_strike_points_2,overlay_separatrix,overlay_Core_Resistive_bol,overlay_Div_Resistive_bol,efit_reconstruction,all_time_mag_axis_location,all_time_x_point_location,all_time_strike_points_location,all_time_strike_points_location_rot,all_time_separatrix,time_array
 	print("tree changes:")
 	for param, change, data in changes:
 		path = param_ext.childPath(param)
@@ -306,7 +310,7 @@ def change(param, changes):
 	roi2.setPos((param_ext['ROI', 'ROI cyan hor'],param_ext['ROI', 'ROI cyan ver']))
 	roi2.setSize((param_ext['ROI', 'ROI cyan d hor'],param_ext['ROI', 'ROI cyan d ver']))
 	# roi2.setAngle((param_ext['ROI', 'ROI cyan angle']))
-	w2.slider.setValue([np.abs(param_ext['ROI', 'Time start [ms]']*1e-3-time_aray).argmin()/(w2.maximum-w2.minimum)*(w2.slider.maximum()-w2.slider.minimum()),np.abs(param_ext['ROI', 'Time [ms]']*1e-3-time_aray).argmin()/(w2.maximum-w2.minimum)*(w2.slider.maximum()-w2.slider.minimum()),np.abs(param_ext['ROI', 'Time end [ms]']*1e-3-time_aray).argmin()/(w2.maximum-w2.minimum)*(w2.slider.maximum()-w2.slider.minimum())])
+	w2.slider.setValue([np.abs(param_ext['ROI', 'Time start [ms]']*1e-3-time_array).argmin()/(w2.maximum-w2.minimum)*(w2.slider.maximum()-w2.slider.minimum()),np.abs(param_ext['ROI', 'Time [ms]']*1e-3-time_array).argmin()/(w2.maximum-w2.minimum)*(w2.slider.maximum()-w2.slider.minimum()),np.abs(param_ext['ROI', 'Time end [ms]']*1e-3-time_array).argmin()/(w2.maximum-w2.minimum)*(w2.slider.maximum()-w2.slider.minimum())])
 	histogram_level_high,histogram_level_low = param_ext['ROI', 'Hist lev high'],param_ext['ROI', 'Hist lev low']
 	hist.setLevels(histogram_level_high,histogram_level_low)
 	# hist.sigLevelChangeFinished.emit(True)
@@ -334,7 +338,7 @@ def change(param, changes):
 			overlay_Div_Resistive_bol[i].setAlpha(1,False)
 	try:
 		if (param_ext['Overlays','Mag axis'] or param_ext['Overlays','X-point'] or param_ext['Overlays','Separatrix']):
-			i_time = np.abs(time_aray[int(w2.x)]-efit_reconstruction.time).argmin()
+			i_time = np.abs(time_array[int(w2.x)]-efit_reconstruction.time).argmin()
 		if param_ext['Overlays','Mag axis']==False:
 			overlay_mag_axis.setAlpha(0,False)
 		else:
@@ -366,17 +370,17 @@ def change(param, changes):
 inhibit_update_like_video = True
 inhibit_update_like_video_rew = True
 def update_like_video():
-	global inhibit_update_like_video,inhibit_update_like_video_rew
+	global inhibit_update_like_video,inhibit_update_like_video_rew,time_array
 	if inhibit_update_like_video == False:
 		inhibit_update_like_video_rew = True
 		print('update_like_video')
-		now = np.abs(param_ext['ROI', 'Time [ms]']-time_aray*1e3).argmin()
-		if now == len(time_aray)-1:
+		now = np.abs(param_ext['ROI', 'Time [ms]']-time_array*1e3).argmin()
+		if now == len(time_array)-1:
 			now = -1
 		future = now+1
-		param_ext['ROI', 'Time [ms]'] = time_aray[future]*1e3
+		param_ext['ROI', 'Time [ms]'] = time_array[future]*1e3
 		# now = w2.x
-		# if now == len(time_aray)-1:
+		# if now == len(time_array)-1:
 		# 	now = -1
 		# future = now+1
 		# w2.x = future
@@ -385,13 +389,13 @@ def update_like_video():
 	elif inhibit_update_like_video_rew == False:
 		inhibit_update_like_video = True
 		print('update_like_video')
-		now = np.abs(param_ext['ROI', 'Time [ms]']-time_aray*1e3).argmin()
+		now = np.abs(param_ext['ROI', 'Time [ms]']-time_array*1e3).argmin()
 		if now == 0:
-			now = len(time_aray)
+			now = len(time_array)
 		future = now-1
-		param_ext['ROI', 'Time [ms]'] = time_aray[future]*1e3
+		param_ext['ROI', 'Time [ms]'] = time_array[future]*1e3
 		# now = w2.x
-		# if now == len(time_aray)-1:
+		# if now == len(time_array)-1:
 		# 	now = -1
 		# future = now+1
 		# w2.x = future
@@ -418,9 +422,31 @@ timer = pg.QtCore.QTimer()
 timer.timeout.connect(update_like_video)
 timer.start(500)	# refresh time in ms
 
+def export_video():
+	global framerate,data,time_array,histogram_level_high,histogram_level_low,w2
+	path_mother = os.path.split(param_ext1['File Path'])[0]
+	filenames = coleval.all_file_names(path_mother,os.path.split(param_ext1['File Path'])[1]+'_export_')
+	if len(filenames)==0:
+		next_export = 1
+	else:
+		done_ones = []
+		for filename in filenames:
+			done_ones.append(int(filename[filename.find('export_')+len('export_'):filename.find('.mp4')]))
+		next_export = np.max(done_ones) + 1
+	start_time = np.abs(param_ext['ROI', 'Time start [ms]']*1e-3-time_array).argmin()
+	end_time = np.abs(param_ext['ROI', 'Time end [ms]']*1e-3-time_array).argmin()
+
+	barlabel=list(quantity_options.keys())[(param_ext['Set display','Quantity']==np.array(list(quantity_options.values()))).argmax()]
+	ani = coleval.movie_from_data(np.array([np.flip(np.transpose(np.flip(data,axis=1)[start_time:end_time],(0,2,1)),axis=2)]), framerate,integration=1,time_offset=time_array[start_time],extvmin=histogram_level_low,extvmax=histogram_level_high,xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel=barlabel, prelude='shot ' + w2.shotID + '\n'+param_ext['Set display','Binning']+'\n',overlay_structure=param_ext['Overlays','Structure'],include_EFIT=True,pulse_ID=w2.shotID,overlay_x_point=param_ext['Overlays','X-point'],overlay_mag_axis=param_ext['Overlays','Mag axis'],overlay_strike_points=param_ext['Overlays','Separatrix'],overlay_separatrix=param_ext['Overlays','Separatrix'])
+	ani.save(param_ext1['File Path'] + '_export_' + str(next_export) + '.mp4', fps=5*framerate/383, writer='ffmpeg',codec='mpeg4')
+	plt.close('all')
+	print(param_ext1['File Path'] + '_export_' + str(next_export) + '.mp4 generated')
+
+
 param_ext.param('Set display','Play').sigActivated.connect(start_video)
 param_ext.param('Set display','Rewind').sigActivated.connect(rew_video)
 param_ext.param('Set display','Pause').sigActivated.connect(pause_video)
+param_ext.param('Set display','Export video').sigActivated.connect(export_video)
 
 
 def NavigatePath():
@@ -460,14 +486,14 @@ def Load_EFIT():
 
 update_plot_inhibit = False
 def Load():
-	global data,framerate,time_aray,overlay_fueling_point,overlay_structure,overlay_x_point,overlay_mag_axis,overlay_strike_points_1,overlay_strike_points_2,overlay_separatrix,overlay_Core_Resistive_bol,overlay_Div_Resistive_bol,data_shape,etendue,update_plot_inhibit
+	global data,framerate,time_array,overlay_fueling_point,overlay_structure,overlay_x_point,overlay_mag_axis,overlay_strike_points_1,overlay_strike_points_2,overlay_separatrix,overlay_Core_Resistive_bol,overlay_Div_Resistive_bol,data_shape,etendue,update_plot_inhibit
 	update_plot_inhibit = True
 	print(param_ext1['File Path'])
 	if param_ext['Set display','Quantity'] == 'counts':
 		laser_dict = np.load(param_ext1['File Path']+'.npz')
 		data = (laser_dict['data'] + laser_dict['data_median']).astype(int)
 		laser_dict.allow_pickle=True
-		time_aray = laser_dict['full_frame'].all()['time_full_full']
+		time_array = laser_dict['full_frame'].all()['time_full_full']
 		framerate = laser_dict['FrameRate']
 		param_ext['Overlays', 'Structure'] = False
 		param_ext['Overlays', 'Mag axis'] = False
@@ -479,26 +505,32 @@ def Load():
 		# laser_dict.allow_pickle=True
 		# etendue = laser_dict['bin1x1x1'].all()['etendue']
 		param_ext['Set display','Binning'] = 'bin1x1x1'
-	elif param_ext['Set display','Quantity'] == 'FAST counts':
-		laser_dict = np.load(param_ext1['File Path']+'.npz')
-		laser_dict.allow_pickle=True
-		data = laser_dict['only_foil'].all()['FAST_counts_minus_background_crop']
-		time_aray = laser_dict['only_foil'].all()['FAST_counts_minus_background_crop_time']
-		framerate = laser_dict['FrameRate']/len(np.unique(laser_dict['digitizer_ID']))
-		# laser_dict = np.load(param_ext1['File Path']+'_short.npz')
-		# laser_dict.allow_pickle=True
-		# etendue = laser_dict['bin1x1x1'].all()['etendue']
-		param_ext['Set display','Binning'] = 'bin1x1x1'
+	elif param_ext['Set display','Quantity'][:4] == 'FAST':
+		if os.path.exists(param_ext1['File Path']+'_FAST.npz'):
+			laser_dict = np.load(param_ext1['File Path']+'_FAST.npz')
+			laser_dict.allow_pickle=True
+			data = laser_dict[param_ext['Set display','Quantity']]
+			time_array = laser_dict['FAST_time_binned']
+			param_ext['Set display','Binning'] = laser_dict['FAST_binning_type']
+		else:
+			laser_dict = np.load(param_ext1['File Path']+'.npz')
+			laser_dict.allow_pickle=True
+			data = laser_dict['only_foil'].all()[param_ext['Set display','Quantity']]
+			time_array = laser_dict['only_foil'].all()['FAST_time_binned']
+			param_ext['Set display','Binning'] = laser_dict['only_foil'].all()['FAST_binning_type']
+		framerate = 1/np.mean(time_array)
 	else:
 		laser_dict = np.load(param_ext1['File Path']+'_short.npz')
 		laser_dict.allow_pickle=True
 		data = laser_dict[param_ext['Set display','Binning']].all()[param_ext['Set display','Quantity']]
 		# etendue = laser_dict[param_ext['Set display','Binning']].all()['etendue']
-		time_aray = laser_dict[param_ext['Set display','Binning']].all()['time_full_binned']
+		time_array = laser_dict[param_ext['Set display','Binning']].all()['time_full_binned']
 		framerate = laser_dict[param_ext['Set display','Binning']].all()['laser_framerate_binned']
 	data = np.flip(data,axis=1)
+	data_shape = np.shape(data)
 	image1.setImage(data[0])
 	isoLine.setValue(np.mean(data[0]))
+	image_frame.setData([0,data_shape[1],data_shape[1],0,0],[0,0,data_shape[2],data_shape[2],0])
 	param_ext['ROI', 'ROI magenta hor'],param_ext['ROI', 'ROI magenta ver'] = np.shape(image1.image)[0]*3//8, np.shape(image1.image)[1]*3//8
 	param_ext['ROI', 'ROI magenta d hor'],param_ext['ROI', 'ROI magenta d ver'] = np.shape(image1.image)[0]//4, np.shape(image1.image)[1]//4
 	param_ext['ROI', 'ROI cyan hor'],param_ext['ROI', 'ROI cyan ver'] = np.shape(image1.image)[0]*1//8, np.shape(image1.image)[1]*1//8
@@ -507,13 +539,12 @@ def Load():
 	w2.maximum = len(data)-1
 	w2.slider.setMinimum(w2.minimum)
 	w2.slider.setMaximum(w2.maximum)
-	param_ext['ROI', 'Time start [ms]'] = time_aray[0]*1e3
-	param_ext['ROI', 'Time [ms]'] = np.mean(time_aray)*1e3
-	param_ext['ROI', 'Time end [ms]'] = time_aray[-1]*1e3
+	param_ext['ROI', 'Time start [ms]'] = time_array[0]*1e3
+	param_ext['ROI', 'Time [ms]'] = np.mean(time_array)*1e3
+	param_ext['ROI', 'Time end [ms]'] = time_array[-1]*1e3
 	param_ext['ROI', 'Histogram auto'] = True
 	param_ext.children()[0].children()[8].setProperty('step',np.min(np.diff(np.sort(data.flatten()))))
 	param_ext.children()[0].children()[9].setProperty('step',np.min(np.diff(np.sort(data.flatten()))))
-	data_shape = np.shape(data)
 	try:
 		for i in range(len(overlay_fueling_point)):
 			overlay_fueling_point[i].setAlpha(0,False)
@@ -591,7 +622,7 @@ def update_plot():
 	global histogram_level_low, histogram_level_high,update_hist_inhibit,update_plot_inhibit,inhibit_update_like_video,inhibit_update_like_video_rew
 	if update_plot_inhibit==False:
 		a = w2.x
-		if (param_ext['ROI', 'Time [ms]']!=time_aray[int(a)]*1e3) or inhibit_update_like_video==False or inhibit_update_like_video_rew==False:
+		if (param_ext['ROI', 'Time [ms]']!=time_array[int(a)]*1e3) or inhibit_update_like_video==False or inhibit_update_like_video_rew==False:
 			update_hist_inhibit = True
 			image1.setImage(data[int(a)])
 			hist.setImageItem(image1)
@@ -615,21 +646,21 @@ def update_plot():
 		param_ext['ROI', 'ROI cyan ver'] = pos2[1]
 		param_ext['ROI', 'ROI cyan d hor'] = size2[0]
 		param_ext['ROI', 'ROI cyan d ver'] = size2[1]
-		param_ext['ROI', 'Time start [ms]'] = time_aray[int(w2.left)]*1e3
-		param_ext['ROI', 'Time end [ms]'] = time_aray[int(w2.right)]*1e3
+		param_ext['ROI', 'Time start [ms]'] = time_array[int(w2.left)]*1e3
+		param_ext['ROI', 'Time end [ms]'] = time_array[int(w2.right)]*1e3
 		if inhibit_update_like_video or inhibit_update_like_video_rew:
-			param_ext['ROI', 'Time [ms]'] = time_aray[int(a)]*1e3
+			param_ext['ROI', 'Time [ms]'] = time_array[int(a)]*1e3
 		p3.plot(np.arange(pos[0],pos[0]+size[0]),np.nanmean(selected,axis=1), clear=True)
 		p1.plot(np.nanmean(selected,axis=0),np.arange(pos[1],pos[1]+size[1]), clear=True)
-		temp = np.nanmean(data[int(w2.left):int(w2.right),max(0,pos[0]):pos[0]+size[0],max(0,pos[1]):pos[1]+size[1]],axis=(1,2))
+		temp = np.nanmean(data[int(w2.left):int(w2.right),max(0,pos[0]):pos[0]+size[0],max(0,pos[1]):pos[1]+size[1]].astype(float),axis=(1,2))
 		# temp = np.nanmean(data[int(w2.left):int(w2.right),np.array([indexes_horiz_axis,indexes_vert_axis]).tolist()],axis=(1,2))
-		# p6.plot(time_aray[int(w2.left):int(w2.right)],temp, clear=True)
-		# p6.plot([time_aray[int(a)]]*2,[np.nanmin(temp),np.nanmax(temp)], pen='g')
-		p6_time_mark.setData([time_aray[int(a)]]*2,[np.nanmin(temp),np.nanmax(temp)])
-		temp = np.nanmean(data[int(w2.left):int(w2.right),max(0,pos[0]):pos[0]+size[0],max(0,pos[1]):pos[1]+size[1]],axis=(1,2))
-		p6_1.setData(time_aray[int(w2.left):int(w2.right)],temp)
-		temp = np.nanmean(data[int(w2.left):int(w2.right),max(0,pos2[0]):pos2[0]+size2[0],max(0,pos2[1]):pos2[1]+size2[1]],axis=(1,2))
-		p6_2.setData(time_aray[int(w2.left):int(w2.right)],temp)
+		# p6.plot(time_array[int(w2.left):int(w2.right)],temp, clear=True)
+		# p6.plot([time_array[int(a)]]*2,[np.nanmin(temp),np.nanmax(temp)], pen='g')
+		p6_time_mark.setData([time_array[int(a)]]*2,[np.nanmin(temp),np.nanmax(temp)])
+		temp = np.nanmean(data[int(w2.left):int(w2.right),max(0,pos[0]):pos[0]+size[0],max(0,pos[1]):pos[1]+size[1]].astype(float),axis=(1,2))
+		p6_1.setData(time_array[int(w2.left):int(w2.right)],temp)
+		temp = np.nanmean(data[int(w2.left):int(w2.right),max(0,pos2[0]):pos2[0]+size2[0],max(0,pos2[1]):pos2[1]+size2[1]].astype(float),axis=(1,2))
+		p6_2.setData(time_array[int(w2.left):int(w2.right)],temp)
 		# hist.setImageItem(image1)
 		# hist.sigLevelChangeFinished.emit(True)
 

@@ -616,10 +616,10 @@ def function_a(index):
 	plt.pcolor(h_coordinates,v_coordinates,np.nanmean(laser_temperature_minus_background_crop,axis=0),cmap='rainbow')
 	plt.colorbar().set_label('Temp [°C]')
 	plt.errorbar(horizontal_loc*dx,vertical_loc*dx,xerr=dhorizontal_loc/2*dx,yerr=dvertical_loc/2*dx,color='k',linestyle='--')
-	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10,dr/10))*dx,(vertical_loc + np.abs(dr**2-np.arange(-dr,+dr+dr/10,dr/10)**2)**0.5)*dx,'r--',label='guess for laser size')
-	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10,dr/10))*dx,(vertical_loc - np.abs(dr**2-np.arange(-dr,+dr+dr/10,dr/10)**2)**0.5)*dx,'r--')
-	# plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10))*dx,(vertical_loc + np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10)**2)**0.5)*dx,'k--',label='area accounted for sum')
-	# plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10))*dx,(vertical_loc - np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10)**2)**0.5)*dx,'k--')
+	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10/2,dr/10))*dx,(vertical_loc + np.abs(dr**2-np.arange(-dr,+dr+dr/10/2,dr/10)**2)**0.5)*dx,'r--',label='guess for laser size')
+	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10/2,dr/10))*dx,(vertical_loc - np.abs(dr**2-np.arange(-dr,+dr+dr/10/2,dr/10)**2)**0.5)*dx,'r--')
+	# plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10/2,dr_total_power/10))*dx,(vertical_loc + np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10/2,dr_total_power/10)**2)**0.5)*dx,'k--',label='area accounted for sum')
+	# plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10/2,dr_total_power/10))*dx,(vertical_loc - np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10/2,dr_total_power/10)**2)**0.5)*dx,'k--')
 	plt.title(preamble_4_prints+'Average temperature increment in '+laser_to_analyse+'\n foil size '+str([foilhorizwpixel,foilvertwpixel])+'pixels, [%.3g,%.3g]mm\n laser located at [%.3g,%.3g]mm prelim radious %.3gmm' %(foilhorizwpixel*dx*1e3,foilvertwpixel*dx*1e3,horizontal_loc*dx*1e3,vertical_loc*dx*1e3,dr*dx*1e3))
 	plt.xlabel('Horizontal axis [m]')
 	plt.ylabel('Vertical axis [m]')
@@ -633,10 +633,10 @@ def function_a(index):
 	plt.pcolor(h_coordinates,v_coordinates,temp,cmap='rainbow')
 	plt.colorbar().set_label('Temp [°C]')
 	plt.errorbar(horizontal_loc*dx,vertical_loc*dx,xerr=dhorizontal_loc/2*dx,yerr=dvertical_loc/2*dx,color='k',linestyle='--')
-	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10,dr/10))*dx,(vertical_loc + np.abs(dr**2-np.arange(-dr,+dr+dr/10,dr/10)**2)**0.5)*dx,'k--',label='guess for laser size')
-	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10,dr/10))*dx,(vertical_loc - np.abs(dr**2-np.arange(-dr,+dr+dr/10,dr/10)**2)**0.5)*dx,'k--')
-	# plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10))*dx,(vertical_loc + np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10)**2)**0.5)*dx,'k--',label='area accounted for sum')
-	# plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10))*dx,(vertical_loc - np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10)**2)**0.5)*dx,'k--')
+	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10/2,dr/10))*dx,(vertical_loc + np.abs(dr**2-np.arange(-dr,+dr+dr/10/2,dr/10)**2)**0.5)*dx,'k--',label='guess for laser size')
+	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10/2,dr/10))*dx,(vertical_loc - np.abs(dr**2-np.arange(-dr,+dr+dr/10/2,dr/10)**2)**0.5)*dx,'k--')
+	# plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10/2,dr_total_power/10))*dx,(vertical_loc + np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10/2,dr_total_power/10)**2)**0.5)*dx,'k--',label='area accounted for sum')
+	# plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10/2,dr_total_power/10))*dx,(vertical_loc - np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10/2,dr_total_power/10)**2)**0.5)*dx,'k--')
 	plt.title(preamble_4_prints+'Hottest fraction of temperature increment in '+laser_to_analyse+'\n foil size '+str([foilhorizwpixel,foilvertwpixel])+'pixels, [%.3g,%.3g]mm\n laser located at [%.3g,%.3g]mm prelim radious %.3gmm' %(foilhorizwpixel*dx*1e3,foilvertwpixel*dx*1e3,horizontal_loc*dx*1e3,vertical_loc*dx*1e3,dr*dx*1e3))
 	plt.xlabel('Horizontal axis [pixles]')
 	plt.ylabel('Vertical axis [pixles]')
@@ -694,12 +694,14 @@ def function_a(index):
 	else:
 		smoothing_size = 1
 	if smoothing_size==1:
-		dTdt=np.divide(laser_temperature_minus_background_crop[2:,1:-1,1:-1]-laser_temperature_minus_background_crop[:-2,1:-1,1:-1],2*dt).astype(np.float32)
+		# dTdt=np.divide(laser_temperature_minus_background_crop[2:,1:-1,1:-1]-laser_temperature_minus_background_crop[:-2,1:-1,1:-1],2*dt).astype(np.float32)
+		dTdt = np.gradient(laser_temperature_minus_background_crop,dt,axis=0)[1:-1,1:-1,1:-1].astype(np.float32)	# this is still a central difference but it doesn't rely on hand made code
 		dTdt_std=np.divide((laser_temperature_std_minus_background_crop[2:,1:-1,1:-1]**2 + laser_temperature_std_minus_background_crop[:-2,1:-1,1:-1]**2)**0.5,2*dt).astype(np.float32)
 	else:
 		laser_temperature_minus_background_crop_time_median = generic_filter(laser_temperature_minus_background_crop,np.nanmedian,size=[1,smoothing_size,smoothing_size])
 		laser_temperature_std_minus_background_crop_time_median = generic_filter((laser_temperature_std_minus_background_crop**2),np.nansum,size=[1,smoothing_size,smoothing_size])**0.5 /(smoothing_size**2)
-		dTdt=np.divide(laser_temperature_minus_background_crop_time_median[2:,1:-1,1:-1]-laser_temperature_minus_background_crop_time_median[:-2,1:-1,1:-1],2*dt).astype(np.float32)
+		# dTdt=np.divide(laser_temperature_minus_background_crop_time_median[2:,1:-1,1:-1]-laser_temperature_minus_background_crop_time_median[:-2,1:-1,1:-1],2*dt).astype(np.float32)
+		dTdt = np.gradient(laser_temperature_minus_background_crop_time_median,dt,axis=0)[1:-1,1:-1,1:-1].astype(np.float32)	# this is still a central difference but it doesn't rely on hand made code
 		dTdt_std=np.divide((laser_temperature_std_minus_background_crop_time_median[2:,1:-1,1:-1]**2 + laser_temperature_std_minus_background_crop_time_median[:-2,1:-1,1:-1]**2)**0.5,2*dt).astype(np.float32)
 	# # I need to clean up further the time varying component from the 29Hz noise
 	# dTdt = coleval.clear_oscillation_central2([dTdt],laser_framerate,oscillation_search_window_end=(len(dTdt)-1)/(laser_framerate),plot_conparison=False)[0]
@@ -707,8 +709,14 @@ def function_a(index):
 	# in order to increase precision I remove the background image
 	if smoothing_size==1:
 		d2Tdx2=np.divide(laser_temperature_minus_background_crop[1:-1,1:-1,2:]-np.multiply(2,laser_temperature_minus_background_crop[1:-1,1:-1,1:-1])+laser_temperature_minus_background_crop[1:-1,1:-1,:-2],dx**2).astype(np.float32)
+		# dTdx = np.gradient(laser_temperature_minus_background_crop,dx,axis=2)	# this is still a central difference but it doesn't rely on hand made code
+		# d2Tdx2 = np.gradient(dTdx,dx,axis=2)[1:-1,1:-1,1:-1].astype(np.float32)	# this is still a central difference but it doesn't rely on hand made code
+		# del dTdx
 		d2Tdx2_std=np.divide((laser_temperature_std_minus_background_crop[1:-1,1:-1,2:]**2+np.multiply(2,laser_temperature_std_minus_background_crop[1:-1,1:-1,1:-1])**2+laser_temperature_std_minus_background_crop[1:-1,1:-1,:-2]**2)**0.5,dx**2).astype(np.float32)
 		d2Tdy2=np.divide(laser_temperature_minus_background_crop[1:-1,2:,1:-1]-np.multiply(2,laser_temperature_minus_background_crop[1:-1,1:-1,1:-1])+laser_temperature_minus_background_crop[1:-1,:-2,1:-1],dx**2).astype(np.float32)
+		# dTdy = np.gradient(laser_temperature_minus_background_crop,dx,axis=1)	# this is still a central difference but it doesn't rely on hand made code
+		# d2Tdy2 = np.gradient(dTdy,dx,axis=1)[1:-1,1:-1,1:-1].astype(np.float32)	# this is still a central difference but it doesn't rely on hand made code
+		# del dTdy
 		d2Tdy2_std=np.divide((laser_temperature_std_minus_background_crop[1:-1,2:,1:-1]**2+np.multiply(2,laser_temperature_std_minus_background_crop[1:-1,1:-1,1:-1])**2+laser_temperature_std_minus_background_crop[1:-1,:-2,1:-1]**2)**0.5,dx**2).astype(np.float32)
 	else:
 		laser_temperature_minus_background_crop_space_median_1 = generic_filter(laser_temperature_minus_background_crop,np.nanmedian,size=[smoothing_size,smoothing_size,1])
@@ -716,8 +724,14 @@ def function_a(index):
 		laser_temperature_minus_background_crop_space_median_2 = generic_filter(laser_temperature_minus_background_crop,np.nanmedian,size=[smoothing_size,1,smoothing_size])
 		laser_temperature_std_minus_background_crop_space_median_2 = generic_filter((laser_temperature_std_minus_background_crop**2),np.nansum,size=[smoothing_size,1,smoothing_size])**0.5 /(smoothing_size**2)
 		d2Tdx2=np.divide(laser_temperature_minus_background_crop_space_median_1[1:-1,1:-1,2:]-np.multiply(2,laser_temperature_minus_background_crop_space_median_1[1:-1,1:-1,1:-1])+laser_temperature_minus_background_crop_space_median_1[1:-1,1:-1,:-2],dx**2).astype(np.float32)
+		# dTdx = np.gradient(laser_temperature_minus_background_crop_space_median_1,dx,axis=2)	# this is still a central difference but it doesn't rely on hand made code
+		# d2Tdx2 = np.gradient(dTdx,dx,axis=2)[1:-1,1:-1,1:-1].astype(np.float32)	# this is still a central difference but it doesn't rely on hand made code
+		# del dTdx
 		d2Tdx2_std=np.divide((laser_temperature_std_minus_background_crop_space_median_1[1:-1,1:-1,2:]**2+np.multiply(2,laser_temperature_std_minus_background_crop_space_median_1[1:-1,1:-1,1:-1])**2+laser_temperature_std_minus_background_crop_space_median_1[1:-1,1:-1,:-2]**2)**0.5,dx**2).astype(np.float32)
 		d2Tdy2=np.divide(laser_temperature_minus_background_crop_space_median_2[1:-1,2:,1:-1]-np.multiply(2,laser_temperature_minus_background_crop_space_median_2[1:-1,1:-1,1:-1])+laser_temperature_minus_background_crop_space_median_2[1:-1,:-2,1:-1],dx**2).astype(np.float32)
+		# dTdy = np.gradient(laser_temperature_minus_background_crop_space_median_2,dx,axis=1)	# this is still a central difference but it doesn't rely on hand made code
+		# d2Tdy2 = np.gradient(dTdy,dx,axis=1)[1:-1,1:-1,1:-1].astype(np.float32)	# this is still a central difference but it doesn't rely on hand made code
+		# del dTdy
 		d2Tdy2_std=np.divide((laser_temperature_std_minus_background_crop_space_median_2[1:-1,2:,1:-1]**2+np.multiply(2,laser_temperature_std_minus_background_crop_space_median_2[1:-1,1:-1,1:-1])**2+laser_temperature_std_minus_background_crop_space_median_2[1:-1,:-2,1:-1]**2)**0.5,dx**2).astype(np.float32)
 	d2Tdxy = np.ones_like(dTdt).astype(np.float32)*np.nan
 	d2Tdxy[:,nan_ROI_mask[1:-1,1:-1]]=np.add(d2Tdx2[:,nan_ROI_mask[1:-1,1:-1]],d2Tdy2[:,nan_ROI_mask[1:-1,1:-1]])
@@ -963,12 +977,12 @@ def function_a(index):
 	plt.pcolor(h_coordinates,v_coordinates,time_averaged_power_over_duty,cmap='rainbow',vmin=np.nanmin(time_averaged_power_over_duty[select]),vmax=np.nanmax(time_averaged_power_over_duty[select]))
 	plt.colorbar().set_label('Power [W/m2]')
 	# plt.errorbar(horizontal_loc*dx,vertical_loc*dx,xerr=dhorizontal_loc/2*dx,yerr=dvertical_loc/2*dx,color='k',linestyle='--')
-	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10,dr/10))*dx,(vertical_loc + np.abs(dr**2-np.arange(-dr,+dr+dr/10,dr/10)**2)**0.5)*dx,'r--',label='found laser size')
-	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10,dr/10))*dx,(vertical_loc - np.abs(dr**2-np.arange(-dr,+dr+dr/10,dr/10)**2)**0.5)*dx,'r--')
-	plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10))*dx,(vertical_loc + np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10)**2)**0.5)*dx,'k--',label='area accounted for sum')
-	plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10))*dx,(vertical_loc - np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10)**2)**0.5)*dx,'k--')
-	plt.plot((horizontal_loc + np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10,dr_total_power_minimum/10))*dx,(vertical_loc + np.abs(dr_total_power_minimum**2-np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10,dr_total_power_minimum/10)**2)**0.5)*dx,'k--')
-	plt.plot((horizontal_loc + np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10,dr_total_power_minimum/10))*dx,(vertical_loc - np.abs(dr_total_power_minimum**2-np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10,dr_total_power_minimum/10)**2)**0.5)*dx,'k--')
+	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10/2,dr/10))*dx,(vertical_loc + np.abs(dr**2-np.arange(-dr,+dr+dr/10/2,dr/10)**2)**0.5)*dx,'r--',label='found laser size')
+	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10/2,dr/10))*dx,(vertical_loc - np.abs(dr**2-np.arange(-dr,+dr+dr/10/2,dr/10)**2)**0.5)*dx,'r--')
+	plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10/2,dr_total_power/10))*dx,(vertical_loc + np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10/2,dr_total_power/10)**2)**0.5)*dx,'k--',label='area accounted for sum')
+	plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10/2,dr_total_power/10))*dx,(vertical_loc - np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10/2,dr_total_power/10)**2)**0.5)*dx,'k--')
+	plt.plot((horizontal_loc + np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10/2,dr_total_power_minimum/10))*dx,(vertical_loc + np.abs(dr_total_power_minimum**2-np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10/2,dr_total_power_minimum/10)**2)**0.5)*dx,'k--')
+	plt.plot((horizontal_loc + np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10/2,dr_total_power_minimum/10))*dx,(vertical_loc - np.abs(dr_total_power_minimum**2-np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10/2,dr_total_power_minimum/10)**2)**0.5)*dx,'k--')
 	plt.title(preamble_4_prints+'Power source shape in '+laser_to_analyse+'\n foil size '+str([foilhorizwpixel,foilvertwpixel])+'pixels, [%.3g,%.3g]mm\n laser located at [%.3g,%.3g]mm laser radious %.3gmm' %(foilhorizwpixel*dx*1e3,foilvertwpixel*dx*1e3,horizontal_loc*dx*1e3,vertical_loc*dx*1e3,dr*dx*1e3))
 	plt.xlabel('Horizontal axis [mm]')
 	plt.ylabel('Vertical axis [mm]')
@@ -981,12 +995,12 @@ def function_a(index):
 	plt.pcolor(h_coordinates,v_coordinates,generic_filter(time_averaged_diffusion_over_duty,np.mean,size=[3,3]),cmap='rainbow',vmax=0)#vmin=np.nanmin(time_averaged_diff_over_duty[select]),vmax=np.nanmax(time_averaged_diff_over_duty[select]))
 	plt.colorbar().set_label('Power [W/m2]')
 	# plt.errorbar(horizontal_loc*dx,vertical_loc*dx,xerr=dhorizontal_loc/2*dx,yerr=dvertical_loc/2*dx,color='k',linestyle='--')
-	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10,dr/10))*dx,(vertical_loc + np.abs(dr**2-np.arange(-dr,+dr+dr/10,dr/10)**2)**0.5)*dx,'r--',label='found laser size')
-	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10,dr/10))*dx,(vertical_loc - np.abs(dr**2-np.arange(-dr,+dr+dr/10,dr/10)**2)**0.5)*dx,'r--')
-	plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10))*dx,(vertical_loc + np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10)**2)**0.5)*dx,'k--',label='area accounted for sum')
-	plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10))*dx,(vertical_loc - np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10)**2)**0.5)*dx,'k--')
-	plt.plot((horizontal_loc + np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10,dr_total_power_minimum/10))*dx,(vertical_loc + np.abs(dr_total_power_minimum**2-np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10,dr_total_power_minimum/10)**2)**0.5)*dx,'k--')
-	plt.plot((horizontal_loc + np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10,dr_total_power_minimum/10))*dx,(vertical_loc - np.abs(dr_total_power_minimum**2-np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10,dr_total_power_minimum/10)**2)**0.5)*dx,'k--')
+	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10/2,dr/10))*dx,(vertical_loc + np.abs(dr**2-np.arange(-dr,+dr+dr/10/2,dr/10)**2)**0.5)*dx,'r--',label='found laser size')
+	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10/2,dr/10))*dx,(vertical_loc - np.abs(dr**2-np.arange(-dr,+dr+dr/10/2,dr/10)**2)**0.5)*dx,'r--')
+	plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10/2,dr_total_power/10))*dx,(vertical_loc + np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10/2,dr_total_power/10)**2)**0.5)*dx,'k--',label='area accounted for sum')
+	plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10/2,dr_total_power/10))*dx,(vertical_loc - np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10/2,dr_total_power/10)**2)**0.5)*dx,'k--')
+	plt.plot((horizontal_loc + np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10/2,dr_total_power_minimum/10))*dx,(vertical_loc + np.abs(dr_total_power_minimum**2-np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10/2,dr_total_power_minimum/10)**2)**0.5)*dx,'k--')
+	plt.plot((horizontal_loc + np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10/2,dr_total_power_minimum/10))*dx,(vertical_loc - np.abs(dr_total_power_minimum**2-np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10/2,dr_total_power_minimum/10)**2)**0.5)*dx,'k--')
 	plt.title(preamble_4_prints+'Diffusion component shape in '+laser_to_analyse+'\n foil size '+str([foilhorizwpixel,foilvertwpixel])+'pixels, [%.3g,%.3g]mm\n laser located at [%.3g,%.3g]mm laser radious %.3gmm' %(foilhorizwpixel*dx*1e3,foilvertwpixel*dx*1e3,horizontal_loc*dx*1e3,vertical_loc*dx*1e3,dr*dx*1e3))
 	plt.xlabel('Horizontal axis [mm]')
 	plt.ylabel('Vertical axis [mm]')
@@ -1000,12 +1014,12 @@ def function_a(index):
 	plt.pcolor(h_coordinates,v_coordinates,time_averaged_BBrad_over_duty,cmap='rainbow',vmax=BBtreshold*5)
 	plt.colorbar().set_label('Power [W/m2]')
 	# plt.errorbar(horizontal_loc*dx,vertical_loc*dx,xerr=dhorizontal_loc/2*dx,yerr=dvertical_loc/2*dx,color='k',linestyle='--')
-	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10,dr/10))*dx,(vertical_loc + np.abs(dr**2-np.arange(-dr,+dr+dr/10,dr/10)**2)**0.5)*dx,'r--',label='found laser size')
-	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10,dr/10))*dx,(vertical_loc - np.abs(dr**2-np.arange(-dr,+dr+dr/10,dr/10)**2)**0.5)*dx,'r--')
-	plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10))*dx,(vertical_loc + np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10)**2)**0.5)*dx,'k--',label='area accounted for sum')
-	plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10))*dx,(vertical_loc - np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10,dr_total_power/10)**2)**0.5)*dx,'k--')
-	plt.plot((horizontal_loc + np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10,dr_total_power_minimum/10))*dx,(vertical_loc + np.abs(dr_total_power_minimum**2-np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10,dr_total_power_minimum/10)**2)**0.5)*dx,'k--')
-	plt.plot((horizontal_loc + np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10,dr_total_power_minimum/10))*dx,(vertical_loc - np.abs(dr_total_power_minimum**2-np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10,dr_total_power_minimum/10)**2)**0.5)*dx,'k--')
+	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10/2,dr/10))*dx,(vertical_loc + np.abs(dr**2-np.arange(-dr,+dr+dr/10/2,dr/10)**2)**0.5)*dx,'r--',label='found laser size')
+	plt.plot((horizontal_loc + np.arange(-dr,+dr+dr/10/2,dr/10))*dx,(vertical_loc - np.abs(dr**2-np.arange(-dr,+dr+dr/10/2,dr/10)**2)**0.5)*dx,'r--')
+	plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10/2,dr_total_power/10))*dx,(vertical_loc + np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10/2,dr_total_power/10)**2)**0.5)*dx,'k--',label='area accounted for sum')
+	plt.plot((horizontal_loc + np.arange(-dr_total_power,+dr_total_power+dr_total_power/10/2,dr_total_power/10))*dx,(vertical_loc - np.abs(dr_total_power**2-np.arange(-dr_total_power,+dr_total_power+dr_total_power/10/2,dr_total_power/10)**2)**0.5)*dx,'k--')
+	plt.plot((horizontal_loc + np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10/2,dr_total_power_minimum/10))*dx,(vertical_loc + np.abs(dr_total_power_minimum**2-np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10/2,dr_total_power_minimum/10)**2)**0.5)*dx,'k--')
+	plt.plot((horizontal_loc + np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10/2,dr_total_power_minimum/10))*dx,(vertical_loc - np.abs(dr_total_power_minimum**2-np.arange(-dr_total_power_minimum,+dr_total_power_minimum+dr_total_power_minimum/10/2,dr_total_power_minimum/10)**2)**0.5)*dx,'k--')
 	plt.title(preamble_4_prints+'BB component shape in '+laser_to_analyse+'\n foil size '+str([foilhorizwpixel,foilvertwpixel])+'pixels, [%.3g,%.3g]mm\n laser located at [%.3g,%.3g]mm laser radious %.3gmm' %(foilhorizwpixel*dx*1e3,foilvertwpixel*dx*1e3,horizontal_loc*dx*1e3,vertical_loc*dx*1e3,dr*dx*1e3))
 	plt.xlabel('Horizontal axis [mm]')
 	plt.ylabel('Vertical axis [mm]')
