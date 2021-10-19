@@ -18,59 +18,125 @@ exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_indexing.py").r
 # import mkl
 # mkl.set_num_threads(number_cpu_available)
 
+if False:
+	fileshot=np.array([files16[2:],files14[5:]])
+	temperaturehot=np.array([temperature16[2:],temperature14[5:]])
+	filescold=np.array([files18[4:],files20[2:]])
+	temperaturecold=np.array([temperature18[4:],temperature20[2:]])
+	inttime=1.0	# ms
+	framerate=383	# Hz
+	n=3
+	pathparam='/home/ffederic/work/irvb/2021-01-06_multiple_search_for_parameters'
+	coleval.build_multiple_poly_coeff(temperaturehot,temperaturecold,fileshot,filescold,inttime,framerate,pathparam,n,function_to_use = coleval.build_poly_coeff_multi_digitizer)
+	coleval.build_average_poly_coeff_multi_digitizer(temperaturehot,temperaturecold,fileshot,filescold,inttime,framerate,pathparam,n)
 
-fileshot=np.array([files16[2:],files14[5:]])
-temperaturehot=np.array([temperature16[2:],temperature14[5:]])
-filescold=np.array([files18[4:],files20[2:]])
-temperaturecold=np.array([temperature18[4:],temperature20[2:]])
-inttime=1.0	# ms
-framerate=383	# Hz
-n=3
-pathparam='/home/ffederic/work/irvb/2021-01-06_multiple_search_for_parameters'
-coleval.build_multiple_poly_coeff(temperaturehot,temperaturecold,fileshot,filescold,inttime,framerate,pathparam,n,function_to_use = coleval.build_poly_coeff_multi_digitizer)
-coleval.build_average_poly_coeff_multi_digitizer(temperaturehot,temperaturecold,fileshot,filescold,inttime,framerate,pathparam,n)
 
+	fileshot=np.array([files15,files17])
+	temperaturehot=np.array([temperature15,temperature17])
+	filescold=np.array([files19,files21])
+	temperaturecold=np.array([temperature19,temperature21])
+	inttime=2.0	# ms
+	framerate=383	# Hz
+	n=3
+	pathparam='/home/ffederic/work/irvb/2021-01-06_multiple_search_for_parameters'
+	coleval.build_multiple_poly_coeff(temperaturehot,temperaturecold,fileshot,filescold,inttime,framerate,pathparam,n,function_to_use = coleval.build_poly_coeff_multi_digitizer)
+	coleval.build_average_poly_coeff_multi_digitizer(temperaturehot,temperaturecold,fileshot,filescold,inttime,framerate,pathparam,n)
 
-fileshot=np.array([files15,files17])
-temperaturehot=np.array([temperature15,temperature17])
-filescold=np.array([files19,files21])
-temperaturecold=np.array([temperature19,temperature21])
-inttime=2.0	# ms
-framerate=383	# Hz
-n=3
-pathparam='/home/ffederic/work/irvb/2021-01-06_multiple_search_for_parameters'
-coleval.build_multiple_poly_coeff(temperaturehot,temperaturecold,fileshot,filescold,inttime,framerate,pathparam,n,function_to_use = coleval.build_poly_coeff_multi_digitizer)
-coleval.build_average_poly_coeff_multi_digitizer(temperaturehot,temperaturecold,fileshot,filescold,inttime,framerate,pathparam,n)
+	fileshot=np.array([files22])
+	temperaturehot=np.array([temperature22])
+	filescold=np.array([files23])
+	temperaturecold=np.array([temperature23])
+	inttime=1.0	# ms
+	framerate=994	# Hz
+	n=3
+	pathparam='/home/ffederic/work/irvb/2021-01-06_multiple_search_for_parameters'
+	coleval.build_multiple_poly_coeff(temperaturehot,temperaturecold,fileshot,filescold,inttime,framerate,pathparam,n,function_to_use = coleval.build_poly_coeff_multi_digitizer)
+	coleval.build_average_poly_coeff_multi_digitizer(temperaturehot,temperaturecold,fileshot,filescold,inttime,framerate,pathparam,n)
 
-fileshot=np.array([files22])
-temperaturehot=np.array([temperature22])
-filescold=np.array([files23])
-temperaturecold=np.array([temperature23])
-inttime=1.0	# ms
-framerate=994	# Hz
-n=3
-pathparam='/home/ffederic/work/irvb/2021-01-06_multiple_search_for_parameters'
-coleval.build_multiple_poly_coeff(temperaturehot,temperaturecold,fileshot,filescold,inttime,framerate,pathparam,n,function_to_use = coleval.build_poly_coeff_multi_digitizer)
-coleval.build_average_poly_coeff_multi_digitizer(temperaturehot,temperaturecold,fileshot,filescold,inttime,framerate,pathparam,n)
+	fileshot=np.array([files24,files28])
+	temperaturehot=np.array([temperature24,temperature28])
+	filescold=np.array([files26,files30])
+	temperaturecold=np.array([temperature26,temperature30])
+	inttime=0.5	# ms
+	framerate=383	# Hz
+	n=3
+	pathparam='/home/ffederic/work/irvb/2021-01-06_multiple_search_for_parameters'
+	coleval.build_multiple_poly_coeff(temperaturehot,temperaturecold,fileshot,filescold,inttime,framerate,pathparam,n,function_to_use = coleval.build_poly_coeff_multi_digitizer)
+	coleval.build_average_poly_coeff_multi_digitizer(temperaturehot,temperaturecold,fileshot,filescold,inttime,framerate,pathparam,n)
 
-fileshot=np.array([files24,files28])
-temperaturehot=np.array([temperature24,temperature28])
-filescold=np.array([files26,files30])
-temperaturecold=np.array([temperature26,temperature30])
-inttime=0.5	# ms
-framerate=383	# Hz
-n=3
-pathparam='/home/ffederic/work/irvb/2021-01-06_multiple_search_for_parameters'
-coleval.build_multiple_poly_coeff(temperaturehot,temperaturecold,fileshot,filescold,inttime,framerate,pathparam,n,function_to_use = coleval.build_poly_coeff_multi_digitizer)
-coleval.build_average_poly_coeff_multi_digitizer(temperaturehot,temperaturecold,fileshot,filescold,inttime,framerate,pathparam,n)
+	fileshot=np.array([files25,files29])
+	temperaturehot=np.array([temperature25,temperature29])
+	filescold=np.array([files27,files31])
+	temperaturecold=np.array([temperature27,temperature31])
+	inttime=1.5	# ms
+	framerate=383	# Hz
+	n=3
+	pathparam='/home/ffederic/work/irvb/2021-01-06_multiple_search_for_parameters'
+	coleval.build_multiple_poly_coeff(temperaturehot,temperaturecold,fileshot,filescold,inttime,framerate,pathparam,n,function_to_use = coleval.build_poly_coeff_multi_digitizer)
+	coleval.build_average_poly_coeff_multi_digitizer(temperaturehot,temperaturecold,fileshot,filescold,inttime,framerate,pathparam,n)
 
-fileshot=np.array([files25,files29])
-temperaturehot=np.array([temperature25,temperature29])
-filescold=np.array([files27,files31])
-temperaturecold=np.array([temperature27,temperature31])
-inttime=1.5	# ms
-framerate=383	# Hz
-n=3
-pathparam='/home/ffederic/work/irvb/2021-01-06_multiple_search_for_parameters'
-coleval.build_multiple_poly_coeff(temperaturehot,temperaturecold,fileshot,filescold,inttime,framerate,pathparam,n,function_to_use = coleval.build_poly_coeff_multi_digitizer)
-coleval.build_average_poly_coeff_multi_digitizer(temperaturehot,temperaturecold,fileshot,filescold,inttime,framerate,pathparam,n)
+else:
+	# added 2021/09/25 to check if there is something wrong in the way I calculate the fir, in particular the covariance matrix
+	# IMPORTANT singificant error fixed in coleval.build_poly_coeff_multi_digitizer
+	# the estimated error in the fit was 3 orders of magnitude higher than reality
+	# additionally, calculating the properties in steps introduce massive errors when I average them. it's much better not do it!
+
+	fileshot=np.array([files16[2:],files14[5:]])
+	temperaturehot=np.array([temperature16[2:],temperature14[5:]])
+	filescold=np.array([files18[4:],files20[2:]])
+	temperaturecold=np.array([temperature18[4:],temperature20[2:]])
+	inttime=1.0	# ms
+	framerate=383	# Hz
+	n=3
+	pathparam='/home/ffederic/work/irvb/2021-09-25_multiple_search_for_parameters/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
+	if not os.path.exists(pathparam):
+		os.makedirs(pathparam)
+	coleval.build_poly_coeff_multi_digitizer(temperaturehot.tolist()+temperaturecold.tolist(),fileshot.tolist()+filescold.tolist(),inttime,pathparam,n)
+
+	fileshot=np.array([files15,files17])
+	temperaturehot=np.array([temperature15,temperature17])
+	filescold=np.array([files19,files21])
+	temperaturecold=np.array([temperature19,temperature21])
+	inttime=2.0	# ms
+	framerate=383	# Hz
+	n=3
+	pathparam='/home/ffederic/work/irvb/2021-09-25_multiple_search_for_parameters/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
+	if not os.path.exists(pathparam):
+		os.makedirs(pathparam)
+	coleval.build_poly_coeff_multi_digitizer(temperaturehot.tolist()+temperaturecold.tolist(),fileshot.tolist()+filescold.tolist(),inttime,pathparam,n)
+
+	fileshot=np.array([files22])
+	temperaturehot=np.array([temperature22])
+	filescold=np.array([files23])
+	temperaturecold=np.array([temperature23])
+	inttime=1.0	# ms
+	framerate=994	# Hz
+	n=3
+	pathparam='/home/ffederic/work/irvb/2021-09-25_multiple_search_for_parameters/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
+	if not os.path.exists(pathparam):
+		os.makedirs(pathparam)
+	coleval.build_poly_coeff_multi_digitizer(temperaturehot.tolist()+temperaturecold.tolist(),fileshot.tolist()+filescold.tolist(),inttime,pathparam,n)
+
+	fileshot=np.array([files24,files28])
+	temperaturehot=np.array([temperature24,temperature28])
+	filescold=np.array([files26,files30])
+	temperaturecold=np.array([temperature26,temperature30])
+	inttime=0.5	# ms
+	framerate=383	# Hz
+	n=3
+	pathparam='/home/ffederic/work/irvb/2021-09-25_multiple_search_for_parameters/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
+	if not os.path.exists(pathparam):
+		os.makedirs(pathparam)
+	coleval.build_poly_coeff_multi_digitizer(temperaturehot.tolist()+temperaturecold.tolist(),fileshot.tolist()+filescold.tolist(),inttime,pathparam,n)
+
+	fileshot=np.array([files25,files29])
+	temperaturehot=np.array([temperature25,temperature29])
+	filescold=np.array([files27,files31])
+	temperaturecold=np.array([temperature27,temperature31])
+	inttime=1.5	# ms
+	framerate=383	# Hz
+	n=3
+	pathparam='/home/ffederic/work/irvb/2021-09-25_multiple_search_for_parameters/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
+	if not os.path.exists(pathparam):
+		os.makedirs(pathparam)
+	coleval.build_poly_coeff_multi_digitizer(temperaturehot.tolist()+temperaturecold.tolist(),fileshot.tolist()+filescold.tolist(),inttime,pathparam,n)

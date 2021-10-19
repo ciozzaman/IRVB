@@ -74,10 +74,10 @@ else:
 	# name='IRVB-MASTU_shot-44578.ptw'
 	# i_day,day = 0,'2021-06-24'
 	# name='IRVB-MASTU_shot-44308.ptw'
-	# i_day,day = 0,'2021-08-13'
-	# name='IRVB-MASTU_shot-44677.ptw'
-	i_day,day = 0,'2021-09-01'
-	name='IRVB-MASTU_shot-44863.ptw'
+	i_day,day = 0,'2021-08-13'
+	name='IRVB-MASTU_shot-44677.ptw'
+	# i_day,day = 0,'2021-09-01'
+	# name='IRVB-MASTU_shot-44863.ptw'
 	laser_to_analyse=path+day+'/'+name
 
 shot_number = int(laser_to_analyse[-9:-4])
@@ -323,10 +323,13 @@ for grid_resolution in [8, 2]:
 	# this step is to adapt the matrix to the size of the foil I measure, that can be slightly different
 	binning_type = 'bin' + str(all_shrink_factor_t[0]) + 'x' + str(all_shrink_factor_x[0]) + 'x' + str(all_shrink_factor_x[0])
 	shape = list(np.array(saved_file_dict_short[binning_type].all()['powernoback_full'].shape[1:])+2)	# +2 spatially because I remove +/- 1 pixel when I calculate the laplacian of the temperature
-	shape.extend([len(grid_laplacian_masked)])
-	def mapping(output_coords):
-		return(output_coords[0]/shape[0]*pixel_h,output_coords[1]/shape[1]*pixel_v,output_coords[2])
-	sensitivities_reshaped_masked2 = geometric_transform(sensitivities_reshaped_masked,mapping,output_shape=shape)
+	if shape!=list(sensitivities_reshaped_masked.shape[:-1]):
+		shape.extend([len(grid_laplacian_masked)])
+		def mapping(output_coords):
+			return(output_coords[0]/shape[0]*pixel_h,output_coords[1]/shape[1]*pixel_v,output_coords[2])
+		sensitivities_reshaped_masked2 = geometric_transform(sensitivities_reshaped_masked,mapping,output_shape=shape)
+	else:
+		sensitivities_reshaped_masked2 = cp.deepcopy(sensitivities_reshaped_masked)
 	plt.figure()
 	plt.imshow(np.sum(sensitivities_reshaped_masked2,axis=-1),'rainbow',origin='lower')
 	plt.colorbar()
@@ -862,8 +865,21 @@ for grid_resolution in [8, 2]:
 					temp = np.abs(efit_reconstruction.time-time_full_binned[i_t]).argmin()
 					for i in range(len(all_time_sep_r[temp])):
 						plt.plot(r_fine[all_time_sep_r[temp][i]],z_fine[all_time_sep_z[temp][i]],'--b')
+					plt.plot(efit_reconstruction.lower_xpoint_r[temp],efit_reconstruction.lower_xpoint_z[temp],'xr')
+					plt.plot(efit_reconstruction.strikepointR[temp],efit_reconstruction.strikepointZ[temp],'xr')
 					plt.colorbar().set_label('emissivity [W/m3]')
 					plt.pause(0.01)
+					# tryong to group the emission based on EFIT
+					pos_start = (((r_fine[np.concatenate(all_time_sep_r[temp])]-efit_reconstruction.lower_xpoint_r[temp])**2+(z_fine[np.concatenate(all_time_sep_z[temp])]-efit_reconstruction.lower_xpoint_z[temp])**2)**0.5).argmin()
+					temp = 0
+					check = False
+					while check == False:
+						if pos_start<= len(all_time_sep_r[temp][temp])-1:
+							check = True
+						else:
+							pos_start -= len(all_time_sep_r[temp][temp])-1
+							temp +=1
+					
 
 					select = m<0
 					plt.figure()
@@ -876,7 +892,7 @@ for grid_resolution in [8, 2]:
 					plt.pause(0.01)
 
 					sensitivities_binned_crop_2 = cp.deepcopy(sensitivities_binned_crop.reshape(sensitivities_binned_crop_shape))
-					sensitivities_binned_crop_2[:,:,m>m.min()/10] = 0
+					sensitivities_binned_crop_2[:,:,m>m.min()/1.00001] = 0
 
 					plt.figure()
 					plt.imshow(np.flip(np.transpose(np.sum(sensitivities_binned_crop_2,axis=-1),(1,0)),axis=1),'rainbow',origin='lower')

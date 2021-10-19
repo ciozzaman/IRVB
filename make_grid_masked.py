@@ -34,9 +34,10 @@ import cherab.mastu.bolometry.grid_construction
 is_this_extra = False
 averaging = 6
 
-for averaging in [7,8,9,10,15]:
+# for averaging in [7,8,9,10,15]:
+for averaging in [1]:
 	for is_this_extra in [True,False]:
-		grid_resolution = 2  # in cm
+		grid_resolution = 4  # in cm
 		with_noise = True
 		foil_resolution_max = 187
 		weigthed_best_search = True

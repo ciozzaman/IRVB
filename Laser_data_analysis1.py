@@ -43,7 +43,7 @@ if False:	# manual collection of parameters
 	all_focus_status=coleval.flatten(all_focus_status)
 	all_path_reference_frames=coleval.flatten(all_path_reference_frames)
 else:	# automatic collection of parameters
-	cases_to_include = ['laser15','laser16','laser17','laser18','laser19','laser20','laser21','laser22','laser23','laser24','laser25','laser26','laser27','laser28','laser29','laser30','laser31','laser32','laser33','laser34','laser35','laser36','laser37','laser38','laser39','laser41','laser42','laser43','laser44','laser45','laser46','laser47']
+	cases_to_include = ['laser22','laser25','laser34','laser15','laser16','laser17','laser18','laser19','laser20','laser21','laser23','laser24','laser26','laser27','laser28','laser29','laser30','laser31','laser32','laser33','laser35','laser36','laser37','laser38','laser39','laser41','laser42','laser43','laser44','laser45','laser46','laser47']
 	# cases_to_include = ['laser39','laser41','laser42','laser43','laser44','laser45','laser46','laser47']
 	# cases_to_include = ['laser34','laser35','laser36','laser37','laser38','laser39']
 	# cases_to_include = ['laser35']
@@ -119,7 +119,7 @@ sample_properties['emissivity'] = 1
 sample_properties['diffusivity'] = 1.03*1e-5
 # BBtreshold = 0.06
 # BBtreshold = 0.13
-BBtreshold = 0.1
+# BBtreshold = 0.05 this is now defined dinamically
 
 def function_a(index):
 	from uncertainties.unumpy import nominal_values,std_devs
@@ -836,6 +836,7 @@ def function_a(index):
 	for value in np.arange(2,limit-10):
 		select2 = np.logical_and( (((horizontal_coord-horizontal_loc)**2 + (vertical_coord-vertical_loc)**2)<=(value+2)**2)[1:-1,1:-1] , (((horizontal_coord-horizontal_loc)**2 + (vertical_coord-vertical_loc)**2)>value**2)[1:-1,1:-1] )
 		test.append(np.nanmean(time_averaged_BBrad_over_duty[select2])-np.nanmean(time_averaged_BBrad_over_duty[select1]))
+	BBtreshold = min(0.05,3*np.max(np.abs(np.array(test)[-5:])))
 	dr_total_power_BB = np.arange(2,limit-10)[np.abs(np.array(test)-BBtreshold).argmin()]
 	ax[0,0].plot(np.arange(2,limit-10)*dx,test)
 	ax[0,0].axhline(y=BBtreshold,linestyle='--',color='k',label='treshold')

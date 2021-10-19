@@ -98,7 +98,7 @@ class RangeSlider(QWidget):
 		self.maximum - self.minimum)
 		self.right = self.minimum + (float(value[2]) / (self.slider.maximum() - self.slider.minimum())) * (
 		self.maximum - self.minimum)
-		self.label.setText('shot '+str(self.shotID)+' from%.4g to %.4g ms : %.4g ms' %(1e3*time_array[int(self.left)],1e3*time_array[int(self.right)],1e3*time_array[int(self.x)]))
+		self.label.setText('shot '+str(self.shotID)+' from%.4g to %.4g ms : %.4g ms' %(1e3*time_array[round(self.left)],1e3*time_array[round(self.right)],1e3*time_array[round(self.x)]))
 
 
 app = pg.mkQApp()
@@ -202,6 +202,9 @@ structure_point_location_on_foil = coleval.return_structure_point_location_on_fo
 core_tangential_location_on_foil = coleval.return_core_tangential_location_on_foil()
 core_poloidal_location_on_foil = coleval.return_core_poloidal_location_on_foil()
 divertor_poloidal_location_on_foil = coleval.return_divertor_poloidal_location_on_foil()
+structure_radial_profile = coleval.return_structure_radial_profile()
+core_poloidal = coleval.return_core_poloidal()
+divertor_poloidal = coleval.return_divertor_poloidal()
 foil_size = [0.07,0.09]
 
 # # image1
@@ -239,7 +242,7 @@ d6.addWidget(w6)
 
 
 
-quantity_options = {'counts [au]': 'counts', 'FAST counts [au]': 'FAST_counts_minus_background_crop', 'FAST power [W/m2]': 'FAST_powernoback', 'FAST brightness [W/m2]': 'FAST_brightness', "Temperature [°C]": 'laser_temperature_crop_binned_full', "Relative temp [K]": 'laser_temperature_minus_background_crop_binned_full', "tot power [W/m2]": 'powernoback_full', "BB power [W/m2]": 'BBrad_full', "diff power [W/m2]": 'diffusion_full', "dt power [W/m2]": 'timevariation_full', "brightness [W/m2]": 'brightness_full'}
+quantity_options = {'counts [au]': 'counts', 'FAST counts [au]': 'FAST_counts_minus_background_crop', 'FAST power [W/m2]': 'FAST_powernoback', 'FAST brightness [W/m2]': 'FAST_brightness', 'FAST foil fit [W/m2]': 'FAST/inverted/fitted_foil_power', 'FAST foil fit error [W/m2]': 'FAST/inverted/fit_error', 'FAST emissivity [W/m3]': 'FAST/inverted/inverted_data', "Temperature [°C]": 'laser_temperature_crop_binned_full', "Relative temp [K]": 'laser_temperature_minus_background_crop_binned_full', "tot power [W/m2]": 'powernoback_full', "tot power std [W/m2]": 'powernoback_std_full', "BB power [W/m2]": 'BBrad_full', "diff power [W/m2]": 'diffusion_full', "dt power [W/m2]": 'timevariation_full', "brightness [W/m2]": 'brightness_full', "fitted power [W/m2]": 'fitted_foil_power', "fitted power residuals [W/m2]": 'foil_power_residuals'}
 
 # creating all the flags and accessories needed
 params = [
@@ -254,9 +257,9 @@ params = [
 		{'name': 'ROI cyan ver', 'type': 'int', 'value': 10},
 		{'name': 'ROI cyan d ver', 'type': 'int', 'value': 10},
 		# {'name': 'ROI cyan angle', 'type': 'int', 'value': 0},
-		{'name': 'Time start [ms]', 'type': 'float', 'value': time_array[int(w2.left)]*1e3, 'step': 1/framerate*1e3, 'finite': False},
-		{'name': 'Time end [ms]', 'type': 'float', 'value': time_array[int(w2.right)]*1e3, 'step': 1/framerate*1e3, 'finite': False},
-		{'name': 'Time [ms]', 'type': 'float', 'value': time_array[int(w2.x)]*1e3, 'step': 1/framerate*1e3, 'finite': False},
+		{'name': 'Time start [ms]', 'type': 'float', 'value': time_array[int(w2.left)]*1e3, 'step': 1, 'finite': False},
+		{'name': 'Time end [ms]', 'type': 'float', 'value': time_array[int(w2.right)]*1e3, 'step': 1, 'finite': False},
+		{'name': 'Time [ms]', 'type': 'float', 'value': time_array[int(w2.x)]*1e3, 'step': 1, 'finite': False},
 		{'name': 'Histogram auto', 'type': 'bool', 'value': True, 'tip': "This is a checkbox"},
 		{'name': 'Hist lev high', 'type': 'float', 'value': histogram_level_high, 'step': np.min(np.diff(np.sort(data.flatten()))), 'finite': False},
 		{'name': 'Hist lev low', 'type': 'float', 'value': histogram_level_low, 'step': np.min(np.diff(np.sort(data.flatten()))), 'finite': False},
@@ -264,6 +267,7 @@ params = [
 	{'name': 'Set display', 'type': 'group', 'children': [
 		{'name': 'Quantity', 'type': 'list', 'values': quantity_options, 'value': 'FAST_counts_minus_background_crop'},
 		{'name': 'Binning', 'type': 'list', 'values': {'bin1x1x1': 'bin1x1x1', 'bin1x3x3': 'bin1x3x3', 'bin1x5x5': 'bin1x5x5', "bin1x10x10": 'bin1x10x10', "bin2x1x1": 'bin2x1x1', "bin2x3x3": 'bin2x3x3', "bin2x5x5": 'bin2x5x5', "bin2x10x10": 'bin2x10x10', "bin3x1x1": 'bin3x1x1', "bin3x3x3": 'bin3x3x3', "bin3x5x5": 'bin3x5x5', "bin3x10x10": 'bin3x10x10', "bin5x1x1": 'bin5x1x1', "bin5x3x3": 'bin5x3x3', "bin5x5x5": 'bin5x5x5', "bin5x10x10": 'bin5x10x10'}, 'value': 1},
+		{'name': 'Voxel res', 'type': 'list', 'values': {'2': '2', '4': '4'}, 'value': '4'},
 		{'name': 'Load data', 'type': 'action'},
 		{'name': 'Load EFIT', 'type': 'action'},
 		{'name': 'Play', 'type': 'action'},
@@ -292,7 +296,7 @@ param_ext1 = Parameter.create(name='params', type='group', children=params1)
 
 ## If anything changes in the tree, print a message
 def change(param, changes):
-	global histogram_level_low,histogram_level_high,overlay_structure,overlay_fueling_point,overlay_x_point,overlay_mag_axis,overlay_strike_points_1,overlay_strike_points_2,overlay_separatrix,overlay_Core_Resistive_bol,overlay_Div_Resistive_bol,efit_reconstruction,all_time_mag_axis_location,all_time_x_point_location,all_time_strike_points_location,all_time_strike_points_location_rot,all_time_separatrix,time_array
+	global histogram_level_low,histogram_level_high,overlay_structure,overlay_fueling_point,overlay_x_point,overlay_mag_axis,overlay_strike_points_1,overlay_strike_points_2,overlay_separatrix,overlay_Core_Resistive_bol,overlay_Div_Resistive_bol,efit_reconstruction,all_time_mag_axis_location,all_time_x_point_location,all_time_strike_points_location,all_time_strike_points_location_rot,all_time_separatrix,time_array,flag_radial_profile,all_time_sep_r,all_time_sep_z,r_fine,z_fine
 	print("tree changes:")
 	for param, change, data in changes:
 		path = param_ext.childPath(param)
@@ -315,15 +319,17 @@ def change(param, changes):
 	hist.setLevels(histogram_level_high,histogram_level_low)
 	# hist.sigLevelChangeFinished.emit(True)
 	if param_ext['Overlays','Structure']==False:
-		for i in range(len(overlay_fueling_point)):
-			overlay_fueling_point[i].setAlpha(0,False)
 		for i in range(len(overlay_structure)):
 			overlay_structure[i].setAlpha(0,False)
 	else:
-		for i in range(len(overlay_fueling_point)):
-			overlay_fueling_point[i].setAlpha(0.5,False)
 		for i in range(len(overlay_structure)):
 			overlay_structure[i].setAlpha(0.5,False)
+	if param_ext['Overlays','Structure']==False or flag_radial_profile:
+		for i in range(len(overlay_fueling_point)):
+			overlay_fueling_point[i].setAlpha(0,False)
+	else:
+		for i in range(len(overlay_fueling_point)):
+			overlay_fueling_point[i].setAlpha(0.5,False)
 	if param_ext['Overlays','Core Resistive bol']==False:
 		for i in range(len(overlay_Core_Resistive_bol)):
 			overlay_Core_Resistive_bol[i].setAlpha(0,False)
@@ -338,32 +344,56 @@ def change(param, changes):
 			overlay_Div_Resistive_bol[i].setAlpha(1,False)
 	try:
 		if (param_ext['Overlays','Mag axis'] or param_ext['Overlays','X-point'] or param_ext['Overlays','Separatrix']):
-			i_time = np.abs(time_array[int(w2.x)]-efit_reconstruction.time).argmin()
+			i_time = np.abs(time_array[round(w2.x)]-efit_reconstruction.time).argmin()
 		if param_ext['Overlays','Mag axis']==False:
 			overlay_mag_axis.setAlpha(0,False)
-		else:
-			overlay_mag_axis.setData(all_time_mag_axis_location[i_time][:,0]*(data_shape[1]-1)/foil_size[0],all_time_mag_axis_location[i_time][:,1]*(data_shape[2]-1)/foil_size[1])
-			overlay_mag_axis.setAlpha(1,False)
 		if param_ext['Overlays','X-point']==False:
 			overlay_x_point.setAlpha(0,False)
+		if flag_radial_profile:
+			if param_ext['Overlays','Mag axis']==True:
+				overlay_mag_axis.setData([efit_reconstruction.mag_axis_r[i_time]],[efit_reconstruction.mag_axis_z[i_time]])
+				overlay_mag_axis.setAlpha(1,False)
+			if param_ext['Overlays','X-point']==True:
+				overlay_x_point.setData([efit_reconstruction.lower_xpoint_r[i_time]],[efit_reconstruction.lower_xpoint_z[i_time]])
+				overlay_x_point.setAlpha(1,False)
+			if param_ext['Overlays','Separatrix']==False:
+				overlay_strike_points_1.setAlpha(0,False)
+				# for __i in range(len(overlay_strike_points_2)):
+				# 	overlay_strike_points_2[__i].setAlpha(0,False)
+				for __i in range(len(overlay_separatrix)):
+					overlay_separatrix[__i].setAlpha(0,False)
+			else:
+				temp = efit_reconstruction.strikepointR[i_time]>0.1	# to avoid that strike points apre placed at 0,0
+				overlay_strike_points_1.setData(efit_reconstruction.strikepointR[i_time][temp].tolist()*2,efit_reconstruction.strikepointZ[i_time][temp].tolist()+(-efit_reconstruction.strikepointZ[i_time][temp]).tolist())
+				overlay_strike_points_1.setAlpha(1,False)
+				# for __i in range(len(overlay_strike_points_2)):
+				# 	overlay_strike_points_2[__i].setData(all_time_strike_points_location_rot[i_time][__i][:,0]*(data_shape[1]-1)/foil_size[0],all_time_strike_points_location_rot[i_time][__i][:,1]*(data_shape[2]-1)/foil_size[1])
+				# 	overlay_strike_points_2[__i].setAlpha(1,False)
+				for __i in range(len(overlay_separatrix)):
+					overlay_separatrix[__i].setData(r_fine[all_time_sep_r[i_time][__i]],z_fine[all_time_sep_z[i_time][__i]])
+					overlay_separatrix[__i].setAlpha(1,False)
 		else:
-			overlay_x_point.setData(all_time_x_point_location[i_time][:,0]*(data_shape[1]-1)/foil_size[0],all_time_x_point_location[i_time][:,1]*(data_shape[2]-1)/foil_size[1])
-			overlay_x_point.setAlpha(1,False)
-		if param_ext['Overlays','Separatrix']==False:
-			overlay_strike_points_1.setAlpha(0,False)
-			for __i in range(len(overlay_strike_points_2)):
-				overlay_strike_points_2[__i].setAlpha(0,False)
-			for __i in range(len(overlay_separatrix)):
-				overlay_separatrix[__i].setAlpha(0,False)
-		else:
-			overlay_strike_points_1.setData(all_time_strike_points_location[i_time][:,0]*(data_shape[1]-1)/foil_size[0],all_time_strike_points_location[i_time][:,1]*(data_shape[2]-1)/foil_size[1])
-			overlay_strike_points_1.setAlpha(1,False)
-			for __i in range(len(overlay_strike_points_2)):
-				overlay_strike_points_2[__i].setData(all_time_strike_points_location_rot[i_time][__i][:,0]*(data_shape[1]-1)/foil_size[0],all_time_strike_points_location_rot[i_time][__i][:,1]*(data_shape[2]-1)/foil_size[1])
-				overlay_strike_points_2[__i].setAlpha(1,False)
-			for __i in range(len(overlay_separatrix)):
-				overlay_separatrix[__i].setData(all_time_separatrix[i_time][__i][:,0]*(data_shape[1]-1)/foil_size[0],all_time_separatrix[i_time][__i][:,1]*(data_shape[2]-1)/foil_size[1])
-				overlay_separatrix[__i].setAlpha(1,False)
+			if param_ext['Overlays','Mag axis']==True:
+				overlay_mag_axis.setData(all_time_mag_axis_location[i_time][:,0]*(data_shape[1]-1)/foil_size[0],all_time_mag_axis_location[i_time][:,1]*(data_shape[2]-1)/foil_size[1])
+				overlay_mag_axis.setAlpha(1,False)
+			if param_ext['Overlays','X-point']==True:
+				overlay_x_point.setData(all_time_x_point_location[i_time][:,0]*(data_shape[1]-1)/foil_size[0],all_time_x_point_location[i_time][:,1]*(data_shape[2]-1)/foil_size[1])
+				overlay_x_point.setAlpha(1,False)
+			if param_ext['Overlays','Separatrix']==False:
+				overlay_strike_points_1.setAlpha(0,False)
+				for __i in range(len(overlay_strike_points_2)):
+					overlay_strike_points_2[__i].setAlpha(0,False)
+				for __i in range(len(overlay_separatrix)):
+					overlay_separatrix[__i].setAlpha(0,False)
+			else:
+				overlay_strike_points_1.setData(all_time_strike_points_location[i_time][:,0]*(data_shape[1]-1)/foil_size[0],all_time_strike_points_location[i_time][:,1]*(data_shape[2]-1)/foil_size[1])
+				overlay_strike_points_1.setAlpha(1,False)
+				for __i in range(len(overlay_strike_points_2)):
+					overlay_strike_points_2[__i].setData(all_time_strike_points_location_rot[i_time][__i][:,0]*(data_shape[1]-1)/foil_size[0],all_time_strike_points_location_rot[i_time][__i][:,1]*(data_shape[2]-1)/foil_size[1])
+					overlay_strike_points_2[__i].setAlpha(1,False)
+				for __i in range(len(overlay_separatrix)):
+					overlay_separatrix[__i].setData(all_time_separatrix[i_time][__i][:,0]*(data_shape[1]-1)/foil_size[0],all_time_separatrix[i_time][__i][:,1]*(data_shape[2]-1)/foil_size[1])
+					overlay_separatrix[__i].setAlpha(1,False)
 	except:
 		print('no legacy plots')
 
@@ -437,10 +467,10 @@ def export_video():
 	end_time = np.abs(param_ext['ROI', 'Time end [ms]']*1e-3-time_array).argmin()
 
 	barlabel=list(quantity_options.keys())[(param_ext['Set display','Quantity']==np.array(list(quantity_options.values()))).argmax()]
-	ani = coleval.movie_from_data(np.array([np.flip(np.transpose(np.flip(data,axis=1)[start_time:end_time],(0,2,1)),axis=2)]), framerate,integration=1,time_offset=time_array[start_time],extvmin=histogram_level_low,extvmax=histogram_level_high,xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel=barlabel, prelude='shot ' + w2.shotID + '\n'+param_ext['Set display','Binning']+'\n',overlay_structure=param_ext['Overlays','Structure'],include_EFIT=True,pulse_ID=w2.shotID,overlay_x_point=param_ext['Overlays','X-point'],overlay_mag_axis=param_ext['Overlays','Mag axis'],overlay_strike_points=param_ext['Overlays','Separatrix'],overlay_separatrix=param_ext['Overlays','Separatrix'])
+	ani = coleval.movie_from_data(np.array([np.flip(np.transpose(np.flip(data,axis=1)[start_time:end_time],(0,2,1)),axis=2)]), framerate,timesteps=time_array[start_time:end_time],integration=1,time_offset=time_array[start_time],extvmin=histogram_level_low,extvmax=histogram_level_high,xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel=barlabel, prelude='shot ' + w2.shotID + '\n'+str(param_ext['Set display','Binning'])+'\n',overlay_structure=param_ext['Overlays','Structure'],include_EFIT=True,pulse_ID=w2.shotID,overlay_x_point=param_ext['Overlays','X-point'],overlay_mag_axis=param_ext['Overlays','Mag axis'],overlay_strike_points=param_ext['Overlays','Separatrix'],overlay_separatrix=param_ext['Overlays','Separatrix'])
 	ani.save(param_ext1['File Path'] + '_export_' + str(next_export) + '.mp4', fps=5*framerate/383, writer='ffmpeg',codec='mpeg4')
 	plt.close('all')
-	print(param_ext1['File Path'] + '_export_' + str(next_export) + '.mp4 generated')
+	print('\n'+'\n'+param_ext1['File Path'] + '_export_' + str(next_export) + '.mp4 generated'+'\n'+'\n')
 
 
 param_ext.param('Set display','Play').sigActivated.connect(start_video)
@@ -455,19 +485,21 @@ def NavigatePath():
 	laser_to_analyse=dialog.getOpenFileName(caption="Open the short archive", filter="Archive file (*.npz)", directory="/home/ffederic/work/irvb/MAST-U")[0][:-4]
 	if laser_to_analyse[-5:] == 'short':
 		laser_to_analyse = laser_to_analyse[:-6]
+	elif laser_to_analyse[-4:] == 'FAST':
+		laser_to_analyse = laser_to_analyse[:-5]
 	print(laser_to_analyse)
 	param_ext1['File Path'] = laser_to_analyse
 	w2.shotID = laser_to_analyse[-5:]
 	# p6.setTitle(title="shot " + str(w2.shotID))
-	Load_EFIT()
+	# Load_EFIT()
 	Load()
 
 def Load_EFIT():
-	global all_time_x_point_location,all_time_mag_axis_location,all_time_strike_points_location,all_time_strike_points_location_rot,all_time_separatrix,efit_reconstruction
+	global all_time_x_point_location,all_time_mag_axis_location,all_time_strike_points_location,all_time_strike_points_location_rot,all_time_separatrix,efit_reconstruction,all_time_sep_r,all_time_sep_z,r_fine,z_fine
 	try:
 		EFIT_path_default = '/common/uda-scratch/lkogan/efitpp_eshed'
 		print('reading '+EFIT_path_default+'/epm0'+str(w2.shotID)+'.nc')
-		efit_reconstruction = coleval.mclass(EFIT_path_default+'/epm0'+str(w2.shotID)+'.nc')
+		efit_reconstruction = coleval.mclass(EFIT_path_default+'/epm0'+str(w2.shotID)+'.nc',w2.shotID)
 		all_time_x_point_location = coleval.return_all_time_x_point_location(efit_reconstruction)
 		all_time_mag_axis_location = coleval.return_all_time_mag_axis_location(efit_reconstruction)
 		all_time_sep_r,all_time_sep_z,r_fine,z_fine = coleval.efit_reconstruction_to_separatrix_on_foil(efit_reconstruction)
@@ -476,6 +508,7 @@ def Load_EFIT():
 		param_ext['Overlays', 'Mag axis'] = True
 		param_ext['Overlays', 'X-point'] = True
 		param_ext['Overlays', 'Separatrix'] = True
+		initialise_plots_from_EFIT()
 	except Exception as e:
 		print('reading EFIT of '+str(w2.shotID)+' failed')
 		logging.exception('with error: ' + str(e))
@@ -485,8 +518,10 @@ def Load_EFIT():
 
 
 update_plot_inhibit = False
+flag_radial_profile = False
 def Load():
-	global data,framerate,time_array,overlay_fueling_point,overlay_structure,overlay_x_point,overlay_mag_axis,overlay_strike_points_1,overlay_strike_points_2,overlay_separatrix,overlay_Core_Resistive_bol,overlay_Div_Resistive_bol,data_shape,etendue,update_plot_inhibit
+	global data,framerate,time_array,overlay_fueling_point,overlay_structure,overlay_x_point,overlay_mag_axis,overlay_strike_points_1,overlay_strike_points_2,overlay_separatrix,overlay_Core_Resistive_bol,overlay_Div_Resistive_bol,data_shape,etendue,update_plot_inhibit,flag_radial_profile,efit_reconstruction
+	flag_radial_profile = False
 	update_plot_inhibit = True
 	print(param_ext1['File Path'])
 	if param_ext['Set display','Quantity'] == 'counts':
@@ -506,19 +541,45 @@ def Load():
 		# etendue = laser_dict['bin1x1x1'].all()['etendue']
 		param_ext['Set display','Binning'] = 'bin1x1x1'
 	elif param_ext['Set display','Quantity'][:4] == 'FAST':
-		if os.path.exists(param_ext1['File Path']+'_FAST.npz'):
+		if param_ext['Set display','Quantity'][:13] == 'FAST/inverted':
+			to_load = param_ext['Set display','Quantity'][14:]
 			laser_dict = np.load(param_ext1['File Path']+'_FAST.npz')
 			laser_dict.allow_pickle=True
-			data = laser_dict[param_ext['Set display','Quantity']]
-			time_array = laser_dict['FAST_time_binned']
-			param_ext['Set display','Binning'] = laser_dict['FAST_binning_type']
+			data = laser_dict['inverted_dict'].all()[param_ext['Set display','Voxel res']][to_load]
+			data[np.isnan(data)] = 0
+			data = np.flip(data,axis=1)
+			time_array = laser_dict['inverted_dict'].all()[param_ext['Set display','Voxel res']]['time_full_binned_crop']
+			param_ext['Set display','Binning'] = laser_dict['inverted_dict'].all()[param_ext['Set display','Voxel res']]['binning_type']
+			inversion_R = laser_dict['inverted_dict'].all()[param_ext['Set display','Voxel res']]['geometry']['R']
+			inversion_Z = laser_dict['inverted_dict'].all()[param_ext['Set display','Voxel res']]['geometry']['Z']
+			dr = np.median(np.diff(inversion_R))
+			dz = np.median(np.diff(inversion_Z))
+			if to_load == 'inverted_data':
+				# data = np.transpose(data,(0,2,1))
+				flag_radial_profile = True
 		else:
-			laser_dict = np.load(param_ext1['File Path']+'.npz')
-			laser_dict.allow_pickle=True
-			data = laser_dict['only_foil'].all()[param_ext['Set display','Quantity']]
-			time_array = laser_dict['only_foil'].all()['FAST_time_binned']
-			param_ext['Set display','Binning'] = laser_dict['only_foil'].all()['FAST_binning_type']
-		framerate = 1/np.mean(time_array)
+			if os.path.exists(param_ext1['File Path']+'_FAST.npz'):
+				laser_dict = np.load(param_ext1['File Path']+'_FAST.npz')
+				laser_dict.allow_pickle=True
+				data = laser_dict[param_ext['Set display','Quantity']]
+				time_array = laser_dict['FAST_time_binned']
+				param_ext['Set display','Binning'] = laser_dict['FAST_binning_type']
+			else:
+				laser_dict = np.load(param_ext1['File Path']+'.npz')
+				laser_dict.allow_pickle=True
+				data = laser_dict['only_foil'].all()[param_ext['Set display','Quantity']]
+				time_array = laser_dict['only_foil'].all()['FAST_time_binned']
+				param_ext['Set display','Binning'] = laser_dict['only_foil'].all()['FAST_binning_type']
+		framerate = 1/np.median(time_array)
+	elif param_ext['Set display','Quantity'] in ['fitted_foil_power','foil_power_residuals']:
+		laser_dict = np.load(param_ext1['File Path']+'_inverted_baiesian.npz')
+		laser_dict.allow_pickle=True
+		shrink_factor_t = param_ext['Set display','Binning'][3:param_ext['Set display','Binning'].find('x')]
+		shrink_factor_x = param_ext['Set display','Binning'][param_ext['Set display','Binning'].find('x')+1:param_ext['Set display','Binning'].find('x')+1+param_ext['Set display','Binning'][param_ext['Set display','Binning'].find('x')+1:].find('x')]
+		data = laser_dict[param_ext['Set display','Voxel res']].all()[str(shrink_factor_x)][str(shrink_factor_t)][param_ext['Set display','Quantity']]
+		# etendue = laser_dict[param_ext['Set display','Binning']].all()['etendue']
+		time_array = laser_dict[param_ext['Set display','Voxel res']].all()[str(shrink_factor_x)][str(shrink_factor_t)]['time_full_binned_crop']
+		framerate = 1/np.median(time_array)
 	else:
 		laser_dict = np.load(param_ext1['File Path']+'_short.npz')
 		laser_dict.allow_pickle=True
@@ -530,17 +591,22 @@ def Load():
 	data_shape = np.shape(data)
 	image1.setImage(data[0])
 	isoLine.setValue(np.mean(data[0]))
-	image_frame.setData([0,data_shape[1],data_shape[1],0,0],[0,0,data_shape[2],data_shape[2],0])
-	param_ext['ROI', 'ROI magenta hor'],param_ext['ROI', 'ROI magenta ver'] = np.shape(image1.image)[0]*3//8, np.shape(image1.image)[1]*3//8
-	param_ext['ROI', 'ROI magenta d hor'],param_ext['ROI', 'ROI magenta d ver'] = np.shape(image1.image)[0]//4, np.shape(image1.image)[1]//4
-	param_ext['ROI', 'ROI cyan hor'],param_ext['ROI', 'ROI cyan ver'] = np.shape(image1.image)[0]*1//8, np.shape(image1.image)[1]*1//8
-	param_ext['ROI', 'ROI cyan d hor'],param_ext['ROI', 'ROI cyan d ver'] = np.shape(image1.image)[0]//4, np.shape(image1.image)[1]//4
+	if flag_radial_profile:
+		image1.setRect(QtCore.QRectF(inversion_R.min()-dr/2,inversion_Z.min()-dz/2,len(inversion_R)*dr,len(inversion_Z)*dz))
+		image1.setBorder('b')
+		image_frame.setData([inversion_R.min()-dr/2,inversion_R.max()+dr/2,inversion_R.max()+dr/2,inversion_R.min()-dr/2,inversion_R.min()-dr/2],[inversion_Z.min()-dz/2,inversion_Z.min()-dz/2,inversion_Z.max()+dz/2,inversion_Z.max()+dz/2,inversion_Z.min()-dz/2])
+	else:
+		image_frame.setData([0,data_shape[1],data_shape[1],0,0],[0,0,data_shape[2],data_shape[2],0])
+		param_ext['ROI', 'ROI magenta hor'],param_ext['ROI', 'ROI magenta ver'] = np.shape(image1.image)[0]*3//8, np.shape(image1.image)[1]*3//8
+		param_ext['ROI', 'ROI magenta d hor'],param_ext['ROI', 'ROI magenta d ver'] = np.shape(image1.image)[0]//4, np.shape(image1.image)[1]//4
+		param_ext['ROI', 'ROI cyan hor'],param_ext['ROI', 'ROI cyan ver'] = np.shape(image1.image)[0]*1//8, np.shape(image1.image)[1]*1//8
+		param_ext['ROI', 'ROI cyan d hor'],param_ext['ROI', 'ROI cyan d ver'] = np.shape(image1.image)[0]//4, np.shape(image1.image)[1]//4
 	w2.minimum = 0
 	w2.maximum = len(data)-1
 	w2.slider.setMinimum(w2.minimum)
 	w2.slider.setMaximum(w2.maximum)
 	param_ext['ROI', 'Time start [ms]'] = time_array[0]*1e3
-	param_ext['ROI', 'Time [ms]'] = np.mean(time_array)*1e3
+	param_ext['ROI', 'Time [ms]'] = np.median(time_array)*1e3
 	param_ext['ROI', 'Time end [ms]'] = time_array[-1]*1e3
 	param_ext['ROI', 'Histogram auto'] = True
 	param_ext.children()[0].children()[8].setProperty('step',np.min(np.diff(np.sort(data.flatten()))))
@@ -560,6 +626,7 @@ def Load():
 		overlay_mag_axis.setAlpha(0,False)
 		overlay_mag_axis.setData([],[])
 		del overlay_mag_axis
+		print('del overlay_mag_axis')
 		overlay_strike_points_1.setAlpha(0,False)
 		overlay_strike_points_1.setData([],[])
 		del overlay_strike_points_1
@@ -571,6 +638,7 @@ def Load():
 			overlay_separatrix[i].setAlpha(0,False)
 			overlay_separatrix[i].setData([],[])
 		del overlay_separatrix
+		print('del overlay_separatrix')
 		for i in range(len(overlay_Core_Resistive_bol)):
 			overlay_Core_Resistive_bol[i].setAlpha(0,False)
 			overlay_Core_Resistive_bol[i].setData([],[])
@@ -586,83 +654,133 @@ def Load():
 		overlay_fueling_point.append(p5.plot(np.array(fueling_point_location_on_foil[i][:,0])*(data_shape[1]-1)/foil_size[0],np.array(fueling_point_location_on_foil[i][:,1])*(data_shape[2]-1)/foil_size[1],symbolBrush='g',symbolPen='g',symbol='+',symbolSize=20))
 		overlay_fueling_point.append(p5.plot(np.array(fueling_point_location_on_foil[i][:,0])*(data_shape[1]-1)/foil_size[0],np.array(fueling_point_location_on_foil[i][:,1])*(data_shape[2]-1)/foil_size[1],symbolBrush='g',symbolPen='g',symbol='o',symbolSize=5))
 	overlay_structure = []
-	for i in range(len(structure_point_location_on_foil)):
-		overlay_structure.append(p5.plot(np.array(structure_point_location_on_foil[i][:,0])*(data_shape[1]-1)/foil_size[0],np.array(structure_point_location_on_foil[i][:,1])*(data_shape[2]-1)/foil_size[1],pen='g'))
+	if flag_radial_profile:
+		for i in range(len(structure_radial_profile)):
+			overlay_structure.append(p5.plot(structure_radial_profile[i][:,0],structure_radial_profile[i][:,1],pen='g'))
+	else:
+		for i in range(len(structure_point_location_on_foil)):
+			overlay_structure.append(p5.plot(np.array(structure_point_location_on_foil[i][:,0])*(data_shape[1]-1)/foil_size[0],np.array(structure_point_location_on_foil[i][:,1])*(data_shape[2]-1)/foil_size[1],pen='g'))
 	overlay_Core_Resistive_bol = []
-	for i in range(len(core_tangential_location_on_foil)):
-		overlay_Core_Resistive_bol.append(p5.plot(np.array(core_tangential_location_on_foil[i][:,0])*(data_shape[1]-1)/foil_size[0],np.array(core_tangential_location_on_foil[i][:,1])*(data_shape[2]-1)/foil_size[1],pen='r'))
-	for i in range(len(core_poloidal_location_on_foil)):
-		overlay_Core_Resistive_bol.append(p5.plot(np.array(core_poloidal_location_on_foil[i][:,0])*(data_shape[1]-1)/foil_size[0],np.array(core_poloidal_location_on_foil[i][:,1])*(data_shape[2]-1)/foil_size[1],pen='r'))
+	if  flag_radial_profile:
+		for i in range(len(core_poloidal)):
+			overlay_Core_Resistive_bol.append(p5.plot(core_poloidal[i][:,0],core_poloidal[i][:,1],pen='r'))
+	else:
+		for i in range(len(core_tangential_location_on_foil)):
+			overlay_Core_Resistive_bol.append(p5.plot(np.array(core_tangential_location_on_foil[i][:,0])*(data_shape[1]-1)/foil_size[0],np.array(core_tangential_location_on_foil[i][:,1])*(data_shape[2]-1)/foil_size[1],pen='r'))
+		for i in range(len(core_poloidal_location_on_foil)):
+			overlay_Core_Resistive_bol.append(p5.plot(np.array(core_poloidal_location_on_foil[i][:,0])*(data_shape[1]-1)/foil_size[0],np.array(core_poloidal_location_on_foil[i][:,1])*(data_shape[2]-1)/foil_size[1],pen='r'))
 	overlay_Div_Resistive_bol = []
-	for i in range(len(divertor_poloidal_location_on_foil)):
-		overlay_Div_Resistive_bol.append(p5.plot(np.array(divertor_poloidal_location_on_foil[i][:,0])*(data_shape[1]-1)/foil_size[0],np.array(divertor_poloidal_location_on_foil[i][:,1])*(data_shape[2]-1)/foil_size[1],pen='r'))
-	try:
-		overlay_x_point = p5.plot([0],[0],pen='r')
-		overlay_mag_axis = p5.plot([0],[0],pen='r')
-		overlay_strike_points_1 = p5.plot([0],[0],symbolBrush='y',symbolPen='y',symbol='x',symbolSize=20,pen=None)
-		overlay_strike_points_2 = []
-		for __i in range(len(all_time_strike_points_location_rot[0])):
-			overlay_strike_points_2.append(p5.plot([0],[0],pen='y'))
-		overlay_separatrix = []
-		for __i in range(len(all_time_separatrix[0])):
-			overlay_separatrix.append(p5.plot([0],[0],pen='b'))
-	except:
-		print('no EFIT loaded')
+	if  flag_radial_profile:
+		for i in range(len(divertor_poloidal)):
+			overlay_Div_Resistive_bol.append(p5.plot(divertor_poloidal[i][:,0],divertor_poloidal[i][:,1],pen='r'))
+	else:
+		for i in range(len(divertor_poloidal_location_on_foil)):
+			overlay_Div_Resistive_bol.append(p5.plot(np.array(divertor_poloidal_location_on_foil[i][:,0])*(data_shape[1]-1)/foil_size[0],np.array(divertor_poloidal_location_on_foil[i][:,1])*(data_shape[2]-1)/foil_size[1],pen='r'))
+	initialise_plots_from_EFIT()
 	update_plot_inhibit = False
 	update_plot()
+
+def initialise_plots_from_EFIT():
+	global overlay_x_point,overlay_mag_axis,overlay_strike_points_1,overlay_strike_points_2,overlay_strike_points_2,overlay_separatrix,all_time_strike_points_location_rot,all_time_separatrix,flag_radial_profile,all_time_sep_r,all_time_sep_z,r_fine,z_fine
+	try:
+		if flag_radial_profile:
+			overlay_x_point = p5.plot([0],[0],symbolBrush='r',symbolPen='r',symbol='x',symbolSize=20,pen=None)
+			overlay_mag_axis = p5.plot([0],[0],symbolBrush='r',symbolPen='r',symbol='x',symbolSize=20,pen=None)
+			overlay_strike_points_2 = p5.plot([],[],symbolBrush='y',symbolPen='y',symbol='x',symbolSize=20,pen=None)
+			overlay_separatrix = []
+			for __i in range(len(all_time_sep_r[0])):
+				overlay_separatrix.append(p5.plot([0],[0],pen='b'))
+		else:
+			overlay_x_point = p5.plot([0],[0],pen='r')
+			overlay_mag_axis = p5.plot([0],[0],pen='r')
+			overlay_strike_points_2 = []
+			for __i in range(len(all_time_strike_points_location_rot[0])):
+				overlay_strike_points_2.append(p5.plot([0],[0],pen='y'))
+			overlay_separatrix = []
+			for __i in range(len(all_time_separatrix[0])):
+				overlay_separatrix.append(p5.plot([0],[0],pen='b'))
+		overlay_strike_points_1 = p5.plot([0],[0],symbolBrush='y',symbolPen='y',symbol='x',symbolSize=20,pen=None)
+	except:
+		print('no EFIT loaded at initialise_plots_from_EFIT')
+
+def reset_EFIT():
+	global all_time_strike_points_location_rot,all_time_separatrix,overlay_x_point,overlay_mag_axis,efit_reconstruction
+	try:
+		del all_time_strike_points_location_rot
+	except:
+		pass
+	try:
+		del all_time_separatrix
+	except:
+		pass
+	try:
+		del overlay_x_point
+	except:
+		pass
+	try:
+		del overlay_mag_axis
+	except:
+		pass
+	try:
+		del efit_reconstruction
+	except:
+		pass
 
 
 	# param_ext['Set display', 'File Path'] = anchive_path
 param_ext1.param('Navigate Path').sigActivated.connect(NavigatePath)
+param_ext1.param('File Path').sigValueChanged.connect(reset_EFIT)
 param_ext.param('Set display','Load data').sigActivated.connect(Load)
 param_ext.param('Set display','Load EFIT').sigActivated.connect(Load_EFIT)
 
+
 update_hist_inhibit = False
 def update_plot():
-	global histogram_level_low, histogram_level_high,update_hist_inhibit,update_plot_inhibit,inhibit_update_like_video,inhibit_update_like_video_rew
+	global histogram_level_low, histogram_level_high,update_hist_inhibit,update_plot_inhibit,inhibit_update_like_video,inhibit_update_like_video_rew,flag_radial_profile
 	if update_plot_inhibit==False:
 		a = w2.x
-		if (param_ext['ROI', 'Time [ms]']!=time_array[int(a)]*1e3) or inhibit_update_like_video==False or inhibit_update_like_video_rew==False:
+		if (param_ext['ROI', 'Time [ms]']!=time_array[round(a)]*1e3) or inhibit_update_like_video==False or inhibit_update_like_video_rew==False:
 			update_hist_inhibit = True
-			image1.setImage(data[int(a)])
+			image1.setImage(data[round(a)])
 			hist.setImageItem(image1)
 			hist.setLevels(histogram_level_high,histogram_level_low)
-		# self.image2.setImage(data[int(a)])
+		# self.image2.setImage(data[round(a)])
 		iso.setLevel(isoLine.value())
 		iso.setData(pg.gaussianFilter(image1.image, (2, 2)))
-		selected = roi.getArrayRegion(image1.image, image1)
-		pos = np.array(roi.getState()['pos']).astype(int)
-		size = np.array(np.shape(selected))
-		indexes_horiz_axis = roi.getArrayRegion(image1.image, image1,returnMappedCoords=True)[1].astype(int)[0].flatten()
-		indexes_vert_axis = roi.getArrayRegion(image1.image, image1,returnMappedCoords=True)[1].astype(int)[1].flatten()
-		param_ext['ROI', 'ROI magenta hor'] = pos[0]
-		param_ext['ROI', 'ROI magenta ver'] = pos[1]
-		param_ext['ROI', 'ROI magenta d hor'] = size[0]
-		param_ext['ROI', 'ROI magenta d ver'] = size[1]
-		selected2 = roi2.getArrayRegion(image1.image, image1)
-		pos2 = np.array(roi2.getState()['pos']).astype(int)
-		size2 = np.array(np.shape(selected2))
-		param_ext['ROI', 'ROI cyan hor'] = pos2[0]
-		param_ext['ROI', 'ROI cyan ver'] = pos2[1]
-		param_ext['ROI', 'ROI cyan d hor'] = size2[0]
-		param_ext['ROI', 'ROI cyan d ver'] = size2[1]
-		param_ext['ROI', 'Time start [ms]'] = time_array[int(w2.left)]*1e3
-		param_ext['ROI', 'Time end [ms]'] = time_array[int(w2.right)]*1e3
 		if inhibit_update_like_video or inhibit_update_like_video_rew:
-			param_ext['ROI', 'Time [ms]'] = time_array[int(a)]*1e3
-		p3.plot(np.arange(pos[0],pos[0]+size[0]),np.nanmean(selected,axis=1), clear=True)
-		p1.plot(np.nanmean(selected,axis=0),np.arange(pos[1],pos[1]+size[1]), clear=True)
-		temp = np.nanmean(data[int(w2.left):int(w2.right),max(0,pos[0]):pos[0]+size[0],max(0,pos[1]):pos[1]+size[1]].astype(float),axis=(1,2))
-		# temp = np.nanmean(data[int(w2.left):int(w2.right),np.array([indexes_horiz_axis,indexes_vert_axis]).tolist()],axis=(1,2))
-		# p6.plot(time_array[int(w2.left):int(w2.right)],temp, clear=True)
-		# p6.plot([time_array[int(a)]]*2,[np.nanmin(temp),np.nanmax(temp)], pen='g')
-		p6_time_mark.setData([time_array[int(a)]]*2,[np.nanmin(temp),np.nanmax(temp)])
-		temp = np.nanmean(data[int(w2.left):int(w2.right),max(0,pos[0]):pos[0]+size[0],max(0,pos[1]):pos[1]+size[1]].astype(float),axis=(1,2))
-		p6_1.setData(time_array[int(w2.left):int(w2.right)],temp)
-		temp = np.nanmean(data[int(w2.left):int(w2.right),max(0,pos2[0]):pos2[0]+size2[0],max(0,pos2[1]):pos2[1]+size2[1]].astype(float),axis=(1,2))
-		p6_2.setData(time_array[int(w2.left):int(w2.right)],temp)
-		# hist.setImageItem(image1)
-		# hist.sigLevelChangeFinished.emit(True)
+			param_ext['ROI', 'Time [ms]'] = time_array[round(a)]*1e3
+		if not flag_radial_profile:
+			selected = roi.getArrayRegion(image1.image, image1)
+			pos = np.array(roi.getState()['pos']).astype(int)
+			size = np.array(np.shape(selected))
+			# indexes_horiz_axis = roi.getArrayRegion(image1.image, image1,returnMappedCoords=True)[1].astype(int)[0].flatten()
+			# indexes_vert_axis = roi.getArrayRegion(image1.image, image1,returnMappedCoords=True)[1].astype(int)[1].flatten()
+			param_ext['ROI', 'ROI magenta hor'] = pos[0]
+			param_ext['ROI', 'ROI magenta ver'] = pos[1]
+			param_ext['ROI', 'ROI magenta d hor'] = size[0]
+			param_ext['ROI', 'ROI magenta d ver'] = size[1]
+			selected2 = roi2.getArrayRegion(image1.image, image1)
+			pos2 = np.array(roi2.getState()['pos']).astype(int)
+			size2 = np.array(np.shape(selected2))
+			param_ext['ROI', 'ROI cyan hor'] = pos2[0]
+			param_ext['ROI', 'ROI cyan ver'] = pos2[1]
+			param_ext['ROI', 'ROI cyan d hor'] = size2[0]
+			param_ext['ROI', 'ROI cyan d ver'] = size2[1]
+			param_ext['ROI', 'Time start [ms]'] = time_array[int(w2.left)]*1e3
+			param_ext['ROI', 'Time end [ms]'] = time_array[int(w2.right)]*1e3
+			p3.plot(np.arange(pos[0],pos[0]+size[0]),np.nanmean(selected,axis=1), clear=True)
+			p1.plot(np.nanmean(selected,axis=0),np.arange(pos[1],pos[1]+size[1]), clear=True)
+			temp = np.nanmean(data[int(w2.left):int(w2.right),max(0,pos[0]):pos[0]+size[0],max(0,pos[1]):pos[1]+size[1]].astype(float),axis=(1,2))
+			# temp = np.nanmean(data[int(w2.left):int(w2.right),np.array([indexes_horiz_axis,indexes_vert_axis]).tolist()],axis=(1,2))
+			# p6.plot(time_array[int(w2.left):int(w2.right)],temp, clear=True)
+			# p6.plot([time_array[round(a)]]*2,[np.nanmin(temp),np.nanmax(temp)], pen='g')
+			p6_time_mark.setData([time_array[round(a)]]*2,[np.nanmin(temp),np.nanmax(temp)])
+			temp = np.nanmean(data[int(w2.left):int(w2.right),max(0,pos[0]):pos[0]+size[0],max(0,pos[1]):pos[1]+size[1]].astype(float),axis=(1,2))
+			p6_1.setData(time_array[int(w2.left):int(w2.right)],temp)
+			temp = np.nanmean(data[int(w2.left):int(w2.right),max(0,pos2[0]):pos2[0]+size2[0],max(0,pos2[1]):pos2[1]+size2[1]].astype(float),axis=(1,2))
+			p6_2.setData(time_array[int(w2.left):int(w2.right)],temp)
+			# hist.setImageItem(image1)
+			# hist.sigLevelChangeFinished.emit(True)
 
 update_plot()
 
@@ -695,11 +813,6 @@ t1 = ParameterTree(showHeader=False)
 t1.setParameters(param_ext1, showTop=False)
 t1.setWindowTitle('pyqtgraph example: Parameter Tree')
 d7.addWidget(t1)
-
-
-
-
-
 
 
 win.show()

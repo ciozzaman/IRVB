@@ -3,7 +3,7 @@
 
 
 # #this is if working on a pc, use pc printer
-# exec(open("/home/ffederic/work/analysis_scripts/preamble_import_pc.py").read())
+# exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_import_pc.py").read())
 
 #this is if working in batch, use predefined NOT visual printer
 exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_import_batch.py").read())
@@ -238,6 +238,7 @@ for index in np.flip(i,axis=0):
 									 targetted_path_prob=1.0,
 									 parent=world, pipelines=[radiance],
 									 transform=translate(*ccd_centre) * rotate_basis(ccd_normal, ccd_y_axis))
+		# width corresponds to pixels[0], so this is correct
 	else:
 		power = PowerPipeline2D()
 		detector = TargettedCCDArray(targets=[pinhole_target], width=0.07, pixels=(pixel_h, pixel_v),
@@ -269,6 +270,11 @@ for index in np.flip(i,axis=0):
 
 	detector.observe()
 
+	# note from 2021-10-08
+	# core_voxel_grid.set_active(index) creates a unitary volume emitter with 1W/str/m^3/ x nm
+	# assuming that the frequency interval is 1nm (it should be from detector.max_wavelength = 601, detector.min_wavelength = 600, detector.spectral_bins = 1)
+	# then the total radiated power from the voxel is 1*4*pi, not just 1, as it is assumed here
+	# I don't want to change the geometry matrices, to I'll need to carry this 4*pi factor forward
 	if pipeline=='radiance':
 		results = np.flip(np.transpose(radiance.frame.mean), axis=-2)/pixel_area
 	else:

@@ -25,7 +25,9 @@ import pyradi.ryptw as ryptw
 # degree of polynomial of choice
 n=3
 # folder of the parameters path
-pathparams='/home/ffederic/work/irvb/2021-01-06_multiple_search_for_parameters'
+# pathparams='/home/ffederic/work/irvb/2021-01-06_multiple_search_for_parameters'
+pathparams='/home/ffederic/work/irvb/2021-09-25_multiple_search_for_parameters'
+
 color = ['b', 'r', 'm', 'y', 'g', 'c', 'k', 'slategrey', 'darkorange', 'lime', 'pink', 'gainsboro', 'paleturquoise', 'teal', 'olive','blueviolet','tan','skyblue','brown','dimgray','hotpink']
 f = []
 for (dirpath, dirnames, filenames) in os.walk(pathparams):
