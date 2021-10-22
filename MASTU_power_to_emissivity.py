@@ -273,7 +273,9 @@ for grid_resolution in [4]:
 	elif grid_resolution==4:
 		temp=0
 
-	def reduce_voxels(sensitivities_reshaped,grid_laplacian,grid_data,std_treshold = temp, sum_treshold = 0.000, core_radious_treshold = 1.9, divertor_radious_treshold = 1.9,chop_top_corner = False, extra_chop_top_corner = False , chop_corner_close_to_baffle = False):
+	def reduce_voxels(sensitivities_reshaped,grid_laplacian,grid_data,std_treshold = temp, sum_treshold = 0.000, core_radious_treshold = 1.9, divertor_radious_treshold = 1.9,chop_top_corner = False, extra_chop_top_corner = False , chop_corner_close_to_baffle = False, restrict_polygon = FULL_MASTU_CORE_GRID_POLYGON):
+		from shapely.geometry import Point
+		from shapely.geometry.polygon import Polygon
 		# masking the voxels whose emission does not reach the foil
 		# select = np.sum(sensitivities_reshaped,axis=(0,1))>0.05
 		select = np.logical_and(np.std(sensitivities_reshaped,axis=(0,1))>std_treshold*(np.std(sensitivities_reshaped,axis=(0,1)).max()),np.sum(sensitivities_reshaped,axis=(0,1))>sum_treshold)
@@ -304,6 +306,11 @@ for grid_resolution in [4]:
 			interp3 = interp1d([x4[0],x3[0]],[x4[1],x3[1]],fill_value="extrapolate",bounds_error=False)
 			select2 = np.logical_or(np.mean(grid_data_masked,axis=1)[:,1]<-1.1,np.mean(grid_data_masked,axis=1)[:,1]>interp3(np.mean(grid_data_masked,axis=1)[:,0]))
 			select = np.logical_and(select,select2)
+		if len(restrict_polygon)>0:
+			polygon = Polygon(restrict_polygon)
+			for i_e in range(len(grid_data_masked)):
+				if np.sum([polygon.contains(Point((grid_data_masked[i_e][i__e,0],grid_data_masked[i_e][i__e,1]))) for i__e in range(4)])==0:
+					select[i_e] = False
 		grid_data_masked = grid_data_masked[select]
 		sensitivities_reshaped_masked = sensitivities_reshaped_masked[:,:,select]
 		select = np.logical_or(np.mean(grid_data_masked,axis=1)[:,0]<divertor_radious_treshold,np.mean(grid_data_masked,axis=1)[:,1]>-1.3)
@@ -405,12 +412,16 @@ for grid_resolution in [4]:
 		# ROI = np.array([[0.05,0.95],[0.05,0.95]])
 		ROI1 = np.array([[0.03,0.85],[0.03,0.95]])
 		ROI2 = np.array([[0.03,0.6],[0.03,1-0.03]])
+		ROI_beams = np.array([[0.,0.3],[0.5,1]])
 		# ROI = np.array([[0.2,0.95],[0.1,1]])
 		ROI1 = np.round((ROI1.T*foil_shape).T).astype(int)
 		ROI2 = np.round((ROI2.T*foil_shape).T).astype(int)
+		ROI_beams = np.round((ROI_beams.T*foil_shape).T).astype(int)
 		a,b = np.meshgrid(np.arange(foil_shape[1]),np.arange(foil_shape[0]))
 		selected_ROI = np.logical_and(np.logical_and(a>=ROI1[1,0],a<ROI1[1,1]),np.logical_and(b>=sensitivities_binned.shape[0]-ROI1[0,1],b<sensitivities_binned.shape[0]-ROI1[0,0]))
 		selected_ROI = np.logical_or(selected_ROI,np.logical_and(np.logical_and(a>=ROI2[1,0],a<ROI2[1,1]),np.logical_and(b>=sensitivities_binned.shape[0]-ROI2[0,1],b<sensitivities_binned.shape[0]-ROI2[0,0])))
+		if check_beams_on(laser_to_analyse[-9:-4]):
+			selected_ROI = np.logical_and(selected_ROI,np.logical_not(np.logical_and(np.logical_and(a>=ROI_beams[1,0],a<ROI_beams[1,1]),np.logical_and(b>=sensitivities_binned.shape[0]-ROI_beams[0,1],b<sensitivities_binned.shape[0]-ROI_beams[0,0]))))
 
 		if development_plots:
 			plt.figure()
@@ -713,7 +724,7 @@ for grid_resolution in [4]:
 			if True:	# these are the settings that seem to work with regolarisation_coeff = 1e-5
 				sigma_emissivity = 1e4	# this is completely arbitrary
 				# sigma_emissivity = 1e4 * ((np.median(sigma_powernoback_full)/78)**0.5)	# I think it must go hand in hand with the uncertanty in the pixels
-				regolarisation_coeff_edge = 1e-9	# I raiset it artificially from 1e-3 to engage regolarisation_coeff_central_border_Z_derivate and regolarisation_coeff_central_column_border_R_derivate
+				regolarisation_coeff_edge = 1e1	# I raiset it artificially from 1e-3 to engage regolarisation_coeff_central_border_Z_derivate and regolarisation_coeff_central_column_border_R_derivate
 				regolarisation_coeff_central_border_Z_derivate = 1e-20
 				regolarisation_coeff_central_column_border_R_derivate = 1e-20
 				regolarisation_coeff_divertor = regolarisation_coeff/2e0
@@ -748,6 +759,7 @@ for grid_resolution in [4]:
 			fit_error = []
 			chi_square_all = []
 			for i_t in range(len(time_full_binned_crop)):
+				print('starting t=%.4gms' %(time_full_binned_crop[i_t]*1e3))
 
 				powernoback = powernoback_full_orig[i_t].flatten()
 				sigma_powernoback = sigma_powernoback_full[i_t].flatten()
@@ -784,12 +796,12 @@ for grid_resolution in [4]:
 					likelihood_emissivity_pos = np.sum((np.minimum(0.,emissivity)/sigma_emissivity)**2)
 					likelihood_emissivity_laplacian = (regolarisation_coeff**2)* np.sum(((emissivity_laplacian*np.logical_not(selected_super_x_cells) /sigma_emissivity)**2))
 					likelihood_emissivity_laplacian_superx = (regolarisation_coeff_divertor**2)* np.sum(((emissivity_laplacian*selected_super_x_cells /sigma_emissivity)**2))
-					likelihood_emissivity_edge_laplacian = (regolarisation_coeff_edge**2)* np.sum(((emissivity_laplacian*selected_edge_cells_for_laplacian /sigma_emissivity)**2))
-					likelihood_emissivity_edge = (regolarisation_coeff_edge>1e-10)*np.sum((emissivity*selected_edge_cells/sigma_emissivity)**2)
+					likelihood_emissivity_edge_laplacian = 0#(regolarisation_coeff_edge**2)* np.sum(((emissivity_laplacian*selected_edge_cells_for_laplacian /sigma_emissivity)**2))
+					likelihood_emissivity_edge = (regolarisation_coeff_edge**2)*np.sum((emissivity*selected_edge_cells/sigma_emissivity)**2)
 					likelihood_emissivity_central_border_Z_derivate = (regolarisation_coeff_central_border_Z_derivate**2)* np.sum((Z_derivate*selected_central_border_cells/sigma_emissivity)**2)
 					likelihood_emissivity_central_column_border_R_derivate = (regolarisation_coeff_central_column_border_R_derivate**2)* np.sum((R_derivate*selected_central_column_border_cells/sigma_emissivity)**2)
 					likelihood = likelihood_power_fit + likelihood_emissivity_pos + likelihood_emissivity_laplacian + likelihood_emissivity_edge_laplacian + likelihood_emissivity_edge + likelihood_emissivity_central_border_Z_derivate + likelihood_emissivity_central_column_border_R_derivate + likelihood_emissivity_laplacian_superx
-					likelihood_homogeneous_offset = (homogeneous_offset/reference_sigma_powernoback)**2
+					likelihood_homogeneous_offset = 0#(homogeneous_offset/reference_sigma_powernoback)**2
 					likelihood_homogeneous_offset_plasma = (homogeneous_offset_plasma/reference_sigma_powernoback)**2
 					likelihood = likelihood + likelihood_homogeneous_offset + likelihood_homogeneous_offset_plasma
 
@@ -797,12 +809,12 @@ for grid_resolution in [4]:
 					likelihood_emissivity_pos_derivate = 2*(np.minimum(0.,emissivity)**2)/emissivity/sigma_emissivity_2
 					likelihood_emissivity_laplacian_derivate = 2*(regolarisation_coeff**2) * np.dot(emissivity_laplacian*np.logical_not(selected_super_x_cells) , grid_laplacian_masked_crop_scaled) / (sigma_emissivity**2)
 					likelihood_emissivity_laplacian_derivate_superx = 2*(regolarisation_coeff_divertor**2) * np.dot(emissivity_laplacian*selected_super_x_cells , grid_laplacian_masked_crop_scaled) / (sigma_emissivity**2)
-					likelihood_emissivity_edge_laplacian_derivate = 2*(regolarisation_coeff_edge**2) * np.dot(emissivity_laplacian*selected_edge_cells_for_laplacian , grid_laplacian_masked_crop_scaled) / (sigma_emissivity**2)
-					likelihood_emissivity_edge_derivate = 2*(regolarisation_coeff_edge>1e-10)*emissivity*selected_edge_cells/sigma_emissivity_2
+					likelihood_emissivity_edge_laplacian_derivate = 0#2*(regolarisation_coeff_edge**2) * np.dot(emissivity_laplacian*selected_edge_cells_for_laplacian , grid_laplacian_masked_crop_scaled) / (sigma_emissivity**2)
+					likelihood_emissivity_edge_derivate = 2*(regolarisation_coeff_edge**2)*emissivity*selected_edge_cells/sigma_emissivity_2
 					likelihood_emissivity_central_border_Z_derivate_derivate = 2*(regolarisation_coeff_central_border_Z_derivate**2)*np.dot(Z_derivate*selected_central_border_cells,grid_Z_derivate_masked_crop_scaled)/sigma_emissivity_2
 					likelihood_emissivity_central_column_border_R_derivate_derivate = 2*(regolarisation_coeff_central_column_border_R_derivate**2)*np.dot(R_derivate*selected_central_column_border_cells,grid_R_derivate_masked_crop_scaled)/sigma_emissivity_2
 					likelihood_derivate = likelihood_emissivity_pos_derivate + likelihood_emissivity_laplacian_derivate + likelihood_emissivity_edge_laplacian_derivate + likelihood_emissivity_edge_derivate + likelihood_emissivity_central_border_Z_derivate_derivate + likelihood_emissivity_central_column_border_R_derivate_derivate + likelihood_emissivity_laplacian_derivate_superx
-					likelihood_homogeneous_offset_derivate = 2*homogeneous_offset*homogeneous_scaling/(reference_sigma_powernoback**2)
+					likelihood_homogeneous_offset_derivate = 0#2*homogeneous_offset*homogeneous_scaling/(reference_sigma_powernoback**2)
 					likelihood_homogeneous_offset_plasma_derivate = 2*homogeneous_offset_plasma*homogeneous_scaling/(reference_sigma_powernoback**2)
 					likelihood_derivate = np.concatenate((likelihood_derivate,[likelihood_homogeneous_offset_plasma_derivate,likelihood_homogeneous_offset_derivate])) + likelihood_power_fit_derivate
 					# likelihood_derivate = likelihood_emissivity_central_border_derivate

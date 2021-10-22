@@ -206,6 +206,11 @@ structure_radial_profile = coleval.return_structure_radial_profile()
 core_poloidal = coleval.return_core_poloidal()
 divertor_poloidal = coleval.return_divertor_poloidal()
 foil_size = [0.07,0.09]
+flag_radial_profile = False
+inversion_R = 0
+inversion_Z = 0
+dr = 0
+dz = 0
 
 # # image1
 # 		for i in range(len(fueling_point_location_on_foil)):
@@ -325,8 +330,11 @@ def change(param, changes):
 		for i in range(len(overlay_structure)):
 			overlay_structure[i].setAlpha(0.5,False)
 	if param_ext['Overlays','Structure']==False or flag_radial_profile:
-		for i in range(len(overlay_fueling_point)):
-			overlay_fueling_point[i].setAlpha(0,False)
+		try:
+			for i in range(len(overlay_fueling_point)):
+				overlay_fueling_point[i].setAlpha(0,False)
+		except:
+			pass
 	else:
 		for i in range(len(overlay_fueling_point)):
 			overlay_fueling_point[i].setAlpha(0.5,False)
@@ -453,7 +461,7 @@ timer.timeout.connect(update_like_video)
 timer.start(500)	# refresh time in ms
 
 def export_video():
-	global framerate,data,time_array,histogram_level_high,histogram_level_low,w2
+	global framerate,data,time_array,histogram_level_high,histogram_level_low,w2,flag_radial_profile,inversion_R,inversion_Z,dr,dz,efit_reconstruction,param_ext
 	path_mother = os.path.split(param_ext1['File Path'])[0]
 	filenames = coleval.all_file_names(path_mother,os.path.split(param_ext1['File Path'])[1]+'_export_')
 	if len(filenames)==0:
@@ -467,7 +475,19 @@ def export_video():
 	end_time = np.abs(param_ext['ROI', 'Time end [ms]']*1e-3-time_array).argmin()
 
 	barlabel=list(quantity_options.keys())[(param_ext['Set display','Quantity']==np.array(list(quantity_options.values()))).argmax()]
-	ani = coleval.movie_from_data(np.array([np.flip(np.transpose(np.flip(data,axis=1)[start_time:end_time],(0,2,1)),axis=2)]), framerate,timesteps=time_array[start_time:end_time],integration=1,time_offset=time_array[start_time],extvmin=histogram_level_low,extvmax=histogram_level_high,xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel=barlabel, prelude='shot ' + w2.shotID + '\n'+str(param_ext['Set display','Binning'])+'\n',overlay_structure=param_ext['Overlays','Structure'],include_EFIT=True,pulse_ID=w2.shotID,overlay_x_point=param_ext['Overlays','X-point'],overlay_mag_axis=param_ext['Overlays','Mag axis'],overlay_strike_points=param_ext['Overlays','Separatrix'],overlay_separatrix=param_ext['Overlays','Separatrix'])
+	if param_ext['ROI', 'Histogram auto']:
+		histogram_level_high_for_plot = 'auto'
+		histogram_level_low_for_plot = 'auto'
+	else:
+		histogram_level_high_for_plot = cp.deepcopy(histogram_level_high)
+		histogram_level_low_for_plot = cp.deepcopy(histogram_level_low)
+
+	if flag_radial_profile:
+		extent = [inversion_R.min()-dr/2, inversion_R.max()+dr/2, inversion_Z.min()-dz/2, inversion_Z.max()+dz/2]
+		image_extent = [inversion_R.min()-dr/2, inversion_R.max()+dr/2, inversion_Z.min()-dz/2, inversion_Z.max()+dz/2]
+		ani = coleval.movie_from_data_radial_profile(np.array([np.transpose(np.flip(data,axis=1)[start_time:end_time],(0,2,1))]), framerate,timesteps=time_array[start_time:end_time],integration=2,time_offset=time_array[start_time],extvmin=histogram_level_low_for_plot,extvmax=histogram_level_high_for_plot, extent = extent, image_extent=image_extent,xlabel='R [m]', ylabel='Z [m]',barlabel=barlabel, prelude='shot '  + w2.shotID + '\n'+str(param_ext['Set display','Binning'])+'\n'+'grid resolution %.3gcm\n' %(int(param_ext['Set display','Voxel res'])) ,overlay_structure=param_ext['Overlays','Structure'],include_EFIT=True,efit_reconstruction=efit_reconstruction,pulse_ID=w2.shotID,overlay_x_point=param_ext['Overlays','X-point'],overlay_mag_axis=param_ext['Overlays','Mag axis'],overlay_strike_points=param_ext['Overlays','Separatrix'],overlay_separatrix=param_ext['Overlays','Separatrix'])#,extvmin=0,extvmax=4e4)
+	else:
+		ani = coleval.movie_from_data(np.array([np.flip(np.transpose(np.flip(data,axis=1)[start_time:end_time],(0,2,1)),axis=2)]), framerate,timesteps=time_array[start_time:end_time],integration=2,time_offset=time_array[start_time],extvmin=histogram_level_low_for_plot,extvmax=histogram_level_high_for_plot,xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel=barlabel, prelude='shot ' + w2.shotID + '\n'+str(param_ext['Set display','Binning'])+'\n',overlay_structure=param_ext['Overlays','Structure'],include_EFIT=True,efit_reconstruction=efit_reconstruction,pulse_ID=w2.shotID,overlay_x_point=param_ext['Overlays','X-point'],overlay_mag_axis=param_ext['Overlays','Mag axis'],overlay_strike_points=param_ext['Overlays','Separatrix'],overlay_separatrix=param_ext['Overlays','Separatrix'])
 	ani.save(param_ext1['File Path'] + '_export_' + str(next_export) + '.mp4', fps=5*framerate/383, writer='ffmpeg',codec='mpeg4')
 	plt.close('all')
 	print('\n'+'\n'+param_ext1['File Path'] + '_export_' + str(next_export) + '.mp4 generated'+'\n'+'\n')
@@ -518,9 +538,8 @@ def Load_EFIT():
 
 
 update_plot_inhibit = False
-flag_radial_profile = False
 def Load():
-	global data,framerate,time_array,overlay_fueling_point,overlay_structure,overlay_x_point,overlay_mag_axis,overlay_strike_points_1,overlay_strike_points_2,overlay_separatrix,overlay_Core_Resistive_bol,overlay_Div_Resistive_bol,data_shape,etendue,update_plot_inhibit,flag_radial_profile,efit_reconstruction
+	global data,framerate,time_array,overlay_fueling_point,overlay_structure,overlay_x_point,overlay_mag_axis,overlay_strike_points_1,overlay_strike_points_2,overlay_separatrix,overlay_Core_Resistive_bol,overlay_Div_Resistive_bol,data_shape,etendue,update_plot_inhibit,flag_radial_profile,efit_reconstruction,inversion_R,inversion_Z,dr,dz
 	flag_radial_profile = False
 	update_plot_inhibit = True
 	print(param_ext1['File Path'])
@@ -612,47 +631,81 @@ def Load():
 	param_ext.children()[0].children()[8].setProperty('step',np.min(np.diff(np.sort(data.flatten()))))
 	param_ext.children()[0].children()[9].setProperty('step',np.min(np.diff(np.sort(data.flatten()))))
 	try:
-		for i in range(len(overlay_fueling_point)):
-			overlay_fueling_point[i].setAlpha(0,False)
-			overlay_fueling_point[i].setData([],[])
-		del overlay_fueling_point
+		try:
+			for i in range(len(overlay_fueling_point)):
+				overlay_fueling_point[i].setAlpha(0,False)
+				try:
+					overlay_fueling_point[i].setData([],[])
+				except:
+					pass
+			del overlay_fueling_point
+		except:
+			pass
 		for i in range(len(overlay_structure)):
 			overlay_structure[i].setAlpha(0,False)
 			overlay_structure[i].setData([],[])
 		del overlay_structure
-		overlay_x_point.setAlpha(0,False)
-		overlay_x_point.setData([],[])
-		del overlay_x_point
-		overlay_mag_axis.setAlpha(0,False)
-		overlay_mag_axis.setData([],[])
-		del overlay_mag_axis
+		try:
+			overlay_x_point.setAlpha(0,False)
+			overlay_x_point.setData([],[])
+			del overlay_x_point
+		except:
+			pass
+		try:
+			overlay_mag_axis.setAlpha(0,False)
+			overlay_mag_axis.setData([],[])
+			del overlay_mag_axis
+		except:
+			pass
 		print('del overlay_mag_axis')
-		overlay_strike_points_1.setAlpha(0,False)
-		overlay_strike_points_1.setData([],[])
-		del overlay_strike_points_1
-		for i in range(len(overlay_strike_points_2)):
-			overlay_strike_points_2[i].setAlpha(0,False)
-			overlay_strike_points_2[i].setData([],[])
-		del overlay_strike_points_2
-		for i in range(len(overlay_separatrix)):
-			overlay_separatrix[i].setAlpha(0,False)
-			overlay_separatrix[i].setData([],[])
-		del overlay_separatrix
+		try:
+			overlay_strike_points_1.setAlpha(0,False)
+			overlay_strike_points_1.setData([],[])
+			del overlay_strike_points_1
+		except:
+			pass
+		try:
+			try:
+				for i in range(len(overlay_strike_points_2)):
+					overlay_strike_points_2[i].setAlpha(0,False)
+					overlay_strike_points_2[i].setData([],[])
+				del overlay_strike_points_2
+			except:
+				overlay_strike_points_2.setAlpha(0,False)
+				overlay_strike_points_2.setData([],[])
+				del overlay_strike_points_2
+		except:
+			pass
+		try:
+			for i in range(len(overlay_separatrix)):
+				overlay_separatrix[i].setAlpha(0,False)
+				overlay_separatrix[i].setData([],[])
+			del overlay_separatrix
+		except:
+			pass
 		print('del overlay_separatrix')
-		for i in range(len(overlay_Core_Resistive_bol)):
-			overlay_Core_Resistive_bol[i].setAlpha(0,False)
-			overlay_Core_Resistive_bol[i].setData([],[])
-		del overlay_Core_Resistive_bol
-		for i in range(len(overlay_Div_Resistive_bol)):
-			overlay_Div_Resistive_bol[i].setAlpha(0,False)
-			overlay_Div_Resistive_bol[i].setData([],[])
-		del overlay_Div_Resistive_bol
-	except:
-		print('no legacy plots')
-	overlay_fueling_point = []
-	for i in range(len(fueling_point_location_on_foil)):
-		overlay_fueling_point.append(p5.plot(np.array(fueling_point_location_on_foil[i][:,0])*(data_shape[1]-1)/foil_size[0],np.array(fueling_point_location_on_foil[i][:,1])*(data_shape[2]-1)/foil_size[1],symbolBrush='g',symbolPen='g',symbol='+',symbolSize=20))
-		overlay_fueling_point.append(p5.plot(np.array(fueling_point_location_on_foil[i][:,0])*(data_shape[1]-1)/foil_size[0],np.array(fueling_point_location_on_foil[i][:,1])*(data_shape[2]-1)/foil_size[1],symbolBrush='g',symbolPen='g',symbol='o',symbolSize=5))
+		try:
+			for i in range(len(overlay_Core_Resistive_bol)):
+				overlay_Core_Resistive_bol[i].setAlpha(0,False)
+				overlay_Core_Resistive_bol[i].setData([],[])
+			del overlay_Core_Resistive_bol
+		except:
+			pass
+		try:
+			for i in range(len(overlay_Div_Resistive_bol)):
+				overlay_Div_Resistive_bol[i].setAlpha(0,False)
+				overlay_Div_Resistive_bol[i].setData([],[])
+			del overlay_Div_Resistive_bol
+		except:
+			pass
+	except Exception as e:
+		print('no legacy plots Load')
+		logging.exception('with error: ' + str(e))
+	if not flag_radial_profile:
+		overlay_fueling_point = []
+		for i in range(len(fueling_point_location_on_foil)):
+			overlay_fueling_point.append(p5.plot(np.array(fueling_point_location_on_foil[i][:,0])*(data_shape[1]-1)/foil_size[0],np.array(fueling_point_location_on_foil[i][:,1])*(data_shape[2]-1)/foil_size[1],symbolBrush='g',symbolPen='g',symbol='+',symbolSize=20))
+			overlay_fueling_point.append(p5.plot(np.array(fueling_point_location_on_foil[i][:,0])*(data_shape[1]-1)/foil_size[0],np.array(fueling_point_location_on_foil[i][:,1])*(data_shape[2]-1)/foil_size[1],symbolBrush='g',symbolPen='g',symbol='o',symbolSize=5))
 	overlay_structure = []
 	if flag_radial_profile:
 		for i in range(len(structure_radial_profile)):

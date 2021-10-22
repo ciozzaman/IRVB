@@ -7,6 +7,9 @@ from PIL import ImageChops # $ pip install pillow
 from pyscreenshot import grab # $ pip install pyscreenshot
 import subprocess
 import copy as cp
+# to manage a timeout
+from threading import Thread
+import functools
 os.chdir('D:\\IRVB')
 
 def click(x,y):
@@ -55,8 +58,46 @@ if test!='k':
 	print('Monitoring '+ file_path)
 
 target_file_path = target_upper_file_path+'\\'+target_folder
-if not os.path.exists(target_file_path):
-	os.mkdir(target_file_path)
+if False:
+	if not os.path.exists(target_file_path):
+		os.mkdir(target_file_path)
+else:
+	def timeout(timeout):
+	    def deco(func):
+	        @functools.wraps(func)
+	        def wrapper(*args, **kwargs):
+	            res = [Exception('function timeout [%s seconds] exceeded!' % (timeout))]
+	            def newFunc():
+	                try:
+	                    res[0] = func(*args, **kwargs)
+	                except Exception as e:
+	                    res[0] = e
+	            t = Thread(target=newFunc)
+	            t.daemon = True
+	            try:
+	                t.start()
+	                t.join(timeout)
+	            except Exception as je:
+	                print ('error starting thread')
+	                raise je
+	            ret = res[0]
+	            if isinstance(ret, BaseException):
+	                raise ret
+	            return ret
+	        return wrapper
+	    return deco
+
+	def create_folder():
+		if not os.path.exists(target_file_path):
+			os.mkdir(target_file_path)
+			print('freia folder created')
+
+	func = timeout(timeout=1*60)(create_folder)
+	try:
+		func()
+	except Exception as exc:
+		print('creation of the folder on freia failed')
+		print(exc)
 
 f = []
 for (dirpath,dirnames,filenames) in os.walk(file_path):

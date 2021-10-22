@@ -125,97 +125,136 @@ for grid_resolution in all_grid_type:
 			inversion_R = inverted_dict[str(grid_resolution)].all()[str(shrink_factor_x)][str(shrink_factor_t)]['geometry']['R']
 			inversion_Z = inverted_dict[str(grid_resolution)].all()[str(shrink_factor_x)][str(shrink_factor_t)]['geometry']['Z']
 			inverted_data = inverted_dict[str(grid_resolution)].all()[str(shrink_factor_x)][str(shrink_factor_t)]['inverted_data']
-			a,b = np.meshgrid(inversion_Z,inversion_R)
-			a_flat = a.flatten()
-			b_flat = b.flatten()
-			leg_resolution = 0.1
 
-			data_length = 0
-			local_mean_emis_all = []
-			local_power_all = []
-			leg_length_all = []
-			for i_t in range(len(time_full_binned_crop)):
-				print('starting t=%.4gms' %(time_full_binned_crop[i_t]*1e3))
-				try:
-					i_efit_time = np.abs(efit_reconstruction.time-time_full_binned_crop[i_t]).argmin()
-					if np.abs((r_fine[all_time_sep_r[i_efit_time][1]]- efit_reconstruction.lower_xpoint_r[i_efit_time])**2 + (z_fine[all_time_sep_z[i_efit_time][1]]- efit_reconstruction.lower_xpoint_z[i_efit_time])**2 ).min() < np.abs((r_fine[all_time_sep_r[i_efit_time][3]]- efit_reconstruction.lower_xpoint_r[i_efit_time])**2 + (z_fine[all_time_sep_z[i_efit_time][3]]- efit_reconstruction.lower_xpoint_z[i_efit_time])**2 ).min():
-						i_closer_separatrix_to_x_point = 1
-					else:
-						i_closer_separatrix_to_x_point = 3
-					i_where_x_point_is = np.abs((r_fine[all_time_sep_r[i_efit_time][i_closer_separatrix_to_x_point]]- efit_reconstruction.lower_xpoint_r[i_efit_time])**2 + (z_fine[all_time_sep_z[i_efit_time][i_closer_separatrix_to_x_point]]- efit_reconstruction.lower_xpoint_z[i_efit_time])**2 ).argmin()
+			if False:
+				a,b = np.meshgrid(inversion_Z,inversion_R)
+				a_flat = a.flatten()
+				b_flat = b.flatten()
+				leg_resolution = 0.1
 
-					temp = np.array([((all_time_strike_points_location[i_efit_time][0][i] - r_fine[all_time_sep_r[i_efit_time][i_closer_separatrix_to_x_point]][:i_where_x_point_is])**2 + (all_time_strike_points_location[i_efit_time][1][i] - z_fine[all_time_sep_z[i_efit_time][i_closer_separatrix_to_x_point]][:i_where_x_point_is])**2).min() for i in range(len(all_time_strike_points_location[i_efit_time][1]))])
-					temp[np.isnan(temp)] = np.inf
-					i_which_strike_point_is = temp.argmin()
-					i_where_strike_point_is = ((all_time_strike_points_location[i_efit_time][0][i_which_strike_point_is] - r_fine[all_time_sep_r[i_efit_time][i_closer_separatrix_to_x_point]][:i_where_x_point_is])**2 + (all_time_strike_points_location[i_efit_time][1][i_which_strike_point_is] - z_fine[all_time_sep_z[i_efit_time][i_closer_separatrix_to_x_point]][:i_where_x_point_is])**2).argmin()
-					# plt.figure()
-					# plt.plot(r_fine[all_time_sep_r[i_efit_time][i_closer_separatrix_to_x_point]][i_where_strike_point_is:i_where_x_point_is],z_fine[all_time_sep_z[i_efit_time][i_closer_separatrix_to_x_point]][i_where_strike_point_is:i_where_x_point_is])
-					# plt.pause(0.001)
-					r_coord_smooth = generic_filter(r_fine[all_time_sep_r[i_efit_time][i_closer_separatrix_to_x_point]][i_where_strike_point_is:i_where_x_point_is],np.mean,size=11)
-					z_coord_smooth = generic_filter(z_fine[all_time_sep_z[i_efit_time][i_closer_separatrix_to_x_point]][i_where_strike_point_is:i_where_x_point_is],np.mean,size=11)
-					leg_length = np.sum((np.diff(r_coord_smooth)**2 + np.diff(z_coord_smooth)**2)**0.5)
-					# I arbitrarily decide to cut the leg in 10cm pieces
-					target_length = 0 + leg_resolution
-					i_ref_points = [0]
-					ref_points = [[r_coord_smooth[0],z_coord_smooth[0]]]
-					while target_length < leg_length + leg_resolution:
-						temp = np.abs(np.cumsum((np.diff(r_coord_smooth)**2 + np.diff(z_coord_smooth)**2)**0.5) - target_length).argmin() + 1
-						i_ref_points.append(temp)
-						ref_points.append([r_coord_smooth[temp],z_coord_smooth[temp]])
-						target_length += leg_resolution
-					ref_points = np.array(ref_points)
-					ref_points_1 = []
-					ref_points_2 = []
-					m = -1/((z_coord_smooth[i_ref_points[0]]-z_coord_smooth[i_ref_points[0]+1])/(r_coord_smooth[i_ref_points[0]]-r_coord_smooth[i_ref_points[0]+1]))
-					ref_points_1.append([r_coord_smooth[i_ref_points[0]] - leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[0]] - m*leg_resolution/((1+m**2)**0.5)])
-					ref_points_2.append([r_coord_smooth[i_ref_points[0]] + leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[0]] + m*leg_resolution/((1+m**2)**0.5)])
-					for i_ref_point in range(1,len(i_ref_points)-1):
-						m = -1/((z_coord_smooth[i_ref_points[i_ref_point]-1]-z_coord_smooth[i_ref_points[i_ref_point]+1])/(r_coord_smooth[i_ref_points[i_ref_point]-1]-r_coord_smooth[i_ref_points[i_ref_point]+1]))
-						ref_points_1.append([r_coord_smooth[i_ref_points[i_ref_point]] - leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[i_ref_point]] - m*leg_resolution/((1+m**2)**0.5)])
-						ref_points_2.append([r_coord_smooth[i_ref_points[i_ref_point]] + leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[i_ref_point]] + m*leg_resolution/((1+m**2)**0.5)])
-					m = -1/((z_coord_smooth[i_ref_points[-1]-1]-z_coord_smooth[i_ref_points[-1]])/(r_coord_smooth[i_ref_points[-1]-1]-r_coord_smooth[i_ref_points[-1]]))
-					ref_points_1.append([r_coord_smooth[i_ref_points[-1]] - leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[-1]] - m*leg_resolution/((1+m**2)**0.5)])
-					ref_points_2.append([r_coord_smooth[i_ref_points[-1]] + leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[-1]] + m*leg_resolution/((1+m**2)**0.5)])
-					ref_points_1 = np.array(ref_points_1)
-					ref_points_2 = np.array(ref_points_2)
+				data_length = 0
+				local_mean_emis_all = []
+				local_power_all = []
+				leg_length_all = []
+				for i_t in range(len(time_full_binned_crop)):
+					print('starting t=%.4gms' %(time_full_binned_crop[i_t]*1e3))
+					try:
+						i_efit_time = np.abs(efit_reconstruction.time-time_full_binned_crop[i_t]).argmin()
+						if np.abs((r_fine[all_time_sep_r[i_efit_time][1]]- efit_reconstruction.lower_xpoint_r[i_efit_time])**2 + (z_fine[all_time_sep_z[i_efit_time][1]]- efit_reconstruction.lower_xpoint_z[i_efit_time])**2 ).min() < np.abs((r_fine[all_time_sep_r[i_efit_time][3]]- efit_reconstruction.lower_xpoint_r[i_efit_time])**2 + (z_fine[all_time_sep_z[i_efit_time][3]]- efit_reconstruction.lower_xpoint_z[i_efit_time])**2 ).min():
+							i_closer_separatrix_to_x_point = 1
+						else:
+							i_closer_separatrix_to_x_point = 3
+						i_where_x_point_is = np.abs((r_fine[all_time_sep_r[i_efit_time][i_closer_separatrix_to_x_point]]- efit_reconstruction.lower_xpoint_r[i_efit_time])**2 + (z_fine[all_time_sep_z[i_efit_time][i_closer_separatrix_to_x_point]]- efit_reconstruction.lower_xpoint_z[i_efit_time])**2 ).argmin()
 
-					# plt.figure()
-					# plt.plot(r_coord_smooth,z_coord_smooth)
-					# plt.plot(r_coord_smooth,z_coord_smooth,'+')
-					# plt.plot(ref_points[:,0],ref_points[:,1],'+')
-					# plt.plot(ref_points_1[:,0],ref_points_1[:,1],'o')
-					# plt.plot(ref_points_2[:,0],ref_points_2[:,1],'+')
-					# plt.pause(0.001)
+						temp = np.array([((all_time_strike_points_location[i_efit_time][0][i] - r_fine[all_time_sep_r[i_efit_time][i_closer_separatrix_to_x_point]][:i_where_x_point_is])**2 + (all_time_strike_points_location[i_efit_time][1][i] - z_fine[all_time_sep_z[i_efit_time][i_closer_separatrix_to_x_point]][:i_where_x_point_is])**2).min() for i in range(len(all_time_strike_points_location[i_efit_time][1]))])
+						temp[np.isnan(temp)] = np.inf
+						i_which_strike_point_is = temp.argmin()
+						i_where_strike_point_is = ((all_time_strike_points_location[i_efit_time][0][i_which_strike_point_is] - r_fine[all_time_sep_r[i_efit_time][i_closer_separatrix_to_x_point]][:i_where_x_point_is])**2 + (all_time_strike_points_location[i_efit_time][1][i_which_strike_point_is] - z_fine[all_time_sep_z[i_efit_time][i_closer_separatrix_to_x_point]][:i_where_x_point_is])**2).argmin()
+						# plt.figure()
+						# plt.plot(r_fine[all_time_sep_r[i_efit_time][i_closer_separatrix_to_x_point]][i_where_strike_point_is:i_where_x_point_is],z_fine[all_time_sep_z[i_efit_time][i_closer_separatrix_to_x_point]][i_where_strike_point_is:i_where_x_point_is])
+						# plt.pause(0.001)
+						r_coord_smooth = generic_filter(r_fine[all_time_sep_r[i_efit_time][i_closer_separatrix_to_x_point]][i_where_strike_point_is:i_where_x_point_is],np.mean,size=11)
+						z_coord_smooth = generic_filter(z_fine[all_time_sep_z[i_efit_time][i_closer_separatrix_to_x_point]][i_where_strike_point_is:i_where_x_point_is],np.mean,size=11)
+						leg_length = np.sum((np.diff(r_coord_smooth)**2 + np.diff(z_coord_smooth)**2)**0.5)
+						# I arbitrarily decide to cut the leg in 10cm pieces
+						target_length = 0 + leg_resolution
+						i_ref_points = [0]
+						ref_points = [[r_coord_smooth[0],z_coord_smooth[0]]]
+						while target_length < leg_length + leg_resolution:
+							temp = np.abs(np.cumsum((np.diff(r_coord_smooth)**2 + np.diff(z_coord_smooth)**2)**0.5) - target_length).argmin() + 1
+							i_ref_points.append(temp)
+							ref_points.append([r_coord_smooth[temp],z_coord_smooth[temp]])
+							target_length += leg_resolution
+						ref_points = np.array(ref_points)
+						ref_points_1 = []
+						ref_points_2 = []
+						m = -1/((z_coord_smooth[i_ref_points[0]]-z_coord_smooth[i_ref_points[0]+1])/(r_coord_smooth[i_ref_points[0]]-r_coord_smooth[i_ref_points[0]+1]))
+						ref_points_1.append([r_coord_smooth[i_ref_points[0]] - leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[0]] - m*leg_resolution/((1+m**2)**0.5)])
+						ref_points_2.append([r_coord_smooth[i_ref_points[0]] + leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[0]] + m*leg_resolution/((1+m**2)**0.5)])
+						for i_ref_point in range(1,len(i_ref_points)-1):
+							m = -1/((z_coord_smooth[i_ref_points[i_ref_point]-1]-z_coord_smooth[i_ref_points[i_ref_point]+1])/(r_coord_smooth[i_ref_points[i_ref_point]-1]-r_coord_smooth[i_ref_points[i_ref_point]+1]))
+							ref_points_1.append([r_coord_smooth[i_ref_points[i_ref_point]] - leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[i_ref_point]] - m*leg_resolution/((1+m**2)**0.5)])
+							ref_points_2.append([r_coord_smooth[i_ref_points[i_ref_point]] + leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[i_ref_point]] + m*leg_resolution/((1+m**2)**0.5)])
+						m = -1/((z_coord_smooth[i_ref_points[-1]-1]-z_coord_smooth[i_ref_points[-1]])/(r_coord_smooth[i_ref_points[-1]-1]-r_coord_smooth[i_ref_points[-1]]))
+						ref_points_1.append([r_coord_smooth[i_ref_points[-1]] - leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[-1]] - m*leg_resolution/((1+m**2)**0.5)])
+						ref_points_2.append([r_coord_smooth[i_ref_points[-1]] + leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[-1]] + m*leg_resolution/((1+m**2)**0.5)])
+						ref_points_1 = np.array(ref_points_1)
+						ref_points_2 = np.array(ref_points_2)
 
-					local_mean_emis = []
-					local_power = []
-					emissivity_flat = inverted_data[i_t].flatten()
-					for i_ref_point in range(1,len(i_ref_points)-1):
-						select = []
-						polygon = Polygon([ref_points_1[i_ref_point-1], ref_points_1[i_ref_point], ref_points_2[i_ref_point], ref_points_2[i_ref_point-1]])
-						for i_e in range(len(emissivity_flat)):
-							point = Point((b_flat[i_e],a_flat[i_e]))
-							select.append(polygon.contains(point))
-						local_mean_emis.append(np.nanmean(emissivity_flat[select]))
-						local_power.append(2*np.pi*np.nansum(emissivity_flat[select]*b_flat[select]*((grid_resolution*1e-2)**2)))
-					local_mean_emis = np.array(local_mean_emis)
-					local_power = np.array(local_power)
-					local_mean_emis = local_mean_emis[np.logical_not(np.isnan(local_mean_emis))].tolist()
-					local_power = local_power[np.logical_not(np.isnan(local_power))].tolist()
-					local_mean_emis_all.append(local_mean_emis)
-					local_power_all.append(local_power)
-					data_length = max(data_length,len(local_power))
-					leg_length_all.append(leg_length)
-				except:
-					local_mean_emis_all.append([])
-					local_power_all.append([])
-					leg_length_all.append(0)
+						# plt.figure()
+						# plt.plot(r_coord_smooth,z_coord_smooth)
+						# plt.plot(r_coord_smooth,z_coord_smooth,'+')
+						# plt.plot(ref_points[:,0],ref_points[:,1],'+')
+						# plt.plot(ref_points_1[:,0],ref_points_1[:,1],'o')
+						# plt.plot(ref_points_2[:,0],ref_points_2[:,1],'+')
+						# plt.pause(0.001)
 
-			for i_t in range(len(time_full_binned_crop)):
-				if len(local_mean_emis_all[i_t])<data_length:
-					local_mean_emis_all[i_t].extend([0]*(data_length-len(local_mean_emis_all[i_t])))
-					local_power_all[i_t].extend([0]*(data_length-len(local_power_all[i_t])))
+						local_mean_emis = []
+						local_power = []
+						emissivity_flat = inverted_data[i_t].flatten()
+						for i_ref_point in range(1,len(i_ref_points)-1):
+							select = []
+							polygon = Polygon([ref_points_1[i_ref_point-1], ref_points_1[i_ref_point], ref_points_2[i_ref_point], ref_points_2[i_ref_point-1]])
+							for i_e in range(len(emissivity_flat)):
+								point = Point((b_flat[i_e],a_flat[i_e]))
+								select.append(polygon.contains(point))
+							local_mean_emis.append(np.nanmean(emissivity_flat[select]))
+							local_power.append(2*np.pi*np.nansum(emissivity_flat[select]*b_flat[select]*((grid_resolution*1e-2)**2)))
+						local_mean_emis = np.array(local_mean_emis)
+						local_power = np.array(local_power)
+						local_mean_emis = local_mean_emis[np.logical_not(np.isnan(local_mean_emis))].tolist()
+						local_power = local_power[np.logical_not(np.isnan(local_power))].tolist()
+						local_mean_emis_all.append(local_mean_emis)
+						local_power_all.append(local_power)
+						data_length = max(data_length,len(local_power))
+						leg_length_all.append(leg_length)
+					except:
+						local_mean_emis_all.append([])
+						local_power_all.append([])
+						leg_length_all.append(0)
 
+				for i_t in range(len(time_full_binned_crop)):
+					if len(local_mean_emis_all[i_t])<data_length:
+						local_mean_emis_all[i_t].extend([0]*(data_length-len(local_mean_emis_all[i_t])))
+						local_power_all[i_t].extend([0]*(data_length-len(local_power_all[i_t])))
+			else:
+				local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution = coleval.track_outer_leg_radiation(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction)
+
+
+			number_of_curves_to_plot = 12
+			alpha = 0.9
+			# colors_smooth = np.array([np.linspace(0,1,num=number_of_curves_to_plot),np.linspace(1,0,num=number_of_curves_to_plot),[0]*number_of_curves_to_plot]).T
+			colors_smooth = np.linspace(0,0.9,num=number_of_curves_to_plot).astype(str)
+			select = np.unique(np.round(np.linspace(0,len(local_mean_emis_all)-1,num=number_of_curves_to_plot))).astype(int)
+			fig, ax = plt.subplots( 2,1,figsize=(10, 20), squeeze=False,sharex=True)
+			# plt.figure()
+			for i_i_t,i_t in enumerate(select):
+				to_plot_x = np.array(leg_length_interval_all[i_t])
+				to_plot_y1 = np.array(local_mean_emis_all[i_t])
+				to_plot_y1 = to_plot_y1[to_plot_x>0]
+				to_plot_y2 = np.array(local_power_all[i_t])
+				to_plot_y2 = to_plot_y2[to_plot_x>0]
+				to_plot_x = to_plot_x[to_plot_x>0]
+				to_plot_x = np.flip(np.sum(to_plot_x)-(np.cumsum(to_plot_x)-np.array(to_plot_x)/2),axis=0)
+				to_plot_y1 = np.flip(to_plot_y1,axis=0)
+				to_plot_y2 = np.flip(to_plot_y2,axis=0)
+				if i_i_t%3==0:
+					ax[0,0].plot(to_plot_x,to_plot_y1,'-',color=colors_smooth[i_i_t],label = '%.3gs' %(time_full_binned_crop[i_t]),linewidth=3,alpha=alpha)
+					ax[1,0].plot(to_plot_x,to_plot_y2,'-',color=colors_smooth[i_i_t],linewidth=3,alpha=alpha)
+				elif i_i_t%3==1:
+					ax[0,0].plot(to_plot_x,to_plot_y1,'-.',color=colors_smooth[i_i_t],label = '%.3gs' %(time_full_binned_crop[i_t]),linewidth=3,alpha=alpha)
+					ax[1,0].plot(to_plot_x,to_plot_y2,'-.',color=colors_smooth[i_i_t],linewidth=3,alpha=alpha)
+				elif i_i_t%3==2:
+					ax[0,0].plot(to_plot_x,to_plot_y1,'--',color=colors_smooth[i_i_t],label = '%.3gs' %(time_full_binned_crop[i_t]),linewidth=3,alpha=alpha)
+					ax[1,0].plot(to_plot_x,to_plot_y2,'--',color=colors_smooth[i_i_t],linewidth=3,alpha=alpha)
+			ax[0,0].legend(loc='best', fontsize='x-small')
+			ax[0,0].set_ylabel('average emissivity [W/m3]')
+			ax[1,0].set_ylabel('local radiated power [W]')
+			# ax[1,0].set_xlabel('distance from target [m]')
+			ax[1,0].set_xlabel('distance from x-point [m]')
+			# plt.pause(0.01)
+			plt.savefig(path_power_output + '/'+ str(shot_number)+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_outer_leg_rad_power2.png')
+			plt.close()
 
 			plt.figure(figsize=(10, 20))
 			plt.imshow(local_power_all,'rainbow',origin='lower',extent=[(0-0.5)*leg_resolution,(data_length+0.5)*leg_resolution,time_full_binned_crop[0]-np.diff(time_full_binned_crop)[0]/2,time_full_binned_crop[-1]+np.diff(time_full_binned_crop)[-1]/2],aspect=10,vmin=np.min(local_power_all[:-4]),vmax=np.max(local_power_all[:-4]))

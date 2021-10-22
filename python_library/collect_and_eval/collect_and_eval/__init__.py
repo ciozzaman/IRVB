@@ -809,9 +809,10 @@ def return_structure_point_location_on_foil():
 	return structure_point_location_on_foil
 
 structure_radial_profile = [_MASTU_CORE_GRID_POLYGON]
-structure_radial_profile.append(np.array([[1.554,1.554,1.746,1.746,1.554],[-0.247,-0.452,-0.452,-0.247,-0.247]]).T)	# P5
+structure_radial_profile.append(FULL_MASTU_CORE_GRID_POLYGON)
+structure_radial_profile.append(np.array([[1.554,1.554,1.746,1.746,1.554],[-0.270,-0.452,-0.452,-0.270,-0.270]]).T)	# P5
 structure_radial_profile.append(np.array([[1.516,1.516,1.788,1.788,1.516],[-0.227,-0.495,-0.495,-0.227,-0.227]]).T)	# P5 support
-structure_radial_profile.append(np.array([[1.554,1.554,1.746,1.746,1.554],[0.247,0.452,0.452,0.247,0.247]]).T)	# P5
+structure_radial_profile.append(np.array([[1.554,1.554,1.746,1.746,1.554],[0.270,0.452,0.452,0.270,0.270]]).T)	# P5
 structure_radial_profile.append(np.array([[1.516,1.516,1.788,1.788,1.516],[0.227,0.495,0.495,0.227,0.227]]).T)	# P5 support
 structure_radial_profile.append(np.array([[1.309,1.268,1.272,1.369,1.370,1.309],[-0.879,-0.95,-1.017,-1.017,-0.879,-0.879]]).T)	# P6
 structure_radial_profile.append(np.array([[1.406,1.306,1.194,1.208,1.309,1.413,1.406],[-0.822,-0.822,-1.002,-1.002,-0.842,-0.842,-0.842]]).T)	# P6 cover
@@ -819,6 +820,7 @@ structure_radial_profile.append(np.array([[1.309,1.268,1.272,1.369,1.370,1.309],
 structure_radial_profile.append(np.array([[1.406,1.306,1.194,1.208,1.309,1.413,1.406],[0.822,0.822,1.002,1.002,0.842,0.842,0.842]]).T)	# P6 cover
 structure_radial_profile.append(np.array([[1.468,1.395,1.446,1.518,1.468],[-0.495,-0.776,-0.788,-0.508,-0.495]]).T)	# ELM coil
 structure_radial_profile.append(np.array([[1.468,1.395,1.446,1.518,1.468],[0.495,0.776,0.788,0.508,0.495]]).T)	# ELM coil
+structure_radial_profile.append(np.array([[2,1.490,1.490,2],[-0.616,-0.616,-0.784,-0.784]]).T)	# IRVB tube
 def return_structure_radial_profile():
 	return structure_radial_profile
 
@@ -858,9 +860,17 @@ def return_all_time_strike_points_location(efit_reconstruction,all_time_sep_r,al
 	temp_Z = np.ones((len(efit_reconstruction.time),20))*np.nan
 	for time in range(len(efit_reconstruction.time)):
 		temp = np.array([efit_reconstruction.strikepointR[time],efit_reconstruction.strikepointZ[time]]).T
-		if temp.max()<1e-1:
-			a=np.concatenate([r_fine[all_time_sep_r[time][0]],r_fine[all_time_sep_r[time][2]]])
-			b=np.concatenate([z_fine[all_time_sep_z[time][0]],z_fine[all_time_sep_z[time][2]]])
+		if temp.max()<1e-1 and len(flatten(all_time_sep_r[time]))>0:
+			try:
+				a=np.concatenate([r_fine[all_time_sep_r[time][0]],r_fine[all_time_sep_r[time][2]]])
+				b=np.concatenate([z_fine[all_time_sep_z[time][0]],z_fine[all_time_sep_z[time][2]]])
+			except:
+				try:
+					a=r_fine[all_time_sep_r[time][0]]
+					b=z_fine[all_time_sep_z[time][0]]
+				except:
+					a=r_fine[all_time_sep_r[time][2]]
+					b=z_fine[all_time_sep_z[time][2]]
 			# c=np.abs(a-R_centre_column)
 			c=np.abs(a-R_centre_column_interpolator(b))
 			peaks = find_peaks(-c)[0]
@@ -897,9 +907,17 @@ def return_all_time_strike_points_location_radial(efit_reconstruction,all_time_s
 	temp_Z = np.ones((len(efit_reconstruction.time),20))*np.nan
 	for time in range(len(efit_reconstruction.time)):
 		temp = np.array([efit_reconstruction.strikepointR[time],efit_reconstruction.strikepointZ[time]]).T
-		if temp.max()<1e-1:
-			a=np.concatenate([r_fine[all_time_sep_r[time][0]],r_fine[all_time_sep_r[time][2]]])
-			b=np.concatenate([z_fine[all_time_sep_z[time][0]],z_fine[all_time_sep_z[time][2]]])
+		if temp.max()<1e-1 and len(flatten(all_time_sep_r[time]))>0:
+			try:
+				a=np.concatenate([r_fine[all_time_sep_r[time][0]],r_fine[all_time_sep_r[time][2]]])
+				b=np.concatenate([z_fine[all_time_sep_z[time][0]],z_fine[all_time_sep_z[time][2]]])
+			except:
+				try:
+					a=r_fine[all_time_sep_r[time][0]]
+					b=z_fine[all_time_sep_z[time][0]]
+				except:
+					a=r_fine[all_time_sep_r[time][2]]
+					b=z_fine[all_time_sep_z[time][2]]
 			# c=np.abs(a-R_centre_column)
 			c=np.abs(a-R_centre_column_interpolator(b))
 			peaks = find_peaks(-c)[0]
@@ -918,7 +936,10 @@ def return_all_time_separatrix(efit_reconstruction,all_time_sep_r,all_time_sep_z
 	for time in range(len(efit_reconstruction.time)):
 		separatrix = []
 		for i in range(len(all_time_sep_r[time])):
-			point_location = np.array([r_fine[all_time_sep_r[time][i]],z_fine[all_time_sep_z[time][i]],[ref_angle]*len(all_time_sep_z[time][i])]).T
+			try:
+				point_location = np.array([r_fine[all_time_sep_r[time][i]],z_fine[all_time_sep_z[time][i]],[ref_angle]*len(all_time_sep_z[time][i])]).T
+			except:
+				point_location = np.array([[0],[0],[ref_angle]]).T
 			point_location = point_toroidal_to_cartesian(point_location)
 			point_location = find_location_on_foil(point_location)
 			separatrix.append(absolute_position_on_foil_to_foil_coord(point_location))
@@ -930,7 +951,10 @@ def return_all_time_separatrix_radial(efit_reconstruction,all_time_sep_r,all_tim
 	for time in range(len(efit_reconstruction.time)):
 		separatrix = []
 		for i in range(len(all_time_sep_r[time])):
-			separatrix.append([r_fine[all_time_sep_r[time][i]],z_fine[all_time_sep_z[time][i]]])
+			try:
+				separatrix.append([r_fine[all_time_sep_r[time][i]],z_fine[all_time_sep_z[time][i]]])
+			except:
+				separatrix.append([[0],[0]])
 		all_time_separatrix.append(separatrix)
 	return all_time_separatrix
 
@@ -5754,7 +5778,11 @@ def efit_reconstruction_to_separatrix_on_foil(efit_reconstruction,refinement=100
 		all_z_up = []
 		all_peaks_low = []
 		all_z_low = []
-		for i_z,z in enumerate(z_fine):
+		z_array = np.arange(len(z_fine))
+		z_array = np.array([np.concatenate((z_array[z_fine>=0],np.flip(z_array[z_fine<0],axis=0))),np.concatenate((z_fine[z_fine>=0],np.flip(z_fine[z_fine<0],axis=0)))]).T
+		# for i_z,z in enumerate(z_fine):
+		for i_z,z in z_array:
+			i_z = int(i_z)
 			# psi_z = psi[i_z]
 			peaks = find_peaks(psi_up[i_z])[0]
 			all_peaks_up.append(peaks)
@@ -5780,6 +5808,7 @@ def efit_reconstruction_to_separatrix_on_foil(efit_reconstruction,refinement=100
 		# plt.figure()
 		# plt.plot(z_fine[all_z_up],r_fine[all_peaks_up],'+b')
 		# plt.plot(z_fine[all_z_low],r_fine[all_peaks_low],'+r')
+		# plt.pause(0.01)
 		select = np.logical_or( interp1(r_fine[all_peaks_up])>z_fine[all_z_up] , interp2(r_fine[all_peaks_up])<z_fine[all_z_up] )
 		all_peaks_up = all_peaks_up[select]
 		all_z_up = all_z_up[select]
@@ -5795,7 +5824,9 @@ def efit_reconstruction_to_separatrix_on_foil(efit_reconstruction,refinement=100
 		right_low = []
 		left_low_z = []
 		right_low_z = []
-		for i_z,z in enumerate(z_fine):
+		# for i_z,z in enumerate(z_fine):
+		for i_z,z in z_array:
+			i_z = int(i_z)
 			if i_z in all_z_up:
 				temp = all_peaks_up[all_z_up==i_z]
 				if len(temp) == 1:
@@ -5804,15 +5835,23 @@ def efit_reconstruction_to_separatrix_on_foil(efit_reconstruction,refinement=100
 				elif len(temp) == 2:
 					# # if r_fine[temp.min()]>R_centre_column or np.abs(z)<x_point_z_proximity:
 					# if r_fine[temp.min()]>R_centre_column_interpolator(-np.abs(z)):
-					left_up.append(temp.min())
-					left_up_z.append(i_z)
-					right_up.append(temp.max())
-					right_up_z.append(i_z)
+					if np.abs(z)>1.5 and np.sum(r_fine[temp]<0.8)==0:	# this identifies the condition when the outer separatrix curles up and it gets split in inner and outer
+						right_up.append(temp[np.abs(temp - right_up[-1]).argmin()])
+						right_up_z.append(i_z)
+					else:
+						left_up.append(temp.min())
+						left_up_z.append(i_z)
+						right_up.append(temp.max())
+						right_up_z.append(i_z)
 				elif len(temp) == 3:
-					left_up.append(np.sort(temp)[1])
-					left_up_z.append(i_z)
-					right_up.append(temp.max())
-					right_up_z.append(i_z)
+					if np.abs(z)>1.5 and np.sum(r_fine[temp]<0.8)==0:	# this identifies the condition when the outer separatrix curles up and it gets split in inner and outer
+						right_up.append(temp[np.abs(temp - right_up[-1]).argmin()])
+						right_up_z.append(i_z)
+					else:
+						left_up.append(np.sort(temp)[1])
+						left_up_z.append(i_z)
+						right_up.append(temp.max())
+						right_up_z.append(i_z)
 				elif len(temp) == 4:
 					left_up.append(np.sort(temp)[1])
 					left_up_z.append(i_z)
@@ -5826,15 +5865,23 @@ def efit_reconstruction_to_separatrix_on_foil(efit_reconstruction,refinement=100
 				elif len(temp) == 2:
 					# # if r_fine[temp.min()]>R_centre_column or np.abs(z)<x_point_z_proximity:
 					# if r_fine[temp.min()]>R_centre_column_interpolator(-np.abs(z)):
-					left_low.append(temp.min())
-					left_low_z.append(i_z)
-					right_low.append(temp.max())
-					right_low_z.append(i_z)
+					if np.abs(z)>1.5 and np.sum(r_fine[temp]<0.8)==0:	# this identifies the condition when the outer separatrix curles up and it gets split in inner and outer
+						right_low.append(temp[np.abs(temp - right_low[-1]).argmin()])
+						right_low_z.append(i_z)
+					else:
+						left_low.append(temp.min())
+						left_low_z.append(i_z)
+						right_low.append(temp.max())
+						right_low_z.append(i_z)
 				elif len(temp) == 3:
-					left_low.append(np.sort(temp)[1])
-					left_low_z.append(i_z)
-					right_low.append(temp.max())
-					right_low_z.append(i_z)
+					if np.abs(z)>1.5 and np.sum(r_fine[temp]<0.8)==0:	# this identifies the condition when the outer separatrix curles up and it gets split in inner and outer
+						right_low.append(temp[np.abs(temp - right_low[-1]).argmin()])
+						right_low_z.append(i_z)
+					else:
+						left_low.append(np.sort(temp)[1])
+						left_low_z.append(i_z)
+						right_low.append(temp.max())
+						right_low_z.append(i_z)
 				elif len(temp) == 4:
 					left_low.append(np.sort(temp)[1])
 					left_low_z.append(i_z)
@@ -5842,6 +5889,20 @@ def efit_reconstruction_to_separatrix_on_foil(efit_reconstruction,refinement=100
 					right_low_z.append(i_z)
 		# sep_r = [left_up,right_up,left_low,right_low]
 		# sep_z = [left_up_z,right_up_z,left_low_z,right_low_z]
+		left_up = np.array([y for _, y in sorted(zip(left_up_z, left_up))])
+		left_up_z = np.sort(left_up_z)
+		right_up = np.array([y for _, y in sorted(zip(right_up_z, right_up))])
+		right_up_z = np.sort(right_up_z)
+		left_low = np.array([y for _, y in sorted(zip(left_low_z, left_low))])
+		left_low_z = np.sort(left_low_z)
+		right_low = np.array([y for _, y in sorted(zip(right_low_z, right_low))])
+		right_low_z = np.sort(right_low_z)
+		# plt.figure()
+		# plt.plot(z_fine[left_up_z],r_fine[left_up],'-b')
+		# plt.plot(z_fine[right_up_z],r_fine[right_up],'-r')
+		# plt.plot(z_fine[left_low_z],r_fine[left_low],'-b')
+		# plt.plot(z_fine[right_low_z],r_fine[right_low],'-r')
+		# plt.pause(0.01)
 		all_time_sep_r.append([left_up,right_up,left_low,right_low])
 		all_time_sep_z.append([left_up_z,right_up_z,left_low_z,right_low_z])
 	return all_time_sep_r,all_time_sep_z,r_fine,z_fine
@@ -6227,6 +6288,7 @@ def track_outer_leg_radiation(inverted_data,inversion_R,inversion_Z,time_full_bi
 	local_mean_emis_all = []
 	local_power_all = []
 	leg_length_all = []
+	leg_length_interval_all = []
 	for i_t in range(len(time_full_binned_crop)):
 		print('starting t=%.4gms' %(time_full_binned_crop[i_t]*1e3))
 		try:
@@ -6239,6 +6301,7 @@ def track_outer_leg_radiation(inverted_data,inversion_R,inversion_Z,time_full_bi
 				local_mean_emis_all.append([])
 				local_power_all.append([])
 				leg_length_all.append(0)
+				leg_length_interval_all.append([])
 				continue
 			elif np.abs((r_fine[all_time_sep_r[i_efit_time][1]]- efit_reconstruction.lower_xpoint_r[i_efit_time])**2 + (z_fine[all_time_sep_z[i_efit_time][1]]- efit_reconstruction.lower_xpoint_z[i_efit_time])**2 ).min() < np.abs((r_fine[all_time_sep_r[i_efit_time][3]]- efit_reconstruction.lower_xpoint_r[i_efit_time])**2 + (z_fine[all_time_sep_z[i_efit_time][3]]- efit_reconstruction.lower_xpoint_z[i_efit_time])**2 ).min():
 				i_closer_separatrix_to_x_point = 1
@@ -6257,15 +6320,19 @@ def track_outer_leg_radiation(inverted_data,inversion_R,inversion_Z,time_full_bi
 			z_coord_smooth = generic_filter(z_fine[all_time_sep_z[i_efit_time][i_closer_separatrix_to_x_point]][i_where_strike_point_is:i_where_x_point_is],np.mean,size=11)
 			leg_length = np.sum((np.diff(r_coord_smooth)**2 + np.diff(z_coord_smooth)**2)**0.5)
 			# I arbitrarily decide to cut the leg in 10cm pieces
+			leg_length_interval = [0]
 			target_length = 0 + leg_resolution
 			i_ref_points = [0]
 			ref_points = [[r_coord_smooth[0],z_coord_smooth[0]]]
 			while target_length < leg_length + leg_resolution:
-				temp = np.abs(np.cumsum((np.diff(r_coord_smooth)**2 + np.diff(z_coord_smooth)**2)**0.5) - target_length).argmin() + 1
-				i_ref_points.append(temp)
-				ref_points.append([r_coord_smooth[temp],z_coord_smooth[temp]])
+				# print(target_length)
+				temp = np.abs(np.cumsum((np.diff(r_coord_smooth)**2 + np.diff(z_coord_smooth)**2)**0.5) - target_length).argmin()
+				leg_length_interval.append(np.cumsum((np.diff(r_coord_smooth)**2 + np.diff(z_coord_smooth)**2)**0.5)[temp] - np.sum(leg_length_interval))
+				i_ref_points.append(temp+1)
+				ref_points.append([r_coord_smooth[temp+1],z_coord_smooth[temp+1]])
 				target_length += leg_resolution
 			ref_points = np.array(ref_points)
+			leg_length_interval = leg_length_interval[1:]
 			ref_points_1 = []
 			ref_points_2 = []
 			try:
@@ -6310,26 +6377,29 @@ def track_outer_leg_radiation(inverted_data,inversion_R,inversion_Z,time_full_bi
 					select.append(polygon.contains(point))
 				local_mean_emis.append(np.nanmean(emissivity_flat[select]))
 				local_power.append(2*np.pi*np.nansum(emissivity_flat[select]*b_flat[select]*((grid_resolution*1e-2)**2)))
-			local_mean_emis = np.array(local_mean_emis)
-			local_power = np.array(local_power)
-			local_mean_emis = local_mean_emis[np.logical_not(np.isnan(local_mean_emis))].tolist()
-			local_power = local_power[np.logical_not(np.isnan(local_power))].tolist()
+			# local_mean_emis = np.array(local_mean_emis)
+			# local_power = np.array(local_power)
+			# local_mean_emis = local_mean_emis[np.logical_not(np.isnan(local_mean_emis))].tolist()
+			# local_power = local_power[np.logical_not(np.isnan(local_power))].tolist()
 			local_mean_emis_all.append(local_mean_emis)
 			local_power_all.append(local_power)
 			data_length = max(data_length,len(local_power))
 			leg_length_all.append(leg_length)
+			leg_length_interval_all.append(leg_length_interval)
 		except Exception as e:
 			# logging.exception('with error: ' + str(e))
 			local_mean_emis_all.append([])
 			local_power_all.append([])
+			leg_length_interval_all.append([])
 			leg_length_all.append(0)
 
 	for i_t in range(len(time_full_binned_crop)):
 		if len(local_mean_emis_all[i_t])<data_length:
 			local_mean_emis_all[i_t].extend([0]*(data_length-len(local_mean_emis_all[i_t])))
 			local_power_all[i_t].extend([0]*(data_length-len(local_power_all[i_t])))
+			leg_length_interval_all[i_t].extend([0]*(data_length-len(leg_length_interval_all[i_t])))
 
-	return local_mean_emis_all,local_power_all,leg_length_all,data_length,leg_resolution
+	return local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution
 
 def MASTU_pulse_process_FAST3(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,height,width,flag_use_of_first_frames_as_reference,params,errparams,foil_position_dict):
 	# created 2021/10/07
@@ -6387,11 +6457,12 @@ def MASTU_pulse_process_FAST3(laser_counts_corrected,time_of_experiment_digitize
 		temp_counts_minus_background_rot[np.logical_and(temp_counts_minus_background_rot<np.nanmin(temp_counts_minus_background),temp_counts_minus_background_rot>np.nanmax(temp_counts_minus_background))]=0
 	FAST_counts_minus_background_crop = temp_counts_minus_background_rot[:,foildw:foilup,foillx:foilrx]
 
-	temp = FAST_counts_minus_background_crop[:,:,:int(np.shape(FAST_counts_minus_background_crop)[2]*0.75)]
-	temp = np.sort(temp[np.max(temp,axis=(1,2)).argmax()].flatten())
-	ani,efit_reconstruction = movie_from_data(np.array([np.flip(np.transpose(FAST_counts_minus_background_crop,(0,2,1)),axis=2)]), laser_framerate/len(laser_digitizer_ID),timesteps=FAST_counts_minus_background_crop_time,integration=laser_int_time/1000,time_offset=FAST_counts_minus_background_crop_time[0],extvmin=0,extvmax=np.nanmean(temp[-len(temp)//60:]),xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='Count increase [au]', prelude='shot ' + laser_to_analyse[-9:-4]+'\n',overlay_structure=True,include_EFIT=True,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True,EFIT_output_requested=True)
-	ani.save(laser_to_analyse[:-4]+ '_FAST_count_increase.mp4', fps=5*laser_framerate/len(laser_digitizer_ID)/383, writer='ffmpeg',codec='mpeg4')
-	plt.close('all')
+	# I drop this to save memory
+	# temp = FAST_counts_minus_background_crop[:,:,:int(np.shape(FAST_counts_minus_background_crop)[2]*0.75)]
+	# temp = np.sort(temp[np.max(temp,axis=(1,2)).argmax()].flatten())
+	# ani,efit_reconstruction = movie_from_data(np.array([np.flip(np.transpose(FAST_counts_minus_background_crop,(0,2,1)),axis=2)]), laser_framerate/len(laser_digitizer_ID),timesteps=FAST_counts_minus_background_crop_time,integration=laser_int_time/1000,time_offset=FAST_counts_minus_background_crop_time[0],extvmin=0,extvmax=np.nanmean(temp[-len(temp)//60:]),xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='Count increase [au]', prelude='shot ' + laser_to_analyse[-9:-4]+'\n',overlay_structure=True,include_EFIT=True,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True,EFIT_output_requested=True)
+	# ani.save(laser_to_analyse[:-4]+ '_FAST_count_increase.mp4', fps=5*laser_framerate/len(laser_digitizer_ID)/383, writer='ffmpeg',codec='mpeg4')
+	# plt.close('all')
 
 	print('completed FAST count rotating/cropping ' + laser_to_analyse)
 
@@ -6527,7 +6598,7 @@ def MASTU_pulse_process_FAST3(laser_counts_corrected,time_of_experiment_digitize
 
 	temp = brightness[:,:,:int(np.shape(brightness)[2]*0.75)]
 	temp = np.sort(temp[np.max(temp,axis=(1,2)).argmax()].flatten())
-	ani,efit_reconstruction = movie_from_data(np.array([np.flip(np.transpose(brightness,(0,2,1)),axis=2)]), 1/np.median(np.diff(time_binned)),timesteps=time_binned[1:-1],integration=laser_int_time/1000,time_offset=time_binned[0],extvmin=0,xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='brightness [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4]+'\n'+binning_type+'\n',overlay_structure=True,include_EFIT=True,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True,EFIT_output_requested=True,efit_reconstruction=efit_reconstruction)
+	ani,efit_reconstruction = movie_from_data(np.array([np.flip(np.transpose(brightness,(0,2,1)),axis=2)]), 1/np.median(np.diff(time_binned)),timesteps=time_binned[1:-1],integration=laser_int_time/1000,time_offset=time_binned[0],extvmin=0,xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='brightness [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4]+'\n'+binning_type+'\n',overlay_structure=True,include_EFIT=True,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True,EFIT_output_requested=True)
 	ani.save('/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+ '_FAST_brightness.mp4', fps=5*(1/np.mean(np.diff(time_binned)))/383, writer='ffmpeg',codec='mpeg4')
 	plt.close('all')
 	powernoback_output = cp.deepcopy(powernoback)
@@ -6583,189 +6654,6 @@ def MASTU_pulse_process_FAST3(laser_counts_corrected,time_of_experiment_digitize
 		sensitivities_reshaped = sensitivities.reshape((pixel_v,pixel_h,len(grid_laplacian)))
 		sensitivities_reshaped = np.transpose(sensitivities_reshaped , (1,0,2))
 
-		def build_laplacian(grid):
-			# Try making grid laplacian matrix for spatial regularisation
-			num_cells = len(grid)
-			grid_laplacian = np.zeros((num_cells, num_cells))
-			unique_x = np.unique(np.mean(grid,axis=1)[:,0])
-			unique_y = np.unique(np.mean(grid,axis=1)[:,1])
-
-			for ith_cell in range(num_cells):
-
-				# get the 2D mesh coordinates of this cell
-				ix = np.abs(unique_x - np.mean(grid,axis=1)[ith_cell,0]).argmin()	# radious
-				iy = np.abs(unique_y - np.mean(grid,axis=1)[ith_cell,1]).argmin()	# Z
-
-				neighbours = 0
-
-				if ix>0:
-					try:
-						select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix-1],np.mean(grid,axis=1)[:,1]==unique_y[iy])  # neighbour 1 left
-						if np.sum(select)>0:
-							n1 = select.argmax()
-							grid_laplacian[ith_cell, n1] = -1
-							neighbours += 1
-					except KeyError:
-						pass
-
-				if ix>0:
-					try:
-						select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix-1],np.mean(grid,axis=1)[:,1]==unique_y[iy+1])  # neighbour 2 top left
-						if np.sum(select)>0:
-							n1 = select.argmax()
-							grid_laplacian[ith_cell, n1] = -1
-							neighbours += 1
-					except:
-						pass
-
-				try:
-					select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix],np.mean(grid,axis=1)[:,1]==unique_y[iy+1])  # neighbour 3 top
-					if np.sum(select)>0:
-						n1 = select.argmax()
-						grid_laplacian[ith_cell, n1] = -1
-						neighbours += 1
-				except:
-					pass
-
-				try:
-					select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix+1],np.mean(grid,axis=1)[:,1]==unique_y[iy+1])  # neighbour 4 top right
-					if np.sum(select)>0:
-						n1 = select.argmax()
-						grid_laplacian[ith_cell, n1] = -1
-						neighbours += 1
-				except:
-					pass
-
-				try:
-					select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix+1],np.mean(grid,axis=1)[:,1]==unique_y[iy])  # neighbour 5 right
-					if np.sum(select)>0:
-						n1 = select.argmax()
-						grid_laplacian[ith_cell, n1] = -1
-						neighbours += 1
-				except:
-					pass
-
-				if iy>0:
-					try:
-						select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix+1],np.mean(grid,axis=1)[:,1]==unique_y[iy-1])  # neighbour 6 down right
-						if np.sum(select)>0:
-							n1 = select.argmax()
-							grid_laplacian[ith_cell, n1] = -1
-							neighbours += 1
-					except:
-						pass
-
-				if iy>0:
-					try:
-						select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix],np.mean(grid,axis=1)[:,1]==unique_y[iy-1])  # neighbour 7 down
-						if np.sum(select)>0:
-							n1 = select.argmax()
-							grid_laplacian[ith_cell, n1] = -1
-							neighbours += 1
-					except:
-						pass
-
-				if ix>0 and iy>0:
-					try:
-						select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix-1],np.mean(grid,axis=1)[:,1]==unique_y[iy-1])  # neighbour 8 down left
-						if np.sum(select)>0:
-							n1 = select.argmax()
-							grid_laplacian[ith_cell, n1] = -1
-							neighbours += 1
-					except:
-						pass
-
-				grid_laplacian[ith_cell, ith_cell] = neighbours
-			return grid_laplacian
-
-		def build_Z_derivate(grid):
-			# Try making grid Z direction derivate matrix for spatial regularisation
-			num_cells = len(grid)
-			grid_laplacian = np.zeros((num_cells, num_cells))
-			unique_x = np.unique(np.mean(grid,axis=1)[:,0])
-			unique_y = np.unique(np.mean(grid,axis=1)[:,1])
-
-			for ith_cell in range(num_cells):
-
-				# get the 2D mesh coordinates of this cell
-				ix = np.abs(unique_x - np.mean(grid,axis=1)[ith_cell,0]).argmin()	# radious
-				iy = np.abs(unique_y - np.mean(grid,axis=1)[ith_cell,1]).argmin()	# Z
-
-				neighbours = 0
-
-				try:
-					select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix],np.mean(grid,axis=1)[:,1]==unique_y[iy+1])  # neighbour 3 top
-					if np.sum(select)>0:
-						n1 = select.argmax()
-						grid_laplacian[ith_cell, n1] = 1
-						neighbours += 1
-				except:
-					pass
-
-				if iy>0:
-					try:
-						select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix],np.mean(grid,axis=1)[:,1]==unique_y[iy-1])  # neighbour 7 down
-						if np.sum(select)>0:
-							n1 = select.argmax()
-							grid_laplacian[ith_cell, n1] = -1
-							neighbours += 1
-					except:
-						pass
-
-				if neighbours==2:
-					grid_laplacian[ith_cell, ith_cell] = 0
-					grid_laplacian[ith_cell] /=2
-				elif neighbours==1:
-					grid_laplacian[ith_cell, ith_cell] = 1
-				else:
-					grid_laplacian[ith_cell, ith_cell] = 0
-
-			return grid_laplacian
-
-		def build_R_derivate(grid):
-			# Try making grid R direction derivate matrix for spatial regularisation
-			num_cells = len(grid)
-			grid_laplacian = np.zeros((num_cells, num_cells))
-			unique_x = np.unique(np.mean(grid,axis=1)[:,0])
-			unique_y = np.unique(np.mean(grid,axis=1)[:,1])
-
-			for ith_cell in range(num_cells):
-
-				# get the 2D mesh coordinates of this cell
-				ix = np.abs(unique_x - np.mean(grid,axis=1)[ith_cell,0]).argmin()	# radious
-				iy = np.abs(unique_y - np.mean(grid,axis=1)[ith_cell,1]).argmin()	# Z
-
-				neighbours = 0
-
-				if ix>0:
-					try:
-						select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix-1],np.mean(grid,axis=1)[:,1]==unique_y[iy])  # neighbour 1 left
-						if np.sum(select)>0:
-							n1 = select.argmax()
-							grid_laplacian[ith_cell, n1] = -1
-							neighbours += 1
-					except KeyError:
-						pass
-
-				try:
-					select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix+1],np.mean(grid,axis=1)[:,1]==unique_y[iy])  # neighbour 5 right
-					if np.sum(select)>0:
-						n1 = select.argmax()
-						grid_laplacian[ith_cell, n1] = 1
-						neighbours += 1
-				except:
-					pass
-
-				if neighbours==2:
-					grid_laplacian[ith_cell, ith_cell] = 0
-					grid_laplacian[ith_cell] /=2
-				elif neighbours==1:
-					grid_laplacian[ith_cell, ith_cell] = 1
-				else:
-					grid_laplacian[ith_cell, ith_cell] = 0
-			return grid_laplacian
-
-
 		if grid_resolution==8:
 			# temp=1e-3
 			temp=1e-7
@@ -6774,7 +6662,9 @@ def MASTU_pulse_process_FAST3(laser_counts_corrected,time_of_experiment_digitize
 		elif grid_resolution==4:
 			temp=0
 
-		def reduce_voxels(sensitivities_reshaped,grid_laplacian,grid_data,std_treshold = temp, sum_treshold = 0.000, core_radious_treshold = 1.9, divertor_radious_treshold = 1.9,chop_top_corner = False, extra_chop_top_corner = False , chop_corner_close_to_baffle = False):
+		def reduce_voxels(sensitivities_reshaped,grid_laplacian,grid_data,std_treshold = temp, sum_treshold = 0.000, core_radious_treshold = 1.9, divertor_radious_treshold = 1.9,chop_top_corner = False, extra_chop_top_corner = False , chop_corner_close_to_baffle = False, restrict_polygon = FULL_MASTU_CORE_GRID_POLYGON):
+			from shapely.geometry import Point
+			from shapely.geometry.polygon import Polygon
 			# masking the voxels whose emission does not reach the foil
 			# select = np.sum(sensitivities_reshaped,axis=(0,1))>0.05
 			select = np.logical_and(np.std(sensitivities_reshaped,axis=(0,1))>std_treshold*(np.std(sensitivities_reshaped,axis=(0,1)).max()),np.sum(sensitivities_reshaped,axis=(0,1))>sum_treshold)
@@ -6805,6 +6695,11 @@ def MASTU_pulse_process_FAST3(laser_counts_corrected,time_of_experiment_digitize
 				interp3 = interp1d([x4[0],x3[0]],[x4[1],x3[1]],fill_value="extrapolate",bounds_error=False)
 				select2 = np.logical_or(np.mean(grid_data_masked,axis=1)[:,1]<-1.1,np.mean(grid_data_masked,axis=1)[:,1]>interp3(np.mean(grid_data_masked,axis=1)[:,0]))
 				select = np.logical_and(select,select2)
+			if len(restrict_polygon)>0:
+				polygon = Polygon(restrict_polygon)
+				for i_e in range(len(grid_data_masked)):
+					if np.sum([polygon.contains(Point((grid_data_masked[i_e][i__e,0],grid_data_masked[i_e][i__e,1]))) for i__e in range(4)])==0:
+						select[i_e] = False
 			grid_data_masked = grid_data_masked[select]
 			sensitivities_reshaped_masked = sensitivities_reshaped_masked[:,:,select]
 			select = np.logical_or(np.mean(grid_data_masked,axis=1)[:,0]<divertor_radious_treshold,np.mean(grid_data_masked,axis=1)[:,1]>-1.3)
@@ -6847,12 +6742,16 @@ def MASTU_pulse_process_FAST3(laser_counts_corrected,time_of_experiment_digitize
 		# ROI = np.array([[0.05,0.95],[0.05,0.95]])
 		ROI1 = np.array([[0.03,0.85],[0.03,0.95]])
 		ROI2 = np.array([[0.03,0.6],[0.03,1-0.03]])
+		ROI_beams = np.array([[0.,0.3],[0.5,1]])
 		# ROI = np.array([[0.2,0.95],[0.1,1]])
 		ROI1 = np.round((ROI1.T*foil_shape).T).astype(int)
 		ROI2 = np.round((ROI2.T*foil_shape).T).astype(int)
+		ROI_beams = np.round((ROI_beams.T*foil_shape).T).astype(int)
 		a,b = np.meshgrid(np.arange(foil_shape[1]),np.arange(foil_shape[0]))
 		selected_ROI = np.logical_and(np.logical_and(a>=ROI1[1,0],a<ROI1[1,1]),np.logical_and(b>=sensitivities_binned.shape[0]-ROI1[0,1],b<sensitivities_binned.shape[0]-ROI1[0,0]))
 		selected_ROI = np.logical_or(selected_ROI,np.logical_and(np.logical_and(a>=ROI2[1,0],a<ROI2[1,1]),np.logical_and(b>=sensitivities_binned.shape[0]-ROI2[0,1],b<sensitivities_binned.shape[0]-ROI2[0,0])))
+		if check_beams_on(laser_to_analyse[-9:-4]):
+			selected_ROI = np.logical_and(selected_ROI,np.logical_not(np.logical_and(np.logical_and(a>=ROI_beams[1,0],a<ROI_beams[1,1]),np.logical_and(b>=sensitivities_binned.shape[0]-ROI_beams[0,1],b<sensitivities_binned.shape[0]-ROI_beams[0,0]))))
 
 		if True:	# setting zero to the sensitivities I want to exclude
 			sensitivities_binned_crop = cp.deepcopy(sensitivities_binned)
@@ -7008,14 +6907,14 @@ def MASTU_pulse_process_FAST3(laser_counts_corrected,time_of_experiment_digitize
 		# regolarisation_coeff = 1e-5 / ((reference_sigma_powernoback/78.18681)**0.5)
 		sigma_emissivity = 2e3	# this is completely arbitrary
 		# sigma_emissivity = 1e4 * ((np.median(sigma_powernoback_full)/78)**0.5)	# I think it must go hand in hand with the uncertanty in the pixels
-		regolarisation_coeff_edge = 1e-4	# I raiset it artificially from 1e-3 to engage regolarisation_coeff_central_border_Z_derivate and regolarisation_coeff_central_column_border_R_derivate
+		regolarisation_coeff_edge = 1e1	# I raiset it artificially from 1e-3 to engage regolarisation_coeff_central_border_Z_derivate and regolarisation_coeff_central_column_border_R_derivate
 		regolarisation_coeff_central_border_Z_derivate = 1e-20
 		regolarisation_coeff_central_column_border_R_derivate = 1e-20
 		regolarisation_coeff_divertor = regolarisation_coeff/1.5
 		sigma_emissivity_2 = sigma_emissivity**2
 
 		sigma_powernoback_full[np.isnan(sigma_powernoback_full)] = 1
-		selected_ROI_internal_no_plasma = selected_ROI_no_plasma.flatten()
+		selected_ROI_internal = selected_ROI.flatten()
 		inverted_data = []
 		inverted_data_likelihood = []
 		inverted_data_info = []
@@ -7068,7 +6967,7 @@ def MASTU_pulse_process_FAST3(laser_counts_corrected,time_of_experiment_digitize
 				# print(homogeneous_offset,homogeneous_offset_plasma)
 				emissivity = emissivity_plus[:-2]
 				emissivity[emissivity==0] = 1e-10
-				foil_power_guess = np.dot(sensitivities_binned_crop,emissivity) + selected_ROI_internal_no_plasma*homogeneous_offset + homogeneous_offset_plasma*select_foil_region_with_plasma
+				foil_power_guess = np.dot(sensitivities_binned_crop,emissivity) + selected_ROI_internal*homogeneous_offset + homogeneous_offset_plasma*select_foil_region_with_plasma
 				foil_power_error = powernoback - foil_power_guess
 				emissivity_laplacian = np.dot(grid_laplacian_masked_crop_scaled,emissivity)
 				Z_derivate = np.dot(grid_Z_derivate_masked_crop_scaled,emissivity)
@@ -7079,26 +6978,26 @@ def MASTU_pulse_process_FAST3(laser_counts_corrected,time_of_experiment_digitize
 				likelihood_emissivity_pos = np.sum((np.minimum(0.,emissivity)/sigma_emissivity)**2)
 				likelihood_emissivity_laplacian = (regolarisation_coeff**2)* np.sum(((emissivity_laplacian*np.logical_not(selected_super_x_cells) /sigma_emissivity)**2))
 				likelihood_emissivity_laplacian_superx = (regolarisation_coeff_divertor**2)* np.sum(((emissivity_laplacian*selected_super_x_cells /sigma_emissivity)**2))
-				likelihood_emissivity_edge_laplacian = (regolarisation_coeff_edge**2)* np.sum(((emissivity_laplacian*selected_edge_cells_for_laplacian /sigma_emissivity)**2))
-				likelihood_emissivity_edge = np.sum((emissivity*selected_edge_cells/sigma_emissivity)**2)
+				likelihood_emissivity_edge_laplacian = 0#(regolarisation_coeff_edge**2)* np.sum(((emissivity_laplacian*selected_edge_cells_for_laplacian /sigma_emissivity)**2))
+				likelihood_emissivity_edge = (regolarisation_coeff_edge**2)*np.sum((emissivity*selected_edge_cells/sigma_emissivity)**2)
 				likelihood_emissivity_central_border_Z_derivate = (regolarisation_coeff_central_border_Z_derivate**2)* np.sum((Z_derivate*selected_central_border_cells/sigma_emissivity)**2)
 				likelihood_emissivity_central_column_border_R_derivate = (regolarisation_coeff_central_column_border_R_derivate**2)* np.sum((R_derivate*selected_central_column_border_cells/sigma_emissivity)**2)
 				likelihood = likelihood_power_fit + likelihood_emissivity_pos + likelihood_emissivity_laplacian + likelihood_emissivity_edge_laplacian + likelihood_emissivity_edge + likelihood_emissivity_central_border_Z_derivate + likelihood_emissivity_central_column_border_R_derivate + likelihood_emissivity_laplacian_superx
-				likelihood_homogeneous_offset = (homogeneous_offset/reference_sigma_powernoback)**2
+				likelihood_homogeneous_offset = 0#(homogeneous_offset/reference_sigma_powernoback)**2
 				likelihood_homogeneous_offset_plasma = (homogeneous_offset_plasma/reference_sigma_powernoback)**2
 				likelihood = likelihood + likelihood_homogeneous_offset + likelihood_homogeneous_offset_plasma + likelihood_chi_square
 
-				likelihood_power_fit_derivate = np.concatenate((-2*np.dot((foil_power_error/sigma_powernoback_2),sensitivities_binned_crop),[-2*np.sum(foil_power_error*select_foil_region_with_plasma/sigma_powernoback_2)*homogeneous_scaling,-2*np.sum(foil_power_error*selected_ROI_internal_no_plasma/sigma_powernoback_2)*homogeneous_scaling]))
+				likelihood_power_fit_derivate = np.concatenate((-2*np.dot((foil_power_error/sigma_powernoback_2),sensitivities_binned_crop),[-2*np.sum(foil_power_error*select_foil_region_with_plasma/sigma_powernoback_2)*homogeneous_scaling,-2*np.sum(foil_power_error*selected_ROI_internal/sigma_powernoback_2)*homogeneous_scaling]))
 				likelihood_chi_square_derivate =0# likelihood_power_fit_derivate * 2 *(likelihood_power_fit-target_chi_square)/(target_chi_square_sigma**2)
 				likelihood_emissivity_pos_derivate = 2*(np.minimum(0.,emissivity)**2)/emissivity/sigma_emissivity_2
 				likelihood_emissivity_laplacian_derivate = 2*(regolarisation_coeff**2) * np.dot(emissivity_laplacian*np.logical_not(selected_super_x_cells) , grid_laplacian_masked_crop_scaled) / (sigma_emissivity**2)
 				likelihood_emissivity_laplacian_derivate_superx = 2*(regolarisation_coeff_divertor**2) * np.dot(emissivity_laplacian*selected_super_x_cells , grid_laplacian_masked_crop_scaled) / (sigma_emissivity**2)
-				likelihood_emissivity_edge_laplacian_derivate = 2*(regolarisation_coeff_edge**2) * np.dot(emissivity_laplacian*selected_edge_cells_for_laplacian , grid_laplacian_masked_crop_scaled) / (sigma_emissivity**2)
-				likelihood_emissivity_edge_derivate = 2*emissivity*selected_edge_cells/sigma_emissivity_2
+				likelihood_emissivity_edge_laplacian_derivate = 0#2*(regolarisation_coeff_edge**2) * np.dot(emissivity_laplacian*selected_edge_cells_for_laplacian , grid_laplacian_masked_crop_scaled) / (sigma_emissivity**2)
+				likelihood_emissivity_edge_derivate = (regolarisation_coeff_edge**2)*2*emissivity*selected_edge_cells/sigma_emissivity_2
 				likelihood_emissivity_central_border_Z_derivate_derivate = 2*(regolarisation_coeff_central_border_Z_derivate**2)*np.dot(Z_derivate*selected_central_border_cells,grid_Z_derivate_masked_crop_scaled)/sigma_emissivity_2
 				likelihood_emissivity_central_column_border_R_derivate_derivate = 2*(regolarisation_coeff_central_column_border_R_derivate**2)*np.dot(R_derivate*selected_central_column_border_cells,grid_R_derivate_masked_crop_scaled)/sigma_emissivity_2
 				likelihood_derivate = likelihood_emissivity_pos_derivate + likelihood_emissivity_laplacian_derivate + likelihood_emissivity_edge_laplacian_derivate + likelihood_emissivity_edge_derivate + likelihood_emissivity_central_border_Z_derivate_derivate + likelihood_emissivity_central_column_border_R_derivate_derivate + likelihood_emissivity_laplacian_derivate_superx
-				likelihood_homogeneous_offset_derivate = 2*homogeneous_offset*homogeneous_scaling/(reference_sigma_powernoback**2)
+				likelihood_homogeneous_offset_derivate = 0#2*homogeneous_offset*homogeneous_scaling/(reference_sigma_powernoback**2)
 				likelihood_homogeneous_offset_plasma_derivate = 2*homogeneous_offset_plasma*homogeneous_scaling/(reference_sigma_powernoback**2)
 				likelihood_derivate = np.concatenate((likelihood_derivate,[likelihood_homogeneous_offset_plasma_derivate,likelihood_homogeneous_offset_derivate])) + likelihood_power_fit_derivate + likelihood_chi_square_derivate
 				# likelihood_derivate = likelihood_emissivity_central_border_derivate
@@ -7115,7 +7014,7 @@ def MASTU_pulse_process_FAST3(laser_counts_corrected,time_of_experiment_digitize
 			# x_optimal[-2:] *= homogeneous_scaling
 			x_optimal[-2:] *= np.array([homogeneous_scaling,homogeneous_scaling])
 
-			foil_power_guess = np.dot(sensitivities_binned_crop,x_optimal[:-2])+x_optimal[-2]*select_foil_region_with_plasma+x_optimal[-1]*selected_ROI_internal_no_plasma
+			foil_power_guess = np.dot(sensitivities_binned_crop,x_optimal[:-2])+x_optimal[-2]*select_foil_region_with_plasma+x_optimal[-1]*selected_ROI_internal
 			foil_power_error = powernoback - foil_power_guess
 			chi_square = np.sum((foil_power_error/sigma_powernoback)**2)
 			print('chi_square '+str(chi_square))
@@ -7159,12 +7058,12 @@ def MASTU_pulse_process_FAST3(laser_counts_corrected,time_of_experiment_digitize
 			inverted_data_plasma_region_offset.append(x_optimal[-2])
 			inverted_data_homogeneous_offset.append(x_optimal[-1])
 			inverted_data_info.append(opt_info)
-			fitted_foil_power.append((np.dot(sensitivities_binned_crop,x_optimal[:-2])+x_optimal[-2]*select_foil_region_with_plasma+x_optimal[-1]*selected_ROI_internal_no_plasma).reshape(powernoback_full_orig[i_t].shape))
+			fitted_foil_power.append((np.dot(sensitivities_binned_crop,x_optimal[:-2])+x_optimal[-2]*select_foil_region_with_plasma+x_optimal[-1]*selected_ROI_internal).reshape(powernoback_full_orig[i_t].shape))
 			foil_power.append(powernoback_full_orig[i_t])
-			foil_power_residuals.append(powernoback_full_orig[i_t]-(np.dot(sensitivities_binned_crop,x_optimal[:-2])+x_optimal[-2]*select_foil_region_with_plasma+x_optimal[-1]*selected_ROI_internal_no_plasma).reshape(powernoback_full_orig[i_t].shape))
-			fit_error.append(np.sum(((powernoback_full_orig[i_t][selected_ROI]-(np.dot(sensitivities_binned_crop,x_optimal[:-2])+x_optimal[-2]*select_foil_region_with_plasma+x_optimal[-1]*selected_ROI_internal_no_plasma).reshape(powernoback_full_orig[i_t].shape)[[selected_ROI]]))**2)**0.5/np.sum(selected_ROI))
+			foil_power_residuals.append(powernoback_full_orig[i_t]-(np.dot(sensitivities_binned_crop,x_optimal[:-2])+x_optimal[-2]*select_foil_region_with_plasma+x_optimal[-1]*selected_ROI_internal).reshape(powernoback_full_orig[i_t].shape))
+			fit_error.append(np.sum(((powernoback_full_orig[i_t][selected_ROI]-(np.dot(sensitivities_binned_crop,x_optimal[:-2])+x_optimal[-2]*select_foil_region_with_plasma+x_optimal[-1]*selected_ROI_internal).reshape(powernoback_full_orig[i_t].shape)[[selected_ROI]]))**2)**0.5/np.sum(selected_ROI))
 			chi_square_all.append(chi_square)
-			regolarisation_coeff_all.append(x_optimal[-3])
+			regolarisation_coeff_all.append(regolarisation_coeff)
 			time_per_iteration.append(tm.time()-time_start)
 
 		inverted_data = np.array(inverted_data)
@@ -7194,7 +7093,7 @@ def MASTU_pulse_process_FAST3(laser_counts_corrected,time_of_experiment_digitize
 
 			temp = brightness[:,:,:int(np.shape(brightness)[2]*0.75)]
 			temp = np.sort(temp[np.max(temp,axis=(1,2)).argmax()].flatten())
-			ani,efit_reconstruction = movie_from_data(np.array([np.flip(np.transpose(brightness,(0,2,1)),axis=2)]), 1/np.median(np.diff(time_binned)),timesteps=time_binned[1:-1],integration=laser_int_time/1000,time_offset=time_binned[0],extvmin=0,extvmax=np.nanmean(temp[-len(temp)//60:]),xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='brightness [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4]+'\n'+binning_type+'\n',overlay_structure=True,include_EFIT=True,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True,EFIT_output_requested=True,efit_reconstruction=efit_reconstruction)
+			ani,efit_reconstruction = movie_from_data(np.array([np.flip(np.transpose(brightness,(0,2,1)),axis=2)]), 1/np.median(np.diff(time_binned)),timesteps=time_binned[1:-1],integration=laser_int_time/1000,time_offset=time_binned[0],extvmin=0,xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='brightness [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4]+'\n'+binning_type+'\n',overlay_structure=True,include_EFIT=True,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True,EFIT_output_requested=True,efit_reconstruction=efit_reconstruction)
 			ani.save('/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+ '_FAST_brightness.mp4', fps=5*(1/np.mean(np.diff(time_binned)))/383, writer='ffmpeg',codec='mpeg4')
 			plt.close('all')
 
@@ -7379,13 +7278,17 @@ def MASTU_pulse_process_FAST3(laser_counts_corrected,time_of_experiment_digitize
 
 			inversion_R = np.unique(voxels_centre[:,0])
 			inversion_Z = np.unique(voxels_centre[:,1])
-			local_mean_emis_all,local_power_all,leg_length_all,data_length,leg_resolution = track_outer_leg_radiation(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction)
+			local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution = track_outer_leg_radiation(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction)
 
 			try:
 				fig, ax = plt.subplots( 1,2,figsize=(10, 20), squeeze=False,sharey=True)
-				im1 = ax[0,0].imshow(local_power_all,'rainbow',origin='lower',extent=[(0-0.5)*leg_resolution,(data_length+0.5)*leg_resolution,time_full_binned_crop[0]-np.diff(time_full_binned_crop)[0]/2,time_full_binned_crop[-1]+np.diff(time_full_binned_crop)[-1]/2],aspect=10,vmin=np.min(local_power_all[:-4]),vmax=np.max(local_power_all[:-4]))
+				temp = np.array(local_power_all)
+				temp[np.isnan(temp)] = 0
+				im1 = ax[0,0].imshow(temp,'rainbow',origin='lower',extent=[(0-0.5)*leg_resolution,(data_length+0.5)*leg_resolution,time_full_binned_crop[0]-np.diff(time_full_binned_crop)[0]/2,time_full_binned_crop[-1]+np.diff(time_full_binned_crop)[-1]/2],aspect=10,vmin=np.min(temp[:-4]),vmax=np.max(temp[:-4]))
 				ax[0,0].plot(leg_length_all,time_full_binned_crop,'--k')
-				im2 = ax[0,1].imshow(local_mean_emis_all,'rainbow',origin='lower',extent=[(0-0.5)*leg_resolution,(data_length+0.5)*leg_resolution,time_full_binned_crop[0]-np.diff(time_full_binned_crop)[0]/2,time_full_binned_crop[-1]+np.diff(time_full_binned_crop)[-1]/2],aspect=10,vmin=np.min(local_mean_emis_all[:-4]),vmax=np.max(local_mean_emis_all[:-4]))
+				temp = np.array(local_mean_emis_all)
+				temp[np.isnan(temp)] = 0
+				im2 = ax[0,1].imshow(temp,'rainbow',origin='lower',extent=[(0-0.5)*leg_resolution,(data_length+0.5)*leg_resolution,time_full_binned_crop[0]-np.diff(time_full_binned_crop)[0]/2,time_full_binned_crop[-1]+np.diff(time_full_binned_crop)[-1]/2],aspect=10,vmin=np.min(temp[:-4]),vmax=np.max(temp[:-4]))
 				ax[0,1].plot(leg_length_all,time_full_binned_crop,'--k')
 				fig.suptitle('tracking radiation on the outer leg')
 				ax[0,0].set_xlabel('distance from the strike point [m]')
@@ -7399,12 +7302,55 @@ def MASTU_pulse_process_FAST3(laser_counts_corrected,time_of_experiment_digitize
 				plt.colorbar(im2,ax=ax[0,1]).set_label('Emissivity [W/m3]')
 				plt.savefig('/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_outer_leg_radiation_tracking.eps')
 				plt.close()
-			except:
+
+
+				number_of_curves_to_plot = 12
+				alpha = 0.9
+				# colors_smooth = np.array([np.linspace(0,1,num=number_of_curves_to_plot),np.linspace(1,0,num=number_of_curves_to_plot),[0]*number_of_curves_to_plot]).T
+				colors_smooth = np.linspace(0,0.9,num=number_of_curves_to_plot).astype(str)
+				select = np.unique(np.round(np.linspace(0,len(local_mean_emis_all)-1,num=number_of_curves_to_plot))).astype(int)
+				fig, ax = plt.subplots( 2,1,figsize=(10, 20), squeeze=False,sharex=True)
+				fig.suptitle('tracking radiation on the outer leg')
+				# plt.figure()
+				for i_i_t,i_t in enumerate(select):
+					# ax[0,0].plot(np.cumsum(leg_length_interval_all[i_t]),local_mean_emis_all[i_t],color=colors_smooth[i_i_t],label = '%.3gs' %(time_full_binned_crop[i_t]),linewidth=3)
+					# ax[1,0].plot(np.cumsum(leg_length_interval_all[i_t]),local_power_all[i_t],color=colors_smooth[i_i_t],linewidth=3)
+					to_plot_x = np.array(leg_length_interval_all[i_t])
+					to_plot_y1 = np.array(local_mean_emis_all[i_t])
+					to_plot_y1 = to_plot_y1[to_plot_x>0]
+					to_plot_y2 = np.array(local_power_all[i_t])
+					to_plot_y2 = to_plot_y2[to_plot_x>0]
+					to_plot_x = to_plot_x[to_plot_x>0]
+					to_plot_x = np.flip(np.sum(to_plot_x)-(np.cumsum(to_plot_x)-np.array(to_plot_x)/2),axis=0)
+					to_plot_y1 = np.flip(to_plot_y1,axis=0)
+					to_plot_y2 = np.flip(to_plot_y2,axis=0)
+					if i_i_t%3==0:
+						ax[0,0].plot(to_plot_x,to_plot_y1,'-',color=colors_smooth[i_i_t],label = '%.3gs' %(time_full_binned_crop[i_t]),linewidth=3,alpha=alpha)
+						ax[1,0].plot(to_plot_x,to_plot_y2,'-',color=colors_smooth[i_i_t],linewidth=3,alpha=alpha)
+					elif i_i_t%3==1:
+						ax[0,0].plot(to_plot_x,to_plot_y1,'-.',color=colors_smooth[i_i_t],label = '%.3gs' %(time_full_binned_crop[i_t]),linewidth=3,alpha=alpha)
+						ax[1,0].plot(to_plot_x,to_plot_y2,'-.',color=colors_smooth[i_i_t],linewidth=3,alpha=alpha)
+					elif i_i_t%3==2:
+						ax[0,0].plot(to_plot_x,to_plot_y1,'--',color=colors_smooth[i_i_t],label = '%.3gs' %(time_full_binned_crop[i_t]),linewidth=3,alpha=alpha)
+						ax[1,0].plot(to_plot_x,to_plot_y2,'--',color=colors_smooth[i_i_t],linewidth=3,alpha=alpha)
+				ax[0,0].legend(loc='best', fontsize='x-small')
+				ax[0,0].set_ylabel('average emissivity [W/m3]')
+				ax[1,0].set_ylabel('local radiated power [W]')
+				# ax[1,0].set_xlabel('distance from target [m]')
+				ax[1,0].set_xlabel('distance from x-point [m]')
+				ax[0,0].grid()
+				ax[1,0].grid()
+				plt.savefig('/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_outer_leg_radiation_tracking_2.png')
+				plt.close()
+
+			except Exception as e:
+				logging.exception('with error: ' + str(e))
 				print('failed to print\n'+'/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_outer_leg_radiation_tracking.eps')
 
 			inverted_dict[str(grid_resolution)]['local_outer_leg_power'] = local_power_all
 			inverted_dict[str(grid_resolution)]['local_outer_leg_mean_emissivity'] = local_mean_emis_all
 			inverted_dict[str(grid_resolution)]['leg_length_all'] = leg_length_all
+			inverted_dict[str(grid_resolution)]['leg_length_interval_all'] = leg_length_interval_all
 
 	return foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop_binned,time_binned,powernoback_output,brightness,binning_type,inverted_dict
 
@@ -7641,10 +7587,213 @@ def get_tend(shot_id):
 	except:
 		try:
 			signal_name = '/AMC/Plasma_current'
-			temp = client.get(shot_id)
+			temp = client.get(signal_name,shot_id)
 			Plasma_current_time = temp.time.data
 			Plasma_current = temp.data
 			tend = Plasma_current_time[np.logical_and(Plasma_current_time>0.1,Plasma_current<20).argmax()]	# the 20 (kA) treshold comes from Jimmy Measures
 		except:
 			tend = 1	# arbitrary time
 	return tend
+
+def check_beams_on(shot_id):
+	import pyuda as uda
+	client = uda.Client()
+
+	try:
+		try:
+			signal_name = '/XNB/SS/BEAMPOWER'
+			temp = client.get(signal_name,shot_id)
+			beams_on_flag = True
+		except:
+			signal_name = '/XNB/SW/BEAMPOWER'
+			temp = client.get(signal_name,shot_id)
+			beams_on_flag = True
+	except:
+		beams_on_flag = False
+	return beams_on_flag
+
+################################################################################################################################################################################################################
+
+# sensitivity matrix manipulation
+
+def build_laplacian(grid):
+	# Try making grid laplacian matrix for spatial regularisation
+	num_cells = len(grid)
+	grid_laplacian = np.zeros((num_cells, num_cells))
+	unique_x = np.unique(np.mean(grid,axis=1)[:,0])
+	unique_y = np.unique(np.mean(grid,axis=1)[:,1])
+
+	for ith_cell in range(num_cells):
+
+		# get the 2D mesh coordinates of this cell
+		ix = np.abs(unique_x - np.mean(grid,axis=1)[ith_cell,0]).argmin()	# radious
+		iy = np.abs(unique_y - np.mean(grid,axis=1)[ith_cell,1]).argmin()	# Z
+
+		neighbours = 0
+
+		if ix>0:
+			try:
+				select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix-1],np.mean(grid,axis=1)[:,1]==unique_y[iy])  # neighbour 1 left
+				if np.sum(select)>0:
+					n1 = select.argmax()
+					grid_laplacian[ith_cell, n1] = -1
+					neighbours += 1
+			except KeyError:
+				pass
+
+		if ix>0:
+			try:
+				select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix-1],np.mean(grid,axis=1)[:,1]==unique_y[iy+1])  # neighbour 2 top left
+				if np.sum(select)>0:
+					n1 = select.argmax()
+					grid_laplacian[ith_cell, n1] = -1
+					neighbours += 1
+			except:
+				pass
+
+		try:
+			select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix],np.mean(grid,axis=1)[:,1]==unique_y[iy+1])  # neighbour 3 top
+			if np.sum(select)>0:
+				n1 = select.argmax()
+				grid_laplacian[ith_cell, n1] = -1
+				neighbours += 1
+		except:
+			pass
+
+		try:
+			select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix+1],np.mean(grid,axis=1)[:,1]==unique_y[iy+1])  # neighbour 4 top right
+			if np.sum(select)>0:
+				n1 = select.argmax()
+				grid_laplacian[ith_cell, n1] = -1
+				neighbours += 1
+		except:
+			pass
+
+		try:
+			select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix+1],np.mean(grid,axis=1)[:,1]==unique_y[iy])  # neighbour 5 right
+			if np.sum(select)>0:
+				n1 = select.argmax()
+				grid_laplacian[ith_cell, n1] = -1
+				neighbours += 1
+		except:
+			pass
+
+		if iy>0:
+			try:
+				select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix+1],np.mean(grid,axis=1)[:,1]==unique_y[iy-1])  # neighbour 6 down right
+				if np.sum(select)>0:
+					n1 = select.argmax()
+					grid_laplacian[ith_cell, n1] = -1
+					neighbours += 1
+			except:
+				pass
+
+		if iy>0:
+			try:
+				select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix],np.mean(grid,axis=1)[:,1]==unique_y[iy-1])  # neighbour 7 down
+				if np.sum(select)>0:
+					n1 = select.argmax()
+					grid_laplacian[ith_cell, n1] = -1
+					neighbours += 1
+			except:
+				pass
+
+		if ix>0 and iy>0:
+			try:
+				select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix-1],np.mean(grid,axis=1)[:,1]==unique_y[iy-1])  # neighbour 8 down left
+				if np.sum(select)>0:
+					n1 = select.argmax()
+					grid_laplacian[ith_cell, n1] = -1
+					neighbours += 1
+			except:
+				pass
+
+		grid_laplacian[ith_cell, ith_cell] = neighbours
+	return grid_laplacian
+
+def build_Z_derivate(grid):
+	# Try making grid Z direction derivate matrix for spatial regularisation
+	num_cells = len(grid)
+	grid_laplacian = np.zeros((num_cells, num_cells))
+	unique_x = np.unique(np.mean(grid,axis=1)[:,0])
+	unique_y = np.unique(np.mean(grid,axis=1)[:,1])
+
+	for ith_cell in range(num_cells):
+
+		# get the 2D mesh coordinates of this cell
+		ix = np.abs(unique_x - np.mean(grid,axis=1)[ith_cell,0]).argmin()	# radious
+		iy = np.abs(unique_y - np.mean(grid,axis=1)[ith_cell,1]).argmin()	# Z
+
+		neighbours = 0
+
+		try:
+			select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix],np.mean(grid,axis=1)[:,1]==unique_y[iy+1])  # neighbour 3 top
+			if np.sum(select)>0:
+				n1 = select.argmax()
+				grid_laplacian[ith_cell, n1] = 1
+				neighbours += 1
+		except:
+			pass
+
+		if iy>0:
+			try:
+				select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix],np.mean(grid,axis=1)[:,1]==unique_y[iy-1])  # neighbour 7 down
+				if np.sum(select)>0:
+					n1 = select.argmax()
+					grid_laplacian[ith_cell, n1] = -1
+					neighbours += 1
+			except:
+				pass
+
+		if neighbours==2:
+			grid_laplacian[ith_cell, ith_cell] = 0
+			grid_laplacian[ith_cell] /=2
+		elif neighbours==1:
+			grid_laplacian[ith_cell, ith_cell] = 1
+		else:
+			grid_laplacian[ith_cell, ith_cell] = 0
+
+	return grid_laplacian
+
+def build_R_derivate(grid):
+	# Try making grid R direction derivate matrix for spatial regularisation
+	num_cells = len(grid)
+	grid_laplacian = np.zeros((num_cells, num_cells))
+	unique_x = np.unique(np.mean(grid,axis=1)[:,0])
+	unique_y = np.unique(np.mean(grid,axis=1)[:,1])
+
+	for ith_cell in range(num_cells):
+
+		# get the 2D mesh coordinates of this cell
+		ix = np.abs(unique_x - np.mean(grid,axis=1)[ith_cell,0]).argmin()	# radious
+		iy = np.abs(unique_y - np.mean(grid,axis=1)[ith_cell,1]).argmin()	# Z
+
+		neighbours = 0
+
+		if ix>0:
+			try:
+				select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix-1],np.mean(grid,axis=1)[:,1]==unique_y[iy])  # neighbour 1 left
+				if np.sum(select)>0:
+					n1 = select.argmax()
+					grid_laplacian[ith_cell, n1] = -1
+					neighbours += 1
+			except KeyError:
+				pass
+
+		try:
+			select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix+1],np.mean(grid,axis=1)[:,1]==unique_y[iy])  # neighbour 5 right
+			if np.sum(select)>0:
+				n1 = select.argmax()
+				grid_laplacian[ith_cell, n1] = 1
+				neighbours += 1
+		except:
+			pass
+
+		if neighbours==2:
+			grid_laplacian[ith_cell, ith_cell] = 0
+			grid_laplacian[ith_cell] /=2
+		elif neighbours==1:
+			grid_laplacian[ith_cell, ith_cell] = 1
+		else:
+			grid_laplacian[ith_cell, ith_cell] = 0
+	return grid_laplacian
