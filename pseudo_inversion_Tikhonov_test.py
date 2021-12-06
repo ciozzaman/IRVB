@@ -13,6 +13,11 @@ exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_import_pc.py").
 exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_indexing.py").read())
 number_cpu_available = 8
 
+
+# just to import _MASTU_CORE_GRID_POLYGON
+exec(open("/home/ffederic/work/analysis_scripts/scripts/python_library/collect_and_eval/collect_and_eval/MASTU_structure.py").read())
+
+
 # to show the line where it fails
 import sys, traceback, logging
 logging.basicConfig(level=logging.ERROR)
@@ -74,8 +79,8 @@ else:
 	# name='IRVB-MASTU_shot-44578.ptw'
 	# i_day,day = 0,'2021-06-24'
 	# name='IRVB-MASTU_shot-44308.ptw'
-	i_day,day = 0,'2021-08-13'
-	name='IRVB-MASTU_shot-44677.ptw'
+	i_day,day = 0,'2021-10-12'
+	name='IRVB-MASTU_shot-45239.ptw'
 	# i_day,day = 0,'2021-09-01'
 	# name='IRVB-MASTU_shot-44863.ptw'
 	laser_to_analyse=path+day+'/'+name
@@ -104,14 +109,16 @@ all_shrink_factor_x = np.unique(all_shrink_factor_x)
 
 
 EFIT_path_default = '/common/uda-scratch/lkogan/efitpp_eshed'
-efit_reconstruction = coleval.mclass(EFIT_path_default+'/epm0'+laser_to_analyse[-9:-4]+'.nc')
+efit_reconstruction = coleval.mclass(EFIT_path_default+'/epm0'+laser_to_analyse[-9:-4]+'.nc',pulse_ID=laser_to_analyse[-9:-4])
 all_time_sep_r,all_time_sep_z,r_fine,z_fine = coleval.efit_reconstruction_to_separatrix_on_foil(efit_reconstruction)
 
 
 
 inverted_dict = dict([])
 
-for grid_resolution in [8, 2]:
+# for grid_resolution in [8, 2]:
+# for grid_resolution in [4]:
+for grid_resolution in [4,2]:
 	inverted_dict[str(grid_resolution)] = dict([])
 	# grid_resolution = 8  # in cm
 	foil_resolution = '187'
@@ -120,7 +127,10 @@ for grid_resolution in [8, 2]:
 
 	grid_type = 'core_res_' + str(grid_resolution) + 'cm'
 	path_sensitivity = '/home/ffederic/work/analysis_scripts/sensitivity_matrix_' + grid_type[5:] + foil_res + '_power'
-	sensitivities = np.array((scipy.sparse.load_npz(path_sensitivity + '/sensitivity.npz')).todense())
+	try:
+		sensitivities = np.array((scipy.sparse.load_npz(path_sensitivity + '/sensitivity.npz')).todense())
+	except:
+		sensitivities = np.load(path_sensitivity + '/sensitivity.npy')
 
 	filenames = coleval.all_file_names(path_sensitivity, '.csv')[0]
 	with open(os.path.join(path_sensitivity, filenames)) as csv_file:
@@ -184,108 +194,17 @@ for grid_resolution in [8, 2]:
 		grid_data_masked = grid_data_masked[select]
 		sensitivities_reshaped_masked = sensitivities_reshaped_masked[:,:,select]
 	else:
-		def build_laplacian(grid):
-			# Try making grid laplacian matrix for spatial regularisation
-			num_cells = len(grid)
-			grid_laplacian = np.zeros((num_cells, num_cells))
-			unique_x = np.unique(np.mean(grid,axis=1)[:,0])
-			unique_y = np.unique(np.mean(grid,axis=1)[:,1])
-
-			for ith_cell in range(num_cells):
-
-				# get the 2D mesh coordinates of this cell
-				ix = np.abs(unique_x - np.mean(grid,axis=1)[ith_cell,0]).argmin()
-				iy = np.abs(unique_y - np.mean(grid,axis=1)[ith_cell,1]).argmin()
-
-				neighbours = 0
-
-				if ix>0:
-					try:
-						select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix-1],np.mean(grid,axis=1)[:,1]==unique_y[iy])  # neighbour 1
-						if np.sum(select)>0:
-							n1 = select.argmax()
-							grid_laplacian[ith_cell, n1] = -1
-							neighbours += 1
-					except KeyError:
-						pass
-
-				if ix>0:
-					try:
-						select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix-1],np.mean(grid,axis=1)[:,1]==unique_y[iy+1])  # neighbour 2
-						if np.sum(select)>0:
-							n1 = select.argmax()
-							grid_laplacian[ith_cell, n1] = -1
-							neighbours += 1
-					except:
-						pass
-
-				try:
-					select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix],np.mean(grid,axis=1)[:,1]==unique_y[iy+1])  # neighbour 3
-					if np.sum(select)>0:
-						n1 = select.argmax()
-						grid_laplacian[ith_cell, n1] = -1
-						neighbours += 1
-				except:
-					pass
-
-				try:
-					select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix+1],np.mean(grid,axis=1)[:,1]==unique_y[iy+1])  # neighbour 4
-					if np.sum(select)>0:
-						n1 = select.argmax()
-						grid_laplacian[ith_cell, n1] = -1
-						neighbours += 1
-				except:
-					pass
-
-				try:
-					select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix+1],np.mean(grid,axis=1)[:,1]==unique_y[iy])  # neighbour 5
-					if np.sum(select)>0:
-						n1 = select.argmax()
-						grid_laplacian[ith_cell, n1] = -1
-						neighbours += 1
-				except:
-					pass
-
-				if iy>0:
-					try:
-						select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix+1],np.mean(grid,axis=1)[:,1]==unique_y[iy-1])  # neighbour 6
-						if np.sum(select)>0:
-							n1 = select.argmax()
-							grid_laplacian[ith_cell, n1] = -1
-							neighbours += 1
-					except:
-						pass
-
-				if iy>0:
-					try:
-						select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix],np.mean(grid,axis=1)[:,1]==unique_y[iy-1])  # neighbour 7
-						if np.sum(select)>0:
-							n1 = select.argmax()
-							grid_laplacian[ith_cell, n1] = -1
-							neighbours += 1
-					except:
-						pass
-
-				if ix>0 and iy>0:
-					try:
-						select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix-1],np.mean(grid,axis=1)[:,1]==unique_y[iy-1])  # neighbour 8
-						if np.sum(select)>0:
-							n1 = select.argmax()
-							grid_laplacian[ith_cell, n1] = -1
-							neighbours += 1
-					except:
-						pass
-
-				grid_laplacian[ith_cell, ith_cell] = neighbours
-			return grid_laplacian
-
 		if grid_resolution==8:
 			# temp=1e-3
 			temp=1e-7
 		elif grid_resolution==2:
 			temp=1e-4
+		elif grid_resolution==4:
+			temp=0
 
-		def reduce_voxels(sensitivities_reshaped,grid_laplacian,grid_data,std_treshold = temp, sum_treshold = 0.000, core_radious_treshold = 1.9, divertor_radious_treshold = 1.9):
+		def reduce_voxels(sensitivities_reshaped,grid_laplacian,grid_data,std_treshold = temp, sum_treshold = 0.000, core_radious_treshold = 1.9, divertor_radious_treshold = 1.9,chop_top_corner = False, extra_chop_top_corner = False , chop_corner_close_to_baffle = False, restrict_polygon = FULL_MASTU_CORE_GRID_POLYGON):
+			from shapely.geometry import Point
+			from shapely.geometry.polygon import Polygon
 			# masking the voxels whose emission does not reach the foil
 			# select = np.sum(sensitivities_reshaped,axis=(0,1))>0.05
 			select = np.logical_and(np.std(sensitivities_reshaped,axis=(0,1))>std_treshold*(np.std(sensitivities_reshaped,axis=(0,1)).max()),np.sum(sensitivities_reshaped,axis=(0,1))>sum_treshold)
@@ -295,30 +214,60 @@ for grid_resolution in [8, 2]:
 			# this is not enough because the voxels close to the pinhole have a too large influence on it and the inversion is weird
 			# select = np.median(sensitivities_reshaped_masked,axis=(0,1))<5*np.mean(np.median(sensitivities_reshaped_masked,axis=(0,1)))
 			select = np.logical_or(np.mean(grid_data_masked,axis=1)[:,0]<core_radious_treshold,np.mean(grid_data_masked,axis=1)[:,1]<-1.3)
+			if chop_top_corner:
+				x1 = [1.1,0.6]	# r,z
+				x2 = [1.6,0.0]
+				interp = interp1d([x1[0],x2[0]],[x1[1],x2[1]],fill_value="extrapolate",bounds_error=False)
+				select = np.logical_and(select,np.mean(grid_data_masked,axis=1)[:,1]<interp(np.mean(grid_data_masked,axis=1)[:,0]))
+			if extra_chop_top_corner:
+				x1 = [1.1,0.3]	# r,z
+				x2 = [1.4,-0.05]
+				interp = interp1d([x1[0],x2[0]],[x1[1],x2[1]],fill_value="extrapolate",bounds_error=False)
+				select = np.logical_and(select,np.mean(grid_data_masked,axis=1)[:,1]<interp(np.mean(grid_data_masked,axis=1)[:,0]))
+			if chop_corner_close_to_baffle:
+				x1 = [1.33,-0.9]	# r,z
+				x2 = [1.5,-1.03]	# r,z
+				x3 = [1.2,-1.07]	# r,z
+				interp1 = interp1d([x1[0],x2[0]],[x1[1],x2[1]],fill_value="extrapolate",bounds_error=False)
+				interp2 = interp1d([x1[0],x3[0]],[x1[1],x3[1]],fill_value="extrapolate",bounds_error=False)
+				# select2 = np.logical_or(np.logical_or(np.mean(grid_data_masked,axis=1)[:,1]<-1.1,np.mean(grid_data_masked,axis=1)[:,1]>interp1(np.mean(grid_data_masked,axis=1)[:,0])),np.mean(grid_data_masked,axis=1)[:,1]>interp2(np.mean(grid_data_masked,axis=1)[:,0]))
+				x4 = [1.4,-0.55]	# r,z
+				interp3 = interp1d([x4[0],x3[0]],[x4[1],x3[1]],fill_value="extrapolate",bounds_error=False)
+				select2 = np.logical_or(np.mean(grid_data_masked,axis=1)[:,1]<-1.1,np.mean(grid_data_masked,axis=1)[:,1]>interp3(np.mean(grid_data_masked,axis=1)[:,0]))
+				select = np.logical_and(select,select2)
+			if len(restrict_polygon)>0:
+				polygon = Polygon(restrict_polygon)
+				for i_e in range(len(grid_data_masked)):
+					if np.sum([polygon.contains(Point((grid_data_masked[i_e][i__e,0],grid_data_masked[i_e][i__e,1]))) for i__e in range(4)])==0:
+						select[i_e] = False
 			grid_data_masked = grid_data_masked[select]
 			sensitivities_reshaped_masked = sensitivities_reshaped_masked[:,:,select]
 			select = np.logical_or(np.mean(grid_data_masked,axis=1)[:,0]<divertor_radious_treshold,np.mean(grid_data_masked,axis=1)[:,1]>-1.3)
 			grid_data_masked = grid_data_masked[select]
 			sensitivities_reshaped_masked = sensitivities_reshaped_masked[:,:,select]
-			grid_laplacian_masked = build_laplacian(grid_data_masked)
-			return sensitivities_reshaped_masked,grid_laplacian_masked,grid_data_masked
+			grid_laplacian_masked = coleval.build_laplacian(grid_data_masked)
+			grid_Z_derivate_masked = coleval.build_Z_derivate(grid_data_masked)
+			grid_R_derivate_masked = coleval.build_R_derivate(grid_data_masked)
 
-		sensitivities_reshaped_masked,grid_laplacian_masked,grid_data_masked = reduce_voxels(sensitivities_reshaped,grid_laplacian,grid_data)
 
+			return sensitivities_reshaped_masked,grid_laplacian_masked,grid_data_masked,grid_Z_derivate_masked,grid_R_derivate_masked
 
-	plt.figure()
-	# plt.scatter(np.mean(grid_data,axis=1)[:,0],np.mean(grid_data,axis=1)[:,1],c=np.mean(sensitivities_reshaped,axis=(0,1)),marker='s')
-	plt.scatter(np.mean(grid_data,axis=1)[:,0],np.mean(grid_data,axis=1)[:,1],c=np.std(sensitivities_reshaped,axis=(0,1)),marker='s',norm=LogNorm())
-	# plt.scatter(np.mean(grid_data,axis=1)[:,0],np.mean(grid_data,axis=1)[:,1],c=np.sum(sensitivities_reshaped,axis=(0,1)),marker='s',norm=LogNorm())
-	plt.colorbar()
-	plt.pause(0.01)
+	sensitivities_reshaped_masked,grid_laplacian_masked,grid_data_masked,grid_Z_derivate_masked,grid_R_derivate_masked = reduce_voxels(sensitivities_reshaped,grid_laplacian,grid_data,chop_top_corner = False,chop_corner_close_to_baffle = False, core_radious_treshold = 1.9,extra_chop_top_corner=False)
 
-	plt.figure()
-	# plt.scatter(np.mean(grid_data_masked,axis=1)[:,0],np.mean(grid_data_masked,axis=1)[:,1],c=np.mean(sensitivities_reshaped_masked,axis=(0,1)),marker='s')
-	plt.scatter(np.mean(grid_data_masked,axis=1)[:,0],np.mean(grid_data_masked,axis=1)[:,1],c=np.std(sensitivities_reshaped_masked,axis=(0,1)),marker='s',norm=LogNorm())
-	# plt.scatter(np.mean(grid_data_masked,axis=1)[:,0],np.mean(grid_data_masked,axis=1)[:,1],c=np.sum(sensitivities_reshaped_masked,axis=(0,1)),marker='s',norm=LogNorm())
-	plt.colorbar()
-	plt.pause(0.01)
+	if False:
+		plt.figure()
+		# plt.scatter(np.mean(grid_data,axis=1)[:,0],np.mean(grid_data,axis=1)[:,1],c=np.mean(sensitivities_reshaped,axis=(0,1)),marker='s')
+		plt.scatter(np.mean(grid_data,axis=1)[:,0],np.mean(grid_data,axis=1)[:,1],c=np.std(sensitivities_reshaped,axis=(0,1)),marker='s',norm=LogNorm())
+		# plt.scatter(np.mean(grid_data,axis=1)[:,0],np.mean(grid_data,axis=1)[:,1],c=np.sum(sensitivities_reshaped,axis=(0,1)),marker='s',norm=LogNorm())
+		plt.colorbar()
+		plt.pause(0.01)
+
+		plt.figure()
+		# plt.scatter(np.mean(grid_data_masked,axis=1)[:,0],np.mean(grid_data_masked,axis=1)[:,1],c=np.mean(sensitivities_reshaped_masked,axis=(0,1)),marker='s')
+		plt.scatter(np.mean(grid_data_masked,axis=1)[:,0],np.mean(grid_data_masked,axis=1)[:,1],c=np.std(sensitivities_reshaped_masked,axis=(0,1)),marker='s',norm=LogNorm())
+		# plt.scatter(np.mean(grid_data_masked,axis=1)[:,0],np.mean(grid_data_masked,axis=1)[:,1],c=np.sum(sensitivities_reshaped_masked,axis=(0,1)),marker='s',norm=LogNorm())
+		plt.colorbar()
+		plt.pause(0.01)
 
 	# this step is to adapt the matrix to the size of the foil I measure, that can be slightly different
 	binning_type = 'bin' + str(all_shrink_factor_t[0]) + 'x' + str(all_shrink_factor_x[0]) + 'x' + str(all_shrink_factor_x[0])
@@ -330,20 +279,22 @@ for grid_resolution in [8, 2]:
 		sensitivities_reshaped_masked2 = geometric_transform(sensitivities_reshaped_masked,mapping,output_shape=shape)
 	else:
 		sensitivities_reshaped_masked2 = cp.deepcopy(sensitivities_reshaped_masked)
-	plt.figure()
-	plt.imshow(np.sum(sensitivities_reshaped_masked2,axis=-1),'rainbow',origin='lower')
-	plt.colorbar()
-	plt.pause(0.01)
 
-	plt.figure()
-	plt.scatter(np.mean(grid_data_masked,axis=1)[:,0],np.mean(grid_data_masked,axis=1)[:,1],c=np.mean(sensitivities_reshaped_masked2,axis=(0,1)),marker='s')
-	plt.colorbar()
-	plt.pause(0.01)
+	if False:
+		plt.figure()
+		plt.imshow(np.sum(sensitivities_reshaped_masked2,axis=-1),'rainbow',origin='lower')
+		plt.colorbar()
+		plt.pause(0.01)
 
-	# plt.figure()
-	# plt.imshow(sensitivities_reshaped_masked2[:,:,335],'rainbow',origin='lower')
-	# plt.colorbar()
-	# plt.pause(0.01)
+		plt.figure()
+		plt.scatter(np.mean(grid_data_masked,axis=1)[:,0],np.mean(grid_data_masked,axis=1)[:,1],c=np.mean(sensitivities_reshaped_masked2,axis=(0,1)),marker='s')
+		plt.colorbar()
+		plt.pause(0.01)
+
+		# plt.figure()
+		# plt.imshow(sensitivities_reshaped_masked2[:,:,335],'rainbow',origin='lower')
+		# plt.colorbar()
+		# plt.pause(0.01)
 
 
 
@@ -355,7 +306,8 @@ for grid_resolution in [8, 2]:
 			self.score_y = score_y
 
 	# for shrink_factor_x in np.flip(all_shrink_factor_x,axis=0):
-	for shrink_factor_x in all_shrink_factor_x:
+	# for shrink_factor_x in all_shrink_factor_x:
+	for shrink_factor_x in [3]:
 		inverted_dict[str(grid_resolution)][str(shrink_factor_x)] = dict([])
 		sensitivities_binned = coleval.proper_homo_binning_1D_1D_1D(sensitivities_reshaped_masked2,shrink_factor_x,shrink_factor_x,1,type='np.nanmean')
 		sensitivities_binned = sensitivities_binned[1:-1,1:-1]	# i need to remove 2 pixels per coordinate because this is done to calculate the lalacian
@@ -368,23 +320,46 @@ for grid_resolution in [8, 2]:
 
 		# additional cropping of the foil to exlude regions without plasma LOS, the frame of the foil and gas puff
 		foil_shape = np.shape(sensitivities_binned)[:-1]
-		ROI = np.array([[0.2,0.85],[0.1,0.9]])
-		ROI = np.round((ROI.T*foil_shape).T).astype(int)
+		# ROI = np.array([[0.2,0.85],[0.1,0.9]])
+		# ROI = np.round((ROI.T*foil_shape).T).astype(int)
+		ROI1 = np.array([[0.03,0.85],[0.03,0.95]])
+		ROI2 = np.array([[0.03,0.6],[0.03,1-0.03]])
+		ROI_beams = np.array([[0.,0.3],[0.5,1]])
+		# ROI = np.array([[0.2,0.95],[0.1,1]])
+		ROI1 = np.round((ROI1.T*foil_shape).T).astype(int)
+		ROI2 = np.round((ROI2.T*foil_shape).T).astype(int)
+		ROI_beams = np.round((ROI_beams.T*foil_shape).T).astype(int)
+		a,b = np.meshgrid(np.arange(foil_shape[1]),np.arange(foil_shape[0]))
+		selected_ROI = np.logical_and(np.logical_and(a>=ROI1[1,0],a<ROI1[1,1]),np.logical_and(b>=sensitivities_binned.shape[0]-ROI1[0,1],b<sensitivities_binned.shape[0]-ROI1[0,0]))
+		selected_ROI = np.logical_or(selected_ROI,np.logical_and(np.logical_and(a>=ROI2[1,0],a<ROI2[1,1]),np.logical_and(b>=sensitivities_binned.shape[0]-ROI2[0,1],b<sensitivities_binned.shape[0]-ROI2[0,0])))
+		if coleval.check_beams_on(laser_to_analyse[-9:-4]):
+			selected_ROI = np.logical_and(selected_ROI,np.logical_not(np.logical_and(np.logical_and(a>=ROI_beams[1,0],a<ROI_beams[1,1]),np.logical_and(b>=sensitivities_binned.shape[0]-ROI_beams[0,1],b<sensitivities_binned.shape[0]-ROI_beams[0,0]))))
+
+		plt.figure()
+		plt.imshow(np.flip(np.transpose(selected_ROI,(1,0)),axis=1),'rainbow',origin='lower')
+		plt.plot([ROI1[0,0]-0.5,ROI1[0,1]-0.5,ROI1[0,1]-0.5,ROI1[0,0]-0.5,ROI1[0,0]-0.5],[ROI1[1,0]-0.5,ROI1[1,0]-0.5,ROI1[1,1]-0.5,ROI1[1,1]-0.5,ROI1[1,0]-0.5],'k')
+		plt.plot([ROI2[0,0]-0.5,ROI2[0,1]-0.5,ROI2[0,1]-0.5,ROI2[0,0]-0.5,ROI2[0,0]-0.5],[ROI2[1,0]-0.5,ROI2[1,0]-0.5,ROI2[1,1]-0.5,ROI2[1,1]-0.5,ROI2[1,0]-0.5],'--k')
+		plt.plot([ROI_beams[0,0]-0.5,ROI_beams[0,1]-0.5,ROI_beams[0,1]-0.5,ROI_beams[0,0]-0.5,ROI_beams[0,0]-0.5],[ROI_beams[1,0]-0.5,ROI_beams[1,0]-0.5,ROI_beams[1,1]-0.5,ROI_beams[1,1]-0.5,ROI_beams[1,0]-0.5],'-.k')
+		# plt.colorbar()
+		plt.pause(0.01)
 
 		plt.figure()
 		plt.imshow(np.flip(np.transpose(np.sum(sensitivities_binned,axis=-1),(1,0)),axis=1),'rainbow',origin='lower')
-		plt.plot([ROI[0,0]-0.5,ROI[0,1]-0.5,ROI[0,1]-0.5,ROI[0,0]-0.5,ROI[0,0]-0.5],[ROI[1,0]-0.5,ROI[1,0]-0.5,ROI[1,1]-0.5,ROI[1,1]-0.5,ROI[1,0]-0.5],'k')
+		plt.plot([ROI1[0,0]-0.5,ROI1[0,1]-0.5,ROI1[0,1]-0.5,ROI1[0,0]-0.5,ROI1[0,0]-0.5],[ROI1[1,0]-0.5,ROI1[1,0]-0.5,ROI1[1,1]-0.5,ROI1[1,1]-0.5,ROI1[1,0]-0.5],'k')
+		plt.plot([ROI2[0,0]-0.5,ROI2[0,1]-0.5,ROI2[0,1]-0.5,ROI2[0,0]-0.5,ROI2[0,0]-0.5],[ROI2[1,0]-0.5,ROI2[1,0]-0.5,ROI2[1,1]-0.5,ROI2[1,1]-0.5,ROI2[1,0]-0.5],'--k')
+		plt.plot([ROI_beams[0,0]-0.5,ROI_beams[0,1]-0.5,ROI_beams[0,1]-0.5,ROI_beams[0,0]-0.5,ROI_beams[0,0]-0.5],[ROI_beams[1,0]-0.5,ROI_beams[1,0]-0.5,ROI_beams[1,1]-0.5,ROI_beams[1,1]-0.5,ROI_beams[1,0]-0.5],'-.k')
 		plt.colorbar()
 		plt.pause(0.01)
 
-		# cutting sensitivity out of ROI
-		sensitivities_binned_crop = cp.deepcopy(sensitivities_binned)
-		sensitivities_binned_crop[(-1-np.arange(ROI[0,0])).tolist()+(-1-np.arange(ROI[0,1],foil_shape[0])).tolist()] = 0
-		sensitivities_binned_crop[:,np.arange(ROI[1,0]).tolist()+np.arange(ROI[1,1],foil_shape[1]).tolist()] = 0
+		if True:	# setting zero to the sensitivities I want to exclude
+			sensitivities_binned_crop = cp.deepcopy(sensitivities_binned)
+			sensitivities_binned_crop[np.logical_not(selected_ROI),:] = 0
+		else:	# cutting sensitivity out of ROI
+			sensitivities_binned_crop = sensitivities_binned[sensitivities_binned.shape[0]-ROI[0,1]:sensitivities_binned.shape[0]-ROI[0,0],ROI[1,0]:ROI[1,1]]
 
 		plt.figure()
 		plt.imshow(np.flip(np.transpose(np.sum(sensitivities_binned_crop,axis=-1),(1,0)),axis=1),'rainbow',origin='lower')
-		plt.plot([ROI[0,0]-0.5,ROI[0,1]-0.5,ROI[0,1]-0.5,ROI[0,0]-0.5,ROI[0,0]-0.5],[ROI[1,0]-0.5,ROI[1,0]-0.5,ROI[1,1]-0.5,ROI[1,1]-0.5,ROI[1,0]-0.5],'k')
+		# plt.plot([ROI[0,0]-0.5,ROI[0,1]-0.5,ROI[0,1]-0.5,ROI[0,0]-0.5,ROI[0,0]-0.5],[ROI[1,0]-0.5,ROI[1,0]-0.5,ROI[1,1]-0.5,ROI[1,1]-0.5,ROI[1,0]-0.5],'k')
 		plt.colorbar()
 		plt.pause(0.01)
 
@@ -393,7 +368,7 @@ for grid_resolution in [8, 2]:
 		plt.colorbar()
 		plt.pause(0.01)
 
-		sensitivities_binned_crop,grid_laplacian_masked_crop,grid_data_masked_crop = reduce_voxels(sensitivities_binned_crop,grid_laplacian_masked,grid_data_masked)
+		sensitivities_binned_crop,grid_laplacian_masked_crop,grid_data_masked_crop,grid_Z_derivate_masked_crop,grid_R_derivate_masked_crop = reduce_voxels(sensitivities_binned_crop,grid_laplacian_masked,grid_data_masked)
 
 		plt.figure()
 		plt.scatter(np.mean(grid_data_masked_crop,axis=1)[:,0],np.mean(grid_data_masked_crop,axis=1)[:,1],c=np.mean(sensitivities_binned_crop,axis=(0,1)),marker='s')
@@ -437,34 +412,50 @@ for grid_resolution in [8, 2]:
 		path_sensitivity = '/home/ffederic/work/analysis_scripts/sensitivity_matrix_'+grid_type[5:]+foil_res+'_power'
 		path_sensitivity_original = cp.deepcopy(path_sensitivity)
 
-		for shrink_factor_t in np.flip(all_shrink_factor_t,axis=0):
+		# for shrink_factor_t in np.flip(all_shrink_factor_t,axis=0):
+		for shrink_factor_t in [3]:
+			tend = coleval.get_tend(laser_to_analyse[-9:-4])+0.01	 # I add 10ms just for safety and to catch disruptions
+
 			inverted_dict[str(grid_resolution)][str(shrink_factor_x)][str(shrink_factor_t)] = dict([])
 			binning_type = 'bin' + str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x)
+			time_full_binned = saved_file_dict_short[binning_type].all()['time_full_binned']
 			powernoback_full = saved_file_dict_short[binning_type].all()['powernoback_full']
 			powernoback_std_full = saved_file_dict_short[binning_type].all()['powernoback_std_full']
+			powernoback_full_crop = powernoback_full[time_full_binned<tend]
+			powernoback_full_crop[:,np.logical_not(selected_ROI)] = 0
+			powernoback_std_full_crop = powernoback_std_full[time_full_binned<tend]
+			# powernoback_std_full_crop[:,np.logical_not(selected_ROI)] = 0
+			time_full_binned_crop = time_full_binned[time_full_binned<tend]
 
-			time_full_binned = saved_file_dict_short[binning_type].all()['time_full_binned']
 			path_for_plots = path_power_output + '/invertions_log/'+binning_type
 			if not os.path.exists(path_for_plots):
 				os.makedirs(path_for_plots)
 
-			weight1 = np.ones((len(powernoback_full[0].flatten())))	# I'm not sure if I can even use weights, so I set them at 1
+			weight1 = np.ones((len(powernoback_full_crop[0].flatten())))	# I'm not sure if I can even use weights, so I set them at 1
 			weight2 = np.ones((len(grid_laplacian_masked_crop)))	# I'm not sure if I can even use weights, so I set them at 1
 			# alpha_exponents_to_test = np.unique(np.concatenate([np.arange(-10,0,0.25).astype(float),np.arange(-1.5,0,0.1).astype(float)]))
 			if grid_resolution==8:
 				alpha_exponents_to_test = np.arange(-6,0.5,0.25).astype(float)
 			elif grid_resolution==2:
 				alpha_exponents_to_test = np.arange(-9,5,0.25).astype(float)
+			elif grid_resolution==4:
+				alpha_exponents_to_test = np.linspace(-2,-10,num=15+7+7)
+				alpha_exponents_to_test = np.flip(alpha_exponents_to_test,axis=0)
+			sigma_emissivity = 1e4
 
+			grid_laplacian_masked_crop_scaled = grid_laplacian_masked_crop/((1e-2*grid_resolution)**2)
 			all_m = []
 			all_alpha = []
 			all_total_radiated_power = []
-			for i_t in range(len(time_full_binned)):
+			Lcurve_curvature_all = []
+			for i_t in range(len(time_full_binned_crop)):
 
-				print('starting t=%.4gms' %(time_full_binned[i_t]*1e3))
+				print('starting t=%.4gms' %(time_full_binned_crop[i_t]*1e3))
 				regen_inverse_anyway = False
+				weight1 = 1/(powernoback_std_full_crop[i_t].flatten()**2)
+				weight2 = 1/(sigma_emissivity**2)
 
-				def calculate_SVG_with_Tikonov_reg(arg, sensitivities=sensitivities_binned_crop, laplacian=grid_laplacian_masked_crop, d=powernoback_full[i_t].flatten(),weight1=weight1,weight2=weight2,path_sensitivity_original=path_sensitivity_original,regen_inverse_anyway=regen_inverse_anyway):
+				def calculate_SVG_with_Tikonov_reg(arg, sensitivities=sensitivities_binned_crop, laplacian=grid_laplacian_masked_crop_scaled, d=powernoback_full_crop[i_t].flatten(),weight1=weight1,weight2=weight2,path_sensitivity_original=path_sensitivity_original,regen_inverse_anyway=regen_inverse_anyway):
 					index_ext = arg[0]
 					exp = arg[1]
 					alpha=1.*10**(exp)
@@ -520,7 +511,7 @@ for grid_resolution in [8, 2]:
 								return output
 							m = np.dot(a1_inv, np.dot(sensitivities.T, d))
 
-
+all_j
 					# m = np.dot(a1_inv, np.dot(sensitivities.T, d))
 					# plt.figure()
 					# plt.scatter(np.mean(grid_data_masked,axis=1)[:,0],np.mean(grid_data_masked,axis=1)[:,1],c=m,marker='s')
@@ -613,30 +604,49 @@ for grid_resolution in [8, 2]:
 							x = coord[0]
 							y = coord[1]
 							dist = ((x-px)**2 + (y-py)**2)**0.5
-							spread = np.sum((dist-np.mean(dist))**2)
+							# spread = np.sum(((dist-np.mean(dist))/np.mean(dist))**2)
+							spread = np.sum(((dist-np.mean(dist)))**2)
 							# print(spread)
 							return [spread]*5
 						return int
 
+					# plt.figure()
+					# plt.plot(score_x_record_rel,score_y_record_rel)
 					curvature_radious = []
 					for ii in range(2,len(score_y_record_rel)-2):
-						guess = np.max([score_y_record_rel[ii-2:ii+2+1],score_x_record_rel[ii-2:ii+2+1]],axis=1)
-						bds = [[np.min(score_y_record_rel[ii-2:ii+2+1]),np.min(score_x_record_rel[ii-2:ii+2+1])],[np.inf,np.inf]]
-						centre = curve_fit(distance_spread([score_y_record_rel[ii-2:ii+2+1],score_x_record_rel[ii-2:ii+2+1]]),[0]*5,[0]*5,p0=guess,bounds = bds,maxfev=1e5)
-						curvature_radious.append(np.mean(((score_y_record_rel[ii-2:ii+2+1]-centre[0][0])**2 + (score_x_record_rel[ii-2:ii+2+1]-centre[0][1])**2)**0.5))
+						# try:
+						# 	guess = centre[0]
+						# except:
+						try:
+							guess = np.max([score_y_record_rel[ii-2:ii+2+1],score_x_record_rel[ii-2:ii+2+1]],axis=1)
+							bds = [[np.min(score_y_record_rel[ii-2:ii+2+1]),np.min(score_x_record_rel[ii-2:ii+2+1])],[np.inf,np.inf]]
+							centre = curve_fit(distance_spread([score_x_record_rel[ii-2:ii+2+1],score_y_record_rel[ii-2:ii+2+1]]),[0]*5,[0]*5,p0=guess,bounds = bds,maxfev=1e5,gtol=1e-12)
+							dist = ((score_x_record_rel[ii-2:ii+2+1]-centre[0][0])**2 + (score_y_record_rel[ii-2:ii+2+1]-centre[0][1])**2)**0.5
+							radious = np.mean(dist)
+							# plt.plot(score_x_record_rel[ii-2:ii+2+1],score_y_record_rel[ii-2:ii+2+1],'+')
+							# plt.plot(centre[0][0],centre[0][1],'o')
+							# plt.plot(np.linspace(centre[0][0]-radious,centre[0][0]+radious),centre[0][1]+(radious**2-np.linspace(-radious,+radious)**2)**0.5)
+							# plt.plot(np.linspace(centre[0][0]-radious,centre[0][0]+radious),centre[0][1]-(radious**2-np.linspace(-radious,+radious)**2)**0.5)
+							# plt.axhline(y=np.min(score_y_record_rel[ii-2:ii+2+1]),linestyle='--')
+							# plt.axvline(x=np.min(score_x_record_rel[ii-2:ii+2+1]),linestyle='--')
+							# plt.pause(0.01)
+						except:
+							radious = np.inf
+						curvature_radious.append(radious)
 					curvature_radious = [np.max(curvature_radious)]+curvature_radious+[np.max(curvature_radious)]
 					Lcurve_curvature = 1/np.array(curvature_radious)
+				Lcurve_curvature_all.append(Lcurve_curvature)
 
 				# plt.figure()
-				# plt.plot(exp_indexes[1:-1], generic_filter(Lcurve_curvature,np.mean,size=5))
-				# plt.plot(exp_indexes[1:-1], Lcurve_curvature, 'x')
-				# # plt.semilogx()
+				# plt.plot(alpha_record[1:-1], generic_filter(Lcurve_curvature,np.mean,size=5))
+				# plt.plot(alpha_record[1:-1], Lcurve_curvature, 'x')
+				# plt.semilogx()
 				# plt.pause(0.01)
 				# plt.figure()
 				# plt.plot(score_x_record,score_y_record)
 				# plt.plot(score_x_record,score_y_record, 'x')
-				# plt.semilogx()
-				# plt.semilogy()
+				# # plt.semilogx()
+				# # plt.semilogy()
 				# plt.pause(0.01)
 
 
@@ -773,7 +783,8 @@ for grid_resolution in [8, 2]:
 
 					temp[temp<0]=0
 					peaks = find_peaks(temp, distance=4)[0]
-					proms = get_proms(np.log10(temp), peaks)[0]
+					# proms = get_proms(np.log10(temp), peaks)[0]
+					proms = get_proms(temp, peaks)[0]
 					peaks = np.array([peaks for _, peaks in sorted(zip(proms, peaks))])
 					proms = np.sort(proms)
 					# this is pretty much arbitrary. here I provilege a higher resolution even if the result is a bit more noisy
@@ -784,7 +795,7 @@ for grid_resolution in [8, 2]:
 							index_best_fit = peaks[-1]+1
 					elif True:
 						peaks = peaks[peaks>1]
-						peaks = peaks[peaks<len(temp)-1]
+						peaks = peaks[peaks<len(temp)-2]
 						index_best_fit = np.min(peaks[-2:]) + 1
 					elif False:
 						index_best_fit = np.max(peaks[-2:]) + 1
@@ -802,30 +813,33 @@ for grid_resolution in [8, 2]:
 
 
 
-				best_alpha = alpha_record[index_best_fit]
-				plt.title('Best tested regularization coefficient is alpha=' + '%.3g' % best_alpha +'\neven if the best is likely ~'+ '%.3g' % most_lickely_alpha )
-				plt.xlabel('Regularisation parameter')
-				plt.ylabel('L-curve curvature')
-				plt.grid()
-				# plt.semilogy()
-				plt.savefig(path_for_plots + '/L_curve_curvature_grid'+str(grid_resolution)+'cm_time%.4g.eps' %(time_full_binned[i_t]*1e3))
-				plt.close()
+				if False:	# kind of redundant visualisation
+					best_alpha = alpha_record[index_best_fit]
+					plt.title('Best tested regularization coefficient is alpha=' + '%.3g' % best_alpha +'\neven if the best is likely ~'+ '%.3g' % most_lickely_alpha )
+					plt.xlabel('Regularisation parameter')
+					plt.ylabel('L-curve curvature')
+					plt.grid()
+					# plt.semilogy()
+					plt.savefig(path_for_plots + '/L_curve_curvature_grid'+str(grid_resolution)+'cm_time%.4g.eps' %(time_full_binned_crop[i_t]*1e3))
+					plt.close()
 
-				plt.figure(figsize=(20, 10))
-				plt.plot(score_x_record, score_y_record)
-				plt.plot(score_x_record,score_y_record, 'x')
-				plt.plot(score_x_record[0],score_y_record[0], 'kx', label = 'reg param '+ '%.3g' % alpha_record[0])
-				plt.plot(score_x_record[-1],score_y_record[-1], 'rx', label = 'reg param '+ '%.3g' % alpha_record[-1])
-				plt.plot(score_x_record[index_best_fit], score_y_record[index_best_fit], 'gx', label='reg param ' + '%.3g' % alpha_record[index_best_fit])
-				plt.legend(loc = 'best')
-				# plt.yscale('log')
-				# plt.xscale('log')
-				plt.title('Best regularization coefficient is alpha=' + str(best_alpha) + '\nwith residuals ||Gm-d||2=' + str(score_x_record[index_best_fit]))
-				plt.xlabel('log ||Gm-d||2')
-				plt.ylabel('log ||Laplacian(m)||2')
-				plt.grid()
-				plt.savefig(path_for_plots + '/L_curve_grid'+str(grid_resolution)+'cm_time%.4g.eps' %(time_full_binned[i_t]*1e3))
-				plt.close()
+					plt.figure(figsize=(20, 10))
+					plt.plot(score_x_record, score_y_record)
+					plt.plot(score_x_record,score_y_record, 'x')
+					plt.plot(score_x_record[0],score_y_record[0], 'kx', label = 'reg param '+ '%.3g' % alpha_record[0])
+					plt.plot(score_x_record[-1],score_y_record[-1], 'rx', label = 'reg param '+ '%.3g' % alpha_record[-1])
+					plt.plot(score_x_record[index_best_fit], score_y_record[index_best_fit], 'gx', label='reg param ' + '%.3g' % alpha_record[index_best_fit])
+					plt.legend(loc = 'best')
+					# plt.yscale('log')
+					# plt.xscale('log')
+					plt.title('Best regularization coefficient is alpha=' + str(best_alpha) + '\nwith residuals ||Gm-d||2=' + str(score_x_record[index_best_fit]))
+					plt.xlabel('log ||Gm-d||2')
+					plt.ylabel('log ||Laplacian(m)||2')
+					plt.grid()
+					plt.savefig(path_for_plots + '/L_curve_grid'+str(grid_resolution)+'cm_time%.4g.eps' %(time_full_binned_crop[i_t]*1e3))
+					plt.close()
+				else:
+					plt.close('all')
 
 
 				# print('alpha')
@@ -856,13 +870,13 @@ for grid_resolution in [8, 2]:
 					a1_inv = np.dot(Vh.T, np.dot(inv_sigma, U.T))
 
 
-				m = np.dot(a1_inv, np.dot(sensitivities_binned_crop.T, powernoback_full[i_t].flatten()))
+				m = np.dot(a1_inv, np.dot(sensitivities_binned_crop.T, powernoback_full_crop[i_t].flatten()))
 
 				if False:	# development plots
 					plt.figure()
-					plt.scatter(np.mean(grid_data_masked_crop,axis=1)[:,0],np.mean(grid_data_masked_crop,axis=1)[:,1],c=m,s=100,marker='s',cmap='rainbow')
+					plt.scatter(np.mean(grid_data_masked_crop,axis=1)[:,0],np.mean(grid_data_masked_crop,axis=1)[:,1],c=m,s=10,marker='s',cmap='rainbow')
 					plt.plot(_MASTU_CORE_GRID_POLYGON[:, 0], _MASTU_CORE_GRID_POLYGON[:, 1], 'k')
-					temp = np.abs(efit_reconstruction.time-time_full_binned[i_t]).argmin()
+					temp = np.abs(efit_reconstruction.time-time_full_binned_crop[i_t]).argmin()
 					for i in range(len(all_time_sep_r[temp])):
 						plt.plot(r_fine[all_time_sep_r[temp][i]],z_fine[all_time_sep_z[temp][i]],'--b')
 					plt.plot(efit_reconstruction.lower_xpoint_r[temp],efit_reconstruction.lower_xpoint_z[temp],'xr')
@@ -879,13 +893,13 @@ for grid_resolution in [8, 2]:
 						else:
 							pos_start -= len(all_time_sep_r[temp][temp])-1
 							temp +=1
-					
+
 
 					select = m<0
 					plt.figure()
 					plt.scatter(np.mean(grid_data_masked_crop,axis=1)[:,0][select],np.mean(grid_data_masked_crop,axis=1)[:,1][select],c=m[select],s=100,marker='s',cmap='rainbow')
 					plt.plot(_MASTU_CORE_GRID_POLYGON[:, 0], _MASTU_CORE_GRID_POLYGON[:, 1], 'k')
-					temp = np.abs(efit_reconstruction.time-time_full_binned[i_t]).argmin()
+					temp = np.abs(efit_reconstruction.time-time_full_binned_crop[i_t]).argmin()
 					for i in range(len(all_time_sep_r[temp])):
 						plt.plot(r_fine[all_time_sep_r[temp][i]],z_fine[all_time_sep_z[temp][i]],'--b')
 					plt.colorbar().set_label('emissivity [W/m3]')
@@ -908,7 +922,7 @@ for grid_resolution in [8, 2]:
 
 					plt.figure()
 					plt.imshow(rotate(np.sum(sensitivities_binned_crop*m,axis=1).reshape(np.shape(powernoback_full[i_t])),-90),'rainbow',origin='lower')
-					plt.plot([ROI[0,0]-0.5,ROI[0,1]-0.5,ROI[0,1]-0.5,ROI[0,0]-0.5,ROI[0,0]-0.5],[ROI[1,0]-0.5,ROI[1,0]-0.5,ROI[1,1]-0.5,ROI[1,1]-0.5,ROI[1,0]-0.5],'k')
+					# plt.plot([ROI[0,0]-0.5,ROI[0,1]-0.5,ROI[0,1]-0.5,ROI[0,0]-0.5,ROI[0,0]-0.5],[ROI[1,0]-0.5,ROI[1,0]-0.5,ROI[1,1]-0.5,ROI[1,1]-0.5,ROI[1,0]-0.5],'k')
 					plt.colorbar()
 					plt.pause(0.01)
 
@@ -922,8 +936,8 @@ for grid_resolution in [8, 2]:
 
 					plt.figure()
 					# plt.imshow(rotate(powernoback_full[i_t],-90),'rainbow',vmax=np.sum(sensitivities_binned_crop*m,axis=1).max(),vmin=0,origin='lower')
-					plt.imshow(rotate(powernoback_full[i_t],-90),'rainbow',vmax=np.sum(sensitivities_binned_crop*m,axis=1).max(),origin='lower')
-					plt.plot([ROI[0,0]-0.5,ROI[0,1]-0.5,ROI[0,1]-0.5,ROI[0,0]-0.5,ROI[0,0]-0.5],[ROI[1,0]-0.5,ROI[1,0]-0.5,ROI[1,1]-0.5,ROI[1,1]-0.5,ROI[1,0]-0.5],'k')
+					plt.imshow(rotate(powernoback_full_crop[i_t],-90),'rainbow',vmax=np.sum(sensitivities_binned_crop*m,axis=1).max(),origin='lower')
+					# plt.plot([ROI[0,0]-0.5,ROI[0,1]-0.5,ROI[0,1]-0.5,ROI[0,0]-0.5,ROI[0,0]-0.5],[ROI[1,0]-0.5,ROI[1,0]-0.5,ROI[1,1]-0.5,ROI[1,1]-0.5,ROI[1,0]-0.5],'k')
 					plt.colorbar()
 					plt.pause(0.01)
 
@@ -940,6 +954,9 @@ for grid_resolution in [8, 2]:
 					plt.colorbar()
 					plt.pause(0.01)
 
+				else:
+					pass
+
 				select = np.mean(grid_data_masked_crop,axis=1)[:,1]<20	# 0 to select only the lower half, such that the tot rad power is twice that
 				total_radiated_power = np.sum(m[select] * np.pi * (((np.mean(grid_data_masked_crop,axis=1)[:,0]+grid_resolution*1e-2/2)**2 - (np.mean(grid_data_masked_crop,axis=1)[:,0]-grid_resolution*1e-2/2)**2)[select]) * grid_resolution*1e-2)
 
@@ -951,26 +968,27 @@ for grid_resolution in [8, 2]:
 			all_m = np.array(all_m)
 			all_alpha = np.array(all_alpha)
 			all_total_radiated_power = np.array(all_total_radiated_power)
+			Lcurve_curvature_all = np.array(Lcurve_curvature_all)
 
 			plt.figure(figsize=(20, 10))
-			plt.plot(time_full_binned,all_alpha)
+			plt.plot(time_full_binned_crop,all_alpha)
 			plt.semilogy()
 			plt.title('Regularization coefficient')
 			plt.xlabel('time [s]')
 			plt.ylabel('alpha [au]')
 			plt.grid()
-			plt.savefig(path_power_output + '/'+ str(shot_number)+'_'+binning_type+'_alpha_grid'+str(grid_resolution)+'cm.eps')
+			plt.savefig(path_power_output + '/'+ str(shot_number)+'_'+binning_type+'_alpha_grid'+str(grid_resolution)+'cm_SVG.eps')
 			plt.close()
 
 			plt.figure(figsize=(20, 10))
-			plt.plot(time_full_binned,all_total_radiated_power)
+			plt.plot(time_full_binned_crop,all_total_radiated_power)
 			plt.title('total radiated power detected')
 			plt.xlabel('time [s]')
 			plt.ylabel('total radiated power [W]')
 			plt.grid()
 			# plt.semilogy()
-			plt.ylim(bottom=0,top=all_total_radiated_power[np.logical_and(time_full_binned>0.2,time_full_binned<0.7)].max()*2)
-			plt.savefig(path_power_output + '/'+ str(shot_number)+'_'+binning_type+'_rad_power_grid'+str(grid_resolution)+'cm.eps')
+			plt.ylim(bottom=0,top=all_total_radiated_power[np.logical_and(time_full_binned_crop>0.2,time_full_binned_crop<0.7)].max()*2)
+			plt.savefig(path_power_output + '/'+ str(shot_number)+'_'+binning_type+'_rad_power_grid'+str(grid_resolution)+'cm_SVG.eps')
 			plt.close()
 
 			voxels_centre = np.mean(grid_data_masked_crop,axis=1)
@@ -984,11 +1002,22 @@ for grid_resolution in [8, 2]:
 					if dist.min()<dist_mean/2:
 						index = np.abs(dist).argmin()
 						recompose_voxel_emissivity[:,i_r,i_z] = all_m[:,index]
+			recompose_voxel_emissivity *= 4*np.pi	# this exist because the sensitivity matrix is built with 1W/str/m^3/ x nm emitters while I use 1W as reference, so I need to multiply the results by 4pi
 
-			temp = np.sort(recompose_voxel_emissivity[np.max(recompose_voxel_emissivity,axis=(1,2)).argmax()].flatten())
-			ani = coleval.movie_from_data(np.array([np.flip(np.transpose(recompose_voxel_emissivity,(0,2,1)),axis=2)]), 1/(np.mean(np.diff(time_full_binned))),integration=laser_int_time/1000,barlabel='Emissivity [W/m3]')
-			ani.save(path_power_output + '/'+ str(shot_number)+'_'+binning_type+'_emissivity_grid'+str(grid_resolution)+'cm.mp4', fps=5*(1/(np.mean(np.diff(time_full_binned))))/383, writer='ffmpeg',codec='mpeg4')
+			# temp = np.sort(recompose_voxel_emissivity[np.max(recompose_voxel_emissivity,axis=(1,2)).argmax()].flatten())
+			# ani = coleval.movie_from_data(np.array([np.flip(np.transpose(recompose_voxel_emissivity,(0,2,1)),axis=2)]), 1/(np.mean(np.diff(time_full_binned))),integration=laser_int_time/1000,barlabel='Emissivity [W/m3]')
+			extent = [grid_data_masked_crop[:,:,0].min(), grid_data_masked_crop[:,:,0].max(), grid_data_masked_crop[:,:,1].min(), grid_data_masked_crop[:,:,1].max()]
+			image_extent = [grid_data_masked_crop[:,:,0].min(), grid_data_masked_crop[:,:,0].max(), grid_data_masked_crop[:,:,1].min(), grid_data_masked_crop[:,:,1].max()]
+			ani,trash = coleval.movie_from_data_radial_profile(np.array([np.flip(np.transpose(recompose_voxel_emissivity,(0,2,1)),axis=2)]), 1/(np.mean(np.diff(time_full_binned_crop))), extent = extent, image_extent=image_extent,timesteps=time_full_binned_crop,integration=laser_int_time/1000,barlabel='Emissivity [W/m3]',xlabel='R [m]', ylabel='Z [m]', prelude='shot '  + laser_to_analyse[-9:-4] + '\n'+binning_type+'\n'+'sigma_emissivity %.3g' %(sigma_emissivity) ,overlay_structure=True,include_EFIT=True,EFIT_output_requested=True,efit_reconstruction=efit_reconstruction,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True)#,extvmin=0,extvmax=4e4)
+			ani.save(path_power_output + '/' + str(shot_number)+'_'+ binning_type +'_gridres'+str(grid_resolution)+'cm_reconstruct_emissivity_SVG.mp4', fps=5*(1/(np.mean(np.diff(time_full_binned_crop))))/383, writer='ffmpeg',codec='mpeg4')
 			plt.close('all')
+
+			plt.figure()
+			plt.imshow(Lcurve_curvature_all,'rainbow',origin='lower')
+			plt.colorbar()
+			plt.savefig(path_power_output + '/'+ str(shot_number)+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_L_curve_SVG.eps')
+			plt.close()
+
 
 
 			# plt.figure()
@@ -1013,4 +1042,4 @@ for grid_resolution in [8, 2]:
 			inverted_dict[str(grid_resolution)][str(shrink_factor_x)][str(shrink_factor_t)]['tot_rad_power'] = all_total_radiated_power
 
 
-np.savez_compressed(laser_to_analyse[:-4]+'_inverted',**inverted_dict)
+np.savez_compressed(laser_to_analyse[:-4]+'_inverted_SVG',**inverted_dict)

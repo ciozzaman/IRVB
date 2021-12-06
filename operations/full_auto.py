@@ -158,11 +158,18 @@ else:
 		else:
 			DAProxy_full_path = test
 	def return_shot_and_state(DAProxy_full_path=DAProxy_full_path):
-		f = open(DAProxy_full_path,'r')
-		for row in f:
-			None
-		last_pulse = int(row[row.find('shot=') + len('shot='):row.find('&state')])
-		MASTU_state = int(row[row.find('state=') + len('state='):row.find('&)\n')])
+		done = 0
+		while done==0:
+			try:
+				f = open(DAProxy_full_path,'r')
+				for row in f:
+					None
+				last_pulse = int(row[row.find('shot=') + len('shot='):row.find('&state')])
+				MASTU_state = int(row[row.find('state=') + len('state='):row.find('&)\n')])
+				done = 1
+			except:
+				print('shot info missing in log')
+				wait_while_moving_mouse(10/60,wait_for_move=2)
 		return last_pulse,MASTU_state
 	last_pulse,MASTU_state = return_shot_and_state()
 	next_pulse = cp.deepcopy(last_pulse)

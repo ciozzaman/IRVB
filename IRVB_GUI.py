@@ -54,6 +54,8 @@ os.chdir('/home/ffederic/work/Collaboratory/test/experimental_data')
 # np.savez_compressed('/home/ff645/Downloads/GUI/IRVB-MASTU_shot-043979_short',**gna_dict)
 
 data = np.zeros((100,100,100))
+data_shape = np.shape(data)
+efit_reconstruction=None
 # data = np.load('/home/ffederic/work/irvb/MAST-U/2021-07-01/IRVB-MASTU_shot-44391.npz')['data']
 framerate = 383 # Hz
 shot_ID = '043979'
@@ -152,7 +154,15 @@ p5.addItem(image1)
 p5.setAspectLocked()
 # p5.invertX()
 image_frame = p5.plot([],[], pen='r')
-
+image_frame_export = p5.plot([],[], pen='r')
+image_frame_roi = pg.ROI([0, 0], [np.shape(image1.image)[0], np.shape(image1.image)[1]])
+image_frame_roi.addScaleHandle([1, 0], [0,1])
+image_frame_roi.addScaleHandle([1, 1], [0,0])
+image_frame_roi.addScaleHandle([0, 1], [1,0])
+image_frame_roi.addScaleHandle([0, 0], [1,1])
+p5.addItem(image_frame_roi)
+image_frame_roi.setZValue(10)  # make sure ROI is drawn above image
+image_frame_roi.setPen(pen='r')
 
 d5.addWidget(w5)
 curve = p5.plot(pen='r')
@@ -178,7 +188,10 @@ isoLine.setZValue(1000) # bring iso line above contrast controls
 roi = pg.ROI([np.shape(image1.image)[0]*3//8, np.shape(image1.image)[1]*3//8], [np.shape(image1.image)[0]//4, np.shape(image1.image)[1]//4])
 # roi.addScaleHandle([0.5, 1], [0.5, 0.5])
 # roi.addScaleHandle([0, 0.5], [0.5, 0.5])
-roi.addScaleHandle([1, 0], [0.5, 0.5])
+roi.addScaleHandle([1, 0], [0,1])
+roi.addScaleHandle([1, 1], [0,0])
+roi.addScaleHandle([0, 1], [1,0])
+roi.addScaleHandle([0, 0], [1,1])
 # roi.addRotateHandle([0, 1], [0.5, 0.5])  # works but better not use it
 p5.addItem(roi)
 roi.setZValue(10)  # make sure ROI is drawn above image
@@ -186,7 +199,10 @@ roi.setPen(pen='m')
 roi2 = pg.ROI([np.shape(image1.image)[0]*1//8, np.shape(image1.image)[1]*1//8], [np.shape(image1.image)[0]//4, np.shape(image1.image)[1]//4])
 # roi.addScaleHandle([0.5, 1], [0.5, 0.5])
 # roi.addScaleHandle([0, 0.5], [0.5, 0.5])
-roi2.addScaleHandle([1, 0], [0.5, 0.5])
+roi2.addScaleHandle([1, 0], [0,1])
+roi2.addScaleHandle([0, 1], [1,0])
+roi2.addScaleHandle([0, 0], [1,1])
+roi2.addScaleHandle([1, 1], [0,0])
 # roi2.addRotateHandle([0, 1], [0.5, 0.5])  # works but better not use it
 p5.addItem(roi2)
 roi2.setZValue(10)  # make sure ROI is drawn above image
@@ -247,20 +263,28 @@ d6.addWidget(w6)
 
 
 
-quantity_options = {'counts [au]': 'counts', 'FAST counts [au]': 'FAST_counts_minus_background_crop', 'FAST power [W/m2]': 'FAST_powernoback', 'FAST brightness [W/m2]': 'FAST_brightness', 'FAST foil fit [W/m2]': 'FAST/inverted/fitted_foil_power', 'FAST foil fit error [W/m2]': 'FAST/inverted/fit_error', 'FAST emissivity [W/m3]': 'FAST/inverted/inverted_data', "Temperature [°C]": 'laser_temperature_crop_binned_full', "Relative temp [K]": 'laser_temperature_minus_background_crop_binned_full', "tot power [W/m2]": 'powernoback_full', "tot power std [W/m2]": 'powernoback_std_full', "BB power [W/m2]": 'BBrad_full', "diff power [W/m2]": 'diffusion_full', "dt power [W/m2]": 'timevariation_full', "brightness [W/m2]": 'brightness_full', "fitted power [W/m2]": 'fitted_foil_power', "fitted power residuals [W/m2]": 'foil_power_residuals'}
+quantity_options = {'counts [au]': 'counts', 'FAST counts [au]': 'FAST_counts_minus_background_crop', 'FAST power [W/m2]': 'FAST_powernoback', 'FAST brightness [W/m2]': 'FAST_brightness', 'FAST foil fit [W/m2]': 'FAST/inverted/fitted_foil_power', 'FAST foil fit error [W/m2]': 'FAST/inverted/foil_power_residuals', 'FAST emissivity [W/m3]': 'FAST/inverted/inverted_data', "Temperature [°C]": 'laser_temperature_crop_binned_full', "Relative temp [K]": 'laser_temperature_minus_background_crop_binned_full', "tot power [W/m2]": 'powernoback_full', "tot power std [W/m2]": 'powernoback_std_full', "BB power [W/m2]": 'BBrad_full', "diff power [W/m2]": 'diffusion_full', "dt power [W/m2]": 'timevariation_full', "brightness [W/m2]": 'brightness_full', "emissivity [W/m3]": 'inverted/inverted_data', "fitted power [W/m2]": 'inverted/fitted_foil_power', "fitted power residuals [W/m2]": 'inverted/foil_power_residuals'}
 
 # creating all the flags and accessories needed
 params = [
 	{'name': 'ROI', 'type': 'group', 'children': [
-		{'name': 'ROI magenta hor', 'type': 'int', 'value': 10},
-		{'name': 'ROI magenta d hor', 'type': 'int', 'value': 10},
-		{'name': 'ROI magenta ver', 'type': 'int', 'value': 10},
-		{'name': 'ROI magenta d ver', 'type': 'int', 'value': 10},
+		# {'name': 'ROI magenta hor', 'type': 'int', 'value': 10},
+		# {'name': 'ROI magenta d hor', 'type': 'int', 'value': 10},
+		# {'name': 'ROI magenta ver', 'type': 'int', 'value': 10},
+		# {'name': 'ROI magenta d ver', 'type': 'int', 'value': 10},
+		{'name': 'ROI magenta hor', 'type': 'float', 'value': 10, 'step': 1e-3},
+		{'name': 'ROI magenta d hor', 'type': 'float', 'value': 10, 'step': 1e-3},
+		{'name': 'ROI magenta ver', 'type': 'float', 'value': 10, 'step': 1e-3},
+		{'name': 'ROI magenta d ver', 'type': 'float', 'value': 10, 'step': 1e-3},
 		# {'name': 'ROI magenta angle', 'type': 'int', 'value': 0},
-		{'name': 'ROI cyan hor', 'type': 'int', 'value': 10},
-		{'name': 'ROI cyan d hor', 'type': 'int', 'value': 10},
-		{'name': 'ROI cyan ver', 'type': 'int', 'value': 10},
-		{'name': 'ROI cyan d ver', 'type': 'int', 'value': 10},
+		# {'name': 'ROI cyan hor', 'type': 'int', 'value': 10},
+		# {'name': 'ROI cyan d hor', 'type': 'int', 'value': 10},
+		# {'name': 'ROI cyan ver', 'type': 'int', 'value': 10},
+		# {'name': 'ROI cyan d ver', 'type': 'int', 'value': 10},
+		{'name': 'ROI cyan hor', 'type': 'float', 'value': 10, 'step': 1e-3},
+		{'name': 'ROI cyan d hor', 'type': 'float', 'value': 10, 'step': 1e-3},
+		{'name': 'ROI cyan ver', 'type': 'float', 'value': 10, 'step': 1e-3},
+		{'name': 'ROI cyan d ver', 'type': 'float', 'value': 10, 'step': 1e-3},
 		# {'name': 'ROI cyan angle', 'type': 'int', 'value': 0},
 		{'name': 'Time start [ms]', 'type': 'float', 'value': time_array[int(w2.left)]*1e3, 'step': 1, 'finite': False},
 		{'name': 'Time end [ms]', 'type': 'float', 'value': time_array[int(w2.right)]*1e3, 'step': 1, 'finite': False},
@@ -270,6 +294,8 @@ params = [
 		{'name': 'Hist lev low', 'type': 'float', 'value': histogram_level_low, 'step': np.min(np.diff(np.sort(data.flatten()))), 'finite': False},
 	]},
 	{'name': 'Set display', 'type': 'group', 'children': [
+		{'name': 'Shot +', 'type': 'action'},
+		{'name': 'Shot -', 'type': 'action'},
 		{'name': 'Quantity', 'type': 'list', 'values': quantity_options, 'value': 'FAST_counts_minus_background_crop'},
 		{'name': 'Binning', 'type': 'list', 'values': {'bin1x1x1': 'bin1x1x1', 'bin1x3x3': 'bin1x3x3', 'bin1x5x5': 'bin1x5x5', "bin1x10x10": 'bin1x10x10', "bin2x1x1": 'bin2x1x1', "bin2x3x3": 'bin2x3x3', "bin2x5x5": 'bin2x5x5', "bin2x10x10": 'bin2x10x10', "bin3x1x1": 'bin3x1x1', "bin3x3x3": 'bin3x3x3', "bin3x5x5": 'bin3x5x5', "bin3x10x10": 'bin3x10x10', "bin5x1x1": 'bin5x1x1', "bin5x3x3": 'bin5x3x3', "bin5x5x5": 'bin5x5x5', "bin5x10x10": 'bin5x10x10'}, 'value': 1},
 		{'name': 'Voxel res', 'type': 'list', 'values': {'2': '2', '4': '4'}, 'value': '4'},
@@ -279,6 +305,13 @@ params = [
 		{'name': 'Rewind', 'type': 'action'},
 		{'name': 'Pause', 'type': 'action'},
 		{'name': 'Export video', 'type': 'action'},
+		{'name': 'Export image', 'type': 'action'},
+		{'name': 'Export left', 'type': 'float', 'value': 10, 'step': 1e-3, 'finite': False},
+		{'name': 'Export right', 'type': 'float', 'value': 10, 'step': 1e-3, 'finite': False},
+		{'name': 'Export up', 'type': 'float', 'value': 10, 'step': 1e-3, 'finite': False},
+		{'name': 'Export down', 'type': 'float', 'value': 10, 'step': 1e-3, 'finite': False},
+		{'name': 'Include prelude', 'type': 'bool', 'value': True, 'tip': "This is a checkbox"},
+		{'name': 'Export size', 'type': 'float', 'value': 15, 'step': 1e-3, 'finite': False},
 	]},
 	{'name': 'Overlays', 'type': 'group', 'children': [
 		{'name': 'Structure', 'type': 'bool', 'value': True, 'tip': "This is a checkbox"},
@@ -301,7 +334,7 @@ param_ext1 = Parameter.create(name='params', type='group', children=params1)
 
 ## If anything changes in the tree, print a message
 def change(param, changes):
-	global histogram_level_low,histogram_level_high,overlay_structure,overlay_fueling_point,overlay_x_point,overlay_mag_axis,overlay_strike_points_1,overlay_strike_points_2,overlay_separatrix,overlay_Core_Resistive_bol,overlay_Div_Resistive_bol,efit_reconstruction,all_time_mag_axis_location,all_time_x_point_location,all_time_strike_points_location,all_time_strike_points_location_rot,all_time_separatrix,time_array,flag_radial_profile,all_time_sep_r,all_time_sep_z,r_fine,z_fine
+	global histogram_level_low,histogram_level_high,overlay_structure,overlay_fueling_point,overlay_x_point,overlay_mag_axis,overlay_strike_points_1,overlay_strike_points_2,overlay_separatrix,overlay_Core_Resistive_bol,overlay_Div_Resistive_bol,efit_reconstruction,all_time_mag_axis_location,all_time_x_point_location,all_time_strike_points_location,all_time_strike_points_location_rot,all_time_separatrix,time_array,flag_radial_profile,all_time_sep_r,all_time_sep_z,r_fine,z_fine,data_shape
 	print("tree changes:")
 	for param, change, data in changes:
 		path = param_ext.childPath(param)
@@ -318,6 +351,8 @@ def change(param, changes):
 	# roi.setAngle((param_ext['ROI', 'ROI magenta angle']))
 	roi2.setPos((param_ext['ROI', 'ROI cyan hor'],param_ext['ROI', 'ROI cyan ver']))
 	roi2.setSize((param_ext['ROI', 'ROI cyan d hor'],param_ext['ROI', 'ROI cyan d ver']))
+	image_frame_roi.setPos((param_ext['Set display', 'Export left'],param_ext['Set display', 'Export down']))
+	image_frame_roi.setSize((param_ext['Set display', 'Export right']-param_ext['Set display', 'Export left'],param_ext['Set display', 'Export up']-param_ext['Set display', 'Export down']))
 	# roi2.setAngle((param_ext['ROI', 'ROI cyan angle']))
 	w2.slider.setValue([np.abs(param_ext['ROI', 'Time start [ms]']*1e-3-time_array).argmin()/(w2.maximum-w2.minimum)*(w2.slider.maximum()-w2.slider.minimum()),np.abs(param_ext['ROI', 'Time [ms]']*1e-3-time_array).argmin()/(w2.maximum-w2.minimum)*(w2.slider.maximum()-w2.slider.minimum()),np.abs(param_ext['ROI', 'Time end [ms]']*1e-3-time_array).argmin()/(w2.maximum-w2.minimum)*(w2.slider.maximum()-w2.slider.minimum())])
 	histogram_level_high,histogram_level_low = param_ext['ROI', 'Hist lev high'],param_ext['ROI', 'Hist lev low']
@@ -461,7 +496,7 @@ timer.timeout.connect(update_like_video)
 timer.start(500)	# refresh time in ms
 
 def export_video():
-	global framerate,data,time_array,histogram_level_high,histogram_level_low,w2,flag_radial_profile,inversion_R,inversion_Z,dr,dz,efit_reconstruction,param_ext
+	global framerate,data,time_array,histogram_level_high,histogram_level_low,w2,flag_radial_profile,inversion_R,inversion_Z,dr,dz,efit_reconstruction,param_ext,data_shape
 	path_mother = os.path.split(param_ext1['File Path'])[0]
 	filenames = coleval.all_file_names(path_mother,os.path.split(param_ext1['File Path'])[1]+'_export_')
 	if len(filenames)==0:
@@ -469,7 +504,7 @@ def export_video():
 	else:
 		done_ones = []
 		for filename in filenames:
-			done_ones.append(int(filename[filename.find('export_')+len('export_'):filename.find('.mp4')]))
+			done_ones.append(int(filename[filename.find('export_')+len('export_'):filename.find('.')]))
 		next_export = np.max(done_ones) + 1
 	start_time = np.abs(param_ext['ROI', 'Time start [ms]']*1e-3-time_array).argmin()
 	end_time = np.abs(param_ext['ROI', 'Time end [ms]']*1e-3-time_array).argmin()
@@ -482,13 +517,88 @@ def export_video():
 		histogram_level_high_for_plot = cp.deepcopy(histogram_level_high)
 		histogram_level_low_for_plot = cp.deepcopy(histogram_level_low)
 
+	# here I set the boundaries of the export
+	if flag_radial_profile:
+		full_range_hor = np.sort((inversion_R-dr/2).tolist()+[inversion_R.max()+dr/2])
+		full_range_ver = np.sort((inversion_Z-dz/2).tolist()+[inversion_Z.max()+dz/2])
+	else:
+		full_range_hor = np.arange(0,data_shape[1]+1)
+		full_range_ver = np.arange(0,data_shape[2]+1)
+	limit_left = np.abs(param_ext['Set display','Export left'] - full_range_hor).argmin()
+	limit_right = np.abs(param_ext['Set display','Export right'] - full_range_hor).argmin()
+	limit_bottom = np.abs(param_ext['Set display','Export down'] - full_range_ver).argmin()
+	limit_top = np.abs(param_ext['Set display','Export up'] - full_range_ver).argmin()
 	if flag_radial_profile:
 		extent = [inversion_R.min()-dr/2, inversion_R.max()+dr/2, inversion_Z.min()-dz/2, inversion_Z.max()+dz/2]
-		image_extent = [inversion_R.min()-dr/2, inversion_R.max()+dr/2, inversion_Z.min()-dz/2, inversion_Z.max()+dz/2]
+		image_extent = [full_range_hor[limit_left], full_range_hor[limit_right], full_range_ver[limit_bottom], full_range_ver[limit_top]]
 		ani = coleval.movie_from_data_radial_profile(np.array([np.transpose(np.flip(data,axis=1)[start_time:end_time],(0,2,1))]), framerate,timesteps=time_array[start_time:end_time],integration=2,time_offset=time_array[start_time],extvmin=histogram_level_low_for_plot,extvmax=histogram_level_high_for_plot, extent = extent, image_extent=image_extent,xlabel='R [m]', ylabel='Z [m]',barlabel=barlabel, prelude='shot '  + w2.shotID + '\n'+str(param_ext['Set display','Binning'])+'\n'+'grid resolution %.3gcm\n' %(int(param_ext['Set display','Voxel res'])) ,overlay_structure=param_ext['Overlays','Structure'],include_EFIT=True,efit_reconstruction=efit_reconstruction,pulse_ID=w2.shotID,overlay_x_point=param_ext['Overlays','X-point'],overlay_mag_axis=param_ext['Overlays','Mag axis'],overlay_strike_points=param_ext['Overlays','Separatrix'],overlay_separatrix=param_ext['Overlays','Separatrix'])#,extvmin=0,extvmax=4e4)
 	else:
-		ani = coleval.movie_from_data(np.array([np.flip(np.transpose(np.flip(data,axis=1)[start_time:end_time],(0,2,1)),axis=2)]), framerate,timesteps=time_array[start_time:end_time],integration=2,time_offset=time_array[start_time],extvmin=histogram_level_low_for_plot,extvmax=histogram_level_high_for_plot,xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel=barlabel, prelude='shot ' + w2.shotID + '\n'+str(param_ext['Set display','Binning'])+'\n',overlay_structure=param_ext['Overlays','Structure'],include_EFIT=True,efit_reconstruction=efit_reconstruction,pulse_ID=w2.shotID,overlay_x_point=param_ext['Overlays','X-point'],overlay_mag_axis=param_ext['Overlays','Mag axis'],overlay_strike_points=param_ext['Overlays','Separatrix'],overlay_separatrix=param_ext['Overlays','Separatrix'])
+		image_extent = [full_range_hor[limit_left]-0.5, full_range_hor[limit_right]-1+0.5, full_range_ver[limit_bottom]-0.5, full_range_ver[limit_top]-1+0.5]
+		ani = coleval.movie_from_data(np.array([np.flip(np.transpose(np.flip(data,axis=1)[start_time:end_time],(0,2,1)),axis=2)]), framerate,image_extent=image_extent,timesteps=time_array[start_time:end_time],integration=2,time_offset=time_array[start_time],extvmin=histogram_level_low_for_plot,extvmax=histogram_level_high_for_plot,xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel=barlabel, prelude='shot ' + w2.shotID + '\n'+str(param_ext['Set display','Binning'])+'\n',overlay_structure=param_ext['Overlays','Structure'],include_EFIT=True,efit_reconstruction=efit_reconstruction,pulse_ID=w2.shotID,overlay_x_point=param_ext['Overlays','X-point'],overlay_mag_axis=param_ext['Overlays','Mag axis'],overlay_strike_points=param_ext['Overlays','Separatrix'],overlay_separatrix=param_ext['Overlays','Separatrix'])
 	ani.save(param_ext1['File Path'] + '_export_' + str(next_export) + '.mp4', fps=5*framerate/383, writer='ffmpeg',codec='mpeg4')
+	plt.close('all')
+	print('\n'+'\n'+param_ext1['File Path'] + '_export_' + str(next_export) + '.mp4 generated'+'\n'+'\n')
+
+def export_image():
+	global framerate,data,time_array,histogram_level_high,histogram_level_low,w2,flag_radial_profile,inversion_R,inversion_Z,dr,dz,efit_reconstruction,param_ext,data_shape
+	path_mother = os.path.split(param_ext1['File Path'])[0]
+	filenames = coleval.all_file_names(path_mother,os.path.split(param_ext1['File Path'])[1]+'_export_')
+	if len(filenames)==0:
+		next_export = 1
+	else:
+		done_ones = []
+		for filename in filenames:
+			done_ones.append(int(filename[filename.find('export_')+len('export_'):filename.find('.')]))
+		next_export = np.max(done_ones) + 1
+
+	barlabel=list(quantity_options.keys())[(param_ext['Set display','Quantity']==np.array(list(quantity_options.values()))).argmax()]
+	if param_ext['ROI', 'Histogram auto']:
+		histogram_level_high_for_plot = 'auto'
+		histogram_level_low_for_plot = 'auto'
+	else:
+		if barlabel[-6:] == '[W/m3]':
+			histogram_level_high_for_plot = cp.deepcopy(histogram_level_high)*1e-3
+			histogram_level_low_for_plot = cp.deepcopy(histogram_level_low)*1e-3
+		else:
+			histogram_level_high_for_plot = cp.deepcopy(histogram_level_high)
+			histogram_level_low_for_plot = cp.deepcopy(histogram_level_low)
+	a = w2.x
+	if barlabel[-6:] == '[W/m3]':
+		barlabel = barlabel[:-6] + '[kW/m3]'
+		to_plot = data[round(a)]*1e-3
+	else:
+		to_plot = data[round(a)]
+	# here I set the boundaries of the export
+	if flag_radial_profile:
+		full_range_hor = np.sort((inversion_R-dr/2).tolist()+[inversion_R.max()+dr/2])
+		full_range_ver = np.sort((inversion_Z-dz/2).tolist()+[inversion_Z.max()+dz/2])
+	else:
+		full_range_hor = np.arange(0,data_shape[1]+1)
+		full_range_ver = np.arange(0,data_shape[2]+1)
+	limit_left = np.abs(param_ext['Set display','Export left'] - full_range_hor).argmin()
+	limit_right = np.abs(param_ext['Set display','Export right'] - full_range_hor).argmin()
+	limit_bottom = np.abs(param_ext['Set display','Export down'] - full_range_ver).argmin()
+	limit_top = np.abs(param_ext['Set display','Export up'] - full_range_ver).argmin()
+	if param_ext['Overlays','X-point'] or param_ext['Overlays','Mag axis'] or param_ext['Overlays','Separatrix']:
+		include_EFIT = True
+	else:
+		include_EFIT = False
+	if flag_radial_profile:
+		if param_ext['Set display','Include prelude']:
+			prelude = 'shot '  + w2.shotID + '\n'+str(param_ext['Set display','Binning'])+'\n'+'grid resolution %.3gcm\nTime %.3gms\n' %(int(param_ext['Set display','Voxel res']),param_ext['ROI', 'Time [ms]'])
+		else:
+			prelude = ''
+		extent = [inversion_R.min()-dr/2, inversion_R.max()+dr/2, inversion_Z.min()-dz/2, inversion_Z.max()+dz/2]
+		image_extent = [full_range_hor[limit_left], full_range_hor[limit_right], full_range_ver[limit_bottom], full_range_ver[limit_top]]
+		fig,efit_reconstruction = coleval.image_from_data_radial_profile(np.array([np.transpose(np.flip([to_plot],axis=1),(0,2,1))]),form_factor_size=param_ext['Set display','Export size'],ref_time=param_ext['ROI', 'Time [ms]']*1e-3,extvmin=histogram_level_low_for_plot,extvmax=histogram_level_high_for_plot, extent = extent, image_extent=image_extent,xlabel='R [m]', ylabel='Z [m]',barlabel=barlabel, prelude=prelude ,overlay_structure=param_ext['Overlays','Structure'],include_EFIT=include_EFIT,efit_reconstruction=efit_reconstruction,pulse_ID=w2.shotID,overlay_x_point=param_ext['Overlays','X-point'],overlay_mag_axis=param_ext['Overlays','Mag axis'],overlay_strike_points=param_ext['Overlays','Separatrix'],overlay_separatrix=param_ext['Overlays','Separatrix'],EFIT_output_requested=True)#,extvmin=0,extvmax=4e4)
+	else:
+		if param_ext['Set display','Include prelude']:
+			prelude = 'shot ' + w2.shotID + '\n'+str(param_ext['Set display','Binning'])+'\n'+'Time %.3gms\n' %(param_ext['ROI', 'Time [ms]'])
+		else:
+			prelude = ''
+		image_extent = [full_range_hor[limit_left]-0.5, full_range_hor[limit_right]-1+0.5, full_range_ver[limit_bottom]-0.5, full_range_ver[limit_top]-1+0.5]
+		fig,efit_reconstruction = coleval.image_from_data(np.array([np.flip(np.transpose(np.flip([to_plot],axis=1),(0,2,1)),axis=2)]),form_factor_size=param_ext['Set display','Export size'],image_extent=image_extent,ref_time=param_ext['ROI', 'Time [ms]']*1e-3,extvmin=histogram_level_low_for_plot,extvmax=histogram_level_high_for_plot,xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel=barlabel, prelude=prelude,overlay_structure=param_ext['Overlays','Structure'],include_EFIT=include_EFIT,efit_reconstruction=efit_reconstruction,pulse_ID=w2.shotID,overlay_x_point=param_ext['Overlays','X-point'],overlay_mag_axis=param_ext['Overlays','Mag axis'],overlay_strike_points=param_ext['Overlays','Separatrix'],overlay_separatrix=param_ext['Overlays','Separatrix'],EFIT_output_requested=True)
+	plt.savefig(param_ext1['File Path'] + '_export_' + str(next_export) + '.png', bbox_inches='tight')
 	plt.close('all')
 	print('\n'+'\n'+param_ext1['File Path'] + '_export_' + str(next_export) + '.mp4 generated'+'\n'+'\n')
 
@@ -497,6 +607,7 @@ param_ext.param('Set display','Play').sigActivated.connect(start_video)
 param_ext.param('Set display','Rewind').sigActivated.connect(rew_video)
 param_ext.param('Set display','Pause').sigActivated.connect(pause_video)
 param_ext.param('Set display','Export video').sigActivated.connect(export_video)
+param_ext.param('Set display','Export image').sigActivated.connect(export_image)
 
 
 def NavigatePath():
@@ -513,6 +624,65 @@ def NavigatePath():
 	# p6.setTitle(title="shot " + str(w2.shotID))
 	# Load_EFIT()
 	Load()
+
+path_to_explore = '/home/ffederic/work/irvb/MAST-U'
+f = []
+for (dirpath, dirnames, filenames) in os.walk(path_to_explore):
+	f.append(dirnames)
+dates = []
+for value in f[0]:
+	if value[:4] == '2021':	# select within the same year
+		dates.append(value)
+dates_searchable = [int(value.replace('-','')) for value in dates]
+dates = np.array([value for _, value in sorted(zip(dates_searchable, dates))])
+# dates_searchable = np.sort(dates_searchable)
+def Select_previous_pulse():
+	global all_time_x_point_location,all_time_mag_axis_location,all_time_strike_points_location,all_time_strike_points_location_rot,all_time_separatrix,efit_reconstruction
+	laser_to_analyse = param_ext1['File Path']
+	if w2.shotID != '':
+		shotID = int(w2.shotID)
+		shotID -= 1
+		laser_to_analyse = laser_to_analyse[:-5] + str(shotID)
+		if os.path.exists(laser_to_analyse+'.npz'):
+			param_ext1['File Path'] = laser_to_analyse
+			w2.shotID = str(shotID)
+			print(laser_to_analyse)
+			Load()
+		else:
+			date_found = (dates == os.path.split(os.path.split(laser_to_analyse)[0])[1]).argmax()
+			neighbour_date = dates[max(0,date_found-1)]
+			test_path = os.path.split(os.path.split(laser_to_analyse)[0])[0] + '/' + neighbour_date + '/' + os.path.split(laser_to_analyse)[1][:-5] + str(shotID)
+			w2.shotID = str(shotID)
+			if os.path.exists(test_path + '.npz'):
+				param_ext1['File Path'] = test_path
+				print(laser_to_analyse)
+				Load()
+			else:
+				print('SHOT  ' + str(shotID) + '  MISSING')
+
+def Select_next_pulse():
+	global all_time_x_point_location,all_time_mag_axis_location,all_time_strike_points_location,all_time_strike_points_location_rot,all_time_separatrix,efit_reconstruction
+	laser_to_analyse = param_ext1['File Path']
+	if w2.shotID != '':
+		shotID = int(w2.shotID)
+		shotID += 1
+		laser_to_analyse = laser_to_analyse[:-5] + str(shotID)
+		if os.path.exists(laser_to_analyse+'.npz'):
+			param_ext1['File Path'] = laser_to_analyse
+			w2.shotID = str(shotID)
+			print(laser_to_analyse)
+			Load()
+		else:
+			date_found = (dates == os.path.split(os.path.split(laser_to_analyse)[0])[1]).argmax()
+			neighbour_date = dates[min(len(dates)-1,date_found+1)]
+			test_path = os.path.split(os.path.split(laser_to_analyse)[0])[0] + '/' + neighbour_date + '/' + os.path.split(laser_to_analyse)[1][:-5] + str(shotID)
+			if os.path.exists(test_path + '.npz'):
+				param_ext1['File Path'] = test_path
+				w2.shotID = str(shotID)
+				print(laser_to_analyse)
+				Load()
+			else:
+				print('SHOT  ' + str(shotID) + '  MISSING')
 
 def Load_EFIT():
 	global all_time_x_point_location,all_time_mag_axis_location,all_time_strike_points_location,all_time_strike_points_location_rot,all_time_separatrix,efit_reconstruction,all_time_sep_r,all_time_sep_z,r_fine,z_fine
@@ -547,7 +717,6 @@ def Load():
 		laser_dict = np.load(param_ext1['File Path']+'.npz')
 		data = (laser_dict['data'] + laser_dict['data_median']).astype(int)
 		laser_dict.allow_pickle=True
-		time_array = laser_dict['full_frame'].all()['time_full_full']
 		framerate = laser_dict['FrameRate']
 		param_ext['Overlays', 'Structure'] = False
 		param_ext['Overlays', 'Mag axis'] = False
@@ -559,14 +728,21 @@ def Load():
 		# laser_dict.allow_pickle=True
 		# etendue = laser_dict['bin1x1x1'].all()['etendue']
 		param_ext['Set display','Binning'] = 'bin1x1x1'
+		try:
+			temp_dict = np.load(param_ext1['File Path']+'_FAST.npz')
+			time_array = temp_dict['time_full_full']
+		except:
+			time_array = laser_dict['full_frame'].all()['time_full_full']
+		param_ext['ROI', 'Time end [ms]'] = time_array[np.abs(time_array-1.5).argmin()]*1e3
+		param_ext['ROI', 'Time [ms]'] = time_array[np.abs(time_array-0.7).argmin()]*1e3
+		param_ext['ROI', 'Time start [ms]'] = time_array[np.abs(time_array-0).argmin()]*1e3
 	elif param_ext['Set display','Quantity'][:4] == 'FAST':
 		if param_ext['Set display','Quantity'][:13] == 'FAST/inverted':
 			to_load = param_ext['Set display','Quantity'][14:]
 			laser_dict = np.load(param_ext1['File Path']+'_FAST.npz')
 			laser_dict.allow_pickle=True
 			data = laser_dict['inverted_dict'].all()[param_ext['Set display','Voxel res']][to_load]
-			data[np.isnan(data)] = 0
-			data = np.flip(data,axis=1)
+			# data[np.isnan(data)] = 0
 			time_array = laser_dict['inverted_dict'].all()[param_ext['Set display','Voxel res']]['time_full_binned_crop']
 			param_ext['Set display','Binning'] = laser_dict['inverted_dict'].all()[param_ext['Set display','Voxel res']]['binning_type']
 			inversion_R = laser_dict['inverted_dict'].all()[param_ext['Set display','Voxel res']]['geometry']['R']
@@ -576,6 +752,7 @@ def Load():
 			if to_load == 'inverted_data':
 				# data = np.transpose(data,(0,2,1))
 				flag_radial_profile = True
+				data = np.flip(data,axis=1)
 		else:
 			if os.path.exists(param_ext1['File Path']+'_FAST.npz'):
 				laser_dict = np.load(param_ext1['File Path']+'_FAST.npz')
@@ -589,16 +766,31 @@ def Load():
 				data = laser_dict['only_foil'].all()[param_ext['Set display','Quantity']]
 				time_array = laser_dict['only_foil'].all()['FAST_time_binned']
 				param_ext['Set display','Binning'] = laser_dict['only_foil'].all()['FAST_binning_type']
-		framerate = 1/np.median(time_array)
-	elif param_ext['Set display','Quantity'] in ['fitted_foil_power','foil_power_residuals']:
+		framerate = 1/np.median(np.diff(time_array))
+		param_ext['ROI', 'Time start [ms]'] = time_array[0]*1e3
+		param_ext['ROI', 'Time [ms]'] = np.median(time_array)*1e3
+		param_ext['ROI', 'Time end [ms]'] = time_array[-1]*1e3
+	elif param_ext['Set display','Quantity'][:8] == 'inverted':
+		to_load = param_ext['Set display','Quantity'][9:]
 		laser_dict = np.load(param_ext1['File Path']+'_inverted_baiesian.npz')
 		laser_dict.allow_pickle=True
 		shrink_factor_t = param_ext['Set display','Binning'][3:param_ext['Set display','Binning'].find('x')]
 		shrink_factor_x = param_ext['Set display','Binning'][param_ext['Set display','Binning'].find('x')+1:param_ext['Set display','Binning'].find('x')+1+param_ext['Set display','Binning'][param_ext['Set display','Binning'].find('x')+1:].find('x')]
-		data = laser_dict[param_ext['Set display','Voxel res']].all()[str(shrink_factor_x)][str(shrink_factor_t)][param_ext['Set display','Quantity']]
-		# etendue = laser_dict[param_ext['Set display','Binning']].all()['etendue']
+		data = laser_dict[param_ext['Set display','Voxel res']].all()[str(shrink_factor_x)][str(shrink_factor_t)][to_load]
+		# data[np.isnan(data)] = 0
 		time_array = laser_dict[param_ext['Set display','Voxel res']].all()[str(shrink_factor_x)][str(shrink_factor_t)]['time_full_binned_crop']
-		framerate = 1/np.median(time_array)
+		inversion_R = laser_dict[param_ext['Set display','Voxel res']].all()[str(shrink_factor_x)][str(shrink_factor_t)]['geometry']['R']
+		inversion_Z = laser_dict[param_ext['Set display','Voxel res']].all()[str(shrink_factor_x)][str(shrink_factor_t)]['geometry']['Z']
+		dr = np.median(np.diff(inversion_R))
+		dz = np.median(np.diff(inversion_Z))
+		if to_load == 'inverted_data':
+			# data = np.transpose(data,(0,2,1))
+			flag_radial_profile = True
+			data = np.flip(data,axis=1)
+		framerate = 1/np.median(np.diff(time_array))
+		param_ext['ROI', 'Time start [ms]'] = time_array[0]*1e3
+		param_ext['ROI', 'Time [ms]'] = np.median(time_array)*1e3
+		param_ext['ROI', 'Time end [ms]'] = time_array[-1]*1e3
 	else:
 		laser_dict = np.load(param_ext1['File Path']+'_short.npz')
 		laser_dict.allow_pickle=True
@@ -606,27 +798,37 @@ def Load():
 		# etendue = laser_dict[param_ext['Set display','Binning']].all()['etendue']
 		time_array = laser_dict[param_ext['Set display','Binning']].all()['time_full_binned']
 		framerate = laser_dict[param_ext['Set display','Binning']].all()['laser_framerate_binned']
+		param_ext['ROI', 'Time start [ms]'] = time_array[0]*1e3
+		param_ext['ROI', 'Time [ms]'] = np.median(time_array)*1e3
+		param_ext['ROI', 'Time end [ms]'] = time_array[-1]*1e3
 	data = np.flip(data,axis=1)
 	data_shape = np.shape(data)
-	image1.setImage(data[0])
+	temp = cp.deepcopy(data[0])
+	temp[np.isnan(temp)]=0
+	image1.setImage(temp)
 	isoLine.setValue(np.mean(data[0]))
 	if flag_radial_profile:
 		image1.setRect(QtCore.QRectF(inversion_R.min()-dr/2,inversion_Z.min()-dz/2,len(inversion_R)*dr,len(inversion_Z)*dz))
 		image1.setBorder('b')
 		image_frame.setData([inversion_R.min()-dr/2,inversion_R.max()+dr/2,inversion_R.max()+dr/2,inversion_R.min()-dr/2,inversion_R.min()-dr/2],[inversion_Z.min()-dz/2,inversion_Z.min()-dz/2,inversion_Z.max()+dz/2,inversion_Z.max()+dz/2,inversion_Z.min()-dz/2])
+		param_ext['Set display', 'Export left'],param_ext['Set display', 'Export down'] = inversion_R.min()-dr/2, inversion_Z.min()-dz/2
+		param_ext['Set display', 'Export right'],param_ext['Set display', 'Export up'] = inversion_R.max()+dr/2, inversion_Z.max()+dz/2
+		param_ext['ROI', 'ROI magenta hor'],param_ext['ROI', 'ROI magenta ver'] = inversion_R.min()+(inversion_R.max()-inversion_R.min())*4/8, inversion_Z.min()+(inversion_Z.max()-inversion_Z.min())*4/8
+		param_ext['ROI', 'ROI magenta d hor'],param_ext['ROI', 'ROI magenta d ver'] = (inversion_R.max()-inversion_R.min())/4, (inversion_Z.max()-inversion_Z.min())/4
+		param_ext['ROI', 'ROI cyan hor'],param_ext['ROI', 'ROI cyan ver'] = inversion_R.min()+(inversion_R.max()-inversion_R.min())*2/8, inversion_Z.min()+(inversion_Z.max()-inversion_Z.min())*2/8
+		param_ext['ROI', 'ROI cyan d hor'],param_ext['ROI', 'ROI cyan d ver'] = (inversion_R.max()-inversion_R.min())/4, (inversion_Z.max()-inversion_Z.min())/4
 	else:
 		image_frame.setData([0,data_shape[1],data_shape[1],0,0],[0,0,data_shape[2],data_shape[2],0])
-		param_ext['ROI', 'ROI magenta hor'],param_ext['ROI', 'ROI magenta ver'] = np.shape(image1.image)[0]*3//8, np.shape(image1.image)[1]*3//8
+		param_ext['Set display', 'Export left'],param_ext['Set display', 'Export down'] = 0, 0
+		param_ext['Set display', 'Export right'],param_ext['Set display', 'Export up'] = np.shape(image1.image)[0], np.shape(image1.image)[1]
+		param_ext['ROI', 'ROI magenta hor'],param_ext['ROI', 'ROI magenta ver'] = np.shape(image1.image)[0]*4//8, np.shape(image1.image)[1]*4//8
 		param_ext['ROI', 'ROI magenta d hor'],param_ext['ROI', 'ROI magenta d ver'] = np.shape(image1.image)[0]//4, np.shape(image1.image)[1]//4
-		param_ext['ROI', 'ROI cyan hor'],param_ext['ROI', 'ROI cyan ver'] = np.shape(image1.image)[0]*1//8, np.shape(image1.image)[1]*1//8
+		param_ext['ROI', 'ROI cyan hor'],param_ext['ROI', 'ROI cyan ver'] = np.shape(image1.image)[0]*2//8, np.shape(image1.image)[1]*2//8
 		param_ext['ROI', 'ROI cyan d hor'],param_ext['ROI', 'ROI cyan d ver'] = np.shape(image1.image)[0]//4, np.shape(image1.image)[1]//4
 	w2.minimum = 0
 	w2.maximum = len(data)-1
 	w2.slider.setMinimum(w2.minimum)
 	w2.slider.setMaximum(w2.maximum)
-	param_ext['ROI', 'Time start [ms]'] = time_array[0]*1e3
-	param_ext['ROI', 'Time [ms]'] = np.median(time_array)*1e3
-	param_ext['ROI', 'Time end [ms]'] = time_array[-1]*1e3
 	param_ext['ROI', 'Histogram auto'] = True
 	param_ext.children()[0].children()[8].setProperty('step',np.min(np.diff(np.sort(data.flatten()))))
 	param_ext.children()[0].children()[9].setProperty('step',np.min(np.diff(np.sort(data.flatten()))))
@@ -778,6 +980,7 @@ def reset_EFIT():
 		del efit_reconstruction
 	except:
 		pass
+	efit_reconstruction=None
 
 
 	# param_ext['Set display', 'File Path'] = anchive_path
@@ -785,16 +988,21 @@ param_ext1.param('Navigate Path').sigActivated.connect(NavigatePath)
 param_ext1.param('File Path').sigValueChanged.connect(reset_EFIT)
 param_ext.param('Set display','Load data').sigActivated.connect(Load)
 param_ext.param('Set display','Load EFIT').sigActivated.connect(Load_EFIT)
+param_ext.param('Set display','Shot +').sigActivated.connect(Select_next_pulse)
+param_ext.param('Set display','Shot -').sigActivated.connect(Select_previous_pulse)
 
 
 update_hist_inhibit = False
 def update_plot():
-	global histogram_level_low, histogram_level_high,update_hist_inhibit,update_plot_inhibit,inhibit_update_like_video,inhibit_update_like_video_rew,flag_radial_profile
+	global histogram_level_low, histogram_level_high,update_hist_inhibit,update_plot_inhibit,inhibit_update_like_video,inhibit_update_like_video_rew,flag_radial_profile,inversion_R,inversion_Z,data_shape
 	if update_plot_inhibit==False:
 		a = w2.x
 		if (param_ext['ROI', 'Time [ms]']!=time_array[round(a)]*1e3) or inhibit_update_like_video==False or inhibit_update_like_video_rew==False:
 			update_hist_inhibit = True
-			image1.setImage(data[round(a)])
+			temp = cp.deepcopy(data[round(a)])
+			temp[np.isnan(temp)]=0
+			image1.setImage(temp)
+			# image1.setImage(data[round(a)])
 			hist.setImageItem(image1)
 			hist.setLevels(histogram_level_high,histogram_level_low)
 		# self.image2.setImage(data[round(a)])
@@ -802,6 +1010,12 @@ def update_plot():
 		iso.setData(pg.gaussianFilter(image1.image, (2, 2)))
 		if inhibit_update_like_video or inhibit_update_like_video_rew:
 			param_ext['ROI', 'Time [ms]'] = time_array[round(a)]*1e3
+		image_frame_pos = np.array(image_frame_roi.getState()['pos'])
+		image_frame_size = np.array(image_frame_roi.getState()['size'])
+		param_ext['Set display', 'Export left'] = image_frame_pos[0]
+		param_ext['Set display', 'Export down'] = image_frame_pos[1]
+		param_ext['Set display', 'Export right'] = image_frame_pos[0] + image_frame_size[0]
+		param_ext['Set display', 'Export up'] = image_frame_pos[1] + image_frame_size[1]
 		if not flag_radial_profile:
 			selected = roi.getArrayRegion(image1.image, image1)
 			pos = np.array(roi.getState()['pos']).astype(int)
@@ -834,6 +1048,22 @@ def update_plot():
 			p6_2.setData(time_array[int(w2.left):int(w2.right)],temp)
 			# hist.setImageItem(image1)
 			# hist.sigLevelChangeFinished.emit(True)
+	if flag_radial_profile:
+		full_range_hor = np.sort((inversion_R-dr/2).tolist()+[inversion_R.max()+dr/2])
+		full_range_ver = np.sort((inversion_Z-dz/2).tolist()+[inversion_Z.max()+dz/2])
+	else:
+		full_range_hor = np.arange(0,data_shape[1]+1)
+		full_range_ver = np.arange(0,data_shape[2]+1)
+		# param_ext['Set display','Export left'] = int(param_ext['Set display','Export left'])
+		# param_ext['Set display','Export right'] = int(param_ext['Set display','Export right'])
+		# param_ext['Set display','Export down'] = int(param_ext['Set display','Export down'])
+		# param_ext['Set display','Export up'] = int(param_ext['Set display','Export up'])
+	limit_left = np.abs(param_ext['Set display','Export left'] - full_range_hor).argmin()
+	limit_right = np.abs(param_ext['Set display','Export right'] - full_range_hor).argmin()
+	limit_bottom = np.abs(param_ext['Set display','Export down'] - full_range_ver).argmin()
+	limit_top = np.abs(param_ext['Set display','Export up'] - full_range_ver).argmin()
+	image_frame_export.setData([full_range_hor[limit_left],full_range_hor[limit_right],full_range_hor[limit_right],full_range_hor[limit_left],full_range_hor[limit_left]],[full_range_ver[limit_bottom],full_range_ver[limit_bottom],full_range_ver[limit_top],full_range_ver[limit_top],full_range_ver[limit_bottom]])
+
 
 update_plot()
 
@@ -853,6 +1083,7 @@ w2.slider.valueChanged.connect(update_plot)
 isoLine.sigDragged.connect(update_plot)
 roi.sigRegionChanged.connect(update_plot)
 roi2.sigRegionChanged.connect(update_plot)
+image_frame_roi.sigRegionChanged.connect(update_plot)
 hist.sigLevelsChanged.connect(update_hist)
 
 param_ext.sigTreeStateChanged.connect(change)

@@ -17,11 +17,16 @@ import copy
 
 
 # Load voxels
-from cherab.mastu.bolometry import load_default_bolometer_config, load_standard_voxel_grid
 from raysect.optical import World
+if False:	# not used because in source /home/jlovell/venvs/cherab/bin/activate, that has the last stable version of cherab, the option 'path' is not available
+	from cherab.mastu.bolometry import load_standard_voxel_grid
+else:	# used because in source /home/jlovell/venvs/cherab/bin/activate, that has the last stable version of cherab, the option 'path' was not available
+	# os.chdir("/home/ffederic/work/cherab/cherab_mastu/cherab/mastu/bolometry/grid_construction")
+	from load_voxel_grids import load_standard_voxel_grid
 world = World()
-grid_type = 'core_res_4cm'
+grid_type = 'core_res_2cm'
 # grid_type = 'core_high_res'
+# core_voxel_grid = load_standard_voxel_grid(grid_type,parent=world, grid_file='/home/ffederic/work/cherab/cherab_mastu/cherab/mastu/bolometry/grid_construction/'+grid_type+'_rectilinear_grid.pickle')
 core_voxel_grid = load_standard_voxel_grid(grid_type,parent=world, path='/home/ffederic/work/cherab/cherab_mastu/cherab/mastu/bolometry/grid_construction')
 
 
@@ -53,7 +58,8 @@ for cad_file in MASTU_FULL_MESH:
 	Mesh.from_file(cad_file[0], parent=world, material=AbsorbingSurface(), name=name)
 
 os.chdir("/home/ffederic/work/analysis_scripts/irvb/")
-irvb_cad = import_stl("IRVB_camera_no_backplate_4mm.stl", parent=world, material=AbsorbingSurface(), name="IRVB")
+pinhole_size = 6	# mm
+irvb_cad = import_stl('IRVB_camera_no_backplate_'+str(pinhole_size)+'mm.stl', parent=world, material=AbsorbingSurface(), name="IRVB")
 
 
 # # TO BE REMOVED - Just to see if something works
@@ -69,10 +75,10 @@ irvb_cad = import_stl("IRVB_camera_no_backplate_4mm.stl", parent=world, material
 
 
 pinhole_centre = Point3D(1.491933, 0, -0.7198).transform(rotate_z(135-0.76004))
-pinhole_target = Sphere(0.005, transform=translate(*pinhole_centre), parent=world, material=NullMaterial())
+pinhole_target = Sphere(pinhole_size*1e-3+0.001, transform=translate(*pinhole_centre), parent=world, material=NullMaterial())
 
 
-stand_off=0.045
+stand_off=0.045	# 0.045 / 0.060 / 0.075
 CCD_radius=1.50467+stand_off
 CCD_angle=135*(np.pi*2)/360
 
@@ -101,8 +107,8 @@ num_pixels = pixel_h * pixel_v
 sensitivities = np.zeros((num_voxels, num_pixels))
 
 
-n_samples_per_pixel=10000	# for low resolution I used 5000
-path_sensitivity = '/home/ffederic/work/analysis_scripts/sensitivity_matrix_'+grid_type[5:]+'_foil_pixel_h_'+str(pixel_h)+'_power'
+n_samples_per_pixel=5000	# for low resolution I used 5000, 10000 for high
+path_sensitivity = '/home/ffederic/work/analysis_scripts/sensitivity_matrix_'+grid_type[5:]+'_foil_pixel_h_'+str(pixel_h)+'_power'+'_stand_off_'+str(stand_off)+'_pinhole_'+str(pinhole_size)
 if not os.path.exists(path_sensitivity):
 	os.makedirs(path_sensitivity)
 
@@ -184,7 +190,7 @@ pipeline='power'
 
 # def sensitivity(world,pinhole_target,pixel_h, pixel_v,ccd_centre,ccd_normal,ccd_y_axis,core_voxel_grid):
 
-
+override = True
 if False:
 	# Use this bit if you want to split the total number of processes
 	total_number = num_voxels
@@ -213,13 +219,20 @@ else:
 		if not (value in done_ones):
 			to_do.append(value)
 	i = np.array(to_do)
+	random_sequence = np.random.random(len(i))
+	i = np.array([y for _, y in sorted(zip(random_sequence, i))])
+	override = False
 i_all=np.linspace(0,num_voxels-1,num_voxels,dtype=int)
 
 
 
-# for index in i:
-for index in np.flip(i,axis=0):
+for index in i:
+# for index in np.flip(i,axis=0):
 	index = int(index)
+	path = path_sensitivity+'/sensitivity_voxel'+str(index)
+	if not override:
+		if os.path.exists(path+'.npy'):	# if I launch multiple of thius together I want to avoid the same file over written
+			continue
 	# def sensitivity(i):
 	# 	global world
 	# 	global pinhole_target
@@ -305,7 +318,6 @@ for index in np.flip(i,axis=0):
 	plt.close()
 
 	sens_row = results.flatten()
-	path = path_sensitivity+'/sensitivity_voxel'+str(index)
 	np.save(path,sens_row)
 	print('saved '+path)
 	# return sensitivity_internal

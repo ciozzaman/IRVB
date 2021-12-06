@@ -769,8 +769,8 @@ exec(open("/home/ffederic/work/analysis_scripts/scripts/python_library/collect_a
 # functions to draw the x-point on images or movies
 Rf=1.54967	# m	radius of the centre of the foil
 plane_equation = np.array([1,-1,0,2**0.5 * Rf])	# plane of the foil
-pinhole_location = np.array([-1.04087,1.068856,-0.7198])
-centre_of_foil = np.array([-1.095782166, 1.095782166, -0.7])
+pinhole_location = np.array([-1.04087,1.068856,-0.7198])	# x,y,z
+centre_of_foil = np.array([-1.095782166, 1.095782166, -0.7])	# x,y,z
 foil_size = [0.07,0.09]
 R_centre_column = 0.261	# m
 pinhole_relative_location = np.array(foil_size)/2 + 0.0198
@@ -823,6 +823,11 @@ structure_radial_profile.append(np.array([[1.468,1.395,1.446,1.518,1.468],[0.495
 structure_radial_profile.append(np.array([[2,1.490,1.490,2],[-0.616,-0.616,-0.784,-0.784]]).T)	# IRVB tube
 def return_structure_radial_profile():
 	return structure_radial_profile
+res_bolo_radial_profile = [np.array([[R_centre_column,(core_tangential_common_point[0]**2+core_tangential_common_point[1]**2)**0.5],[0,0]]).T]
+for core_poloidal_arrival_ in core_poloidal_arrival:
+	res_bolo_radial_profile.append(np.array([[core_poloidal_arrival_[0],core_poloidal_common_point[0]],[core_poloidal_arrival_[1],core_poloidal_common_point[1]]]).T)
+for divertor_poloidal_arrival_ in divertor_poloidal_arrival:
+	res_bolo_radial_profile.append(np.array([[divertor_poloidal_arrival_[0],divertor_poloidal_common_point[0]],[divertor_poloidal_arrival_[1],divertor_poloidal_common_point[1]]]).T)
 
 fueling_point_location_on_foil = []
 for time in range(len(fueling_r)):
@@ -1004,12 +1009,15 @@ def return_divertor_poloidal(resolution = 100):
 			divertor_poloidal.append(np.array([np.linspace(arrival[0],divertor_poloidal_common_point[0],resolution),interp1(np.linspace(arrival[0],divertor_poloidal_common_point[0],resolution))]).T)
 	return divertor_poloidal
 
-def movie_from_data(data,framerate,integration=1,xlabel=(),ylabel=(),barlabel=(),cmap='rainbow',timesteps='auto',extvmin='auto',extvmax='auto',mask=[0],mask_alpha=0.2,time_offset=0,prelude='',vline=None,hline=None,EFIT_path=EFIT_path_default,include_EFIT=False,efit_reconstruction=None,EFIT_output_requested = False,pulse_ID=None,overlay_x_point=False,overlay_mag_axis=False,overlay_structure=False,overlay_strike_points=False,overlay_separatrix=False,structure_alpha=0.5,foil_size=foil_size):
+def movie_from_data(data,framerate,integration=1,xlabel=(),ylabel=(),barlabel=(),cmap='rainbow',form_factor_size=15,timesteps='auto',extvmin='auto',extvmax='auto',image_extent=[],mask=[0],mask_alpha=0.2,time_offset=0,prelude='',vline=None,hline=None,EFIT_path=EFIT_path_default,include_EFIT=False,efit_reconstruction=None,EFIT_output_requested = False,pulse_ID=None,overlay_x_point=False,overlay_mag_axis=False,overlay_structure=False,overlay_strike_points=False,overlay_separatrix=False,structure_alpha=0.5,foil_size=foil_size):
 	import matplotlib.animation as animation
 	import numpy as np
 
-	form_factor = (np.shape(data[0][0])[1])/(np.shape(data[0][0])[0])
-	fig = plt.figure(figsize=(12*form_factor, 12))
+	if len(image_extent)==4:
+		form_factor = (image_extent[1]-image_extent[0])/(image_extent[3]-image_extent[2])
+	else:
+		form_factor = (np.shape(data[0][0])[1])/(np.shape(data[0][0])[0])
+	fig = plt.figure(figsize=(form_factor_size*form_factor, form_factor_size))
 	ax = fig.add_subplot(111)
 
 	# I like to position my colorbars this way, but you don't have to
@@ -1022,6 +1030,18 @@ def movie_from_data(data,framerate,integration=1,xlabel=(),ylabel=(),barlabel=()
 	# x = np.linspace(0, 1, 120)
 	# y = np.linspace(0, 2 * np.pi, 100).reshape(-1, 1)
 
+	if len(image_extent)==4:
+		ver = np.arange(0,np.shape(data[0][0])[0])
+		up = np.abs(image_extent[3]-ver).argmin()
+		down = np.abs(image_extent[2]-ver).argmin()
+		hor = np.arange(0,np.shape(data[0][0])[1])
+		left = np.abs(image_extent[0]-hor).argmin()
+		right = np.abs(image_extent[1]-hor).argmin()
+		data[0][:,:,:left] = np.nan
+		data[0][:,:,right+1:] = np.nan
+		data[0][:,:down] = np.nan
+		data[0][:,up+1:] = np.nan
+
 	# This is now a list of arrays rather than a list of artists
 	frames = [None]*len(data[0])
 	frames[0]=data[0,0]
@@ -1033,6 +1053,10 @@ def movie_from_data(data,framerate,integration=1,xlabel=(),ylabel=(),barlabel=()
 
 	cv0 = frames[0]
 	im = ax.imshow(cv0,cmap, origin='lower', interpolation='none') # Here make an AxesImage rather than contour
+	if len(image_extent)==4:
+		ax.set_ylim(top=image_extent[3],bottom=image_extent[2])
+		ax.set_xlim(right=image_extent[1],left=image_extent[0])
+
 
 	if len(np.shape(mask))==2:
 		if np.shape(mask)!=np.shape(data[0][0]):
@@ -1116,16 +1140,16 @@ def movie_from_data(data,framerate,integration=1,xlabel=(),ylabel=(),barlabel=()
 	def animate(i):
 		arr = frames[i]
 		if extvmax=='auto':
-			vmax = np.max(arr)
+			vmax = np.nanmax(arr)
 		elif extvmax=='allmax':
-			vmax = np.max(data)
+			vmax = np.nanmax(data)
 		else:
 			vmax = extvmax
 
 		if extvmin=='auto':
-			vmin = np.min(arr)
+			vmin = np.nanmin(arr)
 		elif extvmin=='allmin':
-			vmin = np.min(data)
+			vmin = np.nanmin(data)
 		else:
 			vmin = extvmin
 		im.set_data(arr)
@@ -1209,6 +1233,201 @@ def movie_from_data(data,framerate,integration=1,xlabel=(),ylabel=(),barlabel=()
 		return ani
 	else:
 		return ani,efit_reconstruction
+
+def image_from_data(data,xlabel=(),ylabel=(),barlabel=(),cmap='rainbow',form_factor_size=15,ref_time=None,extvmin='auto',extvmax='auto',image_extent=[],mask=[0],mask_alpha=0.2,prelude='',vline=None,hline=None,EFIT_path=EFIT_path_default,include_EFIT=False,efit_reconstruction=None,EFIT_output_requested = False,pulse_ID=None,overlay_x_point=False,overlay_mag_axis=False,overlay_structure=False,overlay_strike_points=False,overlay_separatrix=False,overlay_res_bolo=False,structure_alpha=0.5,foil_size=foil_size):
+	import matplotlib.animation as animation
+	import numpy as np
+	from matplotlib import cm	# to print nan as white
+
+	if len(image_extent)==4:
+		form_factor = (image_extent[1]-image_extent[0])/(image_extent[3]-image_extent[2])
+	else:
+		form_factor = (np.shape(data[0][0])[1])/(np.shape(data[0][0])[0])
+	fig = plt.figure(figsize=(form_factor_size*form_factor, form_factor_size))
+	ax = fig.add_subplot(111)
+
+	# I like to position my colorbars this way, but you don't have to
+	# div = make_axes_locatable(ax)
+	# cax = div.append_axes('right', '5%', '5%')
+
+	# def f(x, y):
+	#	 return np.exp(x) + np.sin(y)
+
+	# x = np.linspace(0, 1, 120)
+	# y = np.linspace(0, 2 * np.pi, 100).reshape(-1, 1)
+
+	if len(image_extent)==4:
+		ver = np.arange(0,np.shape(data[0][0])[0])
+		up = np.abs(image_extent[3]-ver).argmin()
+		down = np.abs(image_extent[2]-ver).argmin()
+		hor = np.arange(0,np.shape(data[0][0])[1])
+		left = np.abs(image_extent[0]-hor).argmin()
+		right = np.abs(image_extent[1]-hor).argmin()
+		data = data.astype(float)
+		data[0][:,:,:left] = np.nan
+		data[0][:,:,right+1:] = np.nan
+		data[0][:,:down] = np.nan
+		data[0][:,up+1:] = np.nan
+
+	# This is now a list of arrays rather than a list of artists
+	frames = [None]*len(data[0])
+	frames[0]=data[0,0]
+
+	for i in range(len(data[0])):
+		# x	   += 1
+		# curVals  = f(x, y)
+		frames[i]=(data[0,i])
+
+	cv0 = frames[0]
+	masked_array = np.ma.array (cv0, mask=np.isnan(cv0))
+	# exec('cmap=cm.' + cmap)
+	cmap=cm.rainbow
+	cmap.set_bad('white',1.)
+	im = ax.imshow(masked_array,cmap=cmap, origin='lower', interpolation='none') # Here make an AxesImage rather than contour
+	if len(image_extent)==4:
+		ax.set_ylim(top=image_extent[3],bottom=image_extent[2])
+		ax.set_xlim(right=image_extent[1],left=image_extent[0])
+
+
+	if len(np.shape(mask))==2:
+		if np.shape(mask)!=np.shape(data[0][0]):
+			print('The shape of the mask '+str(np.shape(mask))+' does not match with the shape of the record '+str(np.shape(data[0][0])))
+		masked = np.ma.masked_where(mask == 0, mask)
+		im2 = ax.imshow(masked, 'gray', interpolation='none', alpha=mask_alpha,origin='lower',extent = [0,np.shape(cv0)[1]-1,0,np.shape(cv0)[0]-1])
+
+	if ref_time==None:
+		include_EFIT = False
+
+	if include_EFIT:
+		try:
+			if efit_reconstruction == None:
+				print('reading '+EFIT_path+'/epm0'+str(pulse_ID)+'.nc')
+				efit_reconstruction = mclass(EFIT_path+'/epm0'+str(pulse_ID)+'.nc',pulse_ID=pulse_ID)
+			else:
+				print('EFIT reconstruction externally supplied')
+			EFIT_dt = np.median(np.diff(efit_reconstruction.time))
+		except Exception as e:
+			print('reading '+EFIT_path+'/epm0'+str(pulse_ID)+'.nc failed')
+			logging.exception('with error: ' + str(e))
+			include_EFIT=False
+			overlay_x_point=False
+			overlay_mag_axis=False
+			overlay_separatrix=False
+			overlay_strike_points=False
+			overlay_separatrix=False
+			efit_reconstruction = None
+		if overlay_x_point:
+			all_time_x_point_location = return_all_time_x_point_location(efit_reconstruction)
+			plot1 = ax.plot(0,0,'-r', alpha=1)[0]
+		if overlay_mag_axis:
+			all_time_mag_axis_location = return_all_time_mag_axis_location(efit_reconstruction)
+			plot2 = ax.plot(0,0,'--r', alpha=1)[0]
+		if overlay_separatrix or overlay_strike_points:
+			all_time_sep_r,all_time_sep_z,r_fine,z_fine = efit_reconstruction_to_separatrix_on_foil(efit_reconstruction)
+		if overlay_strike_points:
+			all_time_strike_points_location,all_time_strike_points_location_rot = return_all_time_strike_points_location(efit_reconstruction,all_time_sep_r,all_time_sep_z,r_fine,z_fine)
+			plot3 = ax.plot(0,0,'xr',markersize=20, alpha=1)[0]
+			plot4 = []
+			for __i in range(len(all_time_strike_points_location[0])):
+				plot4.append(ax.plot(0,0,'-r', alpha=1)[0])
+		if overlay_separatrix:
+			all_time_separatrix = return_all_time_separatrix(efit_reconstruction,all_time_sep_r,all_time_sep_z,r_fine,z_fine)
+			plot5 = []
+			for __i in range(len(all_time_separatrix[0])):
+				plot5.append(ax.plot(0,0,'--b', alpha=1)[0])
+	if overlay_structure:
+		for i in range(len(fueling_point_location_on_foil)):
+			ax.plot(np.array(fueling_point_location_on_foil[i][:,0])*(np.shape(cv0)[1]-1)/foil_size[0],np.array(fueling_point_location_on_foil[i][:,1])*(np.shape(cv0)[0]-1)/foil_size[1],'+k',markersize=40,alpha=structure_alpha)
+			ax.plot(np.array(fueling_point_location_on_foil[i][:,0])*(np.shape(cv0)[1]-1)/foil_size[0],np.array(fueling_point_location_on_foil[i][:,1])*(np.shape(cv0)[0]-1)/foil_size[1],'ok',markersize=5,alpha=structure_alpha)
+		for i in range(len(structure_point_location_on_foil)):
+			ax.plot(np.array(structure_point_location_on_foil[i][:,0])*(np.shape(cv0)[1]-1)/foil_size[0],np.array(structure_point_location_on_foil[i][:,1])*(np.shape(cv0)[0]-1)/foil_size[1],'--k',alpha=structure_alpha)
+
+	# if len(np.shape(mask)) == 2:
+	# im = ax.imshow(mask,'gray',interpolation='none',alpha=1)
+	if np.sum(vline == None)==0:
+		if np.shape(vline)==():
+			vline = max(0,min(vline,np.shape(cv0)[1]-1))
+			axvline = ax.axvline(x=vline,linestyle='--',color='k')
+		else:
+			for i in range(len(vline)):
+				vline[i] = max(0,min(vline[i],np.shape(cv0)[1]-1))
+				axvline = ax.axvline(x=vline[i],linestyle='--',color='k')
+	if np.sum(hline == None)==0:
+		if np.shape(hline)==():
+			hline = max(0,min(hline,np.shape(cv0)[0]-1))
+			axhline = ax.axhline(y=hline,linestyle='--',color='k')
+		else:
+			for i in range(len(hline)):
+				hline[i] = max(0,min(hline[i],np.shape(cv0)[0]-1))
+				axhline = ax.axhline(y=hline[i],linestyle='--',color='k')
+
+	cb = fig.colorbar(im).set_label(barlabel)
+	cb = ax.set_xlabel(xlabel)
+	cb = ax.set_ylabel(ylabel)
+	tx = ax.set_title('Frame 0')
+
+
+	arr = frames[0]
+	if extvmax=='auto':
+		vmax = np.nanmax(arr)
+	elif extvmax=='allmax':
+		vmax = np.nanmax(data)
+	else:
+		vmax = extvmax
+
+	if extvmin=='auto':
+		vmin = np.nanmin(arr)
+	elif extvmin=='allmin':
+		vmin = np.nanmin(data)
+	else:
+		vmin = extvmin
+	masked_array = np.ma.array (arr, mask=np.isnan(arr))
+	im.set_data(masked_array)
+	im.set_clim(vmin, vmax)
+	tx.set_text(prelude)
+	if include_EFIT:
+		if np.min(np.abs(ref_time-efit_reconstruction.time))>EFIT_dt:	# means that the reconstruction is not available for that time
+			if overlay_x_point:
+				plot1.set_data(([],[]))
+			if overlay_mag_axis:
+				plot2.set_data(([],[]))
+			if overlay_strike_points:
+				plot3.set_data(([],[]))
+				for __i in range(len(plot4)):
+					plot4[__i].set_data(([],[]))
+			if overlay_separatrix:
+				for __i in range(len(plot5)):
+					plot5[__i].set_data(([],[]))
+		else:
+			i_time = np.abs(ref_time-efit_reconstruction.time).argmin()
+			if overlay_x_point:
+				if np.sum(np.isnan(all_time_x_point_location[i_time]))>=len(all_time_x_point_location[i_time]):	# means that all the points calculated are outside the foil
+					plot1.set_data(([],[]))
+				else:
+					plot1.set_data((all_time_x_point_location[i_time][:,0]*(np.shape(cv0)[1]-1)/foil_size[0],all_time_x_point_location[i_time][:,1]*(np.shape(cv0)[0]-1)/foil_size[1]))
+			if overlay_mag_axis:
+				# if np.sum(np.isnan(all_time_mag_axis_location[i_time]))>=len(all_time_mag_axis_location[i_time]):	# means that all the points calculated are outside the foil
+				# 	plot2.set_data(([],[]))
+				# else:
+				plot2.set_data((all_time_mag_axis_location[i_time][:,0]*(np.shape(cv0)[1]-1)/foil_size[0],all_time_mag_axis_location[i_time][:,1]*(np.shape(cv0)[0]-1)/foil_size[1]))
+			if overlay_strike_points:
+				# if np.sum(np.isnan(all_time_mag_axis_location[i_time]))>=len(all_time_mag_axis_location[i_time]):	# means that all the points calculated are outside the foil
+				# 	plot3.set_data(([],[]))
+				# 	for __i in range(len(plot4)):
+				# 		plot4[__i].set_data(([],[]))
+				# else:
+				plot3.set_data((all_time_strike_points_location[i_time][:,0]*(np.shape(cv0)[1]-1)/foil_size[0],all_time_strike_points_location[i_time][:,1]*(np.shape(cv0)[0]-1)/foil_size[1]))
+				for __i in range(len(plot4)):
+					plot4[__i].set_data((all_time_strike_points_location_rot[i_time][__i][:,0]*(np.shape(cv0)[1]-1)/foil_size[0],all_time_strike_points_location_rot[i_time][__i][:,1]*(np.shape(cv0)[0]-1)/foil_size[1]))
+			if overlay_separatrix:
+				# if np.sum(np.isnan(all_time_mag_axis_location[i_time]))>=len(all_time_mag_axis_location[i_time]):	# means that all the points calculated are outside the foil
+				for __i in range(len(plot5)):
+					plot5[__i].set_data((all_time_separatrix[i_time][__i][:,0]*(np.shape(cv0)[1]-1)/foil_size[0],all_time_separatrix[i_time][__i][:,1]*(np.shape(cv0)[0]-1)/foil_size[1]))
+
+	if EFIT_output_requested == False:
+		return fig
+	else:
+		return fig,efit_reconstruction
 
 
 
@@ -5354,8 +5573,12 @@ class mclass:
 			self.r_axis = efit_reconstruction['r_axis']
 			self.z_axis = efit_reconstruction['z_axis']
 			self.shotnumber = efit_reconstruction['shot']
-			self.strikepointR = efit_reconstruction['strikepointR']
-			self.strikepointZ = efit_reconstruction['strikepointZ']
+			# self.strikepointR = efit_reconstruction['strikepointR']
+			# self.strikepointZ = efit_reconstruction['strikepointZ']
+			self.strikepointR = np.array([efit_reconstruction['outer_strikepoint_upper_r'],efit_reconstruction['outer_strikepoint_lower_r'],np.zeros_like(efit_reconstruction['outer_strikepoint_lower_r']),np.zeros_like(efit_reconstruction['outer_strikepoint_lower_r'])]).T
+			self.strikepointR[np.isnan(self.strikepointR)] = 0
+			self.strikepointZ = np.array([efit_reconstruction['outer_strikepoint_upper_z'],efit_reconstruction['outer_strikepoint_lower_z'],np.zeros_like(efit_reconstruction['outer_strikepoint_lower_r']),np.zeros_like(efit_reconstruction['outer_strikepoint_lower_r'])]).T
+			self.strikepointZ[np.isnan(self.strikepointZ)] = 0
 			self.psi_bnd = efit_reconstruction['psi_boundary']
 			self.psi_axis = efit_reconstruction['psi_axis']
 			self.cpasma = efit_reconstruction['Ip']
@@ -6186,7 +6409,7 @@ def MASTU_pulse_process_FAST2(laser_counts_corrected,time_of_experiment_digitize
 	horizontal_coord -= foil_position_dict['foilhorizw']*0.5+0.0198
 	vertical_coord -= foil_position_dict['foilvertw']*0.5-0.0198
 	distance_from_vertical = (horizontal_coord**2+vertical_coord**2)**0.5
-	pinhole_to_foil_vertical = 0.008 + 0.003 + 0.002 + 0.045	# pinhole holder, washer, foil holder, standoff
+	pinhole_to_foil_vertical = 0.008 + 0.003 + 0.002 + 0.045	# pinhole holder, washer, foil holder, stand_off
 	pinhole_to_pixel_distance = (pinhole_to_foil_vertical**2 + distance_from_vertical**2)**0.5
 
 	etendue = np.ones_like(powernoback[0]) * (np.pi*(0.002**2)) / (pinhole_to_pixel_distance**2)	# I should include also the area of the pixel, but that is already in the w/m2 power
@@ -6255,7 +6478,7 @@ def find_radiator_location(inverted_data,inversion_R,inversion_Z,time_full_binne
 		radiator_xpoint_distance = ((efit_reconstruction.lower_xpoint_z[i_efit_time] - a_flat[closer_peak])**2 + (efit_reconstruction.lower_xpoint_r[i_efit_time] - b_flat[closer_peak])**2)**0.5
 		radiator_above_xpoint = a_flat[closer_peak]-efit_reconstruction.lower_xpoint_z[i_efit_time]
 		interpolator = RectBivariateSpline(efit_reconstruction.R,efit_reconstruction.Z,efit_reconstruction.psidat[i_efit_time].T)
-		radiator_magnetic_radious = (efit_reconstruction.mag_axis_p[i_efit_time] - interpolator(b_flat[closer_peak],a_flat[closer_peak])[0,0])/(efit_reconstruction.mag_axis_p[i_efit_time] - efit_reconstruction.lower_xpoint_p[i_efit_time])
+		radiator_magnetic_radious = (efit_reconstruction.psi_axis[i_efit_time] - interpolator(b_flat[closer_peak],a_flat[closer_peak])[0,0])/(efit_reconstruction.psi_axis[i_efit_time] - efit_reconstruction.psi_bnd[i_efit_time])
 		radiator_xpoint_distance_all.append(radiator_xpoint_distance)
 		radiator_above_xpoint_all.append(radiator_above_xpoint)
 		radiator_magnetic_radious_all.append(radiator_magnetic_radious)
@@ -6993,7 +7216,7 @@ def MASTU_pulse_process_FAST3(laser_counts_corrected,time_of_experiment_digitize
 				likelihood_emissivity_laplacian_derivate = 2*(regolarisation_coeff**2) * np.dot(emissivity_laplacian*np.logical_not(selected_super_x_cells) , grid_laplacian_masked_crop_scaled) / (sigma_emissivity**2)
 				likelihood_emissivity_laplacian_derivate_superx = 2*(regolarisation_coeff_divertor**2) * np.dot(emissivity_laplacian*selected_super_x_cells , grid_laplacian_masked_crop_scaled) / (sigma_emissivity**2)
 				likelihood_emissivity_edge_laplacian_derivate = 0#2*(regolarisation_coeff_edge**2) * np.dot(emissivity_laplacian*selected_edge_cells_for_laplacian , grid_laplacian_masked_crop_scaled) / (sigma_emissivity**2)
-				likelihood_emissivity_edge_derivate = (regolarisation_coeff_edge**2)*2*emissivity*selected_edge_cells/sigma_emissivity_2
+				likelihood_emissivity_edge_derivate = 2*(regolarisation_coeff_edge**2)*emissivity*selected_edge_cells/sigma_emissivity_2
 				likelihood_emissivity_central_border_Z_derivate_derivate = 2*(regolarisation_coeff_central_border_Z_derivate**2)*np.dot(Z_derivate*selected_central_border_cells,grid_Z_derivate_masked_crop_scaled)/sigma_emissivity_2
 				likelihood_emissivity_central_column_border_R_derivate_derivate = 2*(regolarisation_coeff_central_column_border_R_derivate**2)*np.dot(R_derivate*selected_central_column_border_cells,grid_R_derivate_masked_crop_scaled)/sigma_emissivity_2
 				likelihood_derivate = likelihood_emissivity_pos_derivate + likelihood_emissivity_laplacian_derivate + likelihood_emissivity_edge_laplacian_derivate + likelihood_emissivity_edge_derivate + likelihood_emissivity_central_border_Z_derivate_derivate + likelihood_emissivity_central_column_border_R_derivate_derivate + likelihood_emissivity_laplacian_derivate_superx
@@ -7356,7 +7579,7 @@ def MASTU_pulse_process_FAST3(laser_counts_corrected,time_of_experiment_digitize
 
 #######################################################################################################################################################################################################################################
 
-def movie_from_data_radial_profile(data,framerate,integration=1,xlabel=(),ylabel=(),barlabel=(),cmap='rainbow',extent = [], image_extent = [],timesteps='auto',extvmin='auto',extvmax='auto',time_offset=0,prelude='',vline=None,hline=None,EFIT_path=EFIT_path_default,include_EFIT=False,efit_reconstruction=None,EFIT_output_requested = False,pulse_ID=None,overlay_x_point=False,overlay_mag_axis=False,overlay_structure=False,overlay_strike_points=False,overlay_separatrix=False,structure_alpha=0.5,foil_size=foil_size,additional_points_dict = dict([])):
+def movie_from_data_radial_profile(data,framerate,integration=1,xlabel=(),ylabel=(),barlabel=(),cmap='rainbow',form_factor_size=15,extent = [], image_extent = [],timesteps='auto',extvmin='auto',extvmax='auto',time_offset=0,prelude='',vline=None,hline=None,EFIT_path=EFIT_path_default,include_EFIT=False,efit_reconstruction=None,EFIT_output_requested = False,pulse_ID=None,overlay_x_point=False,overlay_mag_axis=False,overlay_structure=False,overlay_strike_points=False,overlay_separatrix=False,structure_alpha=0.5,foil_size=foil_size,additional_points_dict = dict([])):
 	import matplotlib.animation as animation
 	import numpy as np
 
@@ -7364,8 +7587,9 @@ def movie_from_data_radial_profile(data,framerate,integration=1,xlabel=(),ylabel
 		print('ERROR. for coleval.movie_from_data_radial_profile you must supply an extent and image_extent of shape=1')
 		# exit()
 
-	form_factor = (np.shape(data[0][0])[1])/(np.shape(data[0][0])[0])
-	fig = plt.figure(figsize=(15*form_factor, 15))
+	form_factor = (image_extent[1]-image_extent[0])/(image_extent[3]-image_extent[2])
+	# form_factor = (np.shape(data[0][0])[1])/(np.shape(data[0][0])[0])
+	fig = plt.figure(figsize=(form_factor_size*form_factor, form_factor_size))
 	ax = fig.add_subplot(111)
 
 	data_rotated = np.array([np.flip(data[0],axis=2)])
@@ -7379,6 +7603,18 @@ def movie_from_data_radial_profile(data,framerate,integration=1,xlabel=(),ylabel
 
 	# x = np.linspace(0, 1, 120)
 	# y = np.linspace(0, 2 * np.pi, 100).reshape(-1, 1)
+
+	if len(image_extent)==4:
+		ver = np.linspace(extent[2],extent[3],num=np.shape(data_rotated[0][0])[0]+1)
+		up = np.abs(image_extent[3]-ver).argmin()-1
+		down = np.abs(image_extent[2]-ver).argmin()
+		hor = np.linspace(extent[0],extent[1],num=np.shape(data_rotated[0][0])[1]+1)
+		left = np.abs(image_extent[0]-hor).argmin()
+		right = np.abs(image_extent[1]-hor).argmin()-1
+		data_rotated[0][:,:,:left] = np.nan
+		data_rotated[0][:,:,right+1:] = np.nan
+		data_rotated[0][:,:down] = np.nan
+		data_rotated[0][:,up+1:] = np.nan
 
 	# This is now a list of arrays rather than a list of artists
 	frames = [None]*len(data_rotated[0])
@@ -7431,6 +7667,9 @@ def movie_from_data_radial_profile(data,framerate,integration=1,xlabel=(),ylabel
 	if overlay_structure:
 		for i in range(len(structure_radial_profile)):
 			ax.plot(structure_radial_profile[i][:,0],structure_radial_profile[i][:,1],'--k',alpha=structure_alpha)
+	if overlay_structure:
+		for i in range(len(res_bolo_radial_profile)):
+			ax.plot(res_bolo_radial_profile[i][:,0],res_bolo_radial_profile[i][:,1],'--r',alpha=structure_alpha)
 	if len(list(additional_points_dict.keys()))!=0:
 		plot6 = []
 		for __i in range(additional_points_dict['number_of_points']):
@@ -7563,6 +7802,196 @@ def movie_from_data_radial_profile(data,framerate,integration=1,xlabel=(),ylabel
 	else:
 		return ani,efit_reconstruction
 
+def image_from_data_radial_profile(data,xlabel=(),ylabel=(),barlabel=(),cmap='rainbow',form_factor_size=15,extent = [], image_extent = [],ref_time=None,extvmin='auto',extvmax='auto',prelude='',vline=None,hline=None,EFIT_path=EFIT_path_default,include_EFIT=False,efit_reconstruction=None,EFIT_output_requested = False,pulse_ID=None,overlay_x_point=False,overlay_mag_axis=False,overlay_structure=False,overlay_strike_points=False,overlay_separatrix=False,overlay_res_bolo=False,structure_alpha=0.5,foil_size=foil_size,additional_points_dict = dict([])):
+	import numpy as np
+	from matplotlib import cm	# to print nan as white
+
+	if len(extent) == 0 or len(image_extent) == 0:
+		print('ERROR. for coleval.image_from_data_radial_profile you must supply an extent and image_extent of shape=1')
+		# exit()
+
+	form_factor = (image_extent[1]-image_extent[0])/(image_extent[3]-image_extent[2])
+	fig = plt.figure(figsize=(form_factor_size*form_factor, form_factor_size))
+	ax = fig.add_subplot(111)
+
+	data_rotated = np.array([np.flip(data[0],axis=2)])
+
+	# I like to position my colorbars this way, but you don't have to
+	# div = make_axes_locatable(ax)
+	# cax = div.append_axes('right', '5%', '5%')
+
+	# def f(x, y):
+	#	 return np.exp(x) + np.sin(y)
+
+	# x = np.linspace(0, 1, 120)
+	# y = np.linspace(0, 2 * np.pi, 100).reshape(-1, 1)
+
+	if len(image_extent)==4:
+		ver = np.linspace(extent[2],extent[3],num=np.shape(data_rotated[0][0])[0]+1)
+		up = np.abs(image_extent[3]-ver).argmin()-1
+		down = np.abs(image_extent[2]-ver).argmin()
+		hor = np.linspace(extent[0],extent[1],num=np.shape(data_rotated[0][0])[1]+1)
+		left = np.abs(image_extent[0]-hor).argmin()
+		right = np.abs(image_extent[1]-hor).argmin()-1
+		data_rotated[0][:,:,:left] = np.nan
+		data_rotated[0][:,:,right+1:] = np.nan
+		data_rotated[0][:,:down] = np.nan
+		data_rotated[0][:,up+1:] = np.nan
+
+	# This is now a list of arrays rather than a list of artists
+	frames = [None]*len(data_rotated[0])
+	frames[0]=data_rotated[0,0]
+
+	for i in range(len(data_rotated[0])):
+		# x	   += 1
+		# curVals  = f(x, y)
+		frames[i]=(data_rotated[0,i])
+
+	cv0 = frames[0]
+	masked_array = np.ma.array (cv0, mask=np.isnan(cv0))
+	# exec('cmap=cm.' + cmap)
+	cmap=cm.rainbow
+	cmap.set_bad('white',1.)
+	im = ax.imshow(masked_array,cmap=cmap, origin='lower', interpolation='none', extent = extent)# [0,np.shape(data)[0]-1,0,np.shape(data)[1]-1]) # Here make an AxesImage rather than contour
+	ax.set_ylim(top=image_extent[3],bottom=image_extent[2])
+	ax.set_xlim(right=image_extent[1],left=image_extent[0])
+
+	if ref_time==None:
+		include_EFIT = False
+
+	if include_EFIT:
+		try:
+			if efit_reconstruction == None:
+				print('reading '+EFIT_path+'/epm0'+str(pulse_ID)+'.nc')
+				efit_reconstruction = mclass(EFIT_path+'/epm0'+str(pulse_ID)+'.nc',pulse_ID=pulse_ID)
+			else:
+				print('EFIT reconstruction externally supplied')
+			EFIT_dt = np.median(np.diff(efit_reconstruction.time))
+		except Exception as e:
+			print('reading '+EFIT_path+'/epm0'+str(pulse_ID)+'.nc failed')
+			logging.exception('with error: ' + str(e))
+			include_EFIT=False
+			overlay_x_point=False
+			overlay_mag_axis=False
+			overlay_separatrix=False
+			overlay_strike_points=False
+			overlay_separatrix=False
+			efit_reconstruction = None
+		if overlay_x_point:
+			all_time_x_point_location = np.array([efit_reconstruction.lower_xpoint_r,efit_reconstruction.lower_xpoint_z]).T
+			plot1 = ax.plot(0,0,'+r', alpha=1)[0]
+		if overlay_mag_axis:
+			all_time_mag_axis_location = np.array([efit_reconstruction.mag_axis_r,efit_reconstruction.mag_axis_z]).T
+			plot2 = ax.plot(0,0,'+r', alpha=1)[0]
+		if overlay_separatrix or overlay_strike_points:
+			all_time_sep_r,all_time_sep_z,r_fine,z_fine = efit_reconstruction_to_separatrix_on_foil(efit_reconstruction)
+		if overlay_strike_points:
+			all_time_strike_points_location = return_all_time_strike_points_location_radial(efit_reconstruction,all_time_sep_r,all_time_sep_z,r_fine,z_fine)
+			plot3 = ax.plot(0,0,'xr',markersize=20, alpha=1)[0]
+		if overlay_separatrix:
+			all_time_separatrix = return_all_time_separatrix_radial(efit_reconstruction,all_time_sep_r,all_time_sep_z,r_fine,z_fine)
+			plot5 = []
+			for __i in range(len(all_time_separatrix[0])):
+				plot5.append(ax.plot(0,0,'--b', alpha=1)[0])
+	if overlay_structure:
+		for i in range(len(structure_radial_profile)):
+			ax.plot(structure_radial_profile[i][:,0],structure_radial_profile[i][:,1],'--k',alpha=structure_alpha)
+	if overlay_res_bolo:
+		for i in range(len(res_bolo_radial_profile)):
+			ax.plot(res_bolo_radial_profile[i][:,0],res_bolo_radial_profile[i][:,1],'--r',alpha=structure_alpha)
+	if len(list(additional_points_dict.keys()))!=0:
+		plot6 = []
+		for __i in range(additional_points_dict['number_of_points']):
+			plot6.append(ax.plot(0,0,additional_points_dict['marker'], alpha=1)[0])
+
+	# if len(np.shape(mask)) == 2:
+	# im = ax.imshow(mask,'gray',interpolation='none',alpha=1)
+	if np.sum(vline == None)==0:
+		if np.shape(vline)==():
+			vline = max(0,min(vline,np.shape(cv0)[1]-1))
+			axvline = ax.axvline(x=vline,linestyle='--',color='k')
+		else:
+			for i in range(len(vline)):
+				vline[i] = max(0,min(vline[i],np.shape(cv0)[1]-1))
+				axvline = ax.axvline(x=vline[i],linestyle='--',color='k')
+	if np.sum(hline == None)==0:
+		if np.shape(hline)==():
+			hline = max(0,min(hline,np.shape(cv0)[0]-1))
+			axhline = ax.axhline(y=hline,linestyle='--',color='k')
+		else:
+			for i in range(len(hline)):
+				hline[i] = max(0,min(hline[i],np.shape(cv0)[0]-1))
+				axhline = ax.axhline(y=hline[i],linestyle='--',color='k')
+
+	cb = fig.colorbar(im).set_label(barlabel)
+	cb = ax.set_xlabel(xlabel)
+	cb = ax.set_ylabel(ylabel)
+	tx = ax.set_title('Frame 0')
+
+
+	arr = frames[0]
+	if extvmax=='auto':
+		vmax = np.nanmax(arr)
+	elif extvmax=='allmax':
+		vmax = np.nanmax(data_rotated)
+	else:
+		vmax = extvmax
+
+	if extvmin=='auto':
+		vmin = np.nanmin(arr)
+	elif extvmin=='allmin':
+		vmin = np.nanmin(data_rotated)
+	else:
+		vmin = extvmin
+	masked_array = np.ma.array (arr, mask=np.isnan(arr))
+	im.set_data(masked_array)
+	im.set_clim(vmin, vmax)
+	tx.set_text(prelude)
+	if include_EFIT:
+		if np.min(np.abs(ref_time-efit_reconstruction.time))>EFIT_dt:	# means that the reconstruction is not available for that time
+			if overlay_x_point:
+				plot1.set_data(([],[]))
+			if overlay_mag_axis:
+				plot2.set_data(([],[]))
+			if overlay_strike_points:
+				plot3.set_data(([],[]))
+			if overlay_separatrix:
+				for __i in range(len(plot5)):
+					plot5[__i].set_data(([],[]))
+		else:
+			i_time = np.abs(ref_time-efit_reconstruction.time).argmin()
+			if overlay_x_point:
+				if np.sum(np.isnan(all_time_x_point_location[i_time]))>=len(all_time_x_point_location[i_time]):	# means that all the points calculated are outside the foil
+					plot1.set_data(([],[]))
+				else:
+					plot1.set_data((all_time_x_point_location[i_time][0],all_time_x_point_location[1]))
+			if overlay_mag_axis:
+				# if np.sum(np.isnan(all_time_mag_axis_location[i_time]))>=len(all_time_mag_axis_location[i_time]):	# means that all the points calculated are outside the foil
+				# 	plot2.set_data(([],[]))
+				# else:
+				plot2.set_data((all_time_mag_axis_location[i_time][0],all_time_mag_axis_location[i_time][1]))
+			if overlay_strike_points:
+				# if np.sum(np.isnan(all_time_mag_axis_location[i_time]))>=len(all_time_mag_axis_location[i_time]):	# means that all the points calculated are outside the foil
+				# 	plot3.set_data(([],[]))
+				# 	for __i in range(len(plot4)):
+				# 		plot4[__i].set_data(([],[]))
+				# else:
+				plot3.set_data((all_time_strike_points_location[i_time][0],all_time_strike_points_location[i_time][1]))
+			if overlay_separatrix:
+				# if np.sum(np.isnan(all_time_mag_axis_location[i_time]))>=len(all_time_mag_axis_location[i_time]):	# means that all the points calculated are outside the foil
+				for __i in range(len(plot5)):
+					plot5[__i].set_data((all_time_separatrix[i_time][__i][0],all_time_separatrix[i_time][__i][1]))
+			if len(list(additional_points_dict.keys()))!=0:
+				i_time2 = np.abs(ref_time-additional_points_dict['time']).argmin()
+				# if np.sum(np.isnan(all_time_mag_axis_location[i_time]))>=len(all_time_mag_axis_location[i_time]):	# means that all the points calculated are outside the foil
+				for __i in range(additional_points_dict['number_of_points']):
+					plot6[__i].set_data((additional_points_dict[str(__i)][i_time2][0],additional_points_dict[str(__i)][i_time2][1]))
+
+	if EFIT_output_requested == False:
+		return fig
+	else:
+		return fig,efit_reconstruction
+
 ##############################################################################################################################################################################################################
 
 def estimate_counts_std(counts,framerate=383):
@@ -7616,12 +8045,19 @@ def check_beams_on(shot_id):
 
 # sensitivity matrix manipulation
 
-def build_laplacian(grid):
+def build_laplacian(grid,account_diagonals=True):
 	# Try making grid laplacian matrix for spatial regularisation
 	num_cells = len(grid)
 	grid_laplacian = np.zeros((num_cells, num_cells))
 	unique_x = np.unique(np.mean(grid,axis=1)[:,0])
 	unique_y = np.unique(np.mean(grid,axis=1)[:,1])
+	if account_diagonals:
+		# change to take into account that the distance is different on the diagonals.
+		# https://homepages.inf.ed.ac.uk/rbf/HIPR2/log.htm
+		# here they mention too a laplacian operator with a different coefficient on the diagonals
+		diagonal_factor = 0.5
+	else:
+		diagonal_factor = 1
 
 	for ith_cell in range(num_cells):
 
@@ -7646,8 +8082,8 @@ def build_laplacian(grid):
 				select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix-1],np.mean(grid,axis=1)[:,1]==unique_y[iy+1])  # neighbour 2 top left
 				if np.sum(select)>0:
 					n1 = select.argmax()
-					grid_laplacian[ith_cell, n1] = -1
-					neighbours += 1
+					grid_laplacian[ith_cell, n1] = -diagonal_factor
+					neighbours += diagonal_factor
 			except:
 				pass
 
@@ -7664,8 +8100,8 @@ def build_laplacian(grid):
 			select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix+1],np.mean(grid,axis=1)[:,1]==unique_y[iy+1])  # neighbour 4 top right
 			if np.sum(select)>0:
 				n1 = select.argmax()
-				grid_laplacian[ith_cell, n1] = -1
-				neighbours += 1
+				grid_laplacian[ith_cell, n1] = -diagonal_factor
+				neighbours += diagonal_factor
 		except:
 			pass
 
@@ -7683,8 +8119,8 @@ def build_laplacian(grid):
 				select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix+1],np.mean(grid,axis=1)[:,1]==unique_y[iy-1])  # neighbour 6 down right
 				if np.sum(select)>0:
 					n1 = select.argmax()
-					grid_laplacian[ith_cell, n1] = -1
-					neighbours += 1
+					grid_laplacian[ith_cell, n1] = -diagonal_factor
+					neighbours += diagonal_factor
 			except:
 				pass
 
@@ -7703,8 +8139,8 @@ def build_laplacian(grid):
 				select = np.logical_and(np.mean(grid,axis=1)[:,0]==unique_x[ix-1],np.mean(grid,axis=1)[:,1]==unique_y[iy-1])  # neighbour 8 down left
 				if np.sum(select)>0:
 					n1 = select.argmax()
-					grid_laplacian[ith_cell, n1] = -1
-					neighbours += 1
+					grid_laplacian[ith_cell, n1] = -diagonal_factor
+					neighbours += diagonal_factor
 			except:
 				pass
 

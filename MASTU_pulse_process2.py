@@ -264,6 +264,14 @@ try:
 	full_saved_file_dict_FAST['FAST_time_binned'] = time_binned
 	full_saved_file_dict_FAST['FAST_binning_type'] = binning_type
 	full_saved_file_dict_FAST['inverted_dict'] = inverted_dict
+	time_partial = []
+	for i in range(len(laser_digitizer_ID)):
+		time_of_experiment_digitizer_ID_seconds = (time_of_experiment_digitizer_ID[i]-time_of_experiment[0])*1e-6-start_time_of_pulse
+		if external_clock_marker:
+			time_of_experiment_digitizer_ID_seconds = time_of_experiment_digitizer_ID_seconds-np.mean(aggregated_correction_coefficients[:,4])	# I use the mean of the coefficients because I want to avoid small unpredictable differences between the digitisers
+		time_partial.append(time_of_experiment_digitizer_ID_seconds)
+	time_full_int = np.sort(np.concatenate(time_partial))
+	full_saved_file_dict_FAST['time_full_full'] = time_full_int
 	np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
 
 	try:

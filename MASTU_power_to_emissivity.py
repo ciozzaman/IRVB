@@ -40,8 +40,8 @@ except:
 
 
 # for grid_resolution in [8, 4, 2]:	# 8cm resolution is way not enough
-# for grid_resolution in [4, 2]:
-for grid_resolution in [4]:
+for grid_resolution in [4, 2]:
+# for grid_resolution in [4]:
 	inverted_dict[str(grid_resolution)] = dict([])
 	# grid_resolution = 8  # in cm
 	foil_resolution = '187'
@@ -420,17 +420,20 @@ for grid_resolution in [4]:
 		a,b = np.meshgrid(np.arange(foil_shape[1]),np.arange(foil_shape[0]))
 		selected_ROI = np.logical_and(np.logical_and(a>=ROI1[1,0],a<ROI1[1,1]),np.logical_and(b>=sensitivities_binned.shape[0]-ROI1[0,1],b<sensitivities_binned.shape[0]-ROI1[0,0]))
 		selected_ROI = np.logical_or(selected_ROI,np.logical_and(np.logical_and(a>=ROI2[1,0],a<ROI2[1,1]),np.logical_and(b>=sensitivities_binned.shape[0]-ROI2[0,1],b<sensitivities_binned.shape[0]-ROI2[0,0])))
-		if check_beams_on(laser_to_analyse[-9:-4]):
+		if coleval.check_beams_on(laser_to_analyse[-9:-4]):
 			selected_ROI = np.logical_and(selected_ROI,np.logical_not(np.logical_and(np.logical_and(a>=ROI_beams[1,0],a<ROI_beams[1,1]),np.logical_and(b>=sensitivities_binned.shape[0]-ROI_beams[0,1],b<sensitivities_binned.shape[0]-ROI_beams[0,0]))))
 
-		if development_plots:
-			plt.figure()
-			plt.imshow(np.flip(np.transpose(selected_ROI,(1,0)),axis=1),'rainbow',origin='lower')
-			plt.plot([ROI1[0,0]-0.5,ROI1[0,1]-0.5,ROI1[0,1]-0.5,ROI1[0,0]-0.5,ROI1[0,0]-0.5],[ROI1[1,0]-0.5,ROI1[1,0]-0.5,ROI1[1,1]-0.5,ROI1[1,1]-0.5,ROI1[1,0]-0.5],'k')
-			plt.plot([ROI2[0,0]-0.5,ROI2[0,1]-0.5,ROI2[0,1]-0.5,ROI2[0,0]-0.5,ROI2[0,0]-0.5],[ROI2[1,0]-0.5,ROI2[1,0]-0.5,ROI2[1,1]-0.5,ROI2[1,1]-0.5,ROI2[1,0]-0.5],'--k')
-			# plt.colorbar()
-			plt.pause(0.01)
+		plt.figure(figsize=(10,6))
+		plt.imshow(np.flip(np.transpose(selected_ROI,(1,0)),axis=1),'rainbow',origin='lower')
+		plt.plot([ROI1[0,0]-0.5,ROI1[0,1]-0.5,ROI1[0,1]-0.5,ROI1[0,0]-0.5,ROI1[0,0]-0.5],[ROI1[1,0]-0.5,ROI1[1,0]-0.5,ROI1[1,1]-0.5,ROI1[1,1]-0.5,ROI1[1,0]-0.5],'k')
+		plt.plot([ROI2[0,0]-0.5,ROI2[0,1]-0.5,ROI2[0,1]-0.5,ROI2[0,0]-0.5,ROI2[0,0]-0.5],[ROI2[1,0]-0.5,ROI2[1,0]-0.5,ROI2[1,1]-0.5,ROI2[1,1]-0.5,ROI2[1,0]-0.5],'--k')
+		plt.plot([ROI_beams[0,0]-0.5,ROI_beams[0,1]-0.5,ROI_beams[0,1]-0.5,ROI_beams[0,0]-0.5,ROI_beams[0,0]-0.5],[ROI_beams[1,0]-0.5,ROI_beams[1,0]-0.5,ROI_beams[1,1]-0.5,ROI_beams[1,1]-0.5,ROI_beams[1,0]-0.5],'-.k')
+		# plt.colorbar()
+		plt.title('Parts of the foil considered')
+		plt.savefig(path_power_output + '/'+ str(shot_number)+'_'+ 'bin' + str(shrink_factor_x) + 'x' + str(shrink_factor_x) +'_gridres'+str(grid_resolution)+'cm_foil_area_considered.eps')
+		# plt.pause(0.01)
 
+		if development_plots:
 			plt.figure()
 			plt.imshow(np.flip(np.transpose(np.sum(sensitivities_binned,axis=-1),(1,0)),axis=1),'rainbow',origin='lower')
 			plt.plot([ROI1[0,0]-0.5,ROI1[0,1]-0.5,ROI1[0,1]-0.5,ROI1[0,0]-0.5,ROI1[0,0]-0.5],[ROI1[1,0]-0.5,ROI1[1,0]-0.5,ROI1[1,1]-0.5,ROI1[1,1]-0.5,ROI1[1,0]-0.5],'k')
@@ -536,7 +539,7 @@ for grid_resolution in [4]:
 		ax = plt.gca() #you first need to get the axis handle
 		ax.set_aspect(1)
 		plt.savefig(path_power_output + '/'+ str(shot_number)+'_'+ 'bin' + str(shrink_factor_x) + 'x' + str(shrink_factor_x) +'_gridres'+str(grid_resolution)+'cm_edge_region1.eps')
-		plt.pause(0.01)
+		# plt.pause(0.01)
 
 		plt.figure(figsize=(6,10))
 		plt.scatter(np.mean(grid_data_masked_crop,axis=1)[:,0],np.mean(grid_data_masked_crop,axis=1)[:,1],c=selected_edge_cells_for_laplacian,marker='s')
@@ -546,7 +549,7 @@ for grid_resolution in [4]:
 		ax.set_aspect(1)
 		plt.savefig(path_power_output + '/'+ str(shot_number)+'_'+ 'bin' + str(shrink_factor_x) + 'x' + str(shrink_factor_x) +'_gridres'+str(grid_resolution)+'cm_edge_region2.eps')
 		plt.colorbar()
-		plt.pause(0.01)
+		# plt.pause(0.01)
 
 		if development_plots:
 			plt.figure()
@@ -623,7 +626,8 @@ for grid_resolution in [4]:
 
 			from pycpf import pycpf
 			try:
-				tend = pycpf.query(['tend'], filters=['exp_number = '+laser_to_analyse[-9:-4]])['tend'][0]+0.05	 # I add 50ms just for safety and to catch disruptions
+				# tend = pycpf.query(['tend'], filters=['exp_number = '+laser_to_analyse[-9:-4]])['tend'][0]+0.05	 # I add 50ms just for safety and to catch disruptions
+				tend = coleval.get_tend(laser_to_analyse[-9:-4])+0.01	 # I add 10ms just for safety and to catch disruptions
 			except:
 				tend = 1
 
