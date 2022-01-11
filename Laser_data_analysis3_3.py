@@ -360,6 +360,10 @@ for cases_to_include in all_cases_to_include:
 	bds = [[0.7,0.1*2.5e-6,0.1*Ptthermaldiffusivity,0.8],[1,10*2.5e-6,10*Ptthermaldiffusivity,1.2]]
 	guess=[0.98,2.5e-6,Ptthermaldiffusivity,1]
 	fit = curve_fit(calculate_laser_power_given_parameters_1, x, y, sigma=sigma, p0=guess,bounds=bds,maxfev=int(1e6),verbose=2,diff_step=np.array(guess)/100,xtol=1e-10)
+	guess = fit[0]
+	fit = curve_fit(calculate_laser_power_given_parameters_1, x, y, sigma=sigma, p0=guess,bounds=bds,maxfev=int(1e6),verbose=2,diff_step=np.array(guess)/10000,xtol=1e-10)
+	guess = fit[0]
+	fit = curve_fit(calculate_laser_power_given_parameters_1, x, y, sigma=sigma, p0=guess,bounds=bds,maxfev=int(1e6),verbose=2,diff_step=np.array(guess)/1000000,xtol=1e-10)
 	# fit = curve_fit(calculate_laser_power_given_parameters_1, x, y, sigma=sigma, p0=fit[0],bounds=bds,maxfev=int(1e6),verbose=2,diff_step=np.array(fit[0])/10000,xtol=1e-10)
 	best_power = calculate_laser_power_given_parameters_1(1,*fit[0])
 	guess_best_power = calculate_laser_power_given_parameters_1(1,*guess)

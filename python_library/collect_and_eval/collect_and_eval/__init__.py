@@ -767,21 +767,32 @@ foil_size = [0.07,0.09]
 exec(open("/home/ffederic/work/analysis_scripts/scripts/python_library/collect_and_eval/collect_and_eval/MASTU_structure.py").read())
 
 # functions to draw the x-point on images or movies
-Rf=1.54967	# m	radius of the centre of the foil
-plane_equation = np.array([1,-1,0,2**0.5 * Rf])	# plane of the foil
-pinhole_location = np.array([-1.04087,1.068856,-0.7198])	# x,y,z
-centre_of_foil = np.array([-1.095782166, 1.095782166, -0.7])	# x,y,z
-foil_size = [0.07,0.09]
-R_centre_column = 0.261	# m
-pinhole_relative_location = np.array(foil_size)/2 + 0.0198
-pinhole_radious = 0.004/2	# m
-
 def point_toroidal_to_cartesian(coords):	# r,z,teta deg	to	x,y,z
 	out = np.zeros_like(coords).astype(float)
 	out.T[0]=coords.T[0] * np.cos(coords.T[2]*2*np.pi/360)
 	out.T[1]=coords.T[0] * np.sin(coords.T[2]*2*np.pi/360)
 	out.T[2]=coords.T[1]
 	return out
+
+stand_off_length = 0.045	# m
+# Rf=1.54967	# m	radius of the centre of the foil
+Rf=1.48967 + 0.01 + 0.003 + 0.002 + stand_off_length	# m	radius of the centre of the foil
+plane_equation = np.array([1,-1,0,2**0.5 * Rf])	# plane of the foil
+centre_of_front_plate = np.array([1.48967+0.002,-0.7,135])	# R,z,teta deg
+pinhole_offset = np.array([-0.0198,-0.0198])	# toroidal direction parallel to the place surface, z
+
+def locate_pinhole(centre_of_front_plate=centre_of_front_plate,pinhole_offset=pinhole_offset):
+	pinhole_location_toroidal = np.array([(centre_of_front_plate[0]**2 + pinhole_offset[0]**2)**0.5,centre_of_front_plate[1]+pinhole_offset[1],centre_of_front_plate[2]+360/(2*np.pi)*np.arctan(pinhole_offset[0]/centre_of_front_plate[0])])	# R,z,teta deg
+	return point_toroidal_to_cartesian(pinhole_location_toroidal)	# x,y,z
+
+# pinhole_location = np.array([-1.04087,1.068856,-0.7198])	# x,y,z
+pinhole_location = locate_pinhole(pinhole_offset=pinhole_offset)
+centre_of_foil = np.array([-Rf/(2**0.5), Rf/(2**0.5), -0.7])	# x,y,z
+foil_size = [0.07,0.09]
+R_centre_column = 0.261	# m
+pinhole_relative_location = np.array(foil_size)/2 + 0.0198
+pinhole_radious = 0.004/2	# m
+
 
 def find_location_on_foil(point_coord,plane_equation=plane_equation,pinhole_location=pinhole_location):
 	t = (-plane_equation[-1] -np.sum(plane_equation[:-1]*point_coord,axis=-1)) / np.sum(plane_equation[:-1]*(pinhole_location-point_coord),axis=-1)
@@ -805,7 +816,15 @@ for time in range(len(stucture_r)):
 structure_point_location_on_foil.append(np.array([pinhole_relative_location[0] + np.arange(-pinhole_radious,+pinhole_radious+pinhole_radious/10/2,pinhole_radious/10),pinhole_relative_location[1] + np.abs(pinhole_radious**2-np.arange(-pinhole_radious,+pinhole_radious+pinhole_radious/10/2,pinhole_radious/10)**2)**0.5]).T)
 structure_point_location_on_foil.append(np.array([pinhole_relative_location[0] + np.arange(-pinhole_radious,+pinhole_radious+pinhole_radious/10/2,pinhole_radious/10),pinhole_relative_location[1] - np.abs(pinhole_radious**2-np.arange(-pinhole_radious,+pinhole_radious+pinhole_radious/10/2,pinhole_radious/10)**2)**0.5]).T)
 
-def return_structure_point_location_on_foil():
+def return_structure_point_location_on_foil(plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil):
+	structure_point_location_on_foil = []
+	for time in range(len(stucture_r)):
+		point_location = np.array([stucture_r[time],stucture_z[time],stucture_t[time]]).T
+		point_location = point_toroidal_to_cartesian(point_location)
+		point_location = find_location_on_foil(point_location,plane_equation=plane_equation,pinhole_location=pinhole_location)
+		structure_point_location_on_foil.append(absolute_position_on_foil_to_foil_coord(point_location,centre_of_foil=centre_of_foil))
+	structure_point_location_on_foil.append(np.array([pinhole_relative_location[0] + np.arange(-pinhole_radious,+pinhole_radious+pinhole_radious/10/2,pinhole_radious/10),pinhole_relative_location[1] + np.abs(pinhole_radious**2-np.arange(-pinhole_radious,+pinhole_radious+pinhole_radious/10/2,pinhole_radious/10)**2)**0.5]).T)
+	structure_point_location_on_foil.append(np.array([pinhole_relative_location[0] + np.arange(-pinhole_radious,+pinhole_radious+pinhole_radious/10/2,pinhole_radious/10),pinhole_relative_location[1] - np.abs(pinhole_radious**2-np.arange(-pinhole_radious,+pinhole_radious+pinhole_radious/10/2,pinhole_radious/10)**2)**0.5]).T)
 	return structure_point_location_on_foil
 
 structure_radial_profile = [_MASTU_CORE_GRID_POLYGON]
@@ -836,30 +855,36 @@ for time in range(len(fueling_r)):
 	point_location = find_location_on_foil(point_location)
 	fueling_point_location_on_foil.append(absolute_position_on_foil_to_foil_coord(point_location))
 
-def return_fueling_point_location_on_foil():
+def return_fueling_point_location_on_foil(plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil):
+	fueling_point_location_on_foil = []
+	for time in range(len(fueling_r)):
+		point_location = np.array([fueling_r[time],fueling_z[time],fueling_t[time]]).T
+		point_location = point_toroidal_to_cartesian(point_location)
+		point_location = find_location_on_foil(point_location,plane_equation=plane_equation,pinhole_location=pinhole_location)
+		fueling_point_location_on_foil.append(absolute_position_on_foil_to_foil_coord(point_location,centre_of_foil=centre_of_foil))
 	return fueling_point_location_on_foil
 
-def return_all_time_x_point_location(efit_reconstruction,resolution = 1000):
+def return_all_time_x_point_location(efit_reconstruction,resolution = 1000,plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil):
 	all_time_x_point_location = []
 	for time in range(len(efit_reconstruction.time)):
 		x_point_location = np.array([[efit_reconstruction.lower_xpoint_r[time]]*resolution,[efit_reconstruction.lower_xpoint_z[time]]*resolution,np.linspace(0,360,resolution)]).T
 		x_point_location = point_toroidal_to_cartesian(x_point_location)
-		x_point_location = find_location_on_foil(x_point_location)
-		all_time_x_point_location.append(absolute_position_on_foil_to_foil_coord(x_point_location))
+		x_point_location = find_location_on_foil(x_point_location,plane_equation=plane_equation,pinhole_location=pinhole_location)
+		all_time_x_point_location.append(absolute_position_on_foil_to_foil_coord(x_point_location,centre_of_foil=centre_of_foil))
 	all_time_x_point_location = np.array(all_time_x_point_location)
 	return all_time_x_point_location
 
-def return_all_time_mag_axis_location(efit_reconstruction,resolution = 1000):
+def return_all_time_mag_axis_location(efit_reconstruction,resolution = 1000,plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil):
 	all_time_mag_axis_location = []
 	for time in range(len(efit_reconstruction.time)):
 		mag_axis_location = np.array([[efit_reconstruction.mag_axis_r[time]]*resolution,[efit_reconstruction.mag_axis_z[time]]*resolution,np.linspace(0,360,resolution)]).T
 		mag_axis_location = point_toroidal_to_cartesian(mag_axis_location)
-		mag_axis_location = find_location_on_foil(mag_axis_location)
-		all_time_mag_axis_location.append(absolute_position_on_foil_to_foil_coord(mag_axis_location))
+		mag_axis_location = find_location_on_foil(mag_axis_location,plane_equation=plane_equation,pinhole_location=pinhole_location)
+		all_time_mag_axis_location.append(absolute_position_on_foil_to_foil_coord(mag_axis_location,centre_of_foil=centre_of_foil))
 	all_time_mag_axis_location = np.array(all_time_mag_axis_location)
 	return all_time_mag_axis_location
 
-def return_all_time_strike_points_location(efit_reconstruction,all_time_sep_r,all_time_sep_z,r_fine,z_fine,resolution = 1000):
+def return_all_time_strike_points_location(efit_reconstruction,all_time_sep_r,all_time_sep_z,r_fine,z_fine,resolution = 1000,plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil):
 	from scipy.signal import find_peaks, peak_prominences as get_proms
 	temp_R = np.ones((len(efit_reconstruction.time),20))*np.nan
 	temp_Z = np.ones((len(efit_reconstruction.time),20))*np.nan
@@ -892,8 +917,8 @@ def return_all_time_strike_points_location(efit_reconstruction,all_time_sep_r,al
 		# strike_point_location = np.array([efit_reconstruction.strikepointR[time],-np.abs(efit_reconstruction.strikepointZ[time]),[60]*len(efit_reconstruction.strikepointZ[time])]).T
 		strike_point_location = np.array([temp_R[time],temp_Z[time],[60]*len(temp_Z[time])]).T
 		strike_point_location = point_toroidal_to_cartesian(strike_point_location)
-		strike_point_location = find_location_on_foil(strike_point_location)
-		all_time_strike_points_location.append(absolute_position_on_foil_to_foil_coord(strike_point_location))
+		strike_point_location = find_location_on_foil(strike_point_location,plane_equation=plane_equation,pinhole_location=pinhole_location)
+		all_time_strike_points_location.append(absolute_position_on_foil_to_foil_coord(strike_point_location,centre_of_foil=centre_of_foil))
 	all_time_strike_points_location_rot = []
 	for time in range(len(efit_reconstruction.time)):
 		temp = []
@@ -901,8 +926,8 @@ def return_all_time_strike_points_location(efit_reconstruction,all_time_sep_r,al
 			# strike_point_location = np.array([[efit_reconstruction.strikepointR[time][__i]]*resolution,[-np.abs(efit_reconstruction.strikepointZ[time][__i])]*resolution,np.linspace(0,360,resolution)]).T
 			strike_point_location = np.array([[temp_R[time][__i]]*resolution,[temp_Z[time][__i]]*resolution,np.linspace(0,360,resolution)]).T
 			strike_point_location = point_toroidal_to_cartesian(strike_point_location)
-			strike_point_location = find_location_on_foil(strike_point_location)
-			temp.append(absolute_position_on_foil_to_foil_coord(strike_point_location))
+			strike_point_location = find_location_on_foil(strike_point_location,plane_equation=plane_equation,pinhole_location=pinhole_location)
+			temp.append(absolute_position_on_foil_to_foil_coord(strike_point_location,centre_of_foil=centre_of_foil))
 		all_time_strike_points_location_rot.append(temp)
 	return all_time_strike_points_location,all_time_strike_points_location_rot
 
@@ -936,7 +961,7 @@ def return_all_time_strike_points_location_radial(efit_reconstruction,all_time_s
 			temp_Z[time][:min(20,len(efit_reconstruction.strikepointZ[time]))] = -np.abs(efit_reconstruction.strikepointZ[time][:min(20,len(efit_reconstruction.strikepointZ[time]))])
 	return np.transpose([temp_R,temp_Z], axes=(1,0,2))
 
-def return_all_time_separatrix(efit_reconstruction,all_time_sep_r,all_time_sep_z,r_fine,z_fine,ref_angle=60):
+def return_all_time_separatrix(efit_reconstruction,all_time_sep_r,all_time_sep_z,r_fine,z_fine,ref_angle=60,plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil):
 	all_time_separatrix = []
 	for time in range(len(efit_reconstruction.time)):
 		separatrix = []
@@ -946,8 +971,8 @@ def return_all_time_separatrix(efit_reconstruction,all_time_sep_r,all_time_sep_z
 			except:
 				point_location = np.array([[0],[0],[ref_angle]]).T
 			point_location = point_toroidal_to_cartesian(point_location)
-			point_location = find_location_on_foil(point_location)
-			separatrix.append(absolute_position_on_foil_to_foil_coord(point_location))
+			point_location = find_location_on_foil(point_location,plane_equation=plane_equation,pinhole_location=pinhole_location)
+			separatrix.append(absolute_position_on_foil_to_foil_coord(point_location,centre_of_foil=centre_of_foil))
 		all_time_separatrix.append(separatrix)
 	return all_time_separatrix
 
@@ -963,21 +988,21 @@ def return_all_time_separatrix_radial(efit_reconstruction,all_time_sep_r,all_tim
 		all_time_separatrix.append(separatrix)
 	return all_time_separatrix
 
-def return_core_tangential_location_on_foil(resolution = 10000):
+def return_core_tangential_location_on_foil(resolution = 10000,plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil):
 	core_tangential_location_on_foil = []
 	for i in range(len(core_tangential_arrival)):
 		point_location = np.array([np.linspace(core_tangential_arrival[i][0],core_tangential_common_point[0],resolution),np.linspace(core_tangential_arrival[i][1],core_tangential_common_point[1],resolution),[core_tangential_arrival[i][2]]*resolution]).T
-		point_location = find_location_on_foil(point_location)
-		core_tangential_location_on_foil.append(absolute_position_on_foil_to_foil_coord(point_location))
+		point_location = find_location_on_foil(point_location,plane_equation=plane_equation,pinhole_location=pinhole_location)
+		core_tangential_location_on_foil.append(absolute_position_on_foil_to_foil_coord(point_location,centre_of_foil=centre_of_foil))
 	return core_tangential_location_on_foil
 
-def return_core_poloidal_location_on_foil(angle=60,resolution = 10000):
+def return_core_poloidal_location_on_foil(angle=60,resolution = 10000,plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil):
 	core_poloidal_location_on_foil = []
 	for i in range(len(core_poloidal_arrival)):
 		point_location = np.array([np.linspace(core_poloidal_arrival[i][0],core_poloidal_common_point[0],resolution),np.linspace(core_poloidal_arrival[i][1],core_poloidal_common_point[1],resolution),[angle]*resolution]).T
 		point_location = point_toroidal_to_cartesian(point_location)
-		point_location = find_location_on_foil(point_location)
-		core_poloidal_location_on_foil.append(absolute_position_on_foil_to_foil_coord(point_location))
+		point_location = find_location_on_foil(point_location,plane_equation=plane_equation,pinhole_location=pinhole_location)
+		core_poloidal_location_on_foil.append(absolute_position_on_foil_to_foil_coord(point_location,centre_of_foil=centre_of_foil))
 	return core_poloidal_location_on_foil
 
 def return_core_poloidal(resolution = 100):
@@ -990,13 +1015,13 @@ def return_core_poloidal(resolution = 100):
 			core_poloidal.append(np.array([np.linspace(arrival[0],core_poloidal_common_point[0],resolution),interp1(np.linspace(arrival[0],core_poloidal_common_point[0],resolution))]).T)
 	return core_poloidal
 
-def return_divertor_poloidal_location_on_foil(angle=60,resolution = 10000):
+def return_divertor_poloidal_location_on_foil(angle=60,resolution = 10000,plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil):
 	divertor_poloidal_location_on_foil = []
 	for i in range(len(divertor_poloidal_arrival)):
 		point_location = np.array([np.linspace(divertor_poloidal_arrival[i][0],divertor_poloidal_common_point[0],resolution),np.linspace(divertor_poloidal_arrival[i][1],divertor_poloidal_common_point[1],resolution),[angle]*resolution]).T
 		point_location = point_toroidal_to_cartesian(point_location)
-		point_location = find_location_on_foil(point_location)
-		divertor_poloidal_location_on_foil.append(absolute_position_on_foil_to_foil_coord(point_location))
+		point_location = find_location_on_foil(point_location,plane_equation=plane_equation,pinhole_location=pinhole_location)
+		divertor_poloidal_location_on_foil.append(absolute_position_on_foil_to_foil_coord(point_location,centre_of_foil=centre_of_foil))
 	return divertor_poloidal_location_on_foil
 
 def return_divertor_poloidal(resolution = 100):
@@ -4263,7 +4288,7 @@ def fullprint(*args, **kwargs):
 ###################################################################################################
 
 
-def find_dead_pixels(data, start_interval='auto',end_interval='auto', framerate='auto',from_data=True,treshold_for_bad_low_std=0,treshold_for_bad_std=10,treshold_for_bad_difference=13):
+def find_dead_pixels(data, start_interval='auto',end_interval='auto', framerate='auto',from_data=True,treshold_for_bad_low_std=0,treshold_for_bad_std=10,treshold_for_bad_difference=13,verbose=2):
 
 	# Created 26/02/2019
 	# function that finds the dead pixels. 'data' can be a string with the path of the record or the data itself.
@@ -4353,8 +4378,8 @@ def find_dead_pixels(data, start_interval='auto',end_interval='auto', framerate=
 						# flag[i, j] = 0
 						continue
 					else:
-						if (mean[i, j] > max(temp2) + treshold_for_bad_difference or mean[i, j] < min(
-								temp2) - treshold_for_bad_difference):
+						if (mean[i, j] > max(temp2) + treshold_for_bad_difference or mean[i, j] < min(temp2) - treshold_for_bad_difference):
+						# if np.abs(mean[i, j] - np.median(temp2))> treshold_for_bad_difference:
 							flag_check[i, j] += 3
 							flag[i, j] = 0
 	# follows a slower version that checks also the edges
@@ -4373,11 +4398,37 @@ def find_dead_pixels(data, start_interval='auto',end_interval='auto', framerate=
 	# 				flag[i, j] = 0
 
 
-	counter = collections.Counter(flatten_full(flag_check))
-	print('Number of pixels that trepass '+str(treshold_for_bad_difference)+' counts difference with neighbours: '+str(counter.get(3)))
-	print('Number of pixels with standard deviation > '+str(treshold_for_bad_std)+' counts: '+str(counter.get(6)))
-	print('Number of pixels that trepass both limits: '+str(counter.get(9)))
+	if verbose>1:
+		counter = collections.Counter(flatten_full(flag_check))
+		print('Number of pixels that trepass '+str(treshold_for_bad_difference)+' counts difference with neighbours: '+str(counter.get(3)))
+		print('Number of pixels with standard deviation > '+str(treshold_for_bad_std)+' counts: '+str(counter.get(6)))
+		print('Number of pixels that trepass both limits: '+str(counter.get(9)))
+	elif verbose>0:
+		counter = collections.Counter(flatten_full(flag_check))
+		print('diff>'+str(treshold_for_bad_difference)+': '+str(counter.get(3)) + ' , ' + 'std>' +str(treshold_for_bad_std)+': '+str(counter.get(6)) + ' , ' + 'both: '+str(counter.get(9)))
+	return flag_check
 
+
+###################################################################################################
+
+def find_dead_pixels_data_acquisition_stage(data,treshold_for_bad_difference=30,verbose=2):
+	from scipy.ndimage import median_filter
+	import collections
+	# Created 17/12/2021
+	# function that finds the dead pixels looking at the 8 around it. it is used only to check if during the recording the order of the digitizer switches
+	# if the path is given the oscillation filtering is done
+	# default tresholds for std and difference found 25/02/2019
+
+	data = np.array(data)
+	median=median_filter(data,footprint=[[1,1,1],[1,0,1],[1,1,1]])
+	flag_check = (np.abs(data-median)>treshold_for_bad_difference)*3
+
+	if verbose>1:
+		counter = collections.Counter(flag_check.flatten())
+		print('Number of pixels that trepass '+str(treshold_for_bad_difference)+' counts difference with neighbours: '+str(counter.get(3)))
+	elif verbose>0:
+		counter = collections.Counter(flag_check.flatten())
+		print('diff>'+str(treshold_for_bad_difference)+': '+str(counter.get(3)))
 	return flag_check
 
 
@@ -5149,6 +5200,8 @@ def ptw_to_dict(full_path):
 	os.chdir('/home/ffederic/work/Collaboratory/test/experimental_data/functions')
 	import pyradi.ryptw as ryptw
 	import datetime
+	from scipy.ndimage import median_filter
+	import collections
 
 	header = ryptw.readPTWHeader(full_path)
 	width = header.h_Cols
@@ -5159,7 +5212,7 @@ def ptw_to_dict(full_path):
 	IntegrationTime = round(header.h_CEDIPIntegrationTime*1e6,0) # microseconds
 	ExternalTrigger = None	# I couldn't find this signal in the header
 
-	digitizer_ID = []
+	# digitizer_ID = []
 	data = []
 	time_of_measurement = []
 	frame_counter = []
@@ -5174,7 +5227,8 @@ def ptw_to_dict(full_path):
 			new_shape = np.shape(frame.T)
 		data.append(np.flip(frame.flatten().reshape(new_shape).T,axis=0))
 		frame_header = ryptw.getPTWFrames(header, [i])[1][0]
-		digitizer_ID.append(frame_header.h_framepointer%2)	# I couldn't find this so as a proxy, given the digitisers are always alternated, I only use if the frame is even or odd
+		# digitizer_ID.append(frame_header.h_framepointer%2)	# I couldn't find this so as a proxy, given the digitisers are always alternated, I only use if the frame is even or odd
+		# # 2021-12-09 I checked a few recordings and this seems to actually be true, the "dead" pixels flip in a very regular and consistent manner
 		# yyyy = frame_header.h_FileSaveYear
 		# mm = frame_header.h_FileSaveMonth
 		# dd = frame_header.h_FileSaveDay
@@ -5187,6 +5241,69 @@ def ptw_to_dict(full_path):
 		SensorTemp_0.append(frame_header.h_detectorTemp)	# this data is missing so I use the more similar again
 		SensorTemp_3.append(frame_header.h_sensorTemp4)
 		AtmosphereTemp.append(frame_header.h_AtmosphereTemp)	# additional data not present in the .ats format
+	#	 section added to actually find the digitizer
+	bad_pixels_marker = []
+	for i in range(int(min(1*FrameRate,len(data)/5))):
+		bad_pixels_flag = find_dead_pixels_data_acquisition_stage(data[i]-data[i+1],treshold_for_bad_difference=50,verbose=1).flatten()
+		bad_pixels_marker.extend(np.arange(len(bad_pixels_flag))[bad_pixels_flag>0])
+	bad_pixels_marker = np.unique(bad_pixels_marker)
+	shape = np.shape(data[0])
+	bad_pixels_marker_2 = []
+	bad_pixels_marker_str = []
+	for i in range(int(min(1*FrameRate,len(data)/5))):
+		temp = []
+		median = median_filter(data[i],footprint=[[1,1,1],[1,0,1],[1,1,1]])
+		for i_ in bad_pixels_marker:
+			i__ = np.unravel_index(i_,shape)
+			temp.append(np.abs(data[i][i__]-median[i__]))
+		bad_pixels_marker_2.append(bad_pixels_marker[np.array(temp)>25])
+		bad_pixels_marker_str.append(str(bad_pixels_marker_2[-1]))
+	# bad_pixels_marker_2 = np.array(bad_pixels_marker_2)
+	counter = collections.Counter(bad_pixels_marker_str)
+	most_common_str = [counter.most_common()[0][0],counter.most_common()[1][0]]
+	dark_bad_pixels_marker = [bad_pixels_marker_2[(np.array(bad_pixels_marker_str)==most_common_str[0]).argmax()],bad_pixels_marker_2[(np.array(bad_pixels_marker_str)==most_common_str[1]).argmax()]]
+	temp=0
+	while len(dark_bad_pixels_marker[0])*0.8 < np.sum([value in dark_bad_pixels_marker[1] for value in dark_bad_pixels_marker[0]]):	# safety clause in case by mistake it is used twice the same pattern of dewad pixels for both digitizers
+		most_common_str = [counter.most_common()[0][0],counter.most_common()[temp+1+1][0]]
+		dark_bad_pixels_marker = [bad_pixels_marker_2[(np.array(bad_pixels_marker_str)==most_common_str[0]).argmax()],bad_pixels_marker_2[(np.array(bad_pixels_marker_str)==most_common_str[1]).argmax()]]
+		temp+=1
+		print('pattern of dead pixels shifted of '+str(temp))
+	print('dead pixel markers:\n'+str(dark_bad_pixels_marker[0])+'\n'+str(dark_bad_pixels_marker[1]))
+	digitizer_ID = []
+	discarded_frames = []
+	for i in range(len(data)):
+		median = median_filter(data[i],footprint=[[1,1,1],[1,0,1],[1,1,1]])
+		bad_pixels_marker = [[] , []]
+		for i_ in range(len(dark_bad_pixels_marker)):
+			for i__ in dark_bad_pixels_marker[i_]:
+				i__ = np.unravel_index(i__,shape)
+				bad_pixels_marker[i_].append(np.abs(data[i][i__]-median[i__]))
+		for i_ in range(len(dark_bad_pixels_marker)):
+			bad_pixels_marker[i_] = np.mean(bad_pixels_marker[i_])
+		if bad_pixels_marker[0]>bad_pixels_marker[1]:
+			digitizer_ID.append(0)
+		elif bad_pixels_marker[1]>bad_pixels_marker[0]:
+			digitizer_ID.append(1)
+		else:
+			print('frame n'+str(i)+' discarded')
+			discarded_frames.append(i)
+	if len(discarded_frames)>0:
+		print('discarded frames are '+str(discarded_frames))
+		if np.sum(np.array(discarded_frames)>10)>0:
+			print('error, this should not have happened')
+			exit()
+		else:	# it can happen that the first few frames are messed up
+			digitizer_ID = np.flip(digitizer_ID,axis=0).tolist()
+			len_discarded_frames = len(discarded_frames)
+			while len_discarded_frames>0:
+				if digitizer_ID[-1] == 0:
+					digitizer_ID.append(1)
+				else:
+					digitizer_ID.append(0)
+				len_discarded_frames -=1
+			digitizer_ID = np.flip(digitizer_ID,axis=0).tolist()
+	print('digitizer inversion at frames '+str(np.arange(len(data)-1)[np.diff(digitizer_ID)==0]))
+	# back to the normal process
 	data = np.array(data)
 	data_median = int(np.median(data))
 	if np.abs(data-data_median).max()<2**8/2-1:
@@ -5226,6 +5343,7 @@ def ptw_to_dict(full_path):
 	out['data_time_space_avg_counts'] = np.array([(np.mean(data,axis=(0,1,2))) for data in data_per_digitizer])
 	out['data_time_space_avg_counts_std'] = np.array([(np.std(data,axis=(0,1,2))) for data in data_per_digitizer])
 	out['uniques_digitizer_ID'] = uniques_digitizer_ID
+	out['discarded_frames'] = discarded_frames
 	# return data,digitizer_ID,time_of_measurement,IntegrationTime,FrameRate,ExternalTrigger,SensorTemp_0,DetectorTemp,width,height,camera_SN,frame_counter
 	return out
 
@@ -5251,8 +5369,19 @@ def generic_separate_with_digitizer(data,digitizer_ID):
 		data_per_digitizer.append(data[digitizer_ID==ID])
 	return data_per_digitizer,uniques_digitizer_ID
 
+def read_IR_file(file):
+	if os.path.exists(file+'.npz'):
+		full_saved_file_dict=np.load(file+'.npz')
+	else:
+		if os.path.exists(file+'.ats'):
+			full_saved_file_dict = ats_to_dict(file+'.ats')
+		elif os.path.exists(file+'.ptw'):
+			full_saved_file_dict = ptw_to_dict(file+'.ptw')
+		print(file+'.npz generated')
+		np.savez_compressed(file,**full_saved_file_dict)
+	return full_saved_file_dict
 
-def build_poly_coeff_multi_digitizer(temperature,files,int,path,n):
+def build_poly_coeff_multi_digitizer(temperature,files,inttime,pathparam,n):
 	# modified 2018-10-08 to build the coefficient only for 1 degree of polinomial
 	while np.shape(temperature[0])!=():
 		temperature=np.concatenate(temperature)
@@ -5265,7 +5394,7 @@ def build_poly_coeff_multi_digitizer(temperature,files,int,path,n):
 	all_frame_counter = []
 	all_time_of_measurement = []
 	for i_file,file in enumerate(files):
-		full_saved_file_dict=np.load(file+'.npz')
+		full_saved_file_dict=read_IR_file(file)
 		data_per_digitizer,uniques_digitizer_ID = separate_data_with_digitizer(full_saved_file_dict)
 		if i_file==0:
 			digitizer_ID = np.array(uniques_digitizer_ID)
@@ -5279,18 +5408,22 @@ def build_poly_coeff_multi_digitizer(temperature,files,int,path,n):
 			a = [np.mean(x,axis=(-1,-2)) for x in data_per_digitizer]
 			b = []
 			for i in digitizer_ID:
+				framerate = float(full_saved_file_dict['FrameRate'])
 				time_axis = np.arange(len(a[i]))*2*1 / framerate
 				lin_fit = np.polyfit(time_axis,a[i],1)
 				baseline = np.polyval(lin_fit,time_axis)
-				bds = [[0,20,-4*np.pi],[np.inf,40,4*np.pi]]
-				guess = [1,29,max(-4*np.pi,min(4*np.pi,-np.pi*np.trapz((a[i]-baseline)[time_axis<1/29/2])*2/np.trapz(np.abs(a[i]-baseline)[time_axis<1/29])))]
-				fit = curve_fit(sin_fun, time_axis,a[i]-baseline, p0=guess, bounds = bds, maxfev=100000000)
-				# plt.figure()
-				# plt.plot(time_axis,a[i]-baseline)
-				# plt.plot(time_axis,sin_fun(time_axis,*fit[0]))
-				# plt.plot(time_axis,sin_fun(time_axis,*guess),'--')
-				# plt.pause(0.001)
-				b.append((data_per_digitizer[i].T-baseline-sin_fun(time_axis,*fit[0])).T)
+				if framerate>300:	# the oscillation will be present only at high frequency
+					bds = [[0,20,-4*np.pi],[np.inf,40,4*np.pi]]
+					guess = [1,29,max(-4*np.pi,min(4*np.pi,-np.pi*np.trapz((a[i]-baseline)[time_axis<1/29/2])*2/np.trapz(np.abs(a[i]-baseline)[time_axis<1/29])))]
+					fit = curve_fit(sin_fun, time_axis,a[i]-baseline, p0=guess, bounds = bds, maxfev=100000000)
+					# plt.figure()
+					# plt.plot(time_axis,a[i]-baseline)
+					# plt.plot(time_axis,sin_fun(time_axis,*fit[0]))
+					# plt.plot(time_axis,sin_fun(time_axis,*guess),'--')
+					# plt.pause(0.001)
+					b.append((data_per_digitizer[i].T-baseline-sin_fun(time_axis,*fit[0])).T)
+				else:
+					b.append((data_per_digitizer[i].T-baseline).T)
 			meancountstdtot.append([np.std(x,axis=0) for x in b])
 		all_SensorTemp_0.append(np.mean(full_saved_file_dict['SensorTemp_0']))
 		all_DetectorTemp.append(np.mean(full_saved_file_dict['DetectorTemp']))
@@ -5302,10 +5435,47 @@ def build_poly_coeff_multi_digitizer(temperature,files,int,path,n):
 	shapex=np.shape(meancounttot)[-2]
 	shapey=np.shape(meancounttot)[-1]
 	score=np.zeros((len(digitizer_ID),shapex,shapey))
+	score2=np.zeros((len(digitizer_ID),shapex,shapey))
 
 	# WARNING; THIS CREATE COEFFICIENTS INCOMPATIBLE WITH PREVIOUS build_poly_coeff FUNCTION
 	coeff=np.zeros((len(digitizer_ID),shapex,shapey,n))
 	errcoeff=np.zeros((len(digitizer_ID),shapex,shapey,n,n))
+	coeff2=np.zeros((len(digitizer_ID),shapex,shapey,2))
+	errcoeff2=np.zeros((len(digitizer_ID),shapex,shapey,2,2))
+
+	def BB_rad_prob_and_gradient(T_,counts,grads=True):
+		def int(arg):
+			a1=arg[0]
+			a2=arg[1]
+			lambda_cam_x = np.linspace(1.5,5.1,10)*1e-6	# m, Range of FLIR SC7500
+			lambda_cam = np.array([lambda_cam_x.tolist()]*len(T_)).T
+			temp1 = np.trapz(2*scipy.constants.h*(scipy.constants.c**2)/(lambda_cam**5) * 1/( np.exp(scipy.constants.h*scipy.constants.c/(lambda_cam*scipy.constants.k*T_)) -1) ,x=lambda_cam_x,axis=0)
+			temp2 = a1*temp1 + a2 - counts
+			out = np.sum(temp2**2)
+			if grads:
+				grad = [np.sum(2*temp2*temp1),np.sum(2*temp2*1)]
+				return out,np.array(grad)
+			else:
+				return out
+		return int
+
+	import numdifftools as nd
+	def make_standatd_fit_output(function,x_optimal):
+		hessian = nd.Hessian(function)
+		hessian = hessian(x_optimal)
+		covariance = np.linalg.inv(hessian)
+		for i in range(len(covariance)):
+			covariance[i,i] = np.abs(covariance[i,i])
+		fit = [x_optimal,covariance]
+		return fit
+
+	BB_rad = lambda T,a1,a2 : a1*2*scipy.constants.h*(scipy.constants.c**2)/((5e-6)**5) * 1/( np.exp(scipy.constants.h*scipy.constants.c/((5e-6)*scipy.constants.k*T)) -1) + a2
+	def BB_rad(T_,a1,a2):
+		lambda_cam_x = np.linspace(1.5,5.1,10)*1e-6	# m, Range of FLIR SC7500
+		lambda_cam = np.array([lambda_cam_x.tolist()]*len(T_)).T
+		temp1 = np.trapz(2*scipy.constants.h*(scipy.constants.c**2)/(lambda_cam**5) * 1/( np.exp(scipy.constants.h*scipy.constants.c/(lambda_cam*scipy.constants.k*T_)) -1) ,x=lambda_cam_x,axis=0)
+		out = a1*temp1 + a2
+		return out
 
 	for j in range(shapex):
 		for k in range(shapey):
@@ -5316,14 +5486,253 @@ def build_poly_coeff_multi_digitizer(temperature,files,int,path,n):
 				temp1=np.polyfit(x,temperature,n-1)	# this correction alone decrease the errors by 2 error by 2 orders of magnitude
 				yerr=(np.polyval(temp1,x+xerr)-np.polyval(temp1,x-xerr))/2
 				temp1,temp2=np.polyfit(x,temperature,n-1,w=1/yerr,cov='unscaled')
+				fit = curve_fit(BB_rad,np.array(temperature)+273,x,sigma=xerr,absolute_sigma=False,p0=[1e4,100])
+				# the following is much slower
+				# x_optimal, y_opt, opt_info = scipy.optimize.fmin_l_bfgs_b(BB_rad_prob_and_gradient(np.array(temperature)+273,x), x0=[1e4,100], iprint=0, factr=1e2, pgtol=1e-6, maxiter=5000)#,m=1000, maxls=1000, pgtol=1e-10, factr=1e0)#,approx_grad = True)
+				# fit = make_standatd_fit_output(BB_rad_prob_and_gradient(np.array(temperature)+273,x,grads=False),x_optimal)
 				# plt.figure()
-				# plt.errorbar(x,temperature,xerr=xerr)
-				# plt.plot(x,np.polyval(temp1,x),'--')
+				# plt.errorbar(x,temperature,xerr=xerr,fmt='+')
+				# plt.plot(np.sort(x),np.polyval(temp1,np.sort(x)),'--')
+				# plt.plot(BB_rad(np.sort(temperature)+273,*fit[0]),np.sort(temperature),':')
 				# plt.pause(0.01)
 				coeff[i_z,j,k,:]=temp1
 				errcoeff[i_z,j,k,:]=temp2
+				coeff2[i_z,j,k,:]=fit[0]
+				errcoeff2[i_z,j,k,:]=fit[1]
 				score[i_z,j,k]=rsquared(temperature,np.polyval(temp1,x))
-	np.savez_compressed(os.path.join(path,'coeff_polynomial_deg'+str(n-1)+'int_time'+str(int)+'ms'),**dict([('coeff',coeff),('errcoeff',errcoeff),('score',score)]))
+				score2[i_z,j,k]=rsquared(x,BB_rad(np.array(temperature)+273,*fit[0]))
+	np.savez_compressed(os.path.join(pathparam,'coeff_polynomial_deg'+str(n-1)+'int_time'+str(inttime)+'ms'),**dict([('coeff',coeff),('errcoeff',errcoeff),('score',score),('coeff2',coeff2),('errcoeff2',errcoeff2),('score2',score2)]))
+	print('for a polinomial of degree '+str(n-1)+' the R^2 score is '+str(np.sum(score[n-2])))
+
+def build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5,wavelength_bottom=2.5):
+	# modified 2018-10-08 to build the coefficient only for 1 degree of polinomial
+	while np.shape(temperature_window[0])!=():
+		temperature_window=np.concatenate(temperature_window)
+		files_window=np.concatenate(files_window)
+	temperature_window = np.array(temperature_window)
+	files_window = np.array(files_window)
+	while np.shape(temperature_no_window[0])!=():
+		temperature_no_window=np.concatenate(temperature_no_window)
+		files_no_window=np.concatenate(files_no_window)
+	temperature_no_window = np.array(temperature_no_window)
+	files_no_window = np.array(files_no_window)
+	sin_fun = lambda x,A,f,p : A*np.sin(x*f*2*np.pi+p)
+	meancounttot=[]
+	meancountstdtot=[]
+	all_SensorTemp_0 = []
+	all_DetectorTemp = []
+	all_frame_counter = []
+	all_time_of_measurement = []
+	for i_file,file in enumerate(files_window):
+		full_saved_file_dict=read_IR_file(file)
+		data_per_digitizer,uniques_digitizer_ID = separate_data_with_digitizer(full_saved_file_dict)
+		if i_file==0:
+			digitizer_ID = np.array(uniques_digitizer_ID)
+		if np.sum(digitizer_ID==uniques_digitizer_ID)<len(digitizer_ID):
+			print('ERROR: problem with the ID of the digitizer in \n' + file)
+			exit()
+		meancounttot.append([np.mean(x,axis=0) for x in data_per_digitizer])
+		if False:	# what if I'm exaggerating this because of the oscillation and the baseline drift?
+			meancountstdtot.append([np.std(x,axis=0) for x in data_per_digitizer])	# what if I'm exaggerating this because of the oscillation and the baseline drift?
+		else:	# this tries to remove the effect of the oshillation. it's marginally (std decrease~1%) better. it is still fast so I can keep it
+			a = [np.mean(x,axis=(-1,-2)) for x in data_per_digitizer]
+			b = []
+			for i in digitizer_ID:
+				framerate = float(full_saved_file_dict['FrameRate'])
+				time_axis = np.arange(len(a[i]))*2*1 / framerate
+				lin_fit = np.polyfit(time_axis,a[i],1)
+				baseline = np.polyval(lin_fit,time_axis)
+				if framerate>300:	# the oscillation will be present only at high frequency
+					bds = [[0,20,-4*np.pi],[np.inf,40,4*np.pi]]
+					guess = [1,29,max(-4*np.pi,min(4*np.pi,-np.pi*np.trapz((a[i]-baseline)[time_axis<1/29/2])*2/np.trapz(np.abs(a[i]-baseline)[time_axis<1/29])))]
+					fit = curve_fit(sin_fun, time_axis,a[i]-baseline, p0=guess, bounds = bds, maxfev=100000000)
+					# plt.figure()
+					# plt.plot(time_axis,a[i]-baseline)
+					# plt.plot(time_axis,sin_fun(time_axis,*fit[0]))
+					# plt.plot(time_axis,sin_fun(time_axis,*guess),'--')
+					# plt.pause(0.001)
+					b.append((data_per_digitizer[i].T-baseline-sin_fun(time_axis,*fit[0])).T)
+				else:
+					b.append((data_per_digitizer[i].T-baseline).T)
+			meancountstdtot.append([np.std(x,axis=0) for x in b])
+		all_SensorTemp_0.append(np.mean(full_saved_file_dict['SensorTemp_0']))
+		all_DetectorTemp.append(np.mean(full_saved_file_dict['DetectorTemp']))
+		all_time_of_measurement.append(np.mean(full_saved_file_dict['time_of_measurement']))
+		all_frame_counter.append(np.mean(full_saved_file_dict['frame_counter']))
+	meancounttot=np.array(meancounttot)
+	meancountstdtot=np.array(meancountstdtot)
+
+	meancounttot_no_window=[]
+	meancountstdtot_no_window=[]
+	all_SensorTemp_0 = []
+	all_DetectorTemp = []
+	all_frame_counter = []
+	all_time_of_measurement = []
+	for i_file,file in enumerate(files_no_window):
+		full_saved_file_dict=read_IR_file(file)
+		data_per_digitizer,uniques_digitizer_ID = separate_data_with_digitizer(full_saved_file_dict)
+		if i_file==0:
+			digitizer_ID = np.array(uniques_digitizer_ID)
+		if np.sum(digitizer_ID==uniques_digitizer_ID)<len(digitizer_ID):
+			print('ERROR: problem with the ID of the digitizer in \n' + file)
+			exit()
+		meancounttot_no_window.append([np.mean(x,axis=0) for x in data_per_digitizer])
+		if False:	# what if I'm exaggerating this because of the oscillation and the baseline drift?
+			meancountstdtot_no_window.append([np.std(x,axis=0) for x in data_per_digitizer])	# what if I'm exaggerating this because of the oscillation and the baseline drift?
+		else:	# this tries to remove the effect of the oshillation. it's marginally (std decrease~1%) better. it is still fast so I can keep it
+			a = [np.mean(x,axis=(-1,-2)) for x in data_per_digitizer]
+			b = []
+			for i in digitizer_ID:
+				framerate = float(full_saved_file_dict['FrameRate'])
+				time_axis = np.arange(len(a[i]))*2*1 / framerate
+				lin_fit = np.polyfit(time_axis,a[i],1)
+				baseline = np.polyval(lin_fit,time_axis)
+				if framerate>300:	# the oscillation will be present only at high frequency
+					bds = [[0,20,-4*np.pi],[np.inf,40,4*np.pi]]
+					guess = [1,29,max(-4*np.pi,min(4*np.pi,-np.pi*np.trapz((a[i]-baseline)[time_axis<1/29/2])*2/np.trapz(np.abs(a[i]-baseline)[time_axis<1/29])))]
+					fit = curve_fit(sin_fun, time_axis,a[i]-baseline, p0=guess, bounds = bds, maxfev=100000000)
+					# plt.figure()
+					# plt.plot(time_axis,a[i]-baseline)
+					# plt.plot(time_axis,sin_fun(time_axis,*fit[0]))
+					# plt.plot(time_axis,sin_fun(time_axis,*guess),'--')
+					# plt.pause(0.001)
+					b.append((data_per_digitizer[i].T-baseline-sin_fun(time_axis,*fit[0])).T)
+				else:
+					b.append((data_per_digitizer[i].T-baseline).T)
+			meancountstdtot_no_window.append([np.std(x,axis=0) for x in b])
+		all_SensorTemp_0.append(np.mean(full_saved_file_dict['SensorTemp_0']))
+		all_DetectorTemp.append(np.mean(full_saved_file_dict['DetectorTemp']))
+		all_time_of_measurement.append(np.mean(full_saved_file_dict['time_of_measurement']))
+		all_frame_counter.append(np.mean(full_saved_file_dict['frame_counter']))
+	meancounttot_no_window=np.array(meancounttot_no_window)
+	meancountstdtot_no_window=np.array(meancountstdtot_no_window)
+
+	shapex=np.shape(meancounttot)[-2]
+	shapey=np.shape(meancounttot)[-1]
+	score=np.zeros((len(digitizer_ID),shapex,shapey))
+	score2=np.zeros((len(digitizer_ID),shapex,shapey))
+
+	# WARNING; THIS CREATE COEFFICIENTS INCOMPATIBLE WITH PREVIOUS build_poly_coeff FUNCTION
+	coeff=np.zeros((len(digitizer_ID),shapex,shapey,n))
+	errcoeff=np.zeros((len(digitizer_ID),shapex,shapey,n,n))
+	coeff2=np.zeros((len(digitizer_ID),shapex,shapey,4))
+	errcoeff2=np.zeros((len(digitizer_ID),shapex,shapey,4,4))
+
+	# lambda_cam_x = np.linspace(1.5,5.1,10)*1e-6	# m, Range of FLIR SC7500
+	lambda_cam_x = np.linspace(wavelength_bottom,wavewlength_top,100)*1e-6	# m, Range of FLIR SC7500
+	temperature = temperature_window.tolist() + temperature_no_window.tolist()
+	# temperature_range = np.linspace(np.min(temperature),np.max(temperature))
+	temperature_range = np.unique(temperature)
+	photon_flux = []
+	for T_ in temperature_range:
+		photon_flux.append(np.trapz(2*scipy.constants.c/(lambda_cam_x**4) * 1/( np.exp(scipy.constants.h*scipy.constants.c/(lambda_cam_x*scipy.constants.k*(T_+273.15))) -1) ,x=lambda_cam_x,axis=0) * inttime/1000)
+	photon_flux = np.array(photon_flux)
+	photon_flux_interpolator = interp1d(temperature_range,photon_flux,bounds_error=False,fill_value='extrapolate')
+
+
+	def BB_rad_prob_and_gradient(T_,counts,lambda_cam_x=lambda_cam_x,grads=True):
+		def int(arg):
+			a1=arg[0]
+			a2=arg[1]
+			lambda_cam = np.array([lambda_cam_x.tolist()]*len(T_)).T
+			# temp1 = np.trapz(2*scipy.constants.c/(lambda_cam**4) * 1/( np.exp(scipy.constants.h*scipy.constants.c/(lambda_cam*scipy.constants.k*(T_+273.15))) -1) ,x=lambda_cam_x,axis=0) * inttime/1000
+			temp1 = photon_flux_interpolator(T_)
+			temp2 = a1*temp1 + a2 - counts
+			out = np.sum(temp2**2)
+			if grads:
+				grad = [np.sum(2*temp2*temp1),np.sum(2*temp2*1)]
+				return out,np.array(grad)
+			else:
+				return out
+		return int
+
+	import numdifftools as nd
+	def make_standatd_fit_output(function,x_optimal):
+		hessian = nd.Hessian(function)
+		hessian = hessian(x_optimal)
+		covariance = np.linalg.inv(hessian)
+		for i in range(len(covariance)):
+			covariance[i,i] = np.abs(covariance[i,i])
+		fit = [x_optimal,covariance]
+		return fit
+
+	BB_rad = lambda T,a1,a2 : a1*2*scipy.constants.c/((5e-6)**5) * 1/( np.exp(scipy.constants.h*scipy.constants.c/((5e-6)*scipy.constants.k*(T+273.15))) -1) * inttime/1000 + a2
+
+	def BB_rad(number_of_window,lambda_cam_x=lambda_cam_x):
+		def int(T_,a1,a2,a3,a4):
+			# lambda_cam_x = np.linspace(1.5,5.1,10)*1e-6	# m, Range of FLIR SC7500
+			lambda_cam = np.array([lambda_cam_x.tolist()]*len(T_)).T
+			# temp1 = np.trapz(2*scipy.constants.c/(lambda_cam**4) * 1/( np.exp(scipy.constants.h*scipy.constants.c/(lambda_cam*scipy.constants.k*(T_+273.15))) -1) ,x=lambda_cam_x,axis=0) * inttime/1000
+			temp1 = photon_flux_interpolator(T_)
+			# temp1 = 2*scipy.constants.h*(scipy.constants.c**2)/(lambda_cam_x.max()**5) * 1/( np.exp(scipy.constants.h*scipy.constants.c/(lambda_cam_x.max()*scipy.constants.k*T_)) -1)
+			out = a1*temp1 + a2
+			out[number_of_window:] = a1*a3*temp1[number_of_window:] + a2 + a4
+			return out
+		return int
+
+	def deg_2_poly(x,a2,a1,a0):
+		out = a2*x**2 + a1*x + a0
+		return out
+
+	def BB_rad_counts_to_delta_temp(trash,T_,lambda_cam_x=lambda_cam_x):
+		# lambda_cam_x = np.linspace(1.5,5.1,10)*1e-6	# m, Range of FLIR SC7500
+		# temp1 = np.trapz(2*scipy.constants.c/(lambda_cam_x**4) * 1/( np.exp(scipy.constants.h*scipy.constants.c/(lambda_cam_x*scipy.constants.k*(T_+273.15))) -1) ,x=lambda_cam_x) * inttime/1000
+		temp1 = photon_flux_interpolator(T_)
+		# temp1 = 2*scipy.constants.h*(scipy.constants.c**2)/(lambda_cam_x.max()**5) * 1/( np.exp(scipy.constants.h*scipy.constants.c/(lambda_cam_x.max()*scipy.constants.k*T_)) -1)
+		return temp1
+
+	def sigma_T_multimpier(T_,lambda_cam_x=lambda_cam_x):
+		# lambda_cam_x = np.linspace(1.5,5.1,10)*1e-6	# m, Range of FLIR SC7500
+		temp = 2*scipy.constants.c/(lambda_cam_x**4) * 1/( np.exp(scipy.constants.h*scipy.constants.c/(lambda_cam_x*scipy.constants.k*(T_+273.15))) -1) * inttime/1000
+		temp1 = np.trapz(temp* scipy.constants.h*scipy.constants.c/(lambda_cam_x*scipy.constants.k*(T_**2)) ,x=lambda_cam_x)
+		# temp1 = 2*scipy.constants.h*(scipy.constants.c**2)/(lambda_cam_x.max()**5) * 1/( np.exp(scipy.constants.h*scipy.constants.c/(lambda_cam_x.max()*scipy.constants.k*T_)) -1)
+		return temp1
+
+	number_of_window = len(temperature_window)
+	bds = [[0,-np.inf,0,0],[np.inf,np.inf,1,np.inf]]
+	for j in range(shapex):
+		for k in range(shapey):
+			for i_z,z in enumerate(digitizer_ID):
+				x=np.array(meancounttot[:,z==digitizer_ID,j,k]).flatten()
+				x_=np.array(np.array(meancounttot[:,z==digitizer_ID,j,k]).flatten().tolist() + np.array(meancounttot_no_window[:,z==digitizer_ID,j,k]).flatten().tolist())
+				xerr=np.array(meancountstdtot[:,z==digitizer_ID,j,k]).flatten()
+				xerr_=np.array(np.array(meancountstdtot[:,z==digitizer_ID,j,k]).flatten().tolist() + np.array(meancountstdtot_no_window[:,z==digitizer_ID,j,k]).flatten().tolist())
+				# temp1,temp2=np.polyfit(temperature_window,x,n-1,cov='unscaled')
+				temp1=np.polyfit(x,temperature_window,n-1)	# this correction alone decrease the errors by 2 error by 2 orders of magnitude
+				yerr=(np.polyval(temp1,x+xerr)-np.polyval(temp1,x-xerr))/2
+				temp1,temp2=np.polyfit(x,temperature_window,n-1,w=1/yerr,cov='unscaled')
+				# fit = curve_fit(deg_2_poly,x,temperature_window,sigma=yerr,absolute_sigma=True,p0=[1,1,1])	# equivalent to np.polyfit, just to check that both return the same uncertainty
+				fit = curve_fit(BB_rad(number_of_window),np.array(temperature),x_,sigma=xerr_,absolute_sigma=True,p0=[1e-13,1000,1,100],bounds=bds,x_scale=[1e-13,1,1,1])
+				# the following is much slower
+				# x_optimal, y_opt, opt_info = scipy.optimize.fmin_l_bfgs_b(BB_rad_prob_and_gradient(np.array(temperature_window)+273,x), x0=[1e4,100], iprint=0, factr=1e2, pgtol=1e-6, maxiter=5000)#,m=1000, maxls=1000, pgtol=1e-10, factr=1e0)#,approx_grad = True)
+				# fit = make_standatd_fit_output(BB_rad_prob_and_gradient(np.array(temperature_window)+273,x,grads=False),x_optimal)
+				# plt.figure()
+				# plt.errorbar(x,temperature_window,xerr=xerr,fmt='+',color='b')
+				# plt.errorbar(x_[number_of_window:],temperature_no_window,xerr=xerr_[number_of_window:],fmt='+',color='r')
+				# plt.plot(np.sort(x),np.polyval(temp1,np.sort(x)),'--')
+				# plt.plot(BB_rad(number_of_window)(np.sort(temperature_window),*fit[0]),np.sort(temperature_window),':b')
+				# plt.plot(BB_rad(0)(np.sort(temperature_no_window),*fit[0]),np.sort(temperature_no_window),':r')
+				# plt.grid()
+				# plt.pause(0.01)
+				if False:	# small piece to check how the uncertainty goes between the 2 models
+					delta_counts = 7194-5800
+					a1a3 = fit[0][0]*fit[0][2]
+					sigma_a1a3 = a1a3 * ((fit[1][0,0]**0.5/fit[0][0])**2 + (fit[1][2,2]**0.5/fit[0][2])**2 + 2*fit[1][0,2]/a1a3)**0.5
+					ref = delta_counts/a1a3 + BB_rad_counts_to_delta_temp(1,300)
+					sigma_ref = delta_counts/a1a3*(( (estimate_counts_std(5800+delta_counts)*2/delta_counts)**2 + (sigma_a1a3/(a1a3**2))**2 )**0.5)
+					# sigma_ref = (sigma_ref**2 + ((sigma_T_multimpier(300)*0.1)**2))**0.5	# I'm not sure if I should consider this
+					check = curve_fit(BB_rad_counts_to_delta_temp,1,ref,sigma=[sigma_ref],absolute_sigma=True,p0=[300])
+					counts = 5800+delta_counts
+					temp = temp1[-1] + temp1[-2] * counts + temp1[-3] * (counts**2)
+					counts_std = estimate_counts_std(counts)
+					temperature_std = (temp2[2,2] + (counts_std**2)*(temp1[1]**2) + (counts**2+counts_std**2)*temp2[1,1] + (counts_std**2)*(4*counts**2+3*counts_std**2)*(temp1[0]**2) + (counts**4+6*(counts**2)*(counts_std**2)+3*counts_std**4)*temp2[0,0] + 2*counts*temp2[2,1] + 2*(counts**2+counts_std**2)*temp2[2,0] + 2*(counts**3+counts*(counts_std**2))*temp2[1,0])**0.5
+				coeff[i_z,j,k,:]=temp1
+				errcoeff[i_z,j,k,:]=temp2
+				coeff2[i_z,j,k,:]=fit[0]
+				errcoeff2[i_z,j,k,:]=fit[1]
+				score[i_z,j,k]=rsquared(temperature_window,np.polyval(temp1,x))
+				score2[i_z,j,k]=rsquared(x_,BB_rad(number_of_window)(np.array(temperature),*fit[0]))
+	np.savez_compressed(os.path.join(pathparam,'coeff_polynomial_deg'+str(n-1)+'int_time'+str(inttime)+'ms'),**dict([('coeff',coeff),('errcoeff',errcoeff),('score',score),('coeff2',coeff2),('errcoeff2',errcoeff2),('score2',score2)]))
 	print('for a polinomial of degree '+str(n-1)+' the R^2 score is '+str(np.sum(score[n-2])))
 
 
@@ -5485,6 +5894,95 @@ def count_to_temp_poly_multi_digitizer(counts,params,errparams,digitizer_ID,numb
 			print("you didn't supply the appropriate background counts, requested "+str(np.shape(counts)[-2:]))
 			exit()
 		return count_to_temp_poly_multi_digitizer_time_dependent(counts,params,errparams,reference_background,reference_background_std,reference_background_flat,digitizer_ID,number_cpu_available,n,parallelised=parallelised,report=report)
+
+def count_to_temp_BB_multi_digitizer(counts,params,errparams,digitizer_ID,counts_std=[0],reference_background=[0],reference_background_std=[0],ref_temperature=20,ref_temperature_std=0,wavewlength_top=5,wavelength_bottom=2.5,inttime=2):
+	# I don't think that there is the need of a separate function for stationary and time dependent
+
+	shape = np.shape(counts)
+	if len(shape)==3:
+		if np.shape(counts)!=np.shape(counts_std):
+			print("for steady state conversion counts std should be supplied, counts shape "+str(np.shape(counts))+" counts std "+str(np.shape(counts_std)))
+			exit()
+		return count_to_temp_BB_multi_digitizer_int(counts,counts_std,params,errparams,digitizer_ID,reference_background,reference_background_std,ref_temperature=ref_temperature,ref_temperature_std=ref_temperature_std,wavewlength_top=wavewlength_top,wavelength_bottom=wavelength_bottom,inttime=inttime)
+	else:
+		if (len(np.shape(reference_background))<2 or len(np.shape(reference_background_std))<2) and False:	# this is no longer necessary in count_to_temp_poly_multi_digitizer_time_dependent
+			print("you didn't supply the appropriate background counts, requested "+str(np.shape(counts)[-2:]))
+			exit()
+		if counts_std==[0]:
+			counts_std = []
+			for i in range(len(digitizer_ID)):
+				counts_std.append(estimate_counts_std(counts[i]))
+		return count_to_temp_BB_multi_digitizer_int(counts,counts_std,params,errparams,digitizer_ID,reference_background,reference_background_std,ref_temperature=ref_temperature,ref_temperature_std=ref_temperature_std,wavewlength_top=wavewlength_top,wavelength_bottom=wavelength_bottom,inttime=inttime)
+
+
+def calc_interpolators_BB(wavewlength_top=5,wavelength_bottom=2.5,inttime=2):
+	lambda_cam_x = np.linspace(wavelength_bottom,wavewlength_top,100)*1e-6	# m, Range of FLIR SC7500
+	def BB_rad_counts_to_delta_temp(trash,T_,lambda_cam_x=lambda_cam_x):
+		temp1 = np.trapz(2*scipy.constants.c/(lambda_cam_x**4) * 1/( np.exp(scipy.constants.h*scipy.constants.c/(lambda_cam_x*scipy.constants.k*T_)) -1) ,x=lambda_cam_x) * inttime/1000
+		return temp1
+
+	temperature_range = np.linspace(0,50,num=100)
+	temperature_range = temperature_range+273.15
+	photon_flux = []
+	for T in temperature_range:
+		photon_flux.append(BB_rad_counts_to_delta_temp(1,T))
+	photon_flux = np.array(photon_flux)
+	photon_flux_interpolator = interp1d(temperature_range-273.15,photon_flux,bounds_error=False,fill_value='extrapolate')	# in degC
+	reverse_photon_flux_interpolator = interp1d(photon_flux,temperature_range-273.15,bounds_error=False,fill_value='extrapolate')	# in degC
+	photon_flux_over_temperature = photon_flux/temperature_range
+	photon_flux_over_temperature_interpolator = interp1d(temperature_range-273.15,photon_flux_over_temperature,bounds_error=False,fill_value='extrapolate')	# in degC
+	photon_dict = dict([])
+	photon_dict['photon_flux_interpolator'] = photon_flux_interpolator
+	photon_dict['reverse_photon_flux_interpolator'] = reverse_photon_flux_interpolator
+	photon_dict['temperature_range'] = temperature_range
+	photon_dict['photon_flux'] = photon_flux
+	photon_dict['photon_flux_over_temperature'] = photon_flux_over_temperature
+	photon_dict['photon_flux_over_temperature_interpolator'] = photon_flux_over_temperature_interpolator
+	return photon_dict
+
+def calc_BB_coefficients_multi_digitizer_stationary(params,errparams,digitizer_ID,reference_background,reference_background_std,ref_temperature=20,ref_temperature_std=0,wavewlength_top=5,wavelength_bottom=2.5,inttime=2):
+
+	photon_dict = calc_interpolators_BB(wavewlength_top=wavewlength_top,wavelength_bottom=wavelength_bottom,inttime=inttime)
+	photon_flux_interpolator = photon_dict['photon_flux_interpolator']
+
+	photon_flux_std = np.abs(photon_flux_interpolator(ref_temperature+ref_temperature_std)-photon_flux_interpolator(ref_temperature-ref_temperature_std))/2
+	constant_offset = []
+	constant_offset_std = []
+	BB_proportional = []
+	BB_proportional_std = []
+	for i in range(len(digitizer_ID)):
+		BB_proportional.append(params[i,:,:,0]*params[i,:,:,2])
+		BB_proportional_std.append(((errparams[i,:,:,0,0]**0.5 * params[i,:,:,2])**2 + (errparams[i,:,:,2,2]**0.5 * params[i,:,:,0])**2 + 2*params[i,:,:,0]*params[i,:,:,2]*errparams[i,:,:,2,0])**0.5)
+		constant_offset.append( reference_background[i]-BB_proportional[-1]*photon_flux_interpolator(ref_temperature) )
+		constant_offset_std.append( ((photon_flux_interpolator(ref_temperature)*BB_proportional_std[-1])**2 + (BB_proportional[-1]*photon_flux_std)**2 + reference_background_std**2 )**0.5 )
+	BB_proportional = np.array(BB_proportional)
+	BB_proportional_std = np.array(BB_proportional_std)
+	constant_offset = np.array(constant_offset)
+	constant_offset_std = np.array(constant_offset_std)
+
+	return BB_proportional,BB_proportional_std,constant_offset,constant_offset_std,photon_dict
+
+
+def count_to_temp_BB_multi_digitizer_int(counts,counts_std,params,errparams,digitizer_ID,reference_background,reference_background_std,ref_temperature=20,ref_temperature_std=0,wavewlength_top=5,wavelength_bottom=2.5,inttime=2):
+	# by definition resetting the constant value such that it matches ref_temperature means that the reference temperature is a flat ref_temperature, so I'm not sure if this function will ever be usefull
+
+	BB_proportional,BB_proportional_std,constant_offset,constant_offset_std,photon_dict = calc_BB_coefficients_multi_digitizer_stationary(params,errparams,digitizer_ID,reference_background,reference_background_std,ref_temperature=ref_temperature,ref_temperature_std=ref_temperature_std,wavewlength_top=wavewlength_top,wavelength_bottom=wavelength_bottom,inttime=inttime)
+	photon_dict = calc_interpolators_BB(wavewlength_top=wavewlength_top,wavelength_bottom=wavelength_bottom,inttime=inttime)
+	reverse_photon_flux_interpolator = photon_dict['reverse_photon_flux_interpolator']
+	photon_flux_over_temperature_interpolator = photon_dict['photon_flux_over_temperature_interpolator']
+	photon_flux_interpolator = photon_dict['photon_flux_interpolator']
+
+	temperature = []
+	temperature_std = []
+	for i in range(len(digitizer_ID)):
+		photon_flux = (counts[i] - reference_background[i])/BB_proportional[i] + photon_flux_interpolator(ref_temperature)
+		temperature.append(reverse_photon_flux_interpolator(photon_flux))	# in degC
+		photon_flux_over_temperature = np.mean([photon_flux_over_temperature_interpolator(temperature[-1]),photon_flux_over_temperature_interpolator(ref_temperature)*np.ones_like(temperature[-1])],axis=0)
+		temperature_std.append( ( (counts_std[i]/(photon_flux_over_temperature*BB_proportional[i]))**2 + (reference_background_std[i]/(photon_flux_over_temperature*BB_proportional[i]))**2 + (BB_proportional_std[i]*(counts[i] - reference_background[i])/((BB_proportional[i]**2)*photon_flux_over_temperature))**2 + (ref_temperature_std)**2 )**0.5 )	# in degC
+	temperature = np.array(temperature)
+	temperature_std = np.array(temperature_std)
+
+	return temperature,temperature_std
 
 
 ##################################################################################################################################################################################################

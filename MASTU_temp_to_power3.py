@@ -341,7 +341,8 @@ for shrink_factor_t in [1,2,3,5]:
 			# dt=1/laser_framerate/shrink_factor_t
 			dt = time_partial_binned[2:]-time_partial_binned[:-2]
 			dx=foilhorizw/foilhorizwpixel*shrink_factor_x
-			dTdt=np.divide((laser_temperature_crop_binned[2:,1:-1,1:-1]-laser_temperature_crop_binned[:-2,1:-1,1:-1]).T,dt).T.astype(np.float32)
+			# dTdt=np.divide((laser_temperature_crop_binned[2:,1:-1,1:-1]-laser_temperature_crop_binned[:-2,1:-1,1:-1]).T,dt).T.astype(np.float32)
+			dTdt = np.gradient(laser_temperature_crop_binned,time_partial_binned,axis=0)[1:-1,1:-1,1:-1].astype(np.float32)	# this is still a central difference but it doesn't rely on hand made code
 			if False:
 				dTdt_std=np.divide((laser_temperature_std_crop_binned[2:,1:-1,1:-1]**2 + laser_temperature_std_crop_binned[:-2,1:-1,1:-1]**2).T**0.5,dt).T.astype(np.float32)
 			else:

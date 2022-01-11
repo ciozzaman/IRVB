@@ -528,15 +528,43 @@ try:
 			plt.savefig(laser_to_analyse[:-4]+'_filter.eps', bbox_inches='tight')
 			plt.close('all')
 
-			laser_temperature,laser_temperature_std = coleval.count_to_temp_poly_multi_digitizer(temp_counts,params,errparams,laser_digitizer_ID,number_cpu_available,report=1)
 			reference_background_temperature,reference_background_temperature_std = coleval.count_to_temp_poly_multi_digitizer(temp_ref_counts,params,errparams,laser_digitizer_ID,number_cpu_available,counts_std=temp_ref_counts_std,report=0,parallelised=False)
+			# here I should use the room temperature acquired by other means. it is availabl, but with a 1degC precision, so for now I use the camera as thermometer
+			ref_temperature = np.mean(reference_background_temperature)
+			ref_temperature_std = (np.sum(np.array(reference_background_temperature_std)**2)**0.5 / len(np.array(reference_background_temperature).flatten()))
+
+			temp = np.abs(parameters_available_int_time_BB-laser_int_time/1000)<0.1
+			framerate = np.array(parameters_available_framerate_BB)[temp][np.abs(parameters_available_framerate_BB[temp]-laser_framerate).argmin()]
+			int_time = np.array(parameters_available_int_time_BB)[temp][np.abs(parameters_available_framerate_BB[temp]-laser_framerate).argmin()]
+			temp = np.array(parameters_available_BB)[temp][np.abs(parameters_available_framerate_BB[temp]-laser_framerate).argmin()]
+			print('parameters selected '+temp)
+
+			# Load BB parameters
+			# temp = pathparams+'/'+temp+'/numcoeff'+str(n)+'/average'
+			temp = pathparams_BB+'/'+temp+'/numcoeff'+str(n)
+			fullpathparams=os.path.join(temp,'coeff_polynomial_deg'+str(n-1)+'int_time'+str(int_time)+'ms.npz')
+			params_dict=np.load(fullpathparams)
+			params_dict.allow_pickle=True
+			params_BB = params_dict['coeff2']
+			errparams_BB = params_dict['errcoeff2']
+			BB_proportional,BB_proportional_std,constant_offset,constant_offset_std,photon_dict = coleval.calc_BB_coefficients_multi_digitizer_stationary(params_BB,errparams_BB,laser_digitizer_ID,reference_background,reference_background_std,ref_temperature=ref_temperature,ref_temperature_std=ref_temperature_std,wavewlength_top=5,wavelength_bottom=2.5,inttime=laser_int_time/1000)
+			photon_flux_over_temperature_interpolator = photon_dict['photon_flux_over_temperature_interpolator']
+
+			laser_temperature,laser_temperature_std = coleval.count_to_temp_BB_multi_digitizer(temp_counts,params_BB,errparams_BB,laser_digitizer_ID,reference_background=temp_ref_counts,reference_background_std=temp_ref_counts_std,ref_temperature=ref_temperature,ref_temperature_std=ref_temperature_std,wavewlength_top=5,wavelength_bottom=2.5,inttime=laser_int_time/1000)
+			temp_counts_std = []
+			for i in range(len(digitizer_ID)):
+				temp_counts_std.append(coleval.estimate_counts_std(temp_counts[i]))
+
 			laser_temperature_no_dead_pixels = [coleval.replace_dead_pixels([data],flag)[0] for flag,data in zip(temp_bad_pixels_flag,laser_temperature)]
 			laser_temperature_std_no_dead_pixels = [coleval.replace_dead_pixels([data],flag)[0] for flag,data in zip(temp_bad_pixels_flag,laser_temperature_std)]
 			reference_background_temperature_no_dead_pixels = [coleval.replace_dead_pixels([[data]],flag)[0][0] for flag,data in zip(temp_bad_pixels_flag,reference_background_temperature)]
 			reference_background_temperature_std_no_dead_pixels = [coleval.replace_dead_pixels([[data]],flag)[0][0] for flag,data in zip(temp_bad_pixels_flag,reference_background_temperature_std)]
 			temp_counts_no_dead_pixels = [coleval.replace_dead_pixels([data],flag)[0] for flag,data in zip(temp_bad_pixels_flag,temp_counts)]
+			temp_counts_std_no_dead_pixels = [coleval.replace_dead_pixels([data],flag)[0] for flag,data in zip(temp_bad_pixels_flag,temp_counts_std)]
 			temp_ref_counts_no_dead_pixels = [coleval.replace_dead_pixels([[data]],flag)[0][0] for flag,data in zip(temp_bad_pixels_flag,temp_ref_counts)]
 			temp_ref_counts_std_no_dead_pixels = [coleval.replace_dead_pixels([[data]],flag)[0][0] for flag,data in zip(temp_bad_pixels_flag,temp_ref_counts_std)]
+			BB_proportional_no_dead_pixels = [coleval.replace_dead_pixels([[data]],flag)[0][0] for flag,data in zip(bad_pixels_flag,BB_proportional)]
+			BB_proportional_std_no_dead_pixels = [coleval.replace_dead_pixels([[data]],flag)[0][0] for flag,data in zip(bad_pixels_flag,BB_proportional_std)]
 
 			# for i in range(len(laser_digitizer_ID)):
 			# 	full_saved_file_dict['full_frame'][str(laser_digitizer_ID[i])]['laser_temperature_no_dead_pixels_minus_median'] = np.float16(laser_temperature_no_dead_pixels[i].T-np.median(laser_temperature_no_dead_pixels[i],axis=(-1,-2))).T
@@ -558,7 +586,7 @@ try:
 				full_saved_file_dict['full_frame']['time_full_mode'] = 'no time refinement required'
 			full_saved_file_dict['full_frame']['time_full'] = time_full
 			print('arrived up to here 1')
-			exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_pulse_process3.py").read())
+			exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_pulse_process3_BB.py").read())
 		else:
 			print('analysis halted to save memory')
 

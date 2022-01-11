@@ -74,8 +74,9 @@ irvb_cad = import_stl('IRVB_camera_no_backplate_'+str(pinhole_size)+'mm.stl', pa
 # generate_annulus_mesh_segments(x_point_lower, x_point_upper, 360, world, material=UniformVolumeEmitter(ConstantSF(power_density)))
 
 
-pinhole_centre = Point3D(1.491933, 0, -0.7198).transform(rotate_z(135-0.76004))
-pinhole_target = Sphere(pinhole_size*1e-3+0.001, transform=translate(*pinhole_centre), parent=world, material=NullMaterial())
+# pinhole_centre = Point3D(1.491933, 0, -0.7198).transform(rotate_z(135-0.76004))
+pinhole_centre = Point3D(-1.04076926,  1.06877069, -0.7198)
+pinhole_target = Sphere(pinhole_size*1e-3+0.001, transform=translate(*pinhole_centre), parent=world, material=NullMaterial())	# the first argument is the radious
 
 
 stand_off=0.045	# 0.045 / 0.060 / 0.075

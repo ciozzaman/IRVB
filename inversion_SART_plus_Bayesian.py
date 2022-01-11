@@ -118,7 +118,7 @@ all_shrink_factor_x = np.unique(all_shrink_factor_x)
 EFIT_path_default = '/common/uda-scratch/lkogan/efitpp_eshed'
 efit_reconstruction = coleval.mclass(EFIT_path_default+'/epm0'+laser_to_analyse[-9:-4]+'.nc',pulse_ID=laser_to_analyse[-9:-4])
 all_time_sep_r,all_time_sep_z,r_fine,z_fine = coleval.efit_reconstruction_to_separatrix_on_foil(efit_reconstruction)
-
+all_time_separatrix = coleval.return_all_time_separatrix(efit_reconstruction,all_time_sep_r,all_time_sep_z,r_fine,z_fine)
 
 
 inverted_dict = dict([])
@@ -556,9 +556,13 @@ for grid_resolution in [2]:
 			emissivity_steps = 5
 			thickness_steps = 9
 			rec_diffusivity_steps = 9
-			sigma_emissivity = 0.1
-			sigma_thickness = 0.15
-			sigma_rec_diffusivity = 0.1
+			# sigma_emissivity = 0.1
+			# sigma_thickness = 0.15
+			# sigma_rec_diffusivity = 0.1
+			sigma_emissivity = np.std(foilemissivity)/np.mean(foilemissivity)	# I use the varition on the japanese data as reference
+			sigma_thickness = np.std(foilthickness)/np.mean(foilthickness)
+			sigma_rec_diffusivity = 0	# this was not consodered as variable
+
 			emissivity = np.unique(saved_file_dict_short[binning_type].all()['foil_properties']['emissivity'])[0]
 			emissivity_array = np.linspace(1-sigma_emissivity*3,1,num=emissivity_steps)
 			emissivity_log_prob =  -(0.5*(((1-emissivity_array)/sigma_emissivity)**2))**1	# super gaussian order 1, probability assigned linearly
@@ -1085,6 +1089,7 @@ for grid_resolution in [2]:
 				grid_Z_derivate_masked_crop_scaled = grid_Z_derivate_masked_crop/((1e-2*grid_resolution)**1)
 				grid_R_derivate_masked_crop_scaled = grid_R_derivate_masked_crop/((1e-2*grid_resolution)**1)
 				reference_sigma_powernoback = np.nanmedian(sigma_powernoback_full)
+				not_selected_super_x_cells = np.logical_not(selected_super_x_cells)
 				regolarisation_coeff = 1e-3	# ok for np.median(sigma_powernoback_full)=78.18681
 				if grid_resolution==4:
 					regolarisation_coeff = 1e-3
@@ -1092,7 +1097,7 @@ for grid_resolution in [2]:
 					regolarisation_coeff = 5e-4
 				# regolarisation_coeff = 1e-5 / ((reference_sigma_powernoback/78.18681)**0.5)
 				if True:	# these are the settings that seem to work with regolarisation_coeff = 1e-5
-					sigma_emissivity = 1e5	# this is completely arbitrary
+					sigma_emissivity = 1e6	# this is completely arbitrary
 					# sigma_emissivity = 1e4 * ((np.median(sigma_powernoback_full)/78)**0.5)	# I think it must go hand in hand with the uncertanty in the pixels
 					regolarisation_coeff_edge = 10	# I raiset it artificially from 1e-3 to engage regolarisation_coeff_central_border_Z_derivate and regolarisation_coeff_central_column_border_R_derivate
 					regolarisation_coeff_central_border_Z_derivate = 1e-20
@@ -1178,6 +1183,11 @@ for grid_resolution in [2]:
 				score_x_all = []
 				score_y_all = []
 				Lcurve_curvature_all = []
+				regolarisation_coeff_range_all = []
+				plt.figure(10)
+				plt.title('L-curve evolution\nlight=early, dark=late')
+				plt.figure(11)
+				plt.title('L-curve curvature evolution\nlight=early, dark=late')
 				for i_t in range(len(time_full_binned_crop)):
 					time_start = tm.time()
 
@@ -1417,19 +1427,21 @@ for grid_resolution in [2]:
 					elif True:	# here I want to do the L-curve search
 						guess = np.ones(sensitivities_binned_crop.shape[1]+2)*1e3
 
-						regolarisation_coeff_range = 10**np.linspace(-2,-6,num=15)
+						regolarisation_coeff_range = 10**np.linspace(2,-4,num=40)
 						regolarisation_coeff_edge = 10
 						def prob_and_gradient(emissivity_plus,*args):
+							# time_start = tm.time()
+							emissivity_plus = emissivity_plus
 							powernoback = args[0]
 							sigma_powernoback = args[1]
-							sigma_powernoback_2 = sigma_powernoback**2
 							sigma_emissivity = args[2]
-							sigma_emissivity_2 = sigma_emissivity**2
 							regolarisation_coeff = args[3]
+							sigma_powernoback_2 = args[4]
+							sigma_emissivity_2 = args[5]
 							homogeneous_offset = emissivity_plus[-1]*homogeneous_scaling	# scaling added such that all variables have the same order of magnitude
 							homogeneous_offset_plasma = emissivity_plus[-2]*homogeneous_scaling	# scaling added such that all variables have the same order of magnitude
 							regolarisation_coeff_divertor = regolarisation_coeff/1
-							regolarisation_coeff_central_column_border_R_derivate = regolarisation_coeff*4e2
+							regolarisation_coeff_central_column_border_R_derivate = regolarisation_coeff*0
 							regolarisation_coeff_edge_laplacian = regolarisation_coeff*1e1
 							# print(homogeneous_offset,homogeneous_offset_plasma)
 							emissivity = emissivity_plus[:-2]
@@ -1438,41 +1450,60 @@ for grid_resolution in [2]:
 							foil_power_error = powernoback - foil_power_guess
 							emissivity_laplacian = np.dot(grid_laplacian_masked_crop_scaled,emissivity)
 							R_derivate = np.dot(grid_R_derivate_masked_crop_scaled,emissivity)
+							emissivity_laplacian_not_selected_super_x_cells = emissivity_laplacian*not_selected_super_x_cells
+							emissivity_laplacian_selected_super_x_cells = emissivity_laplacian*selected_super_x_cells
+							R_derivate_selected_central_column_border_cells = R_derivate*selected_central_column_border_cells
+							emissivity_laplacian_selected_edge_cells_for_laplacian = emissivity_laplacian*selected_edge_cells_for_laplacian
+							# print(tm.time()-time_start)
+							# time_start = tm.time()
 
 							likelihood_power_fit = np.sum((foil_power_error/sigma_powernoback)**2)
 							likelihood_emissivity_pos = np.sum((np.minimum(0.,emissivity)/sigma_emissivity)**2)
-							likelihood_emissivity_laplacian = (regolarisation_coeff**2)* np.sum(((emissivity_laplacian*np.logical_not(selected_super_x_cells) /sigma_emissivity)**2))
-							likelihood_emissivity_laplacian_superx = (regolarisation_coeff_divertor**2)* np.sum(((emissivity_laplacian*selected_super_x_cells /sigma_emissivity)**2))
-							likelihood_emissivity_edge_laplacian = (regolarisation_coeff_edge_laplacian**2)* np.sum(((emissivity_laplacian*selected_edge_cells_for_laplacian /sigma_emissivity)**2))
+							likelihood_emissivity_laplacian = (regolarisation_coeff**2)* np.sum(((emissivity_laplacian_not_selected_super_x_cells /sigma_emissivity)**2))
+							likelihood_emissivity_laplacian_superx = (regolarisation_coeff_divertor**2)* np.sum(((emissivity_laplacian_selected_super_x_cells /sigma_emissivity)**2))
+							likelihood_emissivity_edge_laplacian = (regolarisation_coeff_edge_laplacian**2)* np.sum(((emissivity_laplacian_selected_edge_cells_for_laplacian /sigma_emissivity)**2))
 							likelihood_emissivity_edge = (regolarisation_coeff_edge**2)*np.sum((emissivity*selected_edge_cells/sigma_emissivity)**2)
-							likelihood_emissivity_central_column_border_R_derivate = (regolarisation_coeff_central_column_border_R_derivate**2)* np.sum((R_derivate*selected_central_column_border_cells/sigma_emissivity)**2)
+							if regolarisation_coeff_central_column_border_R_derivate==0:
+								likelihood_emissivity_central_column_border_R_derivate = 0
+							else:
+								likelihood_emissivity_central_column_border_R_derivate = (regolarisation_coeff_central_column_border_R_derivate**2)* np.sum((R_derivate_selected_central_column_border_cells/sigma_emissivity)**2)
 							likelihood = likelihood_power_fit + likelihood_emissivity_pos + likelihood_emissivity_laplacian + likelihood_emissivity_edge + likelihood_emissivity_laplacian_superx + likelihood_emissivity_central_column_border_R_derivate + likelihood_emissivity_edge_laplacian
 							likelihood_homogeneous_offset = 0#(homogeneous_offset/reference_sigma_powernoback)**2
-							likelihood_homogeneous_offset_plasma = (homogeneous_offset_plasma/reference_sigma_powernoback)**2
+							likelihood_homogeneous_offset_plasma = 0#(homogeneous_offset_plasma/reference_sigma_powernoback)**2
 							likelihood = likelihood + likelihood_homogeneous_offset + likelihood_homogeneous_offset_plasma
+							# print(tm.time()-time_start)
+							# time_start = tm.time()
 
 							likelihood_power_fit_derivate = np.concatenate((-2*np.dot((foil_power_error/sigma_powernoback_2),sensitivities_binned_crop),[-2*np.sum(foil_power_error*select_foil_region_with_plasma/sigma_powernoback_2)*homogeneous_scaling,-2*np.sum(foil_power_error*selected_ROI_internal/sigma_powernoback_2)*homogeneous_scaling]))
 							likelihood_emissivity_pos_derivate = 2*(np.minimum(0.,emissivity)**2)/emissivity/sigma_emissivity_2
-							likelihood_emissivity_laplacian_derivate = 2*(regolarisation_coeff**2) * np.dot(emissivity_laplacian*np.logical_not(selected_super_x_cells) , grid_laplacian_masked_crop_scaled) / (sigma_emissivity**2)
-							likelihood_emissivity_laplacian_derivate_superx = 2*(regolarisation_coeff_divertor**2) * np.dot(emissivity_laplacian*selected_super_x_cells , grid_laplacian_masked_crop_scaled) / (sigma_emissivity**2)
-							likelihood_emissivity_edge_laplacian_derivate = 2*(regolarisation_coeff_edge_laplacian**2) * np.dot(emissivity_laplacian*selected_edge_cells_for_laplacian , grid_laplacian_masked_crop_scaled) / (sigma_emissivity**2)
+
+							# likelihood_emissivity_laplacian_derivate = 2*(regolarisation_coeff**2) * np.dot(emissivity_laplacian_not_selected_super_x_cells , grid_laplacian_masked_crop_scaled) / (sigma_emissivity**2)
+							# likelihood_emissivity_laplacian_derivate_superx = 2*(regolarisation_coeff_divertor**2) * np.dot(emissivity_laplacian_selected_super_x_cells , grid_laplacian_masked_crop_scaled) / (sigma_emissivity**2)
+							# likelihood_emissivity_edge_laplacian_derivate = 2*(regolarisation_coeff_edge_laplacian**2) * np.dot(emissivity_laplacian_selected_edge_cells_for_laplacian , grid_laplacian_masked_crop_scaled) / (sigma_emissivity**2)
+							likelihood_emissivity_laplacian_derivate_all = 2* np.dot( (regolarisation_coeff**2)*emissivity_laplacian_not_selected_super_x_cells + (regolarisation_coeff_edge_laplacian**2)*emissivity_laplacian_selected_edge_cells_for_laplacian + (regolarisation_coeff_edge_laplacian**2)*emissivity_laplacian_selected_edge_cells_for_laplacian , grid_laplacian_masked_crop_scaled) / (sigma_emissivity**2)
+
 							likelihood_emissivity_edge_derivate = 2*(regolarisation_coeff_edge**2)*emissivity*selected_edge_cells/sigma_emissivity_2
-							likelihood_emissivity_central_column_border_R_derivate_derivate = 2*(regolarisation_coeff_central_column_border_R_derivate**2)*np.dot(R_derivate*selected_central_column_border_cells,grid_R_derivate_masked_crop_scaled)/sigma_emissivity_2
-							likelihood_derivate = np.zeros_like(emissivity) + likelihood_emissivity_pos_derivate + likelihood_emissivity_laplacian_derivate + likelihood_emissivity_edge_derivate + likelihood_emissivity_laplacian_derivate_superx + likelihood_emissivity_central_column_border_R_derivate_derivate + likelihood_emissivity_edge_laplacian_derivate
+							if regolarisation_coeff_central_column_border_R_derivate==0:
+								likelihood_emissivity_central_column_border_R_derivate_derivate = 0
+							else:
+								likelihood_emissivity_central_column_border_R_derivate_derivate = 2*(regolarisation_coeff_central_column_border_R_derivate**2)*np.dot(R_derivate_selected_central_column_border_cells,grid_R_derivate_masked_crop_scaled)/sigma_emissivity_2
+							likelihood_derivate = np.zeros_like(emissivity) + likelihood_emissivity_pos_derivate + likelihood_emissivity_laplacian_derivate_all + likelihood_emissivity_edge_derivate + likelihood_emissivity_central_column_border_R_derivate_derivate
 							likelihood_homogeneous_offset_derivate = 0#2*homogeneous_offset*homogeneous_scaling/(reference_sigma_powernoback**2)
-							likelihood_homogeneous_offset_plasma_derivate = 2*homogeneous_offset_plasma*homogeneous_scaling/(reference_sigma_powernoback**2)
+							likelihood_homogeneous_offset_plasma_derivate = 0#2*homogeneous_offset_plasma*homogeneous_scaling/(reference_sigma_powernoback**2)
 							likelihood_derivate = np.concatenate((likelihood_derivate,[likelihood_homogeneous_offset_plasma_derivate,likelihood_homogeneous_offset_derivate])) + likelihood_power_fit_derivate
+							# print(tm.time()-time_start)
+							# time_start = tm.time()
 							return likelihood,likelihood_derivate
 
 						x_optimal_all = []
 						recompose_voxel_emissivity_all = []
 						for regolarisation_coeff in regolarisation_coeff_range:
-							print(regolarisation_coeff)
-							args = [powernoback.astype(float),sigma_powernoback,sigma_emissivity,regolarisation_coeff]
-							if time_full_binned_crop[i_t]<0.1:
-								x_optimal, y_opt, opt_info = scipy.optimize.fmin_l_bfgs_b(prob_and_gradient, x0=guess, args = (args), iprint=2, factr=1e3, pgtol=1e-5)#,m=1000, maxls=1000, pgtol=1e-10, factr=1e0)#,approx_grad = True)
+							print('regolarisation_coeff = '+str(regolarisation_coeff))
+							args = [powernoback,sigma_powernoback,sigma_emissivity,regolarisation_coeff,sigma_powernoback**2,sigma_emissivity**2]
+							if time_full_binned_crop[i_t]<0.05:
+								x_optimal, y_opt, opt_info = scipy.optimize.fmin_l_bfgs_b(prob_and_gradient, x0=guess, args = (args), iprint=2, factr=1e9, pgtol=5e-7)#,m=1000, maxls=1000, pgtol=1e-10, factr=1e0)#,approx_grad = True)
 							else:
-								x_optimal, y_opt, opt_info = scipy.optimize.fmin_l_bfgs_b(prob_and_gradient, x0=guess, args = (args), iprint=2, factr=1e3, pgtol=1e-5)#,m=1000, maxls=1000, pgtol=1e-10, factr=1e0)#,approx_grad = True)
+								x_optimal, y_opt, opt_info = scipy.optimize.fmin_l_bfgs_b(prob_and_gradient, x0=guess, args = (args), iprint=2, factr=1e9, pgtol=5e-7)#,m=1000, maxls=1000, pgtol=1e-10, factr=1e0)#,approx_grad = True)
 							x_optimal_all.append(x_optimal)
 							guess = x_optimal
 
@@ -1490,26 +1521,26 @@ for grid_resolution in [2]:
 							recompose_voxel_emissivity *= 4*np.pi	# this exist because the sensitivity matrix is built with 1W/str/m^3/ x nm emitters while I use 1W as reference, so I need to multiply the results by 4pi
 							recompose_voxel_emissivity_all.append(recompose_voxel_emissivity)
 
-temp_save = dict([])
-temp_save['grid_data_masked_crop'] = grid_data_masked_crop
-temp_save['powernoback_full_orig'] = powernoback_full_orig
-temp_save['sigma_powernoback_full'] = sigma_powernoback_full
-temp_save['time_full_binned_crop'] = time_full_binned_crop
-temp_save['sensitivities_binned_crop'] = sensitivities_binned_crop
-temp_save['selected_ROI_internal'] = selected_ROI_internal
-temp_save['select_foil_region_with_plasma'] = select_foil_region_with_plasma
-temp_save['grid_laplacian_masked_crop_scaled'] = grid_laplacian_masked_crop_scaled
-temp_save['grid_R_derivate_masked_crop_scaled'] = grid_R_derivate_masked_crop_scaled
-temp_save['regolarisation_coeff_edge'] = regolarisation_coeff_edge
-temp_save['selected_edge_cells'] = selected_edge_cells
-temp_save['regolarisation_coeff_central_column_border_R_derivate'] = regolarisation_coeff_central_column_border_R_derivate
-temp_save['selected_central_column_border_cells'] = selected_central_column_border_cells
-temp_save['selected_central_column_border_cells'] = selected_central_column_border_cells
-temp_save['selected_central_column_border_cells'] = selected_central_column_border_cells
-temp_save['selected_central_column_border_cells'] = selected_central_column_border_cells
-temp_save['selected_central_column_border_cells'] = selected_central_column_border_cells
-np.savez_compressed(laser_to_analyse[:-4]+'_inverted_baiesian_test_export',**temp_save)
-
+						if False:	# this is used to export the data and perform iterations outside of FREIA
+							temp_save = dict([])
+							temp_save['grid_data_masked_crop'] = grid_data_masked_crop
+							temp_save['powernoback_full_orig'] = powernoback_full_orig
+							temp_save['sigma_powernoback_full'] = sigma_powernoback_full
+							temp_save['time_full_binned_crop'] = time_full_binned_crop
+							temp_save['sensitivities_binned_crop'] = sensitivities_binned_crop
+							temp_save['selected_ROI_internal'] = selected_ROI_internal
+							temp_save['select_foil_region_with_plasma'] = select_foil_region_with_plasma
+							temp_save['grid_laplacian_masked_crop_scaled'] = grid_laplacian_masked_crop_scaled
+							temp_save['grid_R_derivate_masked_crop_scaled'] = grid_R_derivate_masked_crop_scaled
+							temp_save['regolarisation_coeff_edge'] = regolarisation_coeff_edge
+							temp_save['selected_edge_cells'] = selected_edge_cells
+							temp_save['regolarisation_coeff_central_column_border_R_derivate'] = regolarisation_coeff_central_column_border_R_derivate
+							temp_save['selected_central_column_border_cells'] = selected_central_column_border_cells
+							temp_save['selected_super_x_cells'] = selected_super_x_cells
+							temp_save['selected_edge_cells_for_laplacian'] = selected_edge_cells_for_laplacian
+							temp_save['not_selected_super_x_cells'] = not_selected_super_x_cells
+							temp_save['selected_central_column_border_cells'] = selected_central_column_border_cells
+							np.savez_compressed(laser_to_analyse[:-4]+'_inverted_baiesian_test_export',**temp_save)
 
 						regolarisation_coeff_range = np.flip(regolarisation_coeff_range,axis=0)
 						x_optimal_all = np.flip(x_optimal_all,axis=0)
@@ -1517,7 +1548,28 @@ np.savez_compressed(laser_to_analyse[:-4]+'_inverted_baiesian_test_export',**tem
 
 						score_x = np.sum(((np.dot(sensitivities_binned_crop,np.array(x_optimal_all)[:,:-2].T).T  + (np.array([selected_ROI_internal.tolist()]*len(x_optimal_all)).T*np.array(x_optimal_all)[:,-1]).T*homogeneous_scaling + (np.array([select_foil_region_with_plasma.tolist()]*len(x_optimal_all)).T*np.array(x_optimal_all)[:,-2]).T*homogeneous_scaling  - powernoback) ** 2) / (sigma_powernoback**2),axis=1)
 						score_y = np.sum(((np.dot(grid_laplacian_masked_crop_scaled,np.array(x_optimal_all)[:,:-2].T).T) ** 2) / (sigma_emissivity**2),axis=1)
+						score_x_all.append(score_x)
+						score_y_all.append(score_y)
+						regolarisation_coeff_range_all.append(regolarisation_coeff_range)
 
+						# I need to remove the cases where points are overlapped
+						points_removed = []
+						counter_score_x = collections.Counter(score_x)
+						counter_score_y = collections.Counter(score_y)
+						test = np.logical_and( [value in np.array(list(counter_score_x.items()))[:,0][np.array(list(counter_score_x.items()))[:,1]>1] for value in score_x] , [value in np.array(list(counter_score_y.items()))[:,0][np.array(list(counter_score_y.items()))[:,1]>1] for value in score_y] )
+						while np.sum(test)>0:
+							i__ = test.argmax()
+							print(i__)
+							regolarisation_coeff_range = np.concatenate([regolarisation_coeff_range[:i__],regolarisation_coeff_range[i__+1:]])
+							x_optimal_all = np.concatenate([x_optimal_all[:i__],x_optimal_all[i__+1:]])
+							recompose_voxel_emissivity_all = np.concatenate([recompose_voxel_emissivity_all[:i__],recompose_voxel_emissivity_all[i__+1:]])
+							score_x = np.concatenate([score_x[:i__],score_x[i__+1:]])
+							score_y = np.concatenate([score_y[:i__],score_y[i__+1:]])
+							counter_score_x = collections.Counter(score_x)
+							counter_score_y = collections.Counter(score_y)
+							test = np.logical_and( [value in np.array(list(counter_score_x.items()))[:,0][np.array(list(counter_score_x.items()))[:,1]>1] for value in score_x] , [value in np.array(list(counter_score_y.items()))[:,0][np.array(list(counter_score_y.items()))[:,1]>1] for value in score_y] )
+							points_removed.append(i__)
+						points_removed = np.flip(points_removed,axis=0)
 						# plt.figure()
 						# plt.plot(score_x,score_y)
 						# plt.plot(score_x,score_y,'+')
@@ -1533,6 +1585,11 @@ np.savez_compressed(laser_to_analyse[:-4]+'_inverted_baiesian_test_export',**tem
 						score_y_record_rel = (score_y-score_y.min())/(score_y.max()-score_y.min())
 						score_x_record_rel = (score_x-score_x.min())/(score_x.max()-score_x.min())
 
+						# if I use a fine regularisation range I need to fit the curvature over more points. this takes care of that.
+						# curvature_range was originally = 2
+						curvature_range = max(1,int(np.ceil(np.abs(-1.8/np.median(np.diff(np.log10(regolarisation_coeff_range)))-1)/2)))
+						print('curvature_range = '+str(curvature_range))
+
 
 						# plt.figure()
 						# plt.plot(regolarisation_coeff_range,score_x_record_rel,label='fit error')
@@ -1540,6 +1597,15 @@ np.savez_compressed(laser_to_analyse[:-4]+'_inverted_baiesian_test_export',**tem
 						# plt.legend()
 						# plt.semilogx()
 						# plt.pause(0.01)
+						#
+						# plt.figure()
+						# plt.plot(score_x,score_y)
+						# plt.plot(score_x,score_y,'+')
+						# plt.xlabel('log ||Gm-d||2')
+						# plt.ylabel('log ||Laplacian(m)||2')
+						# plt.grid()
+						# plt.pause(0.01)
+
 
 						def distance_spread(coord):
 							def int(trash,px,py):
@@ -1551,18 +1617,39 @@ np.savez_compressed(laser_to_analyse[:-4]+'_inverted_baiesian_test_export',**tem
 								return [spread]*5
 							return int
 
+						def distance_spread_and_gradient(coord):
+							def int(arg):
+								x = coord[0]
+								y = coord[1]
+								px = arg[0]
+								py = arg[1]
+								dist = ((x-px)**2 + (y-py)**2)**0.5
+								spread = np.sum((dist-np.mean(dist))**2)
+								temp = (((x-px)**2 + (y-py)**2)**-0.5)
+								derivate = np.array([np.sum(2*(dist-np.mean(dist))*( -0.5*temp*2*(x-px) - np.mean(-0.5*temp*2*(x-px)) )) , np.sum(2*(dist-np.mean(dist))*( -0.5*temp*2*(y-py) - np.mean(-0.5*temp*2*(y-py)) ))])
+								return spread,derivate
+							return int
+
 						# plt.figure()
 						# plt.plot(score_x_record_rel,score_y_record_rel)
 						curvature_radious = []
-						for ii in range(2,len(score_y_record_rel)-2):
+						for ii in range(curvature_range,len(score_y_record_rel)-curvature_range):
 							# try:
 							# 	guess = centre[0]
 							# except:
+							print(ii)
 							try:
-								guess = np.max([score_y_record_rel[ii-2:ii+2+1],score_x_record_rel[ii-2:ii+2+1]],axis=1)
-								bds = [[np.min(score_y_record_rel[ii-2:ii+2+1]),np.min(score_x_record_rel[ii-2:ii+2+1])],[np.inf,np.inf]]
-								centre = curve_fit(distance_spread([score_x_record_rel[ii-2:ii+2+1],score_y_record_rel[ii-2:ii+2+1]]),[0]*5,[0]*5,p0=guess,bounds = bds,maxfev=1e5,gtol=1e-12,verbose=1)
-								dist = ((score_x_record_rel[ii-2:ii+2+1]-centre[0][0])**2 + (score_y_record_rel[ii-2:ii+2+1]-centre[0][1])**2)**0.5
+								guess = np.max([score_y_record_rel[ii-curvature_range:ii+curvature_range+1]*10,score_x_record_rel[ii-curvature_range:ii+curvature_range+1]*10],axis=1)
+
+								# bds = [[np.min(score_y_record_rel[ii-2:ii+2+1]),np.min(score_x_record_rel[ii-2:ii+2+1])],[np.inf,np.inf]]
+								# centre = curve_fit(distance_spread_and_gradient([score_x_record_rel[ii-2:ii+2+1],score_y_record_rel[ii-2:ii+2+1]]),[0]*5,[0]*5,p0=guess,bounds = bds,maxfev=1e5,gtol=1e-12,verbose=1)
+
+								# bds = [[np.min(score_y_record_rel[ii-curvature_range:ii+curvature_range+1]),np.inf],[np.min(score_x_record_rel[ii-curvature_range:ii+curvature_range+1]),np.inf]]
+								bds = [[score_y_record_rel[ii],np.inf],[score_x_record_rel[ii],np.inf]]
+								centre, y_opt, opt_info = scipy.optimize.fmin_l_bfgs_b(distance_spread_and_gradient([score_x_record_rel[ii-curvature_range:ii+curvature_range+1],score_y_record_rel[ii-curvature_range:ii+curvature_range+1]]), x0=guess, bounds = bds, iprint=0, factr=1e8, pgtol=1e-8)#,m=1000, maxls=1000, pgtol=1e-10, factr=1e0)#,approx_grad = True)
+								centre = [centre]
+
+								dist = ((score_x_record_rel[ii-curvature_range:ii+curvature_range+1]-centre[0][0])**2 + (score_y_record_rel[ii-curvature_range:ii+curvature_range+1]-centre[0][1])**2)**0.5
 								radious = np.mean(dist)
 								# plt.plot(score_x_record_rel[ii-2:ii+2+1],score_y_record_rel[ii-2:ii+2+1],'+')
 								# # plt.plot(centre[0][0],centre[0][1],'o')
@@ -1574,18 +1661,35 @@ np.savez_compressed(laser_to_analyse[:-4]+'_inverted_baiesian_test_export',**tem
 							except:
 								radious = np.inf
 							curvature_radious.append(radious)
-						curvature_radious = [np.max(curvature_radious)]+curvature_radious+[np.max(curvature_radious)]
+						# curvature_radious = [np.max(curvature_radious)]+curvature_radious+[np.max(curvature_radious)]
 						Lcurve_curvature = 1/np.array(curvature_radious)
 
-						recompose_voxel_emissivity = recompose_voxel_emissivity_all[Lcurve_curvature.argmax()+1]
-						regolarisation_coeff = regolarisation_coeff_range[Lcurve_curvature.argmax()+1]
-						x_optimal = x_optimal_all[Lcurve_curvature.argmax()+1]
+						recompose_voxel_emissivity = recompose_voxel_emissivity_all[Lcurve_curvature.argmax()+curvature_range]
+						regolarisation_coeff = regolarisation_coeff_range[Lcurve_curvature.argmax()+curvature_range]
+						x_optimal = x_optimal_all[Lcurve_curvature.argmax()+curvature_range]
+
+						plt.figure(10)
+						plt.plot(score_x,score_y,color=str(0.9-i_t/(len(time_full_binned_crop)/0.9)))
+						plt.plot(score_x,score_y,'+',color=str(0.9-i_t/(len(time_full_binned_crop)/0.9)))
+						plt.plot(score_x[curvature_range:-curvature_range][Lcurve_curvature.argmax()],score_y[curvature_range:-curvature_range][Lcurve_curvature.argmax()],'o',color=str(0.9-i_t/(len(time_full_binned_crop)/0.9)))
+						plt.xlabel('log ||Gm-d||2')
+						plt.ylabel('log ||Laplacian(m)||2')
+						plt.savefig(path_power_output + '/'+ str(shot_number)+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_L_curve_evolution.eps')
+						plt.figure(11)
+						plt.plot(regolarisation_coeff_range[curvature_range:-curvature_range],Lcurve_curvature,color=str(0.9-i_t/(len(time_full_binned_crop)/0.9)))
+						plt.plot(regolarisation_coeff_range[curvature_range:-curvature_range][Lcurve_curvature.argmax()],Lcurve_curvature[Lcurve_curvature.argmax()],'o',color=str(0.9-i_t/(len(time_full_binned_crop)/0.9)))
+						plt.semilogx()
+						plt.xlabel('regularisation coeff')
+						plt.ylabel('L-curve turvature')
+						plt.savefig(path_power_output + '/'+ str(shot_number)+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_L_curve_curvature_evolution.eps')
 
 						if False:	# only visualisation
 							plt.figure()
-							plt.plot(regolarisation_coeff_range[1:-1],Lcurve_curvature)
-							plt.plot(regolarisation_coeff_range[1:-1],Lcurve_curvature,'+')
-							plt.plot(regolarisation_coeff_range[1:-1][Lcurve_curvature.argmax()],Lcurve_curvature[Lcurve_curvature.argmax()],'o')
+							plt.plot(regolarisation_coeff_range[curvature_range:-curvature_range],Lcurve_curvature)
+							plt.plot(regolarisation_coeff_range[curvature_range:-curvature_range],Lcurve_curvature,'+')
+							plt.plot(regolarisation_coeff_range[curvature_range:-curvature_range][Lcurve_curvature.argmax()],Lcurve_curvature[Lcurve_curvature.argmax()],'o')
+							plt.xlabel('regularisation coeff')
+							plt.ylabel('L-curve turvature')
 							plt.semilogx()
 							plt.pause(0.01)
 
@@ -1595,7 +1699,7 @@ np.savez_compressed(laser_to_analyse[:-4]+'_inverted_baiesian_test_export',**tem
 							plt.xlabel('log ||Gm-d||2')
 							plt.ylabel('log ||Laplacian(m)||2')
 							plt.grid()
-							plt.plot(score_x_record_rel[1:-1][Lcurve_curvature.argmax()],score_y_record_rel[1:-1][Lcurve_curvature.argmax()],'o')
+							plt.plot(score_x_record_rel[curvature_range:-curvature_range][Lcurve_curvature.argmax()],score_y_record_rel[curvature_range:-curvature_range][Lcurve_curvature.argmax()],'o')
 							plt.pause(0.01)
 
 
@@ -1626,6 +1730,91 @@ np.savez_compressed(laser_to_analyse[:-4]+'_inverted_baiesian_test_export',**tem
 							# plt.savefig(path_power_output + '/'+ str(shot_number)+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_example19.eps')
 							plt.pause(0.01)
 
+
+							# piece of code to plot the traces on the foil of the MASTU geometry and separatrix with changing pinhole location and standoff
+							fig = plt.figure()
+							ax = fig.add_subplot(111)
+							ax.set_aspect('equal')
+							i_time = np.abs(efit_reconstruction.time-0.3).argmin()
+							pinhole_offset = np.array([-0.0198,-0.0198])	# toroidal direction parallel to the place surface, z
+							# pinhole_offset_extra = np.array([+0.012/(2**0.5),-0.012/(2**0.5)])
+							pinhole_offset_extra = np.array([0,0])
+							stand_off_length = 0.075	# m
+							# Rf=1.54967	# m	radius of the centre of the foil
+							Rf=1.48967 + 0.01 + 0.003 + 0.002 + stand_off_length	# m	radius of the centre of the foil
+							plane_equation = np.array([1,-1,0,2**0.5 * Rf])	# plane of the foil
+							centre_of_foil = np.array([-Rf/(2**0.5), Rf/(2**0.5), -0.7])	# x,y,z
+							pinhole_offset += pinhole_offset_extra
+							pinhole_location = coleval.locate_pinhole(pinhole_offset=pinhole_offset)
+							all_time_separatrix = coleval.return_all_time_separatrix(efit_reconstruction,all_time_sep_r,all_time_sep_z,r_fine,z_fine,plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil)
+							all_time_x_point_location = coleval.return_all_time_x_point_location(efit_reconstruction,plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil)
+							all_time_strike_points_location,all_time_strike_points_location_rot = coleval.return_all_time_strike_points_location(efit_reconstruction,all_time_sep_r,all_time_sep_z,r_fine,z_fine,plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil)
+							fueling_point_location_on_foil = coleval.return_fueling_point_location_on_foil(plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil)
+							structure_point_location_on_foil = coleval.return_structure_point_location_on_foil(plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil)
+							all_time_mag_axis_location = coleval.return_all_time_mag_axis_location(efit_reconstruction,plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil)
+							cv0 = np.zeros((61,78)).T
+							foil_size = [0.07,0.09]
+							structure_alpha=0.5
+							for i in range(len(fueling_point_location_on_foil)):
+								plt.plot(np.array(fueling_point_location_on_foil[i][:,0])*(np.shape(cv0)[1]-1)/foil_size[0],np.array(fueling_point_location_on_foil[i][:,1])*(np.shape(cv0)[0]-1)/foil_size[1],'+k',markersize=40,alpha=structure_alpha)
+								plt.plot(np.array(fueling_point_location_on_foil[i][:,0])*(np.shape(cv0)[1]-1)/foil_size[0],np.array(fueling_point_location_on_foil[i][:,1])*(np.shape(cv0)[0]-1)/foil_size[1],'ok',markersize=5,alpha=structure_alpha)
+							for i in range(len(structure_point_location_on_foil)):
+								plt.plot(np.array(structure_point_location_on_foil[i][:,0])*(np.shape(cv0)[1]-1)/foil_size[0],np.array(structure_point_location_on_foil[i][:,1])*(np.shape(cv0)[0]-1)/foil_size[1],'--k',alpha=structure_alpha)
+							plt.plot(all_time_x_point_location[i_time][:,0]*(np.shape(cv0)[1]-1)/foil_size[0],all_time_x_point_location[i_time][:,1]*(np.shape(cv0)[0]-1)/foil_size[1],'-r')
+							plt.plot(all_time_mag_axis_location[i_time][:,0]*(np.shape(cv0)[1]-1)/foil_size[0],all_time_mag_axis_location[i_time][:,1]*(np.shape(cv0)[0]-1)/foil_size[1],'--r')
+							for __i in range(len(all_time_strike_points_location_rot[i_time])):
+								plt.plot(all_time_strike_points_location_rot[i_time][__i][:,0]*(np.shape(cv0)[1]-1)/foil_size[0],all_time_strike_points_location_rot[i_time][__i][:,1]*(np.shape(cv0)[0]-1)/foil_size[1],'-r')
+							for __i in range(len(all_time_separatrix[i_time])):
+								plt.plot(all_time_separatrix[i_time][__i][:,0]*(np.shape(cv0)[1]-1)/foil_size[0],all_time_separatrix[i_time][__i][:,1]*(np.shape(cv0)[0]-1)/foil_size[1],'--b')
+							plt.axhline(y=0,color='k'),plt.axhline(y=np.shape(cv0)[0],color='k'),plt.axvline(x=0,color='k'),plt.axvline(x=np.shape(cv0)[1],color='k')
+							plt.title('pinhole additional position [%.3g,%.3g]' %(pinhole_offset_extra[0]*1e3,pinhole_offset_extra[1]*1e3)+'mm\nstand off '+str(stand_off_length*1e3)+'mm')
+							plt.pause(0.01)
+
+							pinhole_offset = np.array([-0.0198,-0.0198])	# toroidal direction parallel to the place surface, z
+							pinhole_offset_extra_2 = np.array([-0.012/(2**0.5),+0.012/(2**0.5)])
+							# pinhole_offset_extra = np.array([0,0])
+							stand_off_length = 0.045	# m
+							# Rf=1.54967	# m	radius of the centre of the foil
+							Rf=1.48967 + 0.01 + 0.003 + 0.002 + stand_off_length	# m	radius of the centre of the foil
+							plane_equation = np.array([1,-1,0,2**0.5 * Rf])	# plane of the foil
+							centre_of_foil = np.array([-Rf/(2**0.5), Rf/(2**0.5), -0.7])	# x,y,z
+							pinhole_offset += pinhole_offset_extra_2
+							pinhole_location = coleval.locate_pinhole(pinhole_offset=pinhole_offset)
+							all_time_separatrix = coleval.return_all_time_separatrix(efit_reconstruction,all_time_sep_r,all_time_sep_z,r_fine,z_fine,plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil)
+							all_time_x_point_location = coleval.return_all_time_x_point_location(efit_reconstruction,plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil)
+							all_time_strike_points_location,all_time_strike_points_location_rot = coleval.return_all_time_strike_points_location(efit_reconstruction,all_time_sep_r,all_time_sep_z,r_fine,z_fine,plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil)
+							fueling_point_location_on_foil = coleval.return_fueling_point_location_on_foil(plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil)
+							structure_point_location_on_foil = coleval.return_structure_point_location_on_foil(plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil)
+							all_time_mag_axis_location = coleval.return_all_time_mag_axis_location(efit_reconstruction,plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil)
+							cv0 = np.zeros((61,78)).T
+							foil_size = [0.07,0.09]
+							structure_alpha=0.5
+							for i in range(len(fueling_point_location_on_foil)):
+								plt.plot(np.array(fueling_point_location_on_foil[i][:,0])*(np.shape(cv0)[1]-1)/foil_size[0],np.array(fueling_point_location_on_foil[i][:,1])*(np.shape(cv0)[0]-1)/foil_size[1],'+y',markersize=40,alpha=structure_alpha)
+								plt.plot(np.array(fueling_point_location_on_foil[i][:,0])*(np.shape(cv0)[1]-1)/foil_size[0],np.array(fueling_point_location_on_foil[i][:,1])*(np.shape(cv0)[0]-1)/foil_size[1],'oy',markersize=5,alpha=structure_alpha)
+							for i in range(len(structure_point_location_on_foil)):
+								plt.plot(np.array(structure_point_location_on_foil[i][:,0])*(np.shape(cv0)[1]-1)/foil_size[0],np.array(structure_point_location_on_foil[i][:,1])*(np.shape(cv0)[0]-1)/foil_size[1],'--y',alpha=structure_alpha)
+							plt.plot(all_time_x_point_location[i_time][:,0]*(np.shape(cv0)[1]-1)/foil_size[0],all_time_x_point_location[i_time][:,1]*(np.shape(cv0)[0]-1)/foil_size[1],'-r')
+							plt.plot(all_time_mag_axis_location[i_time][:,0]*(np.shape(cv0)[1]-1)/foil_size[0],all_time_mag_axis_location[i_time][:,1]*(np.shape(cv0)[0]-1)/foil_size[1],'--r')
+							for __i in range(len(all_time_strike_points_location_rot[i_time])):
+								plt.plot(all_time_strike_points_location_rot[i_time][__i][:,0]*(np.shape(cv0)[1]-1)/foil_size[0],all_time_strike_points_location_rot[i_time][__i][:,1]*(np.shape(cv0)[0]-1)/foil_size[1],'-r')
+							for __i in range(len(all_time_separatrix[i_time])):
+								plt.plot(all_time_separatrix[i_time][__i][:,0]*(np.shape(cv0)[1]-1)/foil_size[0],all_time_separatrix[i_time][__i][:,1]*(np.shape(cv0)[0]-1)/foil_size[1],'--b')
+							plt.axhline(y=0,color='y'),plt.axhline(y=np.shape(cv0)[0],color='y'),plt.axvline(x=0,color='y'),plt.axvline(x=np.shape(cv0)[1],color='y')
+							plt.title('pinhole additional position [%.3g,%.3g]' %(pinhole_offset_extra[0]*1e3,pinhole_offset_extra[1]*1e3)+'mm\n [%.3g,%.3g]' %(pinhole_offset_extra_2[0]*1e3,pinhole_offset_extra_2[1]*1e3)+'\nstand off '+str(stand_off_length*1e3)+'mm')
+							plt.pause(0.01)
+
+
+
+
+
+
+
+
+
+						else:
+							pass
+
 						# if opt_info['warnflag']>0:
 						# 	print('incomplete fit so restarted')
 						# 	x_optimal, y_opt, opt_info = scipy.optimize.fmin_l_bfgs_b(prob_and_gradient, x0=x_optimal, args = (powernoback), disp=1, factr=1e0, pgtol=1e-7)#,m=1000, maxls=1000, pgtol=1e-10, factr=1e0)#,approx_grad = True)
@@ -1641,13 +1830,24 @@ np.savez_compressed(laser_to_analyse[:-4]+'_inverted_baiesian_test_export',**tem
 
 					if False:	# only for testinf the prob_and_gradient function
 						target = 832
-						scale = 1e-4
+						scale = 1e-3
 						# guess[target] = 1e5
 						temp1 = prob_and_gradient(guess,*args)
 						guess[target] +=scale
 						temp2 = prob_and_gradient(guess,*args)
 						guess[target] += -2*scale
 						temp3 = prob_and_gradient(guess,*args)
+						guess[target] += scale
+						print('calculated derivated of %.7g vs true of %.7g' %(temp1[1][target],((temp2[0]-temp3[0])/(2*scale))))
+
+						target = 1
+						scale = 1e-3
+						# guess[target] = 1e5
+						temp1 = distance_spread_and_gradient([score_x_record_rel[ii-2:ii+2+1],score_y_record_rel[ii-2:ii+2+1]])(guess)
+						guess[target] +=scale
+						temp2 = distance_spread_and_gradient([score_x_record_rel[ii-2:ii+2+1],score_y_record_rel[ii-2:ii+2+1]])(guess)
+						guess[target] += -2*scale
+						temp3 = distance_spread_and_gradient([score_x_record_rel[ii-2:ii+2+1],score_y_record_rel[ii-2:ii+2+1]])(guess)
 						guess[target] += scale
 						print('calculated derivated of %.7g vs true of %.7g' %(temp1[1][target],((temp2[0]-temp3[0])/(2*scale))))
 
@@ -1669,6 +1869,9 @@ np.savez_compressed(laser_to_analyse[:-4]+'_inverted_baiesian_test_export',**tem
 									recompose_voxel_emissivity[i_r,i_z] = x_optimal[index]
 									# recompose_voxel_emissivity[i_r,i_z] = likelihood_emissivity_laplacian[index]
 						recompose_voxel_emissivity *= 4*np.pi	# this exist because the sensitivity matrix is built with 1W/str/m^3/ x nm emitters while I use 1W as reference, so I need to multiply the results by 4pi
+
+					else:
+						pass
 
 					temp = np.abs(efit_reconstruction.time-time_full_binned_crop[i_t]).argmin()
 					xpoint_r = efit_reconstruction.lower_xpoint_r[temp]
@@ -1739,6 +1942,13 @@ np.savez_compressed(laser_to_analyse[:-4]+'_inverted_baiesian_test_export',**tem
 						plt.pause(0.01)
 
 						plt.figure()
+						plt.imshow(sigma_powernoback_full[i_t])
+						plt.colorbar().set_label('power [W/m2]')
+						plt.title('starting t=%.4gms' %(time_full_binned_crop[i_t]*1e3))
+						# plt.savefig(path_power_output + '/'+ str(shot_number)+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_example0.eps')
+						plt.pause(0.01)
+
+						plt.figure()
 						# plt.scatter(np.mean(grid_data_masked_crop,axis=1)[:,0],np.mean(grid_data_masked_crop,axis=1)[:,1],c=likelihood_emissivity_central_border_Z_derivate,marker='s')
 						plt.scatter(np.mean(grid_data_masked_crop,axis=1)[:,0],np.mean(grid_data_masked_crop,axis=1)[:,1],c=x_optimal,marker='s')
 						plt.colorbar()
@@ -1771,6 +1981,8 @@ np.savez_compressed(laser_to_analyse[:-4]+'_inverted_baiesian_test_export',**tem
 
 						boh = Foo()
 						boh.brightness
+					else:
+						pass
 
 
 					inverted_data.append(recompose_voxel_emissivity)
@@ -1789,9 +2001,18 @@ np.savez_compressed(laser_to_analyse[:-4]+'_inverted_baiesian_test_export',**tem
 					core_tot_rad_power_all.append(core_tot_rad_power)
 					x_point_tot_rad_power_all.append(x_point_tot_rad_power)
 					time_per_iteration.append(tm.time()-time_start)
-					score_x_all.append(score_x)
-					score_y_all.append(score_y)
+					for value in points_removed:
+						Lcurve_curvature = np.concatenate([Lcurve_curvature[:value],[np.nan],Lcurve_curvature[value:]])
 					Lcurve_curvature_all.append(Lcurve_curvature)
+
+				plt.figure(10)
+				plt.grid()
+				plt.savefig(path_power_output + '/'+ str(shot_number)+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_L_curve_evolution.eps')
+				plt.close()
+				plt.figure(11)
+				plt.grid()
+				plt.savefig(path_power_output + '/'+ str(shot_number)+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_L_curve_curvature_evolution.eps')
+				plt.close()
 
 				inverted_data = np.array(inverted_data)
 				inverted_data_likelihood = -np.array(inverted_data_likelihood)
@@ -1810,6 +2031,7 @@ np.savez_compressed(laser_to_analyse[:-4]+'_inverted_baiesian_test_export',**tem
 				foil_power_residuals = np.array(foil_power_residuals)
 				score_x_all = np.array(score_x_all)
 				score_y_all = np.array(score_y_all)
+				regolarisation_coeff_range_all = np.array(regolarisation_coeff_range_all)
 				Lcurve_curvature_all = np.array(Lcurve_curvature_all)
 
 				path_for_plots = path_power_output + '/invertions_log/'+binning_type
@@ -1819,7 +2041,7 @@ np.savez_compressed(laser_to_analyse[:-4]+'_inverted_baiesian_test_export',**tem
 
 
 				plt.figure(figsize=(20, 10))
-				plt.plot(time_full_binned_crop,time_per_iteration)
+				plt.plot(time_full_binned_crop[:len(time_per_iteration)],time_per_iteration)
 				# plt.semilogy()
 				plt.title('time spent per iteration')
 				plt.xlabel('time [s]')
@@ -1829,7 +2051,7 @@ np.savez_compressed(laser_to_analyse[:-4]+'_inverted_baiesian_test_export',**tem
 				plt.close()
 
 				plt.figure(figsize=(20, 10))
-				plt.plot(time_full_binned_crop,inverted_data_likelihood)
+				plt.plot(time_full_binned_crop[:len(inverted_data_likelihood)],inverted_data_likelihood)
 				# plt.semilogy()
 				plt.title('Fit log likelihood')
 				plt.xlabel('time [s]')
@@ -1839,7 +2061,7 @@ np.savez_compressed(laser_to_analyse[:-4]+'_inverted_baiesian_test_export',**tem
 				plt.close()
 
 				plt.figure(figsize=(20, 10))
-				plt.plot(time_full_binned_crop,chi_square_all)
+				plt.plot(time_full_binned_crop[:len(chi_square_all)],chi_square_all)
 				# plt.plot(time_full_binned_crop,np.ones_like(time_full_binned_crop)*target_chi_square,'--k')
 				# plt.semilogy()
 				if False:
@@ -1853,7 +2075,7 @@ np.savez_compressed(laser_to_analyse[:-4]+'_inverted_baiesian_test_export',**tem
 				plt.close()
 
 				plt.figure(figsize=(20, 10))
-				plt.plot(time_full_binned_crop,regolarisation_coeff_all)
+				plt.plot(time_full_binned_crop[:len(regolarisation_coeff_all)],regolarisation_coeff_all)
 				# plt.semilogy()
 				plt.title('regolarisation coefficient obtained')
 				plt.semilogy()
@@ -1864,7 +2086,7 @@ np.savez_compressed(laser_to_analyse[:-4]+'_inverted_baiesian_test_export',**tem
 				plt.close()
 
 				plt.figure(figsize=(20, 10))
-				plt.plot(time_full_binned_crop,fit_error)
+				plt.plot(time_full_binned_crop[:len(fit_error)],fit_error)
 				# plt.semilogy()
 				plt.title('Fit error ( sum((image-fit)^2)^0.5/num pixels )')
 				plt.xlabel('time [s]')
@@ -1874,8 +2096,8 @@ np.savez_compressed(laser_to_analyse[:-4]+'_inverted_baiesian_test_export',**tem
 				plt.close()
 
 				plt.figure(figsize=(20, 10))
-				plt.plot(time_full_binned_crop,inverted_data_plasma_region_offset,label='plasma region')
-				plt.plot(time_full_binned_crop,inverted_data_homogeneous_offset,label='whole foil')
+				plt.plot(time_full_binned_crop[:len(inverted_data_plasma_region_offset)],inverted_data_plasma_region_offset,label='plasma region')
+				plt.plot(time_full_binned_crop[:len(inverted_data_homogeneous_offset)],inverted_data_homogeneous_offset,label='whole foil')
 				plt.title('Offsets to match foil power')
 				plt.legend(loc='best', fontsize='x-small')
 				plt.xlabel('time [s]')
@@ -1885,11 +2107,11 @@ np.savez_compressed(laser_to_analyse[:-4]+'_inverted_baiesian_test_export',**tem
 				plt.close()
 
 				plt.figure(figsize=(20, 10))
-				plt.plot(time_full_binned_crop,outer_leg_tot_rad_power_all/1e3,label='outer_leg')
-				plt.plot(time_full_binned_crop,inner_leg_tot_rad_power_all/1e3,label='inner_leg')
-				plt.plot(time_full_binned_crop,core_tot_rad_power_all/1e3,label='core')
-				plt.plot(time_full_binned_crop,x_point_tot_rad_power_all/1e3,label='x_point')
-				plt.plot(time_full_binned_crop,outer_leg_tot_rad_power_all/1e3+inner_leg_tot_rad_power_all/1e3+core_tot_rad_power_all/1e3,label='tot')
+				plt.plot(time_full_binned_crop[:len(outer_leg_tot_rad_power_all)],outer_leg_tot_rad_power_all/1e3,label='outer_leg')
+				plt.plot(time_full_binned_crop[:len(inner_leg_tot_rad_power_all)],inner_leg_tot_rad_power_all/1e3,label='inner_leg')
+				plt.plot(time_full_binned_crop[:len(core_tot_rad_power_all)],core_tot_rad_power_all/1e3,label='core')
+				plt.plot(time_full_binned_crop[:len(x_point_tot_rad_power_all)],x_point_tot_rad_power_all/1e3,label='x_point')
+				plt.plot(time_full_binned_crop[:len(outer_leg_tot_rad_power_all)],outer_leg_tot_rad_power_all/1e3+inner_leg_tot_rad_power_all/1e3+core_tot_rad_power_all/1e3,label='tot')
 				plt.title('radiated power in the lower half of the machine')
 				plt.legend(loc='best', fontsize='x-small')
 				plt.xlabel('time [s]')
@@ -1906,7 +2128,7 @@ np.savez_compressed(laser_to_analyse[:-4]+'_inverted_baiesian_test_export',**tem
 				plt.close()
 
 				plt.figure()
-				plt.imshow(Lcurve_curvature_all,'rainbow',origin='lower')
+				plt.imshow(Lcurve_curvature_all,'rainbow',origin='lower',norm=LogNorm())
 				plt.colorbar()
 				plt.savefig(path_power_output + '/'+ str(shot_number)+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_L_curve_bayesian.eps')
 				plt.close()
@@ -1921,6 +2143,10 @@ np.savez_compressed(laser_to_analyse[:-4]+'_inverted_baiesian_test_export',**tem
 			inverted_dict[str(grid_resolution)][str(shrink_factor_x)][str(shrink_factor_t)]['fitted_foil_power'] = fitted_foil_power
 			inverted_dict[str(grid_resolution)][str(shrink_factor_x)][str(shrink_factor_t)]['foil_power'] = foil_power
 			inverted_dict[str(grid_resolution)][str(shrink_factor_x)][str(shrink_factor_t)]['foil_power_residuals'] = foil_power_residuals
+			inverted_dict[str(grid_resolution)][str(shrink_factor_x)][str(shrink_factor_t)]['score_x_all'] = score_x_all
+			inverted_dict[str(grid_resolution)][str(shrink_factor_x)][str(shrink_factor_t)]['score_y_all'] = score_y_all
+			inverted_dict[str(grid_resolution)][str(shrink_factor_x)][str(shrink_factor_t)]['regolarisation_coeff_range_all'] = regolarisation_coeff_range_all
+			inverted_dict[str(grid_resolution)][str(shrink_factor_x)][str(shrink_factor_t)]['Lcurve_curvature_all'] = Lcurve_curvature_all
 			inverted_dict[str(grid_resolution)][str(shrink_factor_x)][str(shrink_factor_t)]['fit_error'] = fit_error
 			inverted_dict[str(grid_resolution)][str(shrink_factor_x)][str(shrink_factor_t)]['chi_square_all'] = chi_square_all
 			inverted_dict[str(grid_resolution)][str(shrink_factor_x)][str(shrink_factor_t)]['outer_leg_tot_rad_power_all'] = outer_leg_tot_rad_power_all
@@ -1930,6 +2156,181 @@ np.savez_compressed(laser_to_analyse[:-4]+'_inverted_baiesian_test_export',**tem
 			inverted_dict[str(grid_resolution)][str(shrink_factor_x)][str(shrink_factor_t)]['geometry'] = dict([])
 			inverted_dict[str(grid_resolution)][str(shrink_factor_x)][str(shrink_factor_t)]['geometry']['R'] = np.unique(voxels_centre[:,0])
 			inverted_dict[str(grid_resolution)][str(shrink_factor_x)][str(shrink_factor_t)]['geometry']['Z'] = np.unique(voxels_centre[:,1])
+			inverted_dict[str(grid_resolution)][str(shrink_factor_x)][str(shrink_factor_t)]['sensitivities_binned_crop'] = sensitivities_binned_crop
 
 np.savez_compressed(laser_to_analyse[:-4]+'_inverted_baiesian_test',**inverted_dict)
 # exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_power_to_emissivity2.py").read())
+
+if False:	# I want to take results from the archive
+	inverted_dict = np.load(laser_to_analyse[:-4]+'_inverted_baiesian_test.npz')
+	inverted_dict.allow_pickle=True
+	inverted_dict = dict(inverted_dict)
+	score_x_all = inverted_dict[str(grid_resolution)].all()[str(shrink_factor_x)][str(shrink_factor_t)]['score_x_all']
+	score_y_all = inverted_dict[str(grid_resolution)].all()[str(shrink_factor_x)][str(shrink_factor_t)]['score_y_all']
+	Lcurve_curvature_all = inverted_dict[str(grid_resolution)].all()[str(shrink_factor_x)][str(shrink_factor_t)]['Lcurve_curvature_all']
+	time_full_binned_crop = inverted_dict[str(grid_resolution)].all()[str(shrink_factor_x)][str(shrink_factor_t)]['time_full_binned_crop']
+
+	plt.figure(10)
+	plt.title('L-curve evolution\nlight=early, dark=late')
+	plt.figure(11)
+	plt.title('L-curve curvature evolution\nlight=early, dark=late')
+	i_t = 18
+	for i_t in range(len(time_full_binned_crop)):
+		print('starting t=%.4gms' %(time_full_binned_crop[i_t]*1e3))
+		regolarisation_coeff_range = 10**np.linspace(2,-4,num=40)
+		regolarisation_coeff_range = np.flip(regolarisation_coeff_range,axis=0)
+		score_x = score_x_all[i_t]
+		score_y = score_y_all[i_t]
+
+		points_removed = []
+		counter_score_x = collections.Counter(score_x)
+		counter_score_y = collections.Counter(score_y)
+		test = np.logical_and( [value in np.array(list(counter_score_x.items()))[:,0][np.array(list(counter_score_x.items()))[:,1]>1] for value in score_x] , [value in np.array(list(counter_score_y.items()))[:,0][np.array(list(counter_score_y.items()))[:,1]>1] for value in score_y] )
+		while np.sum(test)>0:
+			i__ = test.argmax()
+			print(i__)
+			regolarisation_coeff_range = np.concatenate([regolarisation_coeff_range[:i__],regolarisation_coeff_range[i__+1:]])
+			# x_optimal_all = np.concatenate([x_optimal_all[:i__],x_optimal_all[i__+1:]])
+			recompose_voxel_emissivity_all = np.concatenate([recompose_voxel_emissivity_all[:i__],recompose_voxel_emissivity_all[i__+1:]])
+			score_x = np.concatenate([score_x[:i__],score_x[i__+1:]])
+			score_y = np.concatenate([score_y[:i__],score_y[i__+1:]])
+			counter_score_x = collections.Counter(score_x)
+			counter_score_y = collections.Counter(score_y)
+			test = np.logical_and( [value in np.array(list(counter_score_x.items()))[:,0][np.array(list(counter_score_x.items()))[:,1]>1] for value in score_x] , [value in np.array(list(counter_score_y.items()))[:,0][np.array(list(counter_score_y.items()))[:,1]>1] for value in score_y] )
+			points_removed.append(i__)
+		points_removed = np.flip(points_removed,axis=0)
+
+		# plt.figure()
+		# plt.plot(score_x,score_y)
+		# plt.plot(score_x,score_y,'+')
+		# plt.xlabel('||Gm-d||2')
+		# plt.ylabel('||Laplacian(m)||2')
+		# plt.grid()
+		# plt.pause(0.01)
+
+
+		score_y = np.log(score_y)
+		score_x = np.log(score_x)
+
+		score_y_record_rel = (score_y-score_y.min())/(score_y.max()-score_y.min())
+		score_x_record_rel = (score_x-score_x.min())/(score_x.max()-score_x.min())
+
+
+		# plt.figure()
+		# plt.plot(regolarisation_coeff_range,score_x_record_rel,label='fit error')
+		# plt.plot(regolarisation_coeff_range,score_y_record_rel,label='laplacian error')
+		# plt.legend()
+		# plt.semilogx()
+		# plt.pause(0.01)
+		#
+		# plt.figure()
+		# plt.plot(score_x,score_y)
+		# plt.plot(score_x,score_y,'+')
+		# plt.xlabel('log ||Gm-d||2')
+		# plt.ylabel('log ||Laplacian(m)||2')
+		# plt.grid()
+		# plt.pause(0.01)
+
+		# if I use a fine regularisation range I need to fit the curvature over more points. this takes care of that.
+		# curvature_range was originally = 2
+		curvature_range = max(1,int(np.ceil(np.abs(-1.8/np.median(np.diff(np.log10(regolarisation_coeff_range)))-1)/2)))
+		print('curvature_range = '+str(curvature_range))
+
+
+		def distance_spread(coord):
+			def int(trash,px,py):
+				x = coord[0]
+				y = coord[1]
+				dist = ((x-px)**2 + (y-py)**2)**0.5
+				spread = np.sum((dist-np.mean(dist))**2)
+				# print(spread)
+				return [spread]*5
+			return int
+
+		def distance_spread_and_gradient(coord):
+			def int(arg):
+				x = coord[0]
+				y = coord[1]
+				px = arg[0]
+				py = arg[1]
+				dist = ((x-px)**2 + (y-py)**2)**0.5
+				spread = np.sum((dist-np.mean(dist))**2)
+				temp = (((x-px)**2 + (y-py)**2)**-0.5)
+				derivate = np.array([np.sum(2*(dist-np.mean(dist))*( -0.5*temp*2*(x-px) - np.mean(-0.5*temp*2*(x-px)) )) , np.sum(2*(dist-np.mean(dist))*( -0.5*temp*2*(y-py) - np.mean(-0.5*temp*2*(y-py)) ))])
+				return spread,derivate
+			return int
+
+		# plt.figure()
+		# plt.plot(score_x_record_rel,score_y_record_rel)
+		curvature_radious = []
+		for ii in range(curvature_range,len(score_y_record_rel)-curvature_range):
+			# try:
+			# 	guess = centre[0]
+			# except:
+			print(ii)
+			try:
+				guess = np.max([score_y_record_rel[ii-curvature_range:ii+curvature_range+1]*10,score_x_record_rel[ii-curvature_range:ii+curvature_range+1]*10],axis=1)
+
+				# bds = [[np.min(score_y_record_rel[ii-2:ii+2+1]),np.min(score_x_record_rel[ii-2:ii+2+1])],[np.inf,np.inf]]
+				# centre = curve_fit(distance_spread_and_gradient([score_x_record_rel[ii-2:ii+2+1],score_y_record_rel[ii-2:ii+2+1]]),[0]*5,[0]*5,p0=guess,bounds = bds,maxfev=1e5,gtol=1e-12,verbose=1)
+
+				# bds = [[np.min(score_y_record_rel[ii-curvature_range:ii+curvature_range+1]),np.inf],[np.min(score_x_record_rel[ii-curvature_range:ii+curvature_range+1]),np.inf]]
+				bds = [[score_y_record_rel[ii],np.inf],[score_x_record_rel[ii],np.inf]]
+				centre, y_opt, opt_info = scipy.optimize.fmin_l_bfgs_b(distance_spread_and_gradient([score_x_record_rel[ii-curvature_range:ii+curvature_range+1],score_y_record_rel[ii-curvature_range:ii+curvature_range+1]]), x0=guess, bounds = bds, iprint=0, factr=1e8, pgtol=1e-8)#,m=1000, maxls=1000, pgtol=1e-10, factr=1e0)#,approx_grad = True)
+				centre = [centre]
+
+				dist = ((score_x_record_rel[ii-curvature_range:ii+curvature_range+1]-centre[0][0])**2 + (score_y_record_rel[ii-curvature_range:ii+curvature_range+1]-centre[0][1])**2)**0.5
+				radious = np.mean(dist)
+				# plt.plot(score_x_record_rel[ii-2:ii+2+1],score_y_record_rel[ii-2:ii+2+1],'+')
+				# # plt.plot(centre[0][0],centre[0][1],'o')
+				# # plt.plot(np.linspace(centre[0][0]-radious,centre[0][0]+radious),centre[0][1]+(radious**2-np.linspace(-radious,+radious)**2)**0.5)
+				# # plt.plot(np.linspace(centre[0][0]-radious,centre[0][0]+radious),centre[0][1]-(radious**2-np.linspace(-radious,+radious)**2)**0.5)
+				# plt.axhline(y=np.min(score_y_record_rel[ii-2:ii+2+1]),linestyle='--')
+				# plt.axvline(x=np.min(score_x_record_rel[ii-2:ii+2+1]),linestyle='--')
+				# plt.pause(0.01)
+			except:
+				radious = np.inf
+			curvature_radious.append(radious)
+		# curvature_radious = [np.max(curvature_radious)]+curvature_radious+[np.max(curvature_radious)]
+		Lcurve_curvature = 1/np.array(curvature_radious)
+
+		# plt.figure()
+		# plt.plot(regolarisation_coeff_range[curvature_range:-curvature_range],Lcurve_curvature)
+		# plt.plot(regolarisation_coeff_range[curvature_range:-curvature_range],Lcurve_curvature,'+')
+		# plt.plot(regolarisation_coeff_range[curvature_range:-curvature_range][Lcurve_curvature.argmax()],Lcurve_curvature[Lcurve_curvature.argmax()],'o')
+		# plt.xlabel('regularisation coeff')
+		# plt.ylabel('L-curve turvature')
+		# plt.semilogx()
+		# plt.pause(0.01)
+		#
+		# plt.figure()
+		# plt.plot(score_x_record_rel,score_y_record_rel)
+		# plt.plot(score_x_record_rel,score_y_record_rel,'+')
+		# plt.xlabel('log ||Gm-d||2')
+		# plt.ylabel('log ||Laplacian(m)||2')
+		# plt.grid()
+		# plt.plot(score_x_record_rel[curvature_range:-curvature_range][Lcurve_curvature.argmax()],score_y_record_rel[curvature_range:-curvature_range][Lcurve_curvature.argmax()],'o')
+		# plt.pause(0.01)
+
+		plt.figure(10)
+		plt.plot(score_x,score_y,color=str(0.9-i_t/(len(time_full_binned_crop)/0.9)))
+		plt.plot(score_x,score_y,'+',color=str(0.9-i_t/(len(time_full_binned_crop)/0.9)))
+		plt.plot(score_x[curvature_range:-curvature_range][Lcurve_curvature.argmax()],score_y[curvature_range:-curvature_range][Lcurve_curvature.argmax()],'o',color=str(0.9-i_t/(len(time_full_binned_crop)/0.9)))
+		plt.xlabel('log ||Gm-d||2')
+		plt.ylabel('log ||Laplacian(m)||2')
+		plt.figure(11)
+		plt.plot(regolarisation_coeff_range[curvature_range:-curvature_range],Lcurve_curvature,color=str(0.9-i_t/(len(time_full_binned_crop)/0.9)))
+		plt.plot(regolarisation_coeff_range[curvature_range:-curvature_range][Lcurve_curvature.argmax()],Lcurve_curvature[Lcurve_curvature.argmax()],'o',color=str(0.9-i_t/(len(time_full_binned_crop)/0.9)))
+		plt.semilogx()
+		plt.xlabel('regularisation coeff')
+		plt.ylabel('L-curve turvature')
+	plt.figure(10)
+	plt.grid()
+	plt.figure(11)
+	plt.grid()
+
+
+
+	recompose_voxel_emissivity = recompose_voxel_emissivity_all[Lcurve_curvature.argmax()+curvature_range]
+	regolarisation_coeff = regolarisation_coeff_range[Lcurve_curvature.argmax()+curvature_range]
+	x_optimal = x_optimal_all[Lcurve_curvature.argmax()+curvature_range]

@@ -11,7 +11,7 @@ exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_import_pc.py").
 
 #this is for importing all the variables names and which are the files
 exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_indexing.py").read())
-number_cpu_available = 14
+number_cpu_available = 8
 
 # degree of polynomial of choice
 n=3
@@ -152,7 +152,7 @@ for i_laser_to_analyse,laser_to_analyse in enumerate(all_laser_to_analyse):
 
 	# before of the temperature conversion I'm better to remove the oscillation
 	# I try to use all the length of the record at first
-	laser_counts_filtered = [coleval.clear_oscillation_central2([counts],laser_framerate/len(laser_digitizer_ID),oscillation_search_window_end=(len(counts)-1)/(laser_framerate/len(laser_digitizer_ID)),plot_conparison=False)[0] for counts in laser_counts]
+	laser_counts_filtered = [coleval.clear_oscillation_central2([counts.astype(np.float32)],laser_framerate/len(laser_digitizer_ID),oscillation_search_window_end=(len(counts)-1)/(laser_framerate/len(laser_digitizer_ID)),plot_conparison=False)[0] for counts in laser_counts]
 
 	if False:	# done with functions now
 		from uncertainties import correlated_values,ufloat
@@ -248,11 +248,13 @@ for i_laser_to_analyse,laser_to_analyse in enumerate(all_laser_to_analyse):
 	laser_temperature_minus_background_std_median = [np.median(data) for data in laser_temperature_std]
 	laser_temperature_minus_background_std_minus_median_downgraded = [np.float16(data-median) for data,median in zip(laser_temperature_std,laser_temperature_minus_background_std_median)]
 
+	laser_dict.allow_pickle=True
 	full_saved_file_dict = dict(laser_dict)
 	full_saved_file_dict['laser_temperature_minus_background_median']=laser_temperature_minus_background_median	# this is NOT minus_background, that is a relic of what I did before, but I keep it not to recreate all .npz, same for the next3
 	full_saved_file_dict['laser_temperature_minus_background_minus_median_downgraded']=laser_temperature_minus_background_minus_median_downgraded
 	full_saved_file_dict['laser_temperature_minus_background_std_median']=laser_temperature_minus_background_std_median
 	full_saved_file_dict['laser_temperature_minus_background_std_minus_median_downgraded']=laser_temperature_minus_background_std_minus_median_downgraded
+	full_saved_file_dict['laser_counts_filtered']=laser_counts_filtered	# I need this for the BB calculations
 	np.savez_compressed(laser_to_analyse,**full_saved_file_dict)
 	print('FINISHED '+laser_to_analyse)
 
