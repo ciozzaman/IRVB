@@ -661,7 +661,7 @@ try:
 
 		print('completed ' + laser_to_analyse)
 
-		exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_temp_to_power3.py").read())
+		exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_temp_to_power3_BB.py").read())
 
 		exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_power_to_emissivity.py").read())
 
