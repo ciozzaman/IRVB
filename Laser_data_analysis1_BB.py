@@ -44,6 +44,7 @@ if False:	# manual collection of parameters
 	all_path_reference_frames=coleval.flatten(all_path_reference_frames)
 else:	# automatic collection of parameters
 	cases_to_include = ['laser22','laser25','laser34','laser15','laser16','laser17','laser18','laser19','laser20','laser21','laser23','laser24','laser26','laser27','laser28','laser29','laser30','laser31','laser32','laser33','laser35','laser36','laser37','laser38','laser39','laser41','laser42','laser43','laser44','laser45','laser46','laser47']
+	cases_to_include = np.flip(cases_to_include,axis=0)
 	# cases_to_include = ['laser39','laser41','laser42','laser43','laser44','laser45','laser46','laser47']
 	# cases_to_include = ['laser34','laser35','laser36','laser37','laser38','laser39']
 	# cases_to_include = ['laser35']
@@ -382,6 +383,7 @@ def function_a(index):
 	temp = pathparams_BB+'/'+temp+'/numcoeff'+str(n)
 	fullpathparams=os.path.join(temp,'coeff_polynomial_deg'+str(n-1)+'int_time'+str(int_time)+'ms.npz')
 	params_dict=np.load(fullpathparams)
+	params_dict.allow_pickle=True
 	params_BB = params_dict['coeff2']
 	errparams_BB = params_dict['errcoeff2']
 	if not (laser_dict['height']==max_ROI[0][1]+1 and laser_dict['width']==max_ROI[1][1]+1):
@@ -399,16 +401,16 @@ def function_a(index):
 
 	laser_temperature_minus_background = [laser_temperature[i]-ref_temperature for i in laser_digitizer_ID]
 	laser_temperature_std_minus_background = [(laser_temperature_std[i]**2+ref_temperature_std**2)**0.5 for i in laser_digitizer_ID]
-	BB_proportional,BB_proportional_std,constant_offset,constant_offset_std,photon_dict = coleval.calc_BB_coefficients_multi_digitizer_stationary(params_BB,errparams_BB,digitizer_ID,reference_background,reference_background_std,ref_temperature=ref_temperature,ref_temperature_std=ref_temperature_std,wavewlength_top=5,wavelength_bottom=2.5,inttime=int_time)
+	BB_proportional,BB_proportional_std,constant_offset,constant_offset_std,photon_dict = coleval.calc_BB_coefficients_multi_digitizer(params_BB,errparams_BB,digitizer_ID,reference_background,reference_background_std,ref_temperature=ref_temperature,ref_temperature_std=ref_temperature_std,wavewlength_top=5,wavelength_bottom=2.5,inttime=int_time)
 	photon_flux_over_temperature_interpolator = photon_dict['photon_flux_over_temperature_interpolator']
 
 	# I can replace the dead pixels even after the transformation to temperature, given the flag comes from the background data
 	# laser_temperature_no_dead_pixels = [coleval.replace_dead_pixels([data],flag)[0] for flag,data in zip(bad_pixels_flag,laser_temperature)]
-	# laser_temperature_std_no_dead_pixels = [coleval.replace_dead_pixels([data],flag)[0] for flag,data in zip(bad_pixels_flag,laser_temperature_std)]
+	laser_temperature_std_no_dead_pixels = [coleval.replace_dead_pixels([data],flag)[0] for flag,data in zip(bad_pixels_flag,laser_temperature_std)]
 	laser_temperature_minus_background_no_dead_pixels = [coleval.replace_dead_pixels([data],flag)[0] for flag,data in zip(bad_pixels_flag,laser_temperature_minus_background)]
 	laser_temperature_std_minus_background_no_dead_pixels = [coleval.replace_dead_pixels([data],flag)[0] for flag,data in zip(bad_pixels_flag,laser_temperature_std_minus_background)]
-	reference_background_temperature_no_dead_pixels = [coleval.replace_dead_pixels([[data]],flag)[0][0] for flag,data in zip(bad_pixels_flag,reference_background_temperature)]
-	reference_background_temperature_std_no_dead_pixels = [coleval.replace_dead_pixels([[data]],flag)[0][0] for flag,data in zip(bad_pixels_flag,reference_background_temperature_std)]
+	# reference_background_temperature_no_dead_pixels = [coleval.replace_dead_pixels([[data]],flag)[0][0] for flag,data in zip(bad_pixels_flag,reference_background_temperature)]
+	# reference_background_temperature_std_no_dead_pixels = [coleval.replace_dead_pixels([[data]],flag)[0][0] for flag,data in zip(bad_pixels_flag,reference_background_temperature_std)]
 	laser_counts_filtered_std_no_dead_pixels = [coleval.replace_dead_pixels([data],flag)[0] for flag,data in zip(bad_pixels_flag,laser_counts_filtered_std)]
 	BB_proportional_no_dead_pixels = [coleval.replace_dead_pixels([[data]],flag)[0][0] for flag,data in zip(bad_pixels_flag,BB_proportional)]
 	BB_proportional_std_no_dead_pixels = [coleval.replace_dead_pixels([[data]],flag)[0][0] for flag,data in zip(bad_pixels_flag,BB_proportional_std)]
@@ -418,7 +420,7 @@ def function_a(index):
 
 	# I need to put together the data from the two digitizers
 	# laser_temperature_full = [(laser_temperature_no_dead_pixels[0][np.abs(time_of_experiment_digitizer_ID[0]-time).argmin()]) if ID==laser_digitizer_ID[0] else (laser_temperature_no_dead_pixels[1][np.abs(time_of_experiment_digitizer_ID[1]-time).argmin()]) for time,ID in zip(time_of_experiment,laser_digitizer)]
-	# laser_temperature_std_full = [(laser_temperature_std_no_dead_pixels[0][np.abs(time_of_experiment_digitizer_ID[0]-time).argmin()]) if ID==laser_digitizer_ID[0] else (laser_temperature_std_no_dead_pixels[1][np.abs(time_of_experiment_digitizer_ID[1]-time).argmin()]) for time,ID in zip(time_of_experiment,laser_digitizer)]
+	laser_temperature_std_full = [(laser_temperature_std_no_dead_pixels[0][np.abs(time_of_experiment_digitizer_ID[0]-time).argmin()]) if ID==laser_digitizer_ID[0] else (laser_temperature_std_no_dead_pixels[1][np.abs(time_of_experiment_digitizer_ID[1]-time).argmin()]) for time,ID in zip(time_of_experiment,laser_digitizer)]
 	laser_temperature_minus_background_full = [(laser_temperature_minus_background_no_dead_pixels[0][np.abs(time_of_experiment_digitizer_ID[0]-time).argmin()]) if time in time_of_experiment_digitizer_ID[0] else (laser_temperature_minus_background_no_dead_pixels[1][np.abs(time_of_experiment_digitizer_ID[1]-time).argmin()]) for time in time_of_experiment]
 	laser_temperature_std_minus_background_full = [(laser_temperature_std_minus_background_no_dead_pixels[0][np.abs(time_of_experiment_digitizer_ID[0]-time).argmin()]) if time in time_of_experiment_digitizer_ID[0] else (laser_temperature_std_minus_background_no_dead_pixels[1][np.abs(time_of_experiment_digitizer_ID[1]-time).argmin()]) for time in time_of_experiment]
 	laser_counts_filtered_std_full = [(laser_counts_filtered_std_no_dead_pixels[0][np.abs(time_of_experiment_digitizer_ID[0]-time).argmin()]) if time in time_of_experiment_digitizer_ID[0] else (laser_counts_filtered_std_no_dead_pixels[1][np.abs(time_of_experiment_digitizer_ID[1]-time).argmin()]) for time in time_of_experiment]
@@ -430,8 +432,8 @@ def function_a(index):
 		temp = np.ones((len(laser_temperature_minus_background_full),max_ROI[0][1]+1,max_ROI[1][1]+1))*(-np.nanmean(reference_background[0]))
 		# temp[:,limited_ROI[0][0]:limited_ROI[0][1]+1,limited_ROI[1][0]:limited_ROI[1][1]+1] = laser_temperature_full
 		# laser_temperature_full = cp.deepcopy(temp)
-		# temp[:,limited_ROI[0][0]:limited_ROI[0][1]+1,limited_ROI[1][0]:limited_ROI[1][1]+1] = laser_temperature_std_full
-		# laser_temperature_std_full = cp.deepcopy(temp)
+		temp[:,limited_ROI[0][0]:limited_ROI[0][1]+1,limited_ROI[1][0]:limited_ROI[1][1]+1] = laser_temperature_std_full
+		laser_temperature_std_full = cp.deepcopy(temp)
 		temp[:,limited_ROI[0][0]:limited_ROI[0][1]+1,limited_ROI[1][0]:limited_ROI[1][1]+1] = laser_temperature_minus_background_full
 		laser_temperature_minus_background_full = cp.deepcopy(temp)
 		temp[:,limited_ROI[0][0]:limited_ROI[0][1]+1,limited_ROI[1][0]:limited_ROI[1][1]+1] = laser_temperature_std_minus_background_full
@@ -439,10 +441,10 @@ def function_a(index):
 		temp[:,limited_ROI[0][0]:limited_ROI[0][1]+1,limited_ROI[1][0]:limited_ROI[1][1]+1] = laser_counts_filtered_std_full
 		laser_counts_filtered_std_full = cp.deepcopy(temp)
 		temp = np.ones((len(laser_digitizer_ID),max_ROI[0][1]+1,max_ROI[1][1]+1))*(-np.nanmean(reference_background[0]))
-		temp[:,limited_ROI[0][0]:limited_ROI[0][1]+1,limited_ROI[1][0]:limited_ROI[1][1]+1] = reference_background_temperature_no_dead_pixels
-		reference_background_temperature_no_dead_pixels = cp.deepcopy(temp)
-		temp[:,limited_ROI[0][0]:limited_ROI[0][1]+1,limited_ROI[1][0]:limited_ROI[1][1]+1] = reference_background_temperature_std_no_dead_pixels
-		reference_background_temperature_std_no_dead_pixels = cp.deepcopy(temp)
+		# temp[:,limited_ROI[0][0]:limited_ROI[0][1]+1,limited_ROI[1][0]:limited_ROI[1][1]+1] = reference_background_temperature_no_dead_pixels
+		# reference_background_temperature_no_dead_pixels = cp.deepcopy(temp)
+		# temp[:,limited_ROI[0][0]:limited_ROI[0][1]+1,limited_ROI[1][0]:limited_ROI[1][1]+1] = reference_background_temperature_std_no_dead_pixels
+		# reference_background_temperature_std_no_dead_pixels = cp.deepcopy(temp)
 		temp[:,limited_ROI[0][0]:limited_ROI[0][1]+1,limited_ROI[1][0]:limited_ROI[1][1]+1] = BB_proportional_no_dead_pixels
 		BB_proportional_no_dead_pixels = cp.deepcopy(temp)
 		temp[:,limited_ROI[0][0]:limited_ROI[0][1]+1,limited_ROI[1][0]:limited_ROI[1][1]+1] = BB_proportional_std_no_dead_pixels
@@ -451,14 +453,14 @@ def function_a(index):
 		reference_background_std_no_dead_pixels = cp.deepcopy(temp)
 
 	# laser_temperature_rot=rotate(laser_temperature_full,foilrotdeg,axes=(-1,-2))
-	# laser_temperature_std_rot=rotate(laser_temperature_std_full,foilrotdeg,axes=(-1,-2))
-	# if not (laser_dict['height']==max_ROI[0][1]+1 and laser_dict['width']==max_ROI[1][1]+1):
-	# 	laser_temperature_std_rot*=out_of_ROI_mask
-	# 	laser_temperature_std_rot[np.logical_and(laser_temperature_rot<np.nanmin(laser_temperature_full),laser_temperature_rot>np.nanmax(laser_temperature_full))]=0
-	# 	laser_temperature_rot*=out_of_ROI_mask
-	# 	laser_temperature_rot[np.logical_and(laser_temperature_rot<np.nanmin(laser_temperature_full),laser_temperature_rot>np.nanmax(laser_temperature_full))]=np.nanmean(reference_background_temperature_no_dead_pixels)
+	laser_temperature_std_rot=rotate(laser_temperature_std_full,foilrotdeg,axes=(-1,-2))
+	if not (laser_dict['height']==max_ROI[0][1]+1 and laser_dict['width']==max_ROI[1][1]+1):
+		laser_temperature_std_rot*=out_of_ROI_mask
+		laser_temperature_std_rot[np.logical_and(laser_temperature_std_rot<np.nanmin(laser_temperature_std_full),laser_temperature_std_rot>np.nanmax(laser_temperature_std_full))]=0
+		# laser_temperature_rot*=out_of_ROI_mask
+		# laser_temperature_rot[np.logical_and(laser_temperature_rot<np.nanmin(laser_temperature_full),laser_temperature_rot>np.nanmax(laser_temperature_full))]=np.nanmean(reference_background_temperature_no_dead_pixels)
 	# laser_temperature_crop=laser_temperature_rot[:,foildw:foilup,foillx:foilrx].astype(np.float32)
-	# laser_temperature_std_crop=laser_temperature_std_rot[:,foildw:foilup,foillx:foilrx].astype(np.float32)
+	laser_temperature_std_crop=laser_temperature_std_rot[:,foildw:foilup,foillx:foilrx].astype(np.float32)
 
 	laser_temperature_minus_background_rot=rotate(laser_temperature_minus_background_full,foilrotdeg,axes=(-1,-2))
 	laser_temperature_std_minus_background_rot=rotate(laser_temperature_std_minus_background_full,foilrotdeg,axes=(-1,-2))
@@ -475,33 +477,33 @@ def function_a(index):
 	laser_counts_filtered_std_crop=laser_counts_filtered_std_rot[:,foildw:foilup,foillx:foilrx].astype(np.float32)
 	nan_ROI_mask = np.isfinite(np.nanmedian(laser_temperature_minus_background_crop[:10],axis=0))
 
-	reference_background_temperature_rot=rotate(reference_background_temperature_no_dead_pixels,foilrotdeg,axes=(-1,-2))
-	reference_background_temperature_std_rot=rotate(reference_background_temperature_std_no_dead_pixels,foilrotdeg,axes=(-1,-2))
+	# reference_background_temperature_rot=rotate(reference_background_temperature_no_dead_pixels,foilrotdeg,axes=(-1,-2))
+	# reference_background_temperature_std_rot=rotate(reference_background_temperature_std_no_dead_pixels,foilrotdeg,axes=(-1,-2))
 	BB_proportional_rot=rotate(BB_proportional_no_dead_pixels,foilrotdeg,axes=(-1,-2))
 	BB_proportional_std_rot=rotate(BB_proportional_std_no_dead_pixels,foilrotdeg,axes=(-1,-2))
 	reference_background_std_rot=rotate(reference_background_std_no_dead_pixels,foilrotdeg,axes=(-1,-2))
 	if not (laser_dict['height']==max_ROI[0][1]+1 and laser_dict['width']==max_ROI[1][1]+1):
-		reference_background_temperature_std_rot*=out_of_ROI_mask
-		reference_background_temperature_std_rot[np.logical_and(reference_background_temperature_rot<np.nanmin(reference_background_temperature_no_dead_pixels),reference_background_temperature_rot>np.nanmax(reference_background_temperature_no_dead_pixels))]=0
+		# reference_background_temperature_std_rot*=out_of_ROI_mask
+		# reference_background_temperature_std_rot[np.logical_and(reference_background_std_rot<np.nanmin(reference_background_std_rot),reference_background_std_rot>np.nanmax(reference_background_std_rot))]=0
 		BB_proportional_rot*=out_of_ROI_mask
-		BB_proportional_rot[np.logical_and(reference_background_temperature_rot<np.nanmin(reference_background_temperature_no_dead_pixels),reference_background_temperature_rot>np.nanmax(reference_background_temperature_no_dead_pixels))]=0
+		BB_proportional_rot[np.logical_and(reference_background_std_rot<np.nanmin(reference_background_std_rot),reference_background_std_rot>np.nanmax(reference_background_std_rot))]=0
 		BB_proportional_std_rot*=out_of_ROI_mask
-		BB_proportional_std_rot[np.logical_and(reference_background_temperature_rot<np.nanmin(reference_background_temperature_no_dead_pixels),reference_background_temperature_rot>np.nanmax(reference_background_temperature_no_dead_pixels))]=0
+		BB_proportional_std_rot[np.logical_and(reference_background_std_rot<np.nanmin(reference_background_std_rot),reference_background_std_rot>np.nanmax(reference_background_std_rot))]=0
+		# reference_background_temperature_rot*=out_of_ROI_mask
+		# reference_background_temperature_rot[np.logical_and(reference_background_temperature_rot<np.nanmin(reference_background_temperature_no_dead_pixels),reference_background_temperature_rot>np.nanmax(reference_background_temperature_no_dead_pixels))]=np.nanmean(reference_background_temperature_no_dead_pixels)
 		reference_background_std_rot*=out_of_ROI_mask
-		reference_background_std_rot[np.logical_and(reference_background_temperature_rot<np.nanmin(reference_background_temperature_no_dead_pixels),reference_background_temperature_rot>np.nanmax(reference_background_temperature_no_dead_pixels))]=0
-		reference_background_temperature_rot*=out_of_ROI_mask
-		reference_background_temperature_rot[np.logical_and(reference_background_temperature_rot<np.nanmin(reference_background_temperature_no_dead_pixels),reference_background_temperature_rot>np.nanmax(reference_background_temperature_no_dead_pixels))]=np.nanmean(reference_background_temperature_no_dead_pixels)
-	reference_background_temperature_crop=reference_background_temperature_rot[:,foildw:foilup,foillx:foilrx]
-	reference_background_temperature_crop = np.nanmean(reference_background_temperature_crop,axis=0).astype(np.float32)
-	reference_background_temperature_std_crop=reference_background_temperature_std_rot[:,foildw:foilup,foillx:foilrx]
-	reference_background_temperature_std_crop = np.nanmean(reference_background_temperature_std_crop,axis=0).astype(np.float32)
+		reference_background_std_rot[np.logical_and(reference_background_std_rot<np.nanmin(reference_background_std_rot),reference_background_std_rot>np.nanmax(reference_background_std_rot))]=0
+	# reference_background_temperature_crop=reference_background_temperature_rot[:,foildw:foilup,foillx:foilrx]
+	# reference_background_temperature_crop = np.nanmean(reference_background_temperature_crop,axis=0).astype(np.float32)
+	# reference_background_temperature_std_crop=reference_background_temperature_std_rot[:,foildw:foilup,foillx:foilrx]
+	# reference_background_temperature_std_crop = np.nanmean(reference_background_temperature_std_crop,axis=0).astype(np.float32)
 	BB_proportional_crop=BB_proportional_rot[:,foildw:foilup,foillx:foilrx]
 	BB_proportional_crop = np.nanmean(BB_proportional_crop,axis=0).astype(np.float32)
 	BB_proportional_std_crop=BB_proportional_std_rot[:,foildw:foilup,foillx:foilrx]
 	BB_proportional_std_crop = np.nanmean(BB_proportional_std_crop,axis=0).astype(np.float32)
 	reference_background_std_crop=reference_background_std_rot[:,foildw:foilup,foillx:foilrx]
 	reference_background_std_crop = np.nanmean(reference_background_std_crop,axis=0).astype(np.float32)
-	del laser_temperature_minus_background_rot,laser_temperature_std_minus_background_rot,reference_background_temperature_no_dead_pixels,reference_background_temperature_std_no_dead_pixels
+	del laser_temperature_minus_background_rot,laser_temperature_std_minus_background_rot
 
 	# plt.figure()
 	# plt.imshow(laser_temperature_crop[0],'rainbow',origin='lower')
@@ -675,72 +677,10 @@ def function_a(index):
 	laser_temperature_minus_background_crop += rise_of_absolute_temperature_difference
 
 
-	photon_flux_over_temperature = photon_flux_over_temperature_interpolator(laser_temperature_minus_background_crop+ref_temperature)
-	# basetemp=np.nanmean(datatempcrop[0,frame-7:frame+7,1:-1,1:-1],axis=0)
-	dt = time_partial[2:]-time_partial[:-2]
-	dT = (laser_temperature_minus_background_crop[2:,1:-1,1:-1]-laser_temperature_minus_background_crop[:-2,1:-1,1:-1]).astype(np.float32)
-	dTdt = np.gradient(laser_temperature_minus_background_crop,time_partial,axis=0)[1:-1,1:-1,1:-1].astype(np.float32)	# this is still a central difference but it doesn't rely on hand made code
-	dTdt_std=np.divide(( (((laser_counts_filtered_std_crop[2:,1:-1,1:-1]**2 + laser_counts_filtered_std_crop[:-2,1:-1,1:-1]**2)**0.5 / ( np.mean([photon_flux_over_temperature[2:,1:-1,1:-1],photon_flux_over_temperature[:-2,1:-1,1:-1]],axis=0) * BB_proportional_crop[1:-1,1:-1] ))**2 + (dT*BB_proportional_std_crop[1:-1,1:-1]/BB_proportional_crop[1:-1,1:-1])**2)**0.5 ).T,dt).T.astype(np.float32)
-	# I want to build a laplacial properly accounting for the diagonals
-	grid = np.array([[horizontal_coord.flatten()]*4,[vertical_coord.flatten()]*4]).T
-	grid_laplacian = -coleval.build_laplacian(grid) / (dx**2)
-	d2Tdxy = np.dot(laser_temperature_minus_background_crop.reshape((len(laser_temperature_minus_background_crop),len(grid_laplacian))),grid_laplacian).reshape(np.shape(laser_temperature_minus_background_crop))[1:-1,1:-1,1:-1]
-	d2Tdxy_std = (np.dot( ( ((laser_counts_filtered_std_crop**2+reference_background_std_crop**2)**0.5/(BB_proportional_crop*(photon_flux_over_temperature+photon_flux_over_temperature_interpolator(ref_temperature))/2))**2 + (laser_temperature_minus_background_crop*BB_proportional_std_crop/BB_proportional_crop)**2 ).reshape((len(laser_temperature_minus_background_crop),len(grid_laplacian))),grid_laplacian**2)**0.5).reshape(np.shape(laser_temperature_minus_background_crop))[1:-1,1:-1,1:-1]
-	temp = np.ones_like(dTdt).astype(np.float32)*np.nan
-	temp[:,nan_ROI_mask[1:-1,1:-1]]=d2Tdxy[:,nan_ROI_mask[1:-1,1:-1]]
-	d2Tdxy = cp.copy(temp)
-	temp = np.ones_like(dTdt).astype(np.float32)*np.nan
-	temp[:,nan_ROI_mask[1:-1,1:-1]]=d2Tdxy_std[:,nan_ROI_mask[1:-1,1:-1]]
-	d2Tdxy_std = cp.copy(temp)
-	negd2Tdxy=np.multiply(-1,d2Tdxy)
-	negd2Tdxy_std=d2Tdxy_std
-	T4=(laser_temperature_minus_background_crop[1:-1,1:-1,1:-1]+ref_temperature+zeroC)**4
-	T4_std=T4**(3/4) *4 *laser_temperature_std_minus_background_crop[1:-1,1:-1,1:-1]	# the error resulting from doing the average on the whole ROI is completely negligible
-	T04=(ref_temperature+zeroC)**4 *np.ones_like(laser_temperature_minus_background_crop[1:-1,1:-1,1:-1])
-	T04_std=0
-	T4_T04 = np.ones_like(dTdt).astype(np.float32)*np.nan
-	T4_T04[:,nan_ROI_mask[1:-1,1:-1]] = (T4[:,nan_ROI_mask[1:-1,1:-1]]-T04[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
-	T4_T04_std = np.ones_like(dTdt).astype(np.float32)*np.nan
-	T4_T04_std[:,nan_ROI_mask[1:-1,1:-1]] = ((T4_std[:,nan_ROI_mask[1:-1,1:-1]]**2+T04_std**2)**0.5).astype(np.float32)
-	temp = np.ones_like(dTdt).astype(np.float32)*np.nan
-	temp[:,nan_ROI_mask[1:-1,1:-1]]=dTdt[:,nan_ROI_mask[1:-1,1:-1]]
-	dTdt = cp.copy(temp)
-	temp = np.ones_like(dTdt).astype(np.float32)*np.nan
-	temp[:,nan_ROI_mask[1:-1,1:-1]]=dTdt_std[:,nan_ROI_mask[1:-1,1:-1]]
-	dTdt_std = cp.copy(temp)
-
-	# ktf=(np.multiply(conductivityscaled,foilthicknessscaled)).astype(np.float32)
-	# BBrad = np.ones_like(dTdt).astype(np.float32)*np.nan
-	# BBrad[:,nan_ROI_mask[1:-1,1:-1]] = (2*sigmaSB*foilemissivityscaled[nan_ROI_mask[1:-1,1:-1]]*T4_T04[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
-	# BBrad_std = np.ones_like(dTdt).astype(np.float32)*np.nan
-	# BBrad_std[:,nan_ROI_mask[1:-1,1:-1]] = (2*sigmaSB*foilemissivityscaled[nan_ROI_mask[1:-1,1:-1]]*T4_T04_std[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
-	# diffusion = np.ones_like(dTdt).astype(np.float32)*np.nan
-	# diffusion[:,nan_ROI_mask[1:-1,1:-1]] = (ktf[nan_ROI_mask[1:-1,1:-1]]*negd2Tdxy[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
-	# diffusion_std = np.ones_like(dTdt).astype(np.float32)*np.nan
-	# diffusion_std[:,nan_ROI_mask[1:-1,1:-1]] = (ktf[nan_ROI_mask[1:-1,1:-1]]*negd2Tdxy_std[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
-	# timevariation = np.ones_like(dTdt).astype(np.float32)*np.nan
-	# timevariation[:,nan_ROI_mask[1:-1,1:-1]] = (ktf[nan_ROI_mask[1:-1,1:-1]]*reciprdiffusivityscaled[nan_ROI_mask[1:-1,1:-1]]*dTdt[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
-	# timevariation_std = np.ones_like(dTdt).astype(np.float32)*np.nan
-	# timevariation_std[:,nan_ROI_mask[1:-1,1:-1]] = (ktf[nan_ROI_mask[1:-1,1:-1]]*reciprdiffusivityscaled[nan_ROI_mask[1:-1,1:-1]]*dTdt_std[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
-	#
-	# powernoback = (diffusion + timevariation + BBrad).astype(np.float32)
-	# powernoback_std = np.ones_like(dTdt)*np.nan
-	# powernoback_std[:,nan_ROI_mask[1:-1,1:-1]] = ((diffusion_std[:,nan_ROI_mask[1:-1,1:-1]]**2 + timevariation_std[:,nan_ROI_mask[1:-1,1:-1]]**2 + BBrad_std[:,nan_ROI_mask[1:-1,1:-1]]**2)**0.5).astype(np.float32)
-
-	temp_BBrad = np.ones_like(dTdt).astype(np.float32)*np.nan
-	temp_BBrad[:,nan_ROI_mask[1:-1,1:-1]] = (2*sigmaSB*T4_T04[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
-	temp_BBrad_std = np.ones_like(dTdt).astype(np.float32)*np.nan
-	temp_BBrad_std[:,nan_ROI_mask[1:-1,1:-1]] = (2*sigmaSB*T4_T04_std[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
-	temp_diffusion = np.ones_like(dTdt).astype(np.float32)*np.nan
-	temp_diffusion[:,nan_ROI_mask[1:-1,1:-1]] = (Ptthermalconductivity*negd2Tdxy[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
-	temp_diffusion_std = np.ones_like(dTdt).astype(np.float32)*np.nan
-	temp_diffusion_std[:,nan_ROI_mask[1:-1,1:-1]] = (Ptthermalconductivity*negd2Tdxy_std[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
-	temp_timevariation = np.ones_like(dTdt).astype(np.float32)*np.nan
-	temp_timevariation[:,nan_ROI_mask[1:-1,1:-1]] = (Ptthermalconductivity*dTdt[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
-	temp_timevariation_std = np.ones_like(dTdt).astype(np.float32)*np.nan
-	temp_timevariation_std[:,nan_ROI_mask[1:-1,1:-1]] = (Ptthermalconductivity*dTdt_std[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
+	dTdt,dTdt_std,d2Tdxy,d2Tdxy_std,negd2Tdxy,negd2Tdxy_std,T4_T04,T4_T04_std = coleval.calc_temp_to_power_BB_1(photon_flux_over_temperature_interpolator,laser_temperature_minus_background_crop,ref_temperature,time_partial,dx,laser_counts_filtered_std_crop,BB_proportional_crop,BB_proportional_std_crop,reference_background_std_crop,laser_temperature_std_crop,nan_ROI_mask)
+	temp_BBrad,temp_diffusion,temp_timevariation,temp_powernoback,temp_BBrad_std,temp_diffusion_std,temp_timevariation_std,temp_powernoback_std = coleval.calc_temp_to_power_BB_2(dTdt,dTdt_std,d2Tdxy,d2Tdxy_std,negd2Tdxy,negd2Tdxy_std,T4_T04,T4_T04_std,nan_ROI_mask,1,1,1,Ptthermalconductivity)
 	temp_powernoback = (sample_properties['thickness']*temp_diffusion + (1/sample_properties['diffusivity'])*sample_properties['thickness']*temp_timevariation + sample_properties['emissivity']*temp_BBrad).astype(np.float32)
-	del dTdt,dTdt_std,d2Tdxy,d2Tdxy_std,negd2Tdxy,negd2Tdxy_std,T4,T4_std,T04,T04_std
+	del dTdt,dTdt_std,d2Tdxy,d2Tdxy_std,negd2Tdxy,negd2Tdxy_std,T4_T04,T4_T04_std,temp_powernoback_std
 
 	def power_vs_space_sampling_explorer():
 		from uncertainties import ufloat
@@ -1140,6 +1080,7 @@ def function_a(index):
 # 	pool.join()
 # 	pool.terminate()
 # 	del pool
+# for index in np.flip(np.arange(len(all_laser_to_analyse)),axis=0):
 for index in range(len(all_laser_to_analyse)):
 	try:
 		function_a(index)

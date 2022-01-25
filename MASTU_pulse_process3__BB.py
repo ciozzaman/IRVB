@@ -121,62 +121,70 @@ else:
 
 
 # rotation and crop
-laser_temperature_no_dead_pixels_crop = []
-laser_temperature_std_no_dead_pixels_crop = []
-for i in range(len(laser_digitizer_ID)):
-	laser_temperature_no_dead_pixels_rot=rotate(laser_temperature_no_dead_pixels[i],foilrotdeg,axes=(-1,-2))
-	laser_temperature_std_no_dead_pixels_rot=rotate(laser_temperature_std_no_dead_pixels[i],foilrotdeg,axes=(-1,-2))
-	if not (laser_dict['height']==max_ROI[0][1]+1 and laser_dict['width']==max_ROI[1][1]+1):
-		laser_temperature_std_no_dead_pixels_rot*=out_of_ROI_mask
-		laser_temperature_std_no_dead_pixels_rot[np.logical_and(laser_temperature_no_dead_pixels_rot<np.nanmin(laser_temperature_no_dead_pixels[i]),laser_temperature_no_dead_pixels_rot>np.nanmax(laser_temperature_no_dead_pixels[i]))]=0
-		laser_temperature_no_dead_pixels_rot*=out_of_ROI_mask
-		laser_temperature_no_dead_pixels_rot[np.logical_and(laser_temperature_no_dead_pixels_rot<np.nanmin(laser_temperature_no_dead_pixels[i]),laser_temperature_no_dead_pixels_rot>np.nanmax(laser_temperature_no_dead_pixels[i]))]=0
-	laser_temperature_no_dead_pixels_crop.append(laser_temperature_no_dead_pixels_rot[:,foildw:foilup,foillx:foilrx])
-	laser_temperature_std_no_dead_pixels_crop.append(laser_temperature_std_no_dead_pixels_rot[:,foildw:foilup,foillx:foilrx])
+# laser_temperature_no_dead_pixels_crop = []
+# laser_temperature_std_no_dead_pixels_crop = []
+# for i in range(len(laser_digitizer_ID)):
+# 	laser_temperature_no_dead_pixels_rot=rotate(laser_temperature_no_dead_pixels[i],foilrotdeg,axes=(-1,-2))
+# 	laser_temperature_std_no_dead_pixels_rot=rotate(laser_temperature_std_no_dead_pixels[i],foilrotdeg,axes=(-1,-2))
+# 	if not (laser_dict['height']==max_ROI[0][1]+1 and laser_dict['width']==max_ROI[1][1]+1):
+# 		laser_temperature_std_no_dead_pixels_rot*=out_of_ROI_mask
+# 		laser_temperature_std_no_dead_pixels_rot[np.logical_and(laser_temperature_no_dead_pixels_rot<np.nanmin(laser_temperature_no_dead_pixels[i]),laser_temperature_no_dead_pixels_rot>np.nanmax(laser_temperature_no_dead_pixels[i]))]=0
+# 		laser_temperature_no_dead_pixels_rot*=out_of_ROI_mask
+# 		laser_temperature_no_dead_pixels_rot[np.logical_and(laser_temperature_no_dead_pixels_rot<np.nanmin(laser_temperature_no_dead_pixels[i]),laser_temperature_no_dead_pixels_rot>np.nanmax(laser_temperature_no_dead_pixels[i]))]=0
+# 	laser_temperature_no_dead_pixels_crop.append(laser_temperature_no_dead_pixels_rot[:,foildw:foilup,foillx:foilrx])
+# 	laser_temperature_std_no_dead_pixels_crop.append(laser_temperature_std_no_dead_pixels_rot[:,foildw:foilup,foillx:foilrx])
+laser_temperature_no_dead_pixels_crop = coleval.rotate_and_crop_multi_digitizer(laser_temperature_no_dead_pixels,3,foilrotdeg,max_ROI,laser_dict['height'],laser_dict['width'],out_of_ROI_mask,foildw,foilup,foillx,foilrx)
+laser_temperature_std_no_dead_pixels_crop = coleval.rotate_and_crop_multi_digitizer(laser_temperature_std_no_dead_pixels,3,foilrotdeg,max_ROI,laser_dict['height'],laser_dict['width'],out_of_ROI_mask,foildw,foilup,foillx,foilrx)
 nan_ROI_mask = np.isfinite(np.nanmedian(laser_temperature_no_dead_pixels_crop[0][:10],axis=0))
 
 
-BB_proportional_no_dead_pixels
-BB_proportional_std_no_dead_pixels
+# temp_counts_no_dead_pixels_crop = []
+# temp_counts_std_no_dead_pixels_crop = []
+# temp_ref_counts_no_dead_pixels_crop = []
+# temp_ref_counts_std_no_dead_pixels_crop = []
+# BB_proportional_no_dead_pixels_crop = []
+# BB_proportional_std_no_dead_pixels_crop = []
+# for i in range(len(laser_digitizer_ID)):
+# 	temp_counts_no_dead_pixels_rot=rotate(temp_counts_no_dead_pixels[i],foilrotdeg,axes=(-1,-2))
+# 	temp_counts_std_no_dead_pixels_rot=rotate(temp_counts_std_no_dead_pixels[i],foilrotdeg,axes=(-1,-2))
+# 	temp_ref_counts_no_dead_pixels_rot=rotate(temp_ref_counts_no_dead_pixels[i],foilrotdeg,axes=(-1,-2))
+# 	temp_ref_counts_std_no_dead_pixels_rot=rotate(temp_ref_counts_std_no_dead_pixels[i],foilrotdeg,axes=(-1,-2))
+# 	BB_proportional_no_dead_pixels_rot=rotate(BB_proportional_no_dead_pixels[i],foilrotdeg,axes=(-1,-2))
+# 	BB_proportional_std_no_dead_pixels_rot=rotate(BB_proportional_std_no_dead_pixels[i],foilrotdeg,axes=(-1,-2))
+# 	if not (laser_dict['height']==max_ROI[0][1]+1 and laser_dict['width']==max_ROI[1][1]+1):
+# 		temp_ref_counts_no_dead_pixels_rot*=out_of_ROI_mask
+# 		temp_ref_counts_no_dead_pixels_rot[np.logical_and(temp_counts_no_dead_pixels_rot<np.nanmin(temp_counts_no_dead_pixels[i]),temp_counts_no_dead_pixels_rot>np.nanmax(temp_counts_no_dead_pixels[i]))]=0
+# 		temp_ref_counts_std_no_dead_pixels_rot*=out_of_ROI_mask
+# 		temp_ref_counts_std_no_dead_pixels_rot[np.logical_and(temp_counts_no_dead_pixels_rot<np.nanmin(temp_counts_no_dead_pixels[i]),temp_counts_no_dead_pixels_rot>np.nanmax(temp_counts_no_dead_pixels[i]))]=0
+# 		BB_proportional_no_dead_pixels_rot*=out_of_ROI_mask
+# 		BB_proportional_no_dead_pixels_rot[np.logical_and(temp_counts_no_dead_pixels_rot<np.nanmin(temp_counts_no_dead_pixels[i]),temp_counts_no_dead_pixels_rot>np.nanmax(temp_counts_no_dead_pixels[i]))]=0
+# 		BB_proportional_std_no_dead_pixels_rot*=out_of_ROI_mask
+# 		BB_proportional_std_no_dead_pixels_rot[np.logical_and(temp_counts_no_dead_pixels_rot<np.nanmin(temp_counts_no_dead_pixels[i]),temp_counts_no_dead_pixels_rot>np.nanmax(temp_counts_no_dead_pixels[i]))]=0
+# 		temp_counts_std_no_dead_pixels_rot*=out_of_ROI_mask
+# 		temp_counts_std_no_dead_pixels_rot[np.logical_and(temp_counts_no_dead_pixels_rot<np.nanmin(temp_counts_no_dead_pixels[i]),temp_counts_no_dead_pixels_rot>np.nanmax(temp_counts_no_dead_pixels[i]))]=0
+# 		temp_counts_no_dead_pixels_rot*=out_of_ROI_mask
+# 		temp_counts_no_dead_pixels_rot[np.logical_and(temp_counts_no_dead_pixels_rot<np.nanmin(temp_counts_no_dead_pixels[i]),temp_counts_no_dead_pixels_rot>np.nanmax(temp_counts_no_dead_pixels[i]))]=0
+# 	temp_counts_no_dead_pixels_crop.append(temp_counts_no_dead_pixels_rot[:,foildw:foilup,foillx:foilrx])
+# 	temp_counts_std_no_dead_pixels_crop.append(temp_counts_std_no_dead_pixels_rot[:,foildw:foilup,foillx:foilrx])
+# 	temp_ref_counts_no_dead_pixels_crop.append(temp_ref_counts_no_dead_pixels_rot[foildw:foilup,foillx:foilrx])
+# 	temp_ref_counts_std_no_dead_pixels_crop.append(temp_ref_counts_std_no_dead_pixels_rot[foildw:foilup,foillx:foilrx])
+# 	BB_proportional_no_dead_pixels_crop.append(BB_proportional_no_dead_pixels_rot[foildw:foilup,foillx:foilrx])
+# 	BB_proportional_std_no_dead_pixels_crop.append(BB_proportional_std_no_dead_pixels_rot[foildw:foilup,foillx:foilrx])
+temp_counts_no_dead_pixels_crop = coleval.rotate_and_crop_multi_digitizer(temp_counts_no_dead_pixels,3,foilrotdeg,max_ROI,laser_dict['height'],laser_dict['width'],out_of_ROI_mask,foildw,foilup,foillx,foilrx)
+temp_counts_std_no_dead_pixels_crop = coleval.rotate_and_crop_multi_digitizer(temp_counts_std_no_dead_pixels,3,foilrotdeg,max_ROI,laser_dict['height'],laser_dict['width'],out_of_ROI_mask,foildw,foilup,foillx,foilrx)
+temp_ref_counts_no_dead_pixels_crop = coleval.rotate_and_crop_multi_digitizer(temp_ref_counts_no_dead_pixels,2,foilrotdeg,max_ROI,laser_dict['height'],laser_dict['width'],out_of_ROI_mask,foildw,foilup,foillx,foilrx)
+temp_ref_counts_std_no_dead_pixels_crop = coleval.rotate_and_crop_multi_digitizer(temp_ref_counts_std_no_dead_pixels,2,foilrotdeg,max_ROI,laser_dict['height'],laser_dict['width'],out_of_ROI_mask,foildw,foilup,foillx,foilrx)
+BB_proportional_no_dead_pixels_crop = coleval.rotate_and_crop_multi_digitizer(BB_proportional_no_dead_pixels,2,foilrotdeg,max_ROI,laser_dict['height'],laser_dict['width'],out_of_ROI_mask,foildw,foilup,foillx,foilrx)
+BB_proportional_std_no_dead_pixels_crop = coleval.rotate_and_crop_multi_digitizer(BB_proportional_std_no_dead_pixels,2,foilrotdeg,max_ROI,laser_dict['height'],laser_dict['width'],out_of_ROI_mask,foildw,foilup,foillx,foilrx)
 
-temp_counts_no_dead_pixels_crop = []
-temp_counts_std_no_dead_pixels_crop = []
-temp_ref_counts_no_dead_pixels_crop = []
-temp_ref_counts_std_no_dead_pixels_crop = []
-BB_proportional_no_dead_pixels_crop = []
-BB_proportional_std_no_dead_pixels_crop = []
-for i in range(len(laser_digitizer_ID)):
-	temp_counts_no_dead_pixels_rot=rotate(temp_counts_no_dead_pixels[i],foilrotdeg,axes=(-1,-2))
-	temp_counts_std_no_dead_pixels_rot=rotate(temp_counts_std_no_dead_pixels[i],foilrotdeg,axes=(-1,-2))
-	temp_ref_counts_no_dead_pixels_rot=rotate(temp_ref_counts_no_dead_pixels[i],foilrotdeg,axes=(-1,-2))
-	temp_ref_counts_std_no_dead_pixels_rot=rotate(temp_ref_counts_std_no_dead_pixels[i],foilrotdeg,axes=(-1,-2))
-	BB_proportional_no_dead_pixels_rot=rotate(BB_proportional_no_dead_pixels[i],foilrotdeg,axes=(-1,-2))
-	BB_proportional_std_no_dead_pixels_rot=rotate(BB_proportional_std_no_dead_pixels[i],foilrotdeg,axes=(-1,-2))
-	if not (laser_dict['height']==max_ROI[0][1]+1 and laser_dict['width']==max_ROI[1][1]+1):
-		temp_ref_counts_no_dead_pixels_rot*=out_of_ROI_mask
-		temp_ref_counts_no_dead_pixels_rot[np.logical_and(temp_counts_no_dead_pixels_rot<np.nanmin(temp_counts_no_dead_pixels[i]),temp_counts_no_dead_pixels_rot>np.nanmax(temp_counts_no_dead_pixels[i]))]=0
-		temp_ref_counts_std_no_dead_pixels_rot*=out_of_ROI_mask
-		temp_ref_counts_std_no_dead_pixels_rot[np.logical_and(temp_counts_no_dead_pixels_rot<np.nanmin(temp_counts_no_dead_pixels[i]),temp_counts_no_dead_pixels_rot>np.nanmax(temp_counts_no_dead_pixels[i]))]=0
-		BB_proportional_no_dead_pixels_rot*=out_of_ROI_mask
-		BB_proportional_no_dead_pixels_rot[np.logical_and(temp_counts_no_dead_pixels_rot<np.nanmin(temp_counts_no_dead_pixels[i]),temp_counts_no_dead_pixels_rot>np.nanmax(temp_counts_no_dead_pixels[i]))]=0
-		BB_proportional_std_no_dead_pixels_rot*=out_of_ROI_mask
-		BB_proportional_std_no_dead_pixels_rot[np.logical_and(temp_counts_no_dead_pixels_rot<np.nanmin(temp_counts_no_dead_pixels[i]),temp_counts_no_dead_pixels_rot>np.nanmax(temp_counts_no_dead_pixels[i]))]=0
-		temp_counts_std_no_dead_pixels_rot*=out_of_ROI_mask
-		temp_counts_std_no_dead_pixels_rot[np.logical_and(temp_counts_no_dead_pixels_rot<np.nanmin(temp_counts_no_dead_pixels[i]),temp_counts_no_dead_pixels_rot>np.nanmax(temp_counts_no_dead_pixels[i]))]=0
-		temp_counts_no_dead_pixels_rot*=out_of_ROI_mask
-		temp_counts_no_dead_pixels_rot[np.logical_and(temp_counts_no_dead_pixels_rot<np.nanmin(temp_counts_no_dead_pixels[i]),temp_counts_no_dead_pixels_rot>np.nanmax(temp_counts_no_dead_pixels[i]))]=0
-	temp_counts_no_dead_pixels_crop.append(temp_counts_no_dead_pixels_rot[:,foildw:foilup,foillx:foilrx])
-	temp_counts_std_no_dead_pixels_crop.append(temp_counts_std_no_dead_pixels_rot[:,foildw:foilup,foillx:foilrx])
-	temp_ref_counts_no_dead_pixels_crop.append(temp_ref_counts_no_dead_pixels_rot[foildw:foilup,foillx:foilrx])
-	temp_ref_counts_std_no_dead_pixels_crop.append(temp_ref_counts_std_no_dead_pixels_rot[foildw:foilup,foillx:foilrx])
-	BB_proportional_no_dead_pixels_crop.append(BB_proportional_no_dead_pixels_rot[foildw:foilup,foillx:foilrx])
-	BB_proportional_std_no_dead_pixels_crop.append(BB_proportional_std_no_dead_pixels_rot[foildw:foilup,foillx:foilrx])
 
-counts_full_rot=rotate(counts_full,foilrotdeg,axes=(-1,-2))
-if not (laser_dict['height']==max_ROI[0][1]+1 and laser_dict['width']==max_ROI[1][1]+1):
-	counts_full_rot*=out_of_ROI_mask
-	counts_full_rot[np.logical_and(counts_full_rot<np.nanmin(counts_full),counts_full_rot>np.nanmax(counts_full))]=0
-counts_full_extended_crop = counts_full_rot[:,foildw-10:foilup+10,foillx-10:foilrx+10]
+# counts_full_rot=rotate(counts_full,foilrotdeg,axes=(-1,-2))
+# if not (laser_dict['height']==max_ROI[0][1]+1 and laser_dict['width']==max_ROI[1][1]+1):
+# 	counts_full_rot*=out_of_ROI_mask
+# 	counts_full_rot[np.logical_and(counts_full_rot<np.nanmin(counts_full),counts_full_rot>np.nanmax(counts_full))]=0
+# counts_full_extended_crop = counts_full_rot[:,foildw-10:foilup+10,foillx-10:foilrx+10]
+counts_full_extended_crop = coleval.rotate_and_crop_3D(counts_full,foilrotdeg,max_ROI,laser_dict['height'],laser_dict['width'],out_of_ROI_mask,foildw-10,foilup+10,foillx-10,foilrx+10)
+
 # counts_full_crop = counts_full_rot[:,foildw:foilup,foillx:foilrx]
 plt.figure(figsize=(10, 5))
 # horizontal_displacement = np.diff((np.sum(laser_counts[i][:,ROI_horizontal[0]:ROI_horizontal[1],ROI_horizontal[2]:ROI_horizontal[3]],axis=2).T/(np.sum(laser_counts[i][:,ROI_horizontal[0]:ROI_horizontal[1],ROI_horizontal[2]:ROI_horizontal[3]],axis=2)[:,0])).T,axis=1).argmin(axis=1)
@@ -194,15 +202,18 @@ plt.legend(loc='best', fontsize='x-small')
 plt.savefig(laser_to_analyse[:-4]+'_2.eps', bbox_inches='tight')
 plt.close('all')
 
-reference_background_temperature_rot=rotate(reference_background_temperature_no_dead_pixels,foilrotdeg,axes=(-1,-2))
-reference_background_temperature_std_rot=rotate(reference_background_temperature_std_no_dead_pixels,foilrotdeg,axes=(-1,-2))
-if not (laser_dict['height']==max_ROI[0][1]+1 and laser_dict['width']==max_ROI[1][1]+1):
-	reference_background_temperature_std_rot*=out_of_ROI_mask
-	reference_background_temperature_std_rot[np.logical_and(reference_background_temperature_rot<np.nanmin(reference_background_temperature_no_dead_pixels),reference_background_temperature_rot>np.nanmax(reference_background_temperature_no_dead_pixels))]=0
-	reference_background_temperature_rot*=out_of_ROI_mask
-	reference_background_temperature_rot[np.logical_and(reference_background_temperature_rot<np.nanmin(reference_background_temperature_no_dead_pixels),reference_background_temperature_rot>np.nanmax(reference_background_temperature_no_dead_pixels))]=np.nanmean(reference_background_temperature_no_dead_pixels)
-reference_background_temperature_crop=reference_background_temperature_rot[:,foildw:foilup,foillx:foilrx]
-reference_background_temperature_std_crop=reference_background_temperature_std_rot[:,foildw:foilup,foillx:foilrx]
+# reference_background_temperature_rot=rotate(reference_background_temperature_no_dead_pixels,foilrotdeg,axes=(-1,-2))
+# reference_background_temperature_std_rot=rotate(reference_background_temperature_std_no_dead_pixels,foilrotdeg,axes=(-1,-2))
+# if not (laser_dict['height']==max_ROI[0][1]+1 and laser_dict['width']==max_ROI[1][1]+1):
+# 	reference_background_temperature_std_rot*=out_of_ROI_mask
+# 	reference_background_temperature_std_rot[np.logical_and(reference_background_temperature_rot<np.nanmin(reference_background_temperature_no_dead_pixels),reference_background_temperature_rot>np.nanmax(reference_background_temperature_no_dead_pixels))]=0
+# 	reference_background_temperature_rot*=out_of_ROI_mask
+# 	reference_background_temperature_rot[np.logical_and(reference_background_temperature_rot<np.nanmin(reference_background_temperature_no_dead_pixels),reference_background_temperature_rot>np.nanmax(reference_background_temperature_no_dead_pixels))]=np.nanmean(reference_background_temperature_no_dead_pixels)
+# reference_background_temperature_crop=reference_background_temperature_rot[:,foildw:foilup,foillx:foilrx]
+# reference_background_temperature_std_crop=reference_background_temperature_std_rot[:,foildw:foilup,foillx:foilrx]
+reference_background_temperature_crop = coleval.rotate_and_crop_3D(reference_background_temperature_no_dead_pixels,foilrotdeg,max_ROI,laser_dict['height'],laser_dict['width'],out_of_ROI_mask,foildw,foilup,foillx,foilrx)
+reference_background_temperature_std_crop = coleval.rotate_and_crop_3D(reference_background_temperature_std_no_dead_pixels,foilrotdeg,max_ROI,laser_dict['height'],laser_dict['width'],out_of_ROI_mask,foildw,foilup,foillx,foilrx)
+
 
 for i in range(len(laser_digitizer_ID)):
 	ani = coleval.movie_from_data(np.array([np.flip(np.transpose(laser_temperature_no_dead_pixels_crop[i],(0,2,1)),axis=2)]), laser_framerate/len(laser_digitizer_ID),integration=laser_int_time/1000,time_offset=time_partial[i][0],xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='foil temp [C]', prelude='shot ' + laser_to_analyse[-9:-4] + '\n')

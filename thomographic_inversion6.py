@@ -58,7 +58,7 @@ for cad_file in MASTU_FULL_MESH:
 	Mesh.from_file(cad_file[0], parent=world, material=AbsorbingSurface(), name=name)
 
 os.chdir("/home/ffederic/work/analysis_scripts/irvb/")
-pinhole_size = 6	# mm
+pinhole_size = 4	# mm
 irvb_cad = import_stl('IRVB_camera_no_backplate_'+str(pinhole_size)+'mm.stl', parent=world, material=AbsorbingSurface(), name="IRVB")
 
 
@@ -79,7 +79,7 @@ pinhole_centre = Point3D(-1.04076926,  1.06877069, -0.7198)
 pinhole_target = Sphere(pinhole_size*1e-3+0.001, transform=translate(*pinhole_centre), parent=world, material=NullMaterial())	# the first argument is the radious
 
 
-stand_off=0.045	# 0.045 / 0.060 / 0.075
+stand_off=0.060	# 0.045 / 0.060 / 0.075
 CCD_radius=1.50467+stand_off
 CCD_angle=135*(np.pi*2)/360
 

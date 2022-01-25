@@ -24,7 +24,7 @@ if laser_to_analyse[-9:-4] in list(MASTU_shots_timing.keys()):
 	start_time_of_pulse = MASTU_shots_timing[laser_to_analyse[-9:-4]]['pulse_start']	# s
 else:
 	start_time_of_pulse = 2.5	# s
-seconds_for_reference_frame = 1	# s
+seconds_for_reference_frame = 5	# s
 
 try:
 	data_median = full_saved_file_dict['data_median']
@@ -70,7 +70,7 @@ try:
 		flag_use_of_first_frames_as_reference = np.std((full_saved_file_dict['data']+full_saved_file_dict['data_median'])[(time_of_experiment-time_of_experiment[0])*1e-6-start_time_of_pulse<0],axis=0).min()<10
 	# Nope: doing this I don't subtract enough and there is a significant residual component of BB after the pulse that is just wrong.
 	flag_use_of_first_frames_as_reference = False
-	# but it shows that eliminating the oscillation before correcting for the rump up is much better
+	# but it shows that eliminating the oscillation before correcting for the ramp up is much better
 
 	try:
 		full_correction_coefficients = full_saved_file_dict['full_correction_coeff']
@@ -256,16 +256,12 @@ try:
 	params = params_dict['coeff']
 	errparams = params_dict['errcoeff']
 
-	foil_position_dict = dict([('angle',0.7),('foilcenter',[157,136]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',240)])	# modified 2021/09/21 to match sensitivity matrix
-	full_saved_file_dict_FAST = dict([])
-	# foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,FAST_counts_minus_background_crop_time = coleval.MASTU_pulse_process_FAST(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,laser_dict['height'],laser_dict['width'],flag_use_of_first_frames_as_reference)
-	foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,time_binned,powernoback,brightness,binning_type,inverted_dict = coleval.MASTU_pulse_process_FAST3(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,laser_dict['height'],laser_dict['width'],flag_use_of_first_frames_as_reference,params,errparams,foil_position_dict)
-	full_saved_file_dict_FAST['FAST_counts_minus_background_crop'] = np.float16(FAST_counts_minus_background_crop)
-	full_saved_file_dict_FAST['FAST_powernoback'] = np.float16(powernoback)
-	full_saved_file_dict_FAST['FAST_brightness'] = np.float32(brightness)
-	full_saved_file_dict_FAST['FAST_time_binned'] = time_binned
-	full_saved_file_dict_FAST['FAST_binning_type'] = binning_type
-	full_saved_file_dict_FAST['inverted_dict'] = inverted_dict
+	temp = np.abs(parameters_available_int_time_BB-laser_int_time/1000)<0.1
+	framerate = np.array(parameters_available_framerate_BB)[temp][np.abs(parameters_available_framerate_BB[temp]-laser_framerate).argmin()]
+	int_time = np.array(parameters_available_int_time_BB)[temp][np.abs(parameters_available_framerate_BB[temp]-laser_framerate).argmin()]
+	temp = np.array(parameters_available_BB)[temp][np.abs(parameters_available_framerate_BB[temp]-laser_framerate).argmin()]
+	print('parameters selected '+temp)
+
 	time_partial = []
 	for i in range(len(laser_digitizer_ID)):
 		time_of_experiment_digitizer_ID_seconds = (time_of_experiment_digitizer_ID[i]-time_of_experiment[0])*1e-6-start_time_of_pulse
@@ -273,6 +269,43 @@ try:
 			time_of_experiment_digitizer_ID_seconds = time_of_experiment_digitizer_ID_seconds-np.mean(aggregated_correction_coefficients[:,4])	# I use the mean of the coefficients because I want to avoid small unpredictable differences between the digitisers
 		time_partial.append(time_of_experiment_digitizer_ID_seconds)
 	time_full_int = np.sort(np.concatenate(time_partial))
+
+	# this is not filtered, but I guess it's well enough for the FAST process
+	temp_ref_counts = []
+	temp_ref_counts_std = []
+	for i in range(len(laser_digitizer_ID)):
+		if flag_use_of_first_frames_as_reference:
+			temp_ref_counts.append(np.mean(laser_counts_corrected[i][np.logical_and(time_of_experiment_digitizer_ID_seconds<0,time_of_experiment_digitizer_ID_seconds>-0.5)],axis=0))
+			temp_ref_counts_std.append(np.std(laser_counts_corrected[i][np.logical_and(time_of_experiment_digitizer_ID_seconds<0,time_of_experiment_digitizer_ID_seconds>-0.5)],axis=0))
+		else:
+			temp_ref_counts.append(np.mean(laser_counts_corrected[i][-int(seconds_for_reference_frame*laser_framerate/len(laser_digitizer_ID)):],axis=0))
+			temp_ref_counts_std.append(np.std(laser_counts_corrected[i][-int(seconds_for_reference_frame*laser_framerate/len(laser_digitizer_ID)):],axis=0))
+	reference_background_temperature,reference_background_temperature_std = coleval.count_to_temp_poly_multi_digitizer(temp_ref_counts,params,errparams,laser_digitizer_ID,number_cpu_available,counts_std=temp_ref_counts_std,report=0,parallelised=False)
+	# here I should use the room temperature acquired by other means. it is availabl, but with a 1degC precision, so for now I use the camera as thermometer
+	ref_temperature = np.mean(reference_background_temperature)
+	ref_temperature_std = (np.sum(np.array(reference_background_temperature_std)**2)**0.5 / len(np.array(reference_background_temperature).flatten()))
+
+	# Load BB parameters
+	# temp = pathparams+'/'+temp+'/numcoeff'+str(n)+'/average'
+	temp = pathparams_BB+'/'+temp+'/numcoeff'+str(n)
+	fullpathparams=os.path.join(temp,'coeff_polynomial_deg'+str(n-1)+'int_time'+str(int_time)+'ms.npz')
+	params_dict=np.load(fullpathparams)
+	params_dict.allow_pickle=True
+	params_BB = params_dict['coeff2']
+	errparams_BB = params_dict['errcoeff2']
+	BB_proportional,BB_proportional_std,constant_offset,constant_offset_std,photon_dict = coleval.calc_BB_coefficients_multi_digitizer(params_BB,errparams_BB,laser_digitizer_ID,temp_ref_counts,temp_ref_counts_std,ref_temperature=ref_temperature,ref_temperature_std=ref_temperature_std,wavewlength_top=5,wavelength_bottom=2.5,inttime=laser_int_time/1000)
+	photon_flux_over_temperature_interpolator = photon_dict['photon_flux_over_temperature_interpolator']
+
+	foil_position_dict = dict([('angle',0.7),('foilcenter',[157,136]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',240)])	# modified 2021/09/21 to match sensitivity matrix
+	full_saved_file_dict_FAST = dict([])
+	# foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,FAST_counts_minus_background_crop_time = coleval.MASTU_pulse_process_FAST(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,laser_dict['height'],laser_dict['width'],flag_use_of_first_frames_as_reference)
+	foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,time_binned,powernoback,brightness,binning_type,inverted_dict = coleval.MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,laser_dict['height'],laser_dict['width'],flag_use_of_first_frames_as_reference,params,errparams,params_BB,errparams_BB,photon_flux_over_temperature_interpolator,BB_proportional,BB_proportional_std,foil_position_dict)
+	full_saved_file_dict_FAST['FAST_counts_minus_background_crop'] = np.float16(FAST_counts_minus_background_crop)
+	full_saved_file_dict_FAST['FAST_powernoback'] = np.float16(powernoback)
+	full_saved_file_dict_FAST['FAST_brightness'] = np.float32(brightness)
+	full_saved_file_dict_FAST['FAST_time_binned'] = time_binned
+	full_saved_file_dict_FAST['FAST_binning_type'] = binning_type
+	full_saved_file_dict_FAST['inverted_dict'] = inverted_dict
 	full_saved_file_dict_FAST['time_full_full'] = time_full_int
 	np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
 
@@ -282,6 +315,7 @@ try:
 		else:
 			test = np.load(laser_to_analyse[:-4]+'_FAST.npz')
 		test = full_saved_file_dict['only_foil'].all()[str(laser_digitizer_ID[0])]['laser_temperature_no_dead_pixels_crop_minus_median']
+		test = full_saved_file_dict['only_foil'].all()[str(laser_digitizer_ID[0])]['BB_proportional_no_dead_pixels_crop']
 		if test.shape[1:]!=(foilup-foildw,foilrx-foillx):
 			bla = sdu+2	# random stuff to generate an error
 		time_full = full_saved_file_dict['full_frame'].all()['time_full_full']
@@ -532,27 +566,12 @@ try:
 			# here I should use the room temperature acquired by other means. it is availabl, but with a 1degC precision, so for now I use the camera as thermometer
 			ref_temperature = np.mean(reference_background_temperature)
 			ref_temperature_std = (np.sum(np.array(reference_background_temperature_std)**2)**0.5 / len(np.array(reference_background_temperature).flatten()))
-
-			temp = np.abs(parameters_available_int_time_BB-laser_int_time/1000)<0.1
-			framerate = np.array(parameters_available_framerate_BB)[temp][np.abs(parameters_available_framerate_BB[temp]-laser_framerate).argmin()]
-			int_time = np.array(parameters_available_int_time_BB)[temp][np.abs(parameters_available_framerate_BB[temp]-laser_framerate).argmin()]
-			temp = np.array(parameters_available_BB)[temp][np.abs(parameters_available_framerate_BB[temp]-laser_framerate).argmin()]
-			print('parameters selected '+temp)
-
-			# Load BB parameters
-			# temp = pathparams+'/'+temp+'/numcoeff'+str(n)+'/average'
-			temp = pathparams_BB+'/'+temp+'/numcoeff'+str(n)
-			fullpathparams=os.path.join(temp,'coeff_polynomial_deg'+str(n-1)+'int_time'+str(int_time)+'ms.npz')
-			params_dict=np.load(fullpathparams)
-			params_dict.allow_pickle=True
-			params_BB = params_dict['coeff2']
-			errparams_BB = params_dict['errcoeff2']
-			BB_proportional,BB_proportional_std,constant_offset,constant_offset_std,photon_dict = coleval.calc_BB_coefficients_multi_digitizer_stationary(params_BB,errparams_BB,laser_digitizer_ID,reference_background,reference_background_std,ref_temperature=ref_temperature,ref_temperature_std=ref_temperature_std,wavewlength_top=5,wavelength_bottom=2.5,inttime=laser_int_time/1000)
-			photon_flux_over_temperature_interpolator = photon_dict['photon_flux_over_temperature_interpolator']
+			# I recalculate coleval.calc_BB_coefficients_multi_digitizer here so it uses filtered data
+			BB_proportional,BB_proportional_std,constant_offset,constant_offset_std,photon_dict = coleval.calc_BB_coefficients_multi_digitizer(params_BB,errparams_BB,laser_digitizer_ID,temp_ref_counts,temp_ref_counts_std,ref_temperature=ref_temperature,ref_temperature_std=ref_temperature_std,wavewlength_top=5,wavelength_bottom=2.5,inttime=laser_int_time/1000)
 
 			laser_temperature,laser_temperature_std = coleval.count_to_temp_BB_multi_digitizer(temp_counts,params_BB,errparams_BB,laser_digitizer_ID,reference_background=temp_ref_counts,reference_background_std=temp_ref_counts_std,ref_temperature=ref_temperature,ref_temperature_std=ref_temperature_std,wavewlength_top=5,wavelength_bottom=2.5,inttime=laser_int_time/1000)
 			temp_counts_std = []
-			for i in range(len(digitizer_ID)):
+			for i in range(len(laser_digitizer_ID)):
 				temp_counts_std.append(coleval.estimate_counts_std(temp_counts[i]))
 
 			laser_temperature_no_dead_pixels = [coleval.replace_dead_pixels([data],flag)[0] for flag,data in zip(temp_bad_pixels_flag,laser_temperature)]
@@ -585,6 +604,9 @@ try:
 			else:
 				full_saved_file_dict['full_frame']['time_full_mode'] = 'no time refinement required'
 			full_saved_file_dict['full_frame']['time_full'] = time_full
+			full_saved_file_dict['ref_temperature'] = ref_temperature
+			full_saved_file_dict['ref_temperature_std'] = ref_temperature_std
+			full_saved_file_dict['photon_flux_over_temperature_interpolator'] = photon_flux_over_temperature_interpolator
 			print('arrived up to here 1')
 			exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_pulse_process3_BB.py").read())
 		else:

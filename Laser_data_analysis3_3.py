@@ -306,7 +306,7 @@ for cases_to_include in all_cases_to_include:
 			else:
 				time_axis = (time_of_experiment[1:-1]-time_of_experiment[1])/1e6
 				totalpower_filtered_2_full = generic_filter(powernoback,np.mean,size=[max(1,int(frames_for_one_pulse*experimental_laser_duty))])
-				totalpower_filtered_2 = totalpower_filtered_2_full[int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5))]
+				totalpower_filtered_2 = totalpower_filtered_2_full#[int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5))]
 				time_axis_crop = time_axis[int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5))]
 				temp = max(1,int((len(totalpower_filtered_2)-len(totalpower_filtered_2)//frames_for_one_pulse*frames_for_one_pulse)/2))
 				totalpower_filtered_2 = totalpower_filtered_2[temp:-temp]
@@ -323,7 +323,7 @@ for cases_to_include in all_cases_to_include:
 					temp = max(1,int((len(totalpower_filtered_2)-len(totalpower_filtered_2)//frames_for_one_pulse*frames_for_one_pulse)/2))
 					totalpower_filtered_2 = totalpower_filtered_2[temp:-temp]
 				throughs_loc = find_peaks(-totalpower_filtered_2,distance=frames_for_one_pulse*0.95)[0]
-				throughs_loc = throughs_loc[np.logical_and(throughs_loc>5,throughs_loc<len(totalpower_filtered_2)-6)]
+				throughs_loc = throughs_loc[np.logical_and(throughs_loc>1,throughs_loc<len(totalpower_filtered_2)-1)]
 				throughs = totalpower_filtered_2[throughs_loc]
 				through = np.mean(throughs)
 				footprint = np.concatenate([np.ones((time_ON_after_SS)),np.zeros((time_ON_after_SS))])
@@ -358,7 +358,8 @@ for cases_to_include in all_cases_to_include:
 	sigma = (np.abs(all_laser_to_analyse_power_end-all_laser_to_analyse_power_end.max()) + all_laser_to_analyse_power_end.max())/np.array(all_laser_to_analyse_frequency_end)
 	sigma = np.array([sigma,sigma*2,sigma]).T.flatten()
 	bds = [[0.7,0.1*2.5e-6,0.1*Ptthermaldiffusivity,0.8],[1,10*2.5e-6,10*Ptthermaldiffusivity,1.2]]
-	guess=[0.98,2.5e-6,Ptthermaldiffusivity,1]
+	# guess=[0.98,2.5e-6,Ptthermaldiffusivity,1]
+	guess=[0.98,2.5e-6,1e-5,1]
 	fit = curve_fit(calculate_laser_power_given_parameters_1, x, y, sigma=sigma, p0=guess,bounds=bds,maxfev=int(1e6),verbose=2,diff_step=np.array(guess)/100,xtol=1e-10)
 	guess = fit[0]
 	fit = curve_fit(calculate_laser_power_given_parameters_1, x, y, sigma=sigma, p0=guess,bounds=bds,maxfev=int(1e6),verbose=2,diff_step=np.array(guess)/10000,xtol=1e-10)
@@ -385,6 +386,8 @@ for cases_to_include in all_cases_to_include:
 		emissivity_first_stage = 0.9999999999999
 		defocused_to_focused_power_first_stage = 0.826382122298828
 		# this to me is the best I ever got. I'll use this
+
+	if cases_to_include==['laser17', 'laser18', 'laser19', 'laser22', 'laser25', 'laser32', 'laser34', 'laser41', 'laser42', 'laser43', 'laser44', 'laser45', 'laser46', 'laser47']:
 
 
 
@@ -436,7 +439,7 @@ for cases_to_include in all_cases_to_include:
 		time_axis = (time_of_experiment[1:-1]-time_of_experiment[1])/1e6
 		totalpower_filtered_2_full = generic_filter(powernoback,np.mean,size=[max(1,int(frames_for_one_pulse*experimental_laser_duty))])
 		totalpower_filtered_2_full_first = generic_filter(powernoback_first,np.mean,size=[max(1,int(frames_for_one_pulse*experimental_laser_duty))])
-		totalpower_filtered_2 = totalpower_filtered_2_full[int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5))]
+		totalpower_filtered_2 = totalpower_filtered_2_full#[int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5))]
 		time_axis_crop = time_axis[int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5))]
 		temp = max(1,int((len(totalpower_filtered_2)-len(totalpower_filtered_2)//frames_for_one_pulse*frames_for_one_pulse)/2))
 		totalpower_filtered_2 = totalpower_filtered_2[temp:-temp]
