@@ -116,6 +116,7 @@ reference_background_temperature_std_crop = []
 temp_counts_no_dead_pixels_crop = []
 temp_counts_std_no_dead_pixels_crop = []
 temp_ref_counts_no_dead_pixels_crop = []
+temp_ref_counts_std_no_dead_pixels_crop = []
 BB_proportional_no_dead_pixels_crop = []
 BB_proportional_std_no_dead_pixels_crop = []
 for i in range(len(laser_digitizer_ID)):
@@ -129,11 +130,12 @@ for i in range(len(laser_digitizer_ID)):
 	temp_counts_no_dead_pixels_crop.append(( laser_dict['only_foil'].all()[str(laser_digitizer_ID[i])]['temp_counts_no_dead_pixels_crop_median'] + laser_dict['only_foil'].all()[str(laser_digitizer_ID[i])]['temp_counts_no_dead_pixels_crop_minus_median'].astype(np.float32).T ).T )
 	temp_counts_std_no_dead_pixels_crop.append(( laser_dict['only_foil'].all()[str(laser_digitizer_ID[i])]['temp_counts_std_no_dead_pixels_crop_median'] + laser_dict['only_foil'].all()[str(laser_digitizer_ID[i])]['temp_counts_std_no_dead_pixels_crop_minus_median'].astype(np.float32).T ).T )
 	temp_ref_counts_no_dead_pixels_crop.append( laser_dict['only_foil'].all()[str(laser_digitizer_ID[i])]['temp_ref_counts_no_dead_pixels_crop'] )
+	temp_ref_counts_std_no_dead_pixels_crop.append( laser_dict['only_foil'].all()[str(laser_digitizer_ID[i])]['temp_ref_counts_std_no_dead_pixels_crop'] )
 nan_ROI_mask = laser_dict['only_foil'].all()['nan_ROI_mask']
 time_full = laser_dict['full_frame'].all()['time_full']
 ref_temperature = laser_dict['ref_temperature']
 ref_temperature_std = laser_dict['ref_temperature_std']
-photon_flux_over_temperature_interpolator = laser_dict['photon_flux_over_temperature_interpolator']
+photon_flux_over_temperature_interpolator = laser_dict['photon_flux_over_temperature_interpolator'].tolist()
 laser_temperature_no_dead_pixels_minus_background_crop = []
 laser_temperature_std_no_dead_pixels_minus_background_crop = []
 for i in range(len(laser_digitizer_ID)):
@@ -178,8 +180,9 @@ for i in range(len(laser_digitizer_ID)):
 		plt.ylabel('Vertical axis [pixles]')
 		plt.pause(0.01)
 
-for shrink_factor_t in [1,2,3,5]:
-	for shrink_factor_x in [1,3,5,10]:
+for shrink_factor_x in [1,2,3,5,10]:
+	grid_laplacian_binned = []
+	for shrink_factor_t in [1,2,3,5]:
 		binning_type = 'bin' + str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x)
 		print('working on binning \n'+binning_type)
 		seconds_for_reference_frame = 1	# s
@@ -219,10 +222,10 @@ for shrink_factor_t in [1,2,3,5]:
 			# plt.plot(time_partial_binned,initial_mean,color=color[i],label='initial, dig '+str(laser_digitizer_ID[i]))
 
 			laser_temperature_std_crop_binned = 1/(shrink_factor_t*shrink_factor_x**2)*coleval.proper_homo_binning_t_2D(laser_temperature_std_no_dead_pixels_crop[i]**2,shrink_factor_t,shrink_factor_x,type='np.nansum')[0]**0.5
-			laser_temperature_std_minus_background_crop_binned = 1/(shrink_factor_t*shrink_factor_x**2)*coleval.proper_homo_binning_t_2D(laser_temperature_std_minus_background_no_dead_pixels_crop[i]**2,shrink_factor_t,shrink_factor_x,type='np.nansum')[0]**0.5
+			# laser_temperature_std_minus_background_crop_binned = 1/(shrink_factor_t*shrink_factor_x**2)*coleval.proper_homo_binning_t_2D(laser_temperature_std_minus_background_no_dead_pixels_crop[i]**2,shrink_factor_t,shrink_factor_x,type='np.nansum')[0]**0.5
 			temp_counts_std_crop_binned = 1/(shrink_factor_t*shrink_factor_x**2)*coleval.proper_homo_binning_t_2D(temp_counts_std_no_dead_pixels_crop[i]**2,shrink_factor_t,shrink_factor_x,type='np.nansum')[0]**0.5
 			BB_proportional_std_crop_binned = 1/(shrink_factor_t*shrink_factor_x**2)*(coleval.proper_homo_binning_2D(BB_proportional_std_no_dead_pixels_crop[i]**2,shrink_factor_x,type='np.nansum')**0.5)
-			reference_background_std_crop_binned = 1/(shrink_factor_t*shrink_factor_x**2)*(coleval.proper_homo_binning_2D(reference_background_std_no_dead_pixels_crop[i]**2,shrink_factor_x,type='np.nansum')**0.5)
+			reference_background_std_crop_binned = 1/(shrink_factor_t*shrink_factor_x**2)*(coleval.proper_homo_binning_2D(temp_ref_counts_std_no_dead_pixels_crop[i]**2,shrink_factor_x,type='np.nansum')**0.5)
 
 			laser_temperature_crop_binned_full.append(laser_temperature_minus_background_crop_binned[1:-1,1:-1,1:-1]+ref_temperature)
 			laser_temperature_minus_background_crop_binned_full.append(laser_temperature_minus_background_crop_binned[1:-1,1:-1,1:-1])
@@ -285,7 +288,13 @@ for shrink_factor_t in [1,2,3,5]:
 			# ani = coleval.movie_from_data(np.array([laser_temperature_minus_background_crop]), laser_framerate/shrink_factor_t, integration=laser_int_time/1000,time_offset=-start_time_of_pulse,xlabel='horizontal coord [pixels]',ylabel='vertical coord [pixels]',barlabel='raw counts [au]')
 			# dt=1/laser_framerate/shrink_factor_t
 			dx=foilhorizw/foilhorizwpixel*shrink_factor_x
-			dTdt,dTdt_std,d2Tdxy,d2Tdxy_std,negd2Tdxy,negd2Tdxy_std,T4_T04,T4_T04_std = coleval.calc_temp_to_power_BB_1(photon_flux_over_temperature_interpolator,laser_temperature_minus_background_crop_binned,ref_temperature,time_partial_binned,dx,temp_counts_std_crop_binned,BB_proportional_crop_binned,BB_proportional_std_crop_binned,reference_background_std_crop_binned,laser_temperature_std_crop_binned,nan_ROI_mask)
+			if len(grid_laplacian_binned)==0:
+				horizontal_coord = np.arange(np.shape(laser_temperature_minus_background_crop_binned)[2])
+				vertical_coord = np.arange(np.shape(laser_temperature_minus_background_crop_binned)[1])
+				horizontal_coord,vertical_coord = np.meshgrid(horizontal_coord,vertical_coord)
+				grid_binned = np.array([[horizontal_coord.flatten()]*4,[vertical_coord.flatten()]*4]).T
+				grid_laplacian_binned = -coleval.build_laplacian(grid_binned,diagonal_factor=0.5) / (dx**2) / 2	# the /2 comes from the fact that including the diagonals amounts to double counting, so i do a mean by summing half of it
+			dTdt,dTdt_std,d2Tdxy,d2Tdxy_std,negd2Tdxy,negd2Tdxy_std,T4_T04,T4_T04_std = coleval.calc_temp_to_power_BB_1(photon_flux_over_temperature_interpolator,laser_temperature_minus_background_crop_binned,ref_temperature,time_partial_binned,dx,temp_counts_std_crop_binned,BB_proportional_crop_binned,BB_proportional_std_crop_binned,reference_background_std_crop_binned,laser_temperature_std_crop_binned,nan_ROI_mask,grid_laplacian=grid_laplacian_binned)
 			BBrad,diffusion,timevariation,powernoback,BBrad_std,diffusion_std,timevariation_std,powernoback_std = coleval.calc_temp_to_power_BB_2(dTdt,dTdt_std,d2Tdxy,d2Tdxy_std,negd2Tdxy,negd2Tdxy_std,T4_T04,T4_T04_std,nan_ROI_mask,foilemissivityscaled,foilthicknessscaled,reciprdiffusivityscaled,Ptthermalconductivity)
 
 			BBrad_full.append(BBrad)
@@ -384,7 +393,7 @@ for shrink_factor_t in [1,2,3,5]:
 
 		temp = powernoback_full[:,:,:int(np.shape(powernoback_full)[2]*0.75)]
 		temp = np.sort(temp[np.max(temp,axis=(1,2)).argmax()].flatten())
-		ani,efit_reconstruction = coleval.movie_from_data(np.array([np.flip(np.transpose(powernoback_full,(0,2,1)),axis=2)]), laser_framerate_binned,timesteps=time_full_binned,integration=laser_int_time/1000,time_offset=time_full_binned[0],extvmin=0,extvmax=np.nanmean(temp[-len(temp)//60:]),xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='Power on foil [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4] + '\n'+binning_type+'\n',overlay_structure=True,include_EFIT=True,EFIT_output_requested=True,efit_reconstruction=efit_reconstruction,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True)
+		ani,efit_reconstruction = coleval.movie_from_data(np.array([np.flip(np.transpose(powernoback_full,(0,2,1)),axis=2)]), laser_framerate_binned,timesteps=time_full_binned,integration=laser_int_time/1000,time_offset=time_full_binned[0],xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='Power on foil [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4] + '\n'+binning_type+'\n',overlay_structure=True,include_EFIT=True,EFIT_output_requested=True,efit_reconstruction=efit_reconstruction,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True)
 		ani.save(path_power_output + '/' + str(shot_number)+'_bin' + str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x) + '_power.mp4', fps=5*laser_framerate_binned/383, writer='ffmpeg',codec='mpeg4')
 		plt.close('all')
 
@@ -394,7 +403,7 @@ for shrink_factor_t in [1,2,3,5]:
 		saved_file_dict_short[binning_type]['brightness_std_full'] = np.float32(brightness_std_full)
 		temp = brightness_full[:,:,:int(np.shape(brightness_full)[2]*0.75)]
 		temp = np.sort(temp[np.max(temp,axis=(1,2)).argmax()].flatten())
-		ani,efit_reconstruction = coleval.movie_from_data(np.array([np.flip(np.transpose(brightness_full,(0,2,1)),axis=2)]), laser_framerate_binned,timesteps=time_full_binned,integration=laser_int_time/1000,time_offset=time_full_binned[0],extvmin=0,extvmax=np.nanmean(temp[-len(temp)//60:]),xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='Brightness [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4] + '\n'+binning_type+'\n',overlay_structure=True,include_EFIT=True,EFIT_output_requested=True,efit_reconstruction=efit_reconstruction,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True)
+		ani,efit_reconstruction = coleval.movie_from_data(np.array([np.flip(np.transpose(brightness_full,(0,2,1)),axis=2)]), laser_framerate_binned,timesteps=time_full_binned,integration=laser_int_time/1000,time_offset=time_full_binned[0],xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='Brightness [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4] + '\n'+binning_type+'\n',overlay_structure=True,include_EFIT=True,EFIT_output_requested=True,efit_reconstruction=efit_reconstruction,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True)
 		ani.save(path_power_output + '/' + str(shot_number)+'_bin' + str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x) + '_brightness.mp4', fps=5*laser_framerate_binned/383, writer='ffmpeg',codec='mpeg4')
 		plt.close('all')
 

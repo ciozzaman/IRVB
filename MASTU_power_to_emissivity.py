@@ -40,8 +40,8 @@ except:
 
 
 # for grid_resolution in [8, 4, 2]:	# 8cm resolution is way not enough
-for grid_resolution in [4, 2]:
-# for grid_resolution in [4]:
+# for grid_resolution in [4, 2]:
+for grid_resolution in [2]:
 	inverted_dict[str(grid_resolution)] = dict([])
 	# grid_resolution = 8  # in cm
 	foil_resolution = '187'
@@ -162,7 +162,7 @@ for grid_resolution in [4, 2]:
 
 	# for shrink_factor_x in np.flip(all_shrink_factor_x,axis=0):
 	# for shrink_factor_x in all_shrink_factor_x:
-	for shrink_factor_x in [5,3]:
+	for shrink_factor_x in [5,3,2]:
 	# for shrink_factor_x in [3]:
 		inverted_dict[str(grid_resolution)][str(shrink_factor_x)] = dict([])
 		sensitivities_binned = coleval.proper_homo_binning_1D_1D_1D(sensitivities_reshaped_masked2,shrink_factor_x,shrink_factor_x,1,type='np.nanmean')
@@ -181,7 +181,7 @@ for grid_resolution in [4, 2]:
 		# ROI = np.array([[0.2,0.95],[0.1,1]])
 		ROI1 = np.array([[0.03,0.80],[0.03,0.85]])
 		ROI2 = np.array([[0.03,0.7],[0.03,0.91]])
-		ROI_beams = np.array([[0.,0.32],[0.4,1]])
+		ROI_beams = np.array([[0.,0.3],[0.5,1]])
 		sensitivities_binned_crop,selected_ROI = coleval.cut_sensitivity_matrix_based_on_foil_anysotropy(sensitivities_binned,ROI1,ROI2,ROI_beams,laser_to_analyse)
 
 		plt.figure(figsize=(10,6))
@@ -364,7 +364,7 @@ for grid_resolution in [4, 2]:
 		path_sensitivity_original = cp.deepcopy(path_sensitivity)
 
 		# for shrink_factor_t in np.flip(all_shrink_factor_t,axis=0):
-		for shrink_factor_t in [5,3,2]:
+		for shrink_factor_t in [5,3,2,1]:
 		# for shrink_factor_t in [3]:
 			inverted_dict[str(grid_resolution)][str(shrink_factor_x)][str(shrink_factor_t)] = dict([])
 			binning_type = 'bin' + str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x)
@@ -443,7 +443,10 @@ for grid_resolution in [4, 2]:
 			plt.title('L-curve evolution\nlight=early, dark=late')
 			plt.figure(11,figsize=(20, 10))
 			plt.title('L-curve curvature evolution\nlight=early, dark=late')
-			first_guess = []
+			path_for_plots = path_power_output + '/invertions_log/'+binning_type
+			if not os.path.exists(path_for_plots):
+				os.makedirs(path_for_plots)
+			x_optimal_all_guess = []
 			regolarisation_coeff_upper_limit = 10**-0.2
 			for i_t in range(len(time_full_binned_crop)):
 				time_start = tm.time()
@@ -456,18 +459,17 @@ for grid_resolution in [4, 2]:
 				homogeneous_scaling=1e-4
 
 				guess = np.random.random(sensitivities_binned_crop.shape[1]+2)*1e2
-				if first_guess != []:
-					guess = cp.deepcopy(first_guess)
 
 				target_chi_square = sensitivities_binned_crop.shape[1]	# obtained doing a scan of the regularisation coefficient. this was the result for regolarisation_coeff~1e-3
 				target_chi_square_sigma = 200	# this should be tight, because for such a high number of degrees of freedom things should average very well
 
 				# regolarisation_coeff_edge = 10
-				regolarisation_coeff_edge_multiplier = 1e2
 				regolarisation_coeff_central_border_Z_derivate_multiplier = 0
 				regolarisation_coeff_central_column_border_R_derivate_multiplier = 0
 				regolarisation_coeff_edge_laplacian_multiplier = 1e1
 				regolarisation_coeff_divertor_multiplier = 1
+				regolarisation_coeff_edge_multiplier = 1e2
+				negative_coeff_multiplier = 1
 
 				def prob_and_gradient(emissivity_plus,*args):
 					# time_start = tm.time()
@@ -500,7 +502,7 @@ for grid_resolution in [4, 2]:
 					# time_start = tm.time()
 
 					likelihood_power_fit = np.sum((foil_power_error/sigma_powernoback)**2)
-					likelihood_emissivity_pos = np.sum((np.minimum(0.,emissivity)/sigma_emissivity)**2)
+					likelihood_emissivity_pos = (negative_coeff_multiplier**2) * np.sum((np.minimum(0.,emissivity)/sigma_emissivity)**2)
 					likelihood_emissivity_laplacian = (regolarisation_coeff**2)* np.sum(((emissivity_laplacian_not_selected_super_x_cells /sigma_emissivity)**2))
 					likelihood_emissivity_laplacian_superx = (regolarisation_coeff_divertor**2)* np.sum(((emissivity_laplacian_selected_super_x_cells /sigma_emissivity)**2))
 					likelihood_emissivity_edge_laplacian = (regolarisation_coeff_edge_laplacian**2)* np.sum(((emissivity_laplacian_selected_edge_cells_for_laplacian /sigma_emissivity)**2))
@@ -518,7 +520,7 @@ for grid_resolution in [4, 2]:
 
 					temp = foil_power_error/sigma_powernoback_2
 					likelihood_power_fit_derivate = np.concatenate((-2*np.dot(temp,sensitivities_binned_crop),[-2*np.sum(temp*select_foil_region_with_plasma)*homogeneous_scaling,-2*np.sum(temp*selected_ROI_internal)*homogeneous_scaling]))
-					likelihood_emissivity_pos_derivate = 2*np.minimum(0.,emissivity)/sigma_emissivity_2
+					likelihood_emissivity_pos_derivate = 2 * (negative_coeff_multiplier**2) * np.minimum(0.,emissivity)/sigma_emissivity_2
 
 					# likelihood_emissivity_laplacian_derivate = 2*(regolarisation_coeff**2) * np.dot(emissivity_laplacian_not_selected_super_x_cells , grid_laplacian_masked_crop_scaled) / (sigma_emissivity**2)
 					# likelihood_emissivity_laplacian_derivate_superx = 2*(regolarisation_coeff_divertor**2) * np.dot(emissivity_laplacian_selected_super_x_cells , grid_laplacian_masked_crop_scaled) / (sigma_emissivity**2)
@@ -538,7 +540,6 @@ for grid_resolution in [4, 2]:
 					# time_start = tm.time()
 					return likelihood,likelihood_derivate
 
-
 				if False:	# only for testinf the prob_and_gradient function
 					target = -2
 					# guess[target] = -10
@@ -551,9 +552,8 @@ for grid_resolution in [4, 2]:
 
 				# regolarisation_coeff_range = 10**np.linspace(1,-6,num=120)
 				regolarisation_coeff_range = 10**np.linspace(1,-5,num=102)
-				x_optimal_all,recompose_voxel_emissivity_all,y_opt_all,opt_info_all,voxels_centre = loop_fit_over_regularisation(prob_and_gradient,regolarisation_coeff_range,guess,grid_data_masked_crop,powernoback,sigma_powernoback,sigma_emissivity)
-				if first_guess == []:
-					first_guess = x_optimal_all[0]
+				x_optimal_all,recompose_voxel_emissivity_all,y_opt_all,opt_info_all,voxels_centre = loop_fit_over_regularisation(prob_and_gradient,regolarisation_coeff_range,guess,grid_data_masked_crop,powernoback,sigma_powernoback,sigma_emissivity,x_optimal_all_guess=x_optimal_all_guess,factr=1e8)
+				x_optimal_all_guess = cp.deepcopy(x_optimal_all)
 
 				regolarisation_coeff_range = np.flip(regolarisation_coeff_range,axis=0)
 				x_optimal_all = np.flip(x_optimal_all,axis=0)
@@ -567,9 +567,12 @@ for grid_resolution in [4, 2]:
 				score_y_all.append(score_y)
 				regolarisation_coeff_range_all.append(regolarisation_coeff_range)
 
+				plt.figure(10)
+				plt.plot(np.log(score_x),np.log(score_y),'--',color=str(0.9-i_t/(len(time_full_binned_crop)/0.9)))
+
 				score_y,score_x,score_y_record_rel,score_x_record_rel,curvature_range,Lcurve_curvature,recompose_voxel_emissivity,x_optimal,points_removed,regolarisation_coeff,regolarisation_coeff_range,y_opt,opt_info,curvature_range_left_all,curvature_range_right_all,peaks,best_index = find_optimal_regularisation(score_x,score_y,regolarisation_coeff_range,x_optimal_all,recompose_voxel_emissivity_all,y_opt_all,opt_info_all,regolarisation_coeff_upper_limit=regolarisation_coeff_upper_limit)
 
-				plt.figure(10)
+				# plt.figure(10)
 				plt.plot(score_x,score_y,color=str(0.9-i_t/(len(time_full_binned_crop)/0.9)))
 				plt.plot(score_x,score_y,'+',color=str(0.9-i_t/(len(time_full_binned_crop)/0.9)))
 				plt.plot(score_x[best_index],score_y[best_index],'o',color=str(0.9-i_t/(len(time_full_binned_crop)/0.9)))
@@ -680,11 +683,7 @@ for grid_resolution in [4, 2]:
 			foil_power_residuals = np.array(foil_power_residuals)
 			fit_error = np.array(fit_error)
 			chi_square_all = np.array(chi_square_all)
-
-			path_for_plots = path_power_output + '/invertions_log/'+binning_type
-			if not os.path.exists(path_for_plots):
-				os.makedirs(path_for_plots)
-
+			plt.close('all')
 
 			plt.figure(figsize=(20, 10))
 			plt.plot(time_full_binned_crop,inverted_data_likelihood)

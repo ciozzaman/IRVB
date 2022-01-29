@@ -88,21 +88,22 @@ for i_day,day in enumerate(to_do):
 # shot_available = [['IRVB-MASTU_shot-45314.ptw','IRVB-MASTU_shot-45315.ptw'],['IRVB-MASTU_shot-45248.ptw'],['IRVB-MASTU_shot-45125.ptw'],['IRVB-MASTU_shot-45100.ptw','IRVB-MASTU_shot-45099.ptw']]
 # to_do = ['2021-10-13','2021-10-22','2021-10-26']
 # shot_available = [['IRVB-MASTU_shot-45272.ptw'],['IRVB-MASTU_shot-45401.ptw','IRVB-MASTU_shot-45399.ptw'],['IRVB-MASTU_shot-45414.ptw','IRVB-MASTU_shot-45420.ptw','IRVB-MASTU_shot-45415.ptw','IRVB-MASTU_shot-45416.ptw']]
-# to_do = ['2021-10-14','2021-10-21','2021-10-12','2021-09-28']
-# shot_available = [['IRVB-MASTU_shot-45293.ptw','IRVB-MASTU_shot-45296.ptw'],['IRVB-MASTU_shot-45382.ptw'],['IRVB-MASTU_shot-45242.ptw'],['IRVB-MASTU_shot-45069.ptw']]
+to_do = ['2021-10-12','2021-10-22','2021-10-13','2021-10-14','2021-10-22','2021-10-22','2021-10-22','2021-10-22','2021-10-28','2021-10-28','2021-09-28','2021-10-28']
+shot_available = [['IRVB-MASTU_shot-45239.ptw','IRVB-MASTU_shot-45391.ptw','IRVB-MASTU_shot-45272.ptw','IRVB-MASTU_shot-45281.ptw','IRVB-MASTU_shot-45397.ptw','IRVB-MASTU_shot-45398.ptw','IRVB-MASTU_shot-45399.ptw','IRVB-MASTU_shot-45400.ptw','IRVB-MASTU_shot-45468.ptw','IRVB-MASTU_shot-45469.ptw','IRVB-MASTU_shot-45470.ptw','IRVB-MASTU_shot-45473.ptw']]
 continue_after_FAST = True
 
 every_pixel_independent = False
-overwrite_oscillation_filter = True
+overwrite_oscillation_filter = False
+override_FAST_analysis = False
 if False:
-	for i_day,day in enumerate(to_do):
-	# for i_day,day in enumerate(np.flip(to_do,axis=0)):
+	# for i_day,day in enumerate(to_do):
+	for i_day,day in enumerate(np.flip(to_do,axis=0)):
 		# for name in shot_available[i_day]:
 		for name in np.flip(shot_available[i_day],axis=0):
 			laser_to_analyse=path+day+'/'+name
 
 			# exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_pulse_process.py").read())
-			exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_pulse_process2.py").read())
+			exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_pulse_process2_BB.py").read())
 			# exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_temp_to_power3.py").read())
 else:
 	# i_day,day = 0,'2021-07-29'
@@ -113,14 +114,16 @@ else:
 	# name='IRVB-MASTU_shot-44308.ptw'
 	# i_day,day = 0,'2021-09-01'
 	# name='IRVB-MASTU_shot-44863.ptw'
-	# i_day,day = 0,'2021-09-28'
-	# name='IRVB-MASTU_shot-45071.ptw'
-	# i_day,day = 0,'2021-10-05'
-	# name='IRVB-MASTU_shot-45156.ptw'
-	i_day,day = 0,'2021-10-12'
-	name='IRVB-MASTU_shot-45239.ptw'
+	# i_day,day = 0,'2021-10-13'
+	# name='IRVB-MASTU_shot-45272.ptw'
+	# i_day,day = 0,'2021-10-15'
+	# name='IRVB-MASTU_shot-45310.ptw'
+	# i_day,day = 0,'2021-10-12'
+	# name='IRVB-MASTU_shot-45239.ptw'
 	# i_day,day = 0,'2021-10-22'
 	# name='IRVB-MASTU_shot-45401.ptw'
+	i_day,day = 0,'2021-10-21'
+	name='IRVB-MASTU_shot-45371.ptw'
 	laser_to_analyse=path+day+'/'+name
 	exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_pulse_process2_BB.py").read())
 	# exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_temp_to_power3.py").read())

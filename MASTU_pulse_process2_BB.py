@@ -297,29 +297,48 @@ try:
 	photon_flux_over_temperature_interpolator = photon_dict['photon_flux_over_temperature_interpolator']
 
 	foil_position_dict = dict([('angle',0.7),('foilcenter',[157,136]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',240)])	# modified 2021/09/21 to match sensitivity matrix
-	full_saved_file_dict_FAST = dict([])
-	# foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,FAST_counts_minus_background_crop_time = coleval.MASTU_pulse_process_FAST(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,laser_dict['height'],laser_dict['width'],flag_use_of_first_frames_as_reference)
-	foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,time_binned,powernoback,brightness,binning_type,inverted_dict = coleval.MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,laser_dict['height'],laser_dict['width'],flag_use_of_first_frames_as_reference,params,errparams,params_BB,errparams_BB,photon_flux_over_temperature_interpolator,BB_proportional,BB_proportional_std,foil_position_dict)
-	full_saved_file_dict_FAST['FAST_counts_minus_background_crop'] = np.float16(FAST_counts_minus_background_crop)
-	full_saved_file_dict_FAST['FAST_powernoback'] = np.float16(powernoback)
-	full_saved_file_dict_FAST['FAST_brightness'] = np.float32(brightness)
-	full_saved_file_dict_FAST['FAST_time_binned'] = time_binned
-	full_saved_file_dict_FAST['FAST_binning_type'] = binning_type
-	full_saved_file_dict_FAST['inverted_dict'] = inverted_dict
-	full_saved_file_dict_FAST['time_full_full'] = time_full_int
-	np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
-
+	try:
+		if override_FAST_analysis:
+			blu=sgne#	I want it to fail
+		test = np.load(laser_to_analyse[:-4]+'_FAST.npz')
+		test.allow_pickle=True
+		inverted_dict = dict(test)
+		inverted_dict = inverted_dict['inverted_dict'].all()
+		test = inverted_dict[str(2)]['regolarisation_coeff_all']
+		foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx = coleval.get_rotation_crop_parameters(temp_ref_counts[-1],foil_position_dict,laser_to_analyse,laser_counts_corrected[-1],time_of_experiment_digitizer_ID_seconds)
+		print('FAST creastion skipped')
+	except:
+		print('generating FAST')
+		start = tm.time()
+		full_saved_file_dict_FAST = dict([])
+		# foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,FAST_counts_minus_background_crop_time = coleval.MASTU_pulse_process_FAST(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,laser_dict['height'],laser_dict['width'],flag_use_of_first_frames_as_reference)
+		foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,time_binned,powernoback,brightness,binning_type,inverted_dict = coleval.MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,laser_dict['height'],laser_dict['width'],flag_use_of_first_frames_as_reference,params,errparams,params_BB,errparams_BB,photon_flux_over_temperature_interpolator,BB_proportional,BB_proportional_std,foil_position_dict)
+		full_saved_file_dict_FAST['FAST_counts_minus_background_crop'] = np.float16(FAST_counts_minus_background_crop)
+		full_saved_file_dict_FAST['FAST_powernoback'] = np.float16(powernoback)
+		full_saved_file_dict_FAST['FAST_brightness'] = np.float32(brightness)
+		full_saved_file_dict_FAST['FAST_time_binned'] = time_binned
+		full_saved_file_dict_FAST['FAST_binning_type'] = binning_type
+		full_saved_file_dict_FAST['inverted_dict'] = inverted_dict
+		full_saved_file_dict_FAST['time_full_full'] = time_full_int
+		np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
+		print('generated FAST in %.3g min' %((tm.time()-start)/60))
 	try:
 		if overwrite_oscillation_filter==True:
-			test = np.load(laser_to_analyse[:-4]+'_FAST.npz')['gnagna']	# I want them all
+			blagna=sbluppa	# I want them all
 		else:
 			test = np.load(laser_to_analyse[:-4]+'_FAST.npz')
-		test = full_saved_file_dict['only_foil'].all()[str(laser_digitizer_ID[0])]['laser_temperature_no_dead_pixels_crop_minus_median']
+			test.allow_pickle=True
+			inverted_dict = dict(test)
+			inverted_dict = inverted_dict['inverted_dict'].all()
+			test = inverted_dict[str(2)]['regolarisation_coeff_all']
 		test = full_saved_file_dict['only_foil'].all()[str(laser_digitizer_ID[0])]['BB_proportional_no_dead_pixels_crop']
+		test = full_saved_file_dict['only_foil'].all()[str(laser_digitizer_ID[0])]['laser_temperature_no_dead_pixels_crop_minus_median']
 		if test.shape[1:]!=(foilup-foildw,foilrx-foillx):
 			bla = sdu+2	# random stuff to generate an error
 		time_full = full_saved_file_dict['full_frame'].all()['time_full_full']
+		print('data filtering skipped')
 	except:
+		print('Filtering data')
 		full_saved_file_dict['only_foil'] = dict([])
 		if continue_after_FAST == True:
 			temp_counts = []
@@ -582,8 +601,8 @@ try:
 			temp_counts_std_no_dead_pixels = [coleval.replace_dead_pixels([data],flag)[0] for flag,data in zip(temp_bad_pixels_flag,temp_counts_std)]
 			temp_ref_counts_no_dead_pixels = [coleval.replace_dead_pixels([[data]],flag)[0][0] for flag,data in zip(temp_bad_pixels_flag,temp_ref_counts)]
 			temp_ref_counts_std_no_dead_pixels = [coleval.replace_dead_pixels([[data]],flag)[0][0] for flag,data in zip(temp_bad_pixels_flag,temp_ref_counts_std)]
-			BB_proportional_no_dead_pixels = [coleval.replace_dead_pixels([[data]],flag)[0][0] for flag,data in zip(bad_pixels_flag,BB_proportional)]
-			BB_proportional_std_no_dead_pixels = [coleval.replace_dead_pixels([[data]],flag)[0][0] for flag,data in zip(bad_pixels_flag,BB_proportional_std)]
+			BB_proportional_no_dead_pixels = [coleval.replace_dead_pixels([[data]],flag)[0][0] for flag,data in zip(temp_bad_pixels_flag,BB_proportional)]
+			BB_proportional_std_no_dead_pixels = [coleval.replace_dead_pixels([[data]],flag)[0][0] for flag,data in zip(temp_bad_pixels_flag,BB_proportional_std)]
 
 			# for i in range(len(laser_digitizer_ID)):
 			# 	full_saved_file_dict['full_frame'][str(laser_digitizer_ID[i])]['laser_temperature_no_dead_pixels_minus_median'] = np.float16(laser_temperature_no_dead_pixels[i].T-np.median(laser_temperature_no_dead_pixels[i],axis=(-1,-2))).T
