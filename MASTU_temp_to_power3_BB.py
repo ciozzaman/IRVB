@@ -182,7 +182,7 @@ for i in range(len(laser_digitizer_ID)):
 
 for shrink_factor_x in [1,2,3,5,10]:
 	grid_laplacian_binned = []
-	for shrink_factor_t in [1,2,3,5]:
+	for shrink_factor_t in [1,2,3,5,7,10]:
 		binning_type = 'bin' + str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x)
 		print('working on binning \n'+binning_type)
 		seconds_for_reference_frame = 1	# s
@@ -224,8 +224,8 @@ for shrink_factor_x in [1,2,3,5,10]:
 			laser_temperature_std_crop_binned = 1/(shrink_factor_t*shrink_factor_x**2)*coleval.proper_homo_binning_t_2D(laser_temperature_std_no_dead_pixels_crop[i]**2,shrink_factor_t,shrink_factor_x,type='np.nansum')[0]**0.5
 			# laser_temperature_std_minus_background_crop_binned = 1/(shrink_factor_t*shrink_factor_x**2)*coleval.proper_homo_binning_t_2D(laser_temperature_std_minus_background_no_dead_pixels_crop[i]**2,shrink_factor_t,shrink_factor_x,type='np.nansum')[0]**0.5
 			temp_counts_std_crop_binned = 1/(shrink_factor_t*shrink_factor_x**2)*coleval.proper_homo_binning_t_2D(temp_counts_std_no_dead_pixels_crop[i]**2,shrink_factor_t,shrink_factor_x,type='np.nansum')[0]**0.5
-			BB_proportional_std_crop_binned = 1/(shrink_factor_t*shrink_factor_x**2)*(coleval.proper_homo_binning_2D(BB_proportional_std_no_dead_pixels_crop[i]**2,shrink_factor_x,type='np.nansum')**0.5)
-			reference_background_std_crop_binned = 1/(shrink_factor_t*shrink_factor_x**2)*(coleval.proper_homo_binning_2D(temp_ref_counts_std_no_dead_pixels_crop[i]**2,shrink_factor_x,type='np.nansum')**0.5)
+			BB_proportional_std_crop_binned = 1/((shrink_factor_t**0.5)*shrink_factor_x**2)*(coleval.proper_homo_binning_2D(BB_proportional_std_no_dead_pixels_crop[i]**2,shrink_factor_x,type='np.nansum')**0.5)
+			reference_background_std_crop_binned = 1/((shrink_factor_t**0.5)*shrink_factor_x**2)*(coleval.proper_homo_binning_2D(temp_ref_counts_std_no_dead_pixels_crop[i]**2,shrink_factor_x,type='np.nansum')**0.5)
 
 			laser_temperature_crop_binned_full.append(laser_temperature_minus_background_crop_binned[1:-1,1:-1,1:-1]+ref_temperature)
 			laser_temperature_minus_background_crop_binned_full.append(laser_temperature_minus_background_crop_binned[1:-1,1:-1,1:-1])

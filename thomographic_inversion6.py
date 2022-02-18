@@ -108,7 +108,7 @@ num_pixels = pixel_h * pixel_v
 sensitivities = np.zeros((num_voxels, num_pixels))
 
 
-n_samples_per_pixel=5000	# for low resolution I used 5000, 10000 for high
+n_samples_per_pixel=2000# 5000	# for low resolution I used 5000, 10000 for high
 path_sensitivity = '/home/ffederic/work/analysis_scripts/sensitivity_matrix_'+grid_type[5:]+'_foil_pixel_h_'+str(pixel_h)+'_power'+'_stand_off_'+str(stand_off)+'_pinhole_'+str(pinhole_size)
 if not os.path.exists(path_sensitivity):
 	os.makedirs(path_sensitivity)

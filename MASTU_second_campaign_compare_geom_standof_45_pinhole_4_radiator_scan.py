@@ -316,7 +316,7 @@ for grid_resolution in [2]:
 			temp2=0
 		elif grid_resolution==2:
 			temp=1e-4
-			temp2=1e-4
+			temp2=np.sum(sensitivities_binned_crop,axis=(0,1)).max()*1e-3
 		elif grid_resolution==4:
 			temp=0
 			temp2=0
@@ -474,16 +474,16 @@ for grid_resolution in [2]:
 			temp_save.allow_pickle = True
 			temp_save = dict(temp_save)
 			original_voxels_centre = temp_save['voxels_centre']
-			original_x_optimal = temp_save['x_optimal']
-			foil_power_residuals = temp_save['foil_power_residuals']
+			# original_x_optimal = temp_save['x_optimal']
+			# foil_power_residuals = temp_save['foil_power_residuals']
 			sigma_powernoback = temp_save['sigma_powernoback']
-			fitted_foil_power = temp_save['fitted_foil_power']
-			foil_power_residuals_mean_interp = temp_save['foil_power_residuals_mean_interp'].tolist()
-			foil_power_residuals_std_interp = temp_save['foil_power_residuals_std_interp'].tolist()
-			foil_power_std_interp = temp_save['foil_power_std_interp'].tolist()
-			original_sensitivities_binned_crop = temp_save['sensitivities_binned_crop']
+			# fitted_foil_power = temp_save['fitted_foil_power']
+			# foil_power_residuals_mean_interp = temp_save['foil_power_residuals_mean_interp'].tolist()
+			# foil_power_residuals_std_interp = temp_save['foil_power_residuals_std_interp'].tolist()
+			# foil_power_std_interp = temp_save['foil_power_std_interp'].tolist()
+			# original_sensitivities_binned_crop = temp_save['sensitivities_binned_crop']
 			original_grid_laplacian_masked_crop = temp_save['grid_laplacian_masked_crop']
-			grid_data_masked_crop = temp_save['grid_data_masked_crop']
+			original_grid_data_masked_crop = temp_save['grid_data_masked_crop']
 			i_t = temp_save['i_t']
 
 
@@ -496,16 +496,18 @@ for grid_resolution in [2]:
 			sep_z = all_time_sep_z[temp]
 			phantom = []
 			for i in range(len(original_grid_laplacian_masked_crop)):
-				r,z = np.mean(grid_data_masked_crop[i],axis=0)
-				for i_ in range(len(sep_r)):
-					if np.nanmin((r_fine[sep_r[i_]]-r)**2 + (z_fine[sep_z[i_]]-z)**2) <= 0.03**2:
-						phantom.append((original_grid_laplacian_masked_crop!=0)[i])
-						continue
-			phantom = phantom[::6]
+				r,z = np.mean(original_grid_data_masked_crop[i],axis=0)
+				if z<-0.9:
+					for i_ in range(len(sep_r)):
+						if np.nanmin((r_fine[sep_r[i_]]-r)**2 + (z_fine[sep_z[i_]]-z)**2) <= 0.03**2:
+							phantom.append((original_grid_laplacian_masked_crop!=0)[i])
+							continue
+			phantom = phantom[::9]
 			phantom.append((original_grid_laplacian_masked_crop!=0)[0])
-			phantom.extend(original_grid_laplacian_masked_crop[2:][(np.diff(np.mean(grid_data_masked_crop,axis=1)[:,1])<0)[:-1]][::2])
+			phantom.extend(original_grid_laplacian_masked_crop[2:][(np.diff(np.mean(original_grid_data_masked_crop,axis=1)[:,1])<0)[:-1]][::4])
 			phantom = np.array(phantom)
 			phantom[phantom!=0] = 1e5
+			phantom = np.flip(phantom,axis=0)
 
 			recompose_voxel_emissivity_input_all = []
 			x_optimal_input_full_res_all = []
@@ -539,6 +541,8 @@ for grid_resolution in [2]:
 				start = tm.time()
 				original_x_optimal = np.concatenate([phantom_int,[0],[0]])
 				x_optimal_input_full_res = x_optimal_input_full_res_all[i_phantom_int]
+				x_optimal_input_low_res,trash = coleval.translate_emissivity_profile_with_homo_temp(np.mean(grid_data,axis=1),x_optimal_input_full_res,grid_data_masked_crop)
+
 
 				if False:	# visualisation only
 					plt.figure(figsize=(12,13))
@@ -617,7 +621,7 @@ for grid_resolution in [2]:
 
 				averaged_params = np.array([-1.40845607e-07,  6.08795383e-03, -2.53336005e+01])
 				counts_full_resolution = (-averaged_params[1]+((averaged_params[1]**2 - 4*averaged_params[0]*(averaged_params[2]-temperature_evolution))**0.5))/(2*averaged_params[0])
-				counts_full_resolution_std = coleval.estimate_counts_std(counts_full_resolution)
+				counts_full_resolution_std = coleval.estimate_counts_std(counts_full_resolution,int_time=laser_int_time/1000)
 				counts_full_resolution_with_noise = np.random.normal(loc=counts_full_resolution,scale=counts_full_resolution_std)
 				temperature_evolution_with_noise = averaged_params[-1] + averaged_params[-2] * counts_full_resolution_with_noise + averaged_params[-3] * (counts_full_resolution_with_noise**2)
 
@@ -625,8 +629,8 @@ for grid_resolution in [2]:
 				temperature_minus_background_crop_binned = temperature_crop_binned-ref_temperature
 				counts_std_crop_binned = 1/(shrink_factor_t*shrink_factor_x**2)*(coleval.proper_homo_binning_t_2D(counts_full_resolution_std**2,shrink_factor_t,shrink_factor_x,type='np.nansum')[0]**0.5)
 				averaged_BB_proportional_crop_binned = 1.17347598197361e-13	* np.ones_like(temperature_minus_background_crop_binned[0])
-				averaged_BB_proportional_std_crop_binned = 1.1647691499440713e-17	* np.ones_like(temperature_minus_background_crop_binned[0])
-				temp_ref_counts_std_crop_binned = 5.077188644392399	* np.ones_like(temperature_minus_background_crop_binned)
+				averaged_BB_proportional_std_crop_binned = 1.1647691499440713e-17/((shrink_factor_t**0.5)*shrink_factor_x)*np.ones_like(temperature_minus_background_crop_binned[0])
+				temp_ref_counts_std_crop_binned = 5.077188644392399/((shrink_factor_t**0.5)*shrink_factor_x)*np.ones_like(temperature_minus_background_crop_binned)
 				photon_flux_over_temperature_interpolator = interp1d([20,30,40,50],[2.22772831e+14, 3.10040403e+14, 4.22648744e+14, 5.65430883e+14],fill_value="extrapolate",bounds_error=False)
 				photon_flux_over_temperature = photon_flux_over_temperature_interpolator(temperature_evolution_with_noise)
 				temperature_std_crop = counts_full_resolution_std/(photon_flux_over_temperature*np.mean(averaged_BB_proportional_crop_binned))
@@ -690,6 +694,8 @@ for grid_resolution in [2]:
 
 				sigma_emissivity = 1e6	# this is completely arbitrary
 				sigma_emissivity_2 = sigma_emissivity**2
+				r_int = np.mean(grid_data_masked_crop,axis=1)[:,0]
+				r_int_2 = r_int**2
 
 				sigma_powernoback_full[np.isnan(sigma_powernoback_full)] = 1e10
 				selected_ROI_internal = selected_ROI.flatten()
@@ -706,17 +712,18 @@ for grid_resolution in [2]:
 				# sigma_powernoback = np.ones_like(powernoback)*10
 				sigma_powernoback_2 = sigma_powernoback**2
 				# homogeneous_scaling=1e-4
-				guess = np.ones(sensitivities_binned_crop.shape[1]+2)*1e2
-				if i_phantom_int>0:
-					guess = first_guess
+				# guess = np.ones(sensitivities_binned_crop.shape[1]+2)*1e2
+				# if i_phantom_int>0:
+				# 	guess = first_guess
+				guess = cp.deepcopy(x_optimal_input_low_res)
 
 				# regolarisation_coeff_edge = 10
 				regolarisation_coeff_central_border_Z_derivate_multiplier = 0
 				regolarisation_coeff_central_column_border_R_derivate_multiplier = 0
 				regolarisation_coeff_edge_laplacian_multiplier = 1e1
 				regolarisation_coeff_divertor_multiplier = 1
-				regolarisation_coeff_edge_multiplier = 1e2
-				negative_coeff_multiplier = 1
+				regolarisation_coeff_edge_multiplier = 2e2
+				regolarisation_coeff_non_negativity_multiplier = 10
 
 				def prob_and_gradient(emissivity_plus,*args):
 					# time_start = tm.time()
@@ -749,7 +756,7 @@ for grid_resolution in [2]:
 					# time_start = tm.time()
 
 					likelihood_power_fit = np.sum((foil_power_error/sigma_powernoback)**2)
-					likelihood_emissivity_pos = (negative_coeff_multiplier**2) * np.sum((np.minimum(0.,emissivity)/sigma_emissivity)**2)
+					likelihood_emissivity_pos = (regolarisation_coeff_non_negativity_multiplier**2)*np.sum((np.minimum(0.,emissivity)*r_int/sigma_emissivity*1)**2)	# I added a weight on the redious, becaus the power increase with radious and a negative voxel at high r is more important that one at low r
 					likelihood_emissivity_laplacian = (regolarisation_coeff**2)* np.sum(((emissivity_laplacian_not_selected_super_x_cells /sigma_emissivity)**2))
 					likelihood_emissivity_laplacian_superx = (regolarisation_coeff_divertor**2)* np.sum(((emissivity_laplacian_selected_super_x_cells /sigma_emissivity)**2))
 					likelihood_emissivity_edge_laplacian = (regolarisation_coeff_edge_laplacian**2)* np.sum(((emissivity_laplacian_selected_edge_cells_for_laplacian /sigma_emissivity)**2))
@@ -767,7 +774,7 @@ for grid_resolution in [2]:
 
 					temp = foil_power_error/sigma_powernoback_2
 					likelihood_power_fit_derivate = np.concatenate((-2*np.dot(temp,sensitivities_binned_crop),[-2*np.sum(temp*select_foil_region_with_plasma)*homogeneous_scaling,-2*np.sum(temp*selected_ROI_internal)*homogeneous_scaling]))
-					likelihood_emissivity_pos_derivate = 2 * (negative_coeff_multiplier**2) * np.minimum(0.,emissivity)/sigma_emissivity_2
+					likelihood_emissivity_pos_derivate = 2*(regolarisation_coeff_non_negativity_multiplier**2)*np.minimum(0.,emissivity)*r_int_2/sigma_emissivity_2*1
 
 					# likelihood_emissivity_laplacian_derivate = 2*(regolarisation_coeff**2) * np.dot(emissivity_laplacian_not_selected_super_x_cells , grid_laplacian_masked_crop_scaled) / (sigma_emissivity**2)
 					# likelihood_emissivity_laplacian_derivate_superx = 2*(regolarisation_coeff_divertor**2) * np.dot(emissivity_laplacian_selected_super_x_cells , grid_laplacian_masked_crop_scaled) / (sigma_emissivity**2)
@@ -787,8 +794,8 @@ for grid_resolution in [2]:
 					# time_start = tm.time()
 					return likelihood,likelihood_derivate
 
-				regolarisation_coeff_range = 10**np.linspace(1,-7,num=137)
-				x_optimal_all,recompose_voxel_emissivity_all,y_opt_all,opt_info_all,voxels_centre = coleval.loop_fit_over_regularisation(prob_and_gradient,regolarisation_coeff_range,guess,grid_data_masked_crop,powernoback,sigma_powernoback,sigma_emissivity,factr=1e7,iprint=1)
+				regolarisation_coeff_range = 10**np.linspace(-1,-8,num=93)
+				x_optimal_all,recompose_voxel_emissivity_all,y_opt_all,opt_info_all,voxels_centre = coleval.loop_fit_over_regularisation(prob_and_gradient,regolarisation_coeff_range,guess,grid_data_masked_crop,powernoback,sigma_powernoback,sigma_emissivity,factr=1e8,pgtol=5e-8,iprint=1)
 				first_guess = cp.deepcopy(x_optimal_all[0])
 
 				regolarisation_coeff_range = np.flip(regolarisation_coeff_range,axis=0)
@@ -821,7 +828,7 @@ for grid_resolution in [2]:
 				plt.ylabel('log ||Laplacian(m)||2')
 				plt.title(csv_file.name[-60:-28])
 				plt.title('L-curve evolution\nlight=early, dark=late\n'+csv_file.name[-60:-28]+'\ntime_per_iteration [s] '+str(np.round(time_per_iteration).astype(int)))
-				plt.savefig('/home/ffederic/work/irvb/MAST-U' + '/' + str(shot_number)+'_'+ binning_type +'_gridres'+str(grid_resolution)+'cm_L_curve_evolution'+'_radiator_scan.eps')
+				plt.savefig('/home/ffederic/work/irvb/MAST-U' + '/'+'stand_off_0.045_pinhole_4' + str(shot_number)+'_'+ binning_type +'_gridres'+str(grid_resolution)+'cm_L_curve_evolution'+'_radiator_scan.eps')
 				plt.figure(11)
 				plt.plot(regolarisation_coeff_range[curvature_range:-curvature_range],Lcurve_curvature,color=str(0.9-i_phantom_int/(len(phantom)/0.9)))
 				plt.plot(regolarisation_coeff_range[best_index],Lcurve_curvature[best_index-curvature_range],'o',color=str(0.9-i_phantom_int/(len(phantom)/0.9)))
@@ -831,7 +838,7 @@ for grid_resolution in [2]:
 				plt.xlabel('regularisation coeff')
 				plt.ylabel('L-curve turvature')
 				plt.title('L-curve curvature evolution\nlight=early, dark=late'+csv_file.name[-60:-28])
-				plt.savefig('/home/ffederic/work/irvb/MAST-U' + '/' + str(shot_number)+'_'+ binning_type +'_gridres'+str(grid_resolution)+'cm_L_curve_curvature_evolution'+'_radiator_scan.eps')
+				plt.savefig('/home/ffederic/work/irvb/MAST-U' + '/'+'stand_off_0.045_pinhole_4' + str(shot_number)+'_'+ binning_type +'_gridres'+str(grid_resolution)+'cm_L_curve_curvature_evolution'+'_radiator_scan.eps')
 				plt.title(csv_file.name[-60:-28])
 				# plt.pause(0.01)
 
@@ -840,7 +847,7 @@ for grid_resolution in [2]:
 				additional_each_frame_label_description = ['reg coeff=']*len(recompose_voxel_emissivity_out)
 				additional_each_frame_label_number = np.array(regolarisation_coeff_all)
 				ani = coleval.movie_from_data_radial_profile(np.array([np.flip(np.transpose(recompose_voxel_emissivity_out,(0,2,1)),axis=2)]), 1, extent = extent, image_extent=image_extent,timesteps=np.ones(len(recompose_voxel_emissivity_out))*0.5,integration=laser_int_time/1000,barlabel='Emissivity [W/m3]',xlabel='R [m]', ylabel='Z [m]', prelude='shot '  + laser_to_analyse[-9:-4] + '\n'+binning_type+'\n' ,overlay_structure=True,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True,include_EFIT=True,additional_each_frame_label_description=additional_each_frame_label_description,additional_each_frame_label_number=additional_each_frame_label_number)#,extvmin=0,extvmax=4e4)
-				ani.save('/home/ffederic/work/irvb/MAST-U' + '/' + str(shot_number)+'_'+ binning_type +'_gridres'+str(grid_resolution)+'cm_reconstruct_emissivity_bayesian_radiator_scan_output.mp4', fps=5*(30)/383, writer='ffmpeg',codec='mpeg4')
+				ani.save('/home/ffederic/work/irvb/MAST-U' + '/'+'stand_off_0.045_pinhole_4' + str(shot_number)+'_'+ binning_type +'_gridres'+str(grid_resolution)+'cm_reconstruct_emissivity_bayesian_radiator_scan_output.mp4', fps=5*(30)/383, writer='ffmpeg',codec='mpeg4')
 				# plt.pause(0.01)
 				plt.close()
 
@@ -858,23 +865,94 @@ for grid_resolution in [2]:
 			temp_save['stand_off_0.045_pinhole_4']['fitted_foil_power_in'] = fitted_foil_power_in
 			temp_save['stand_off_0.045_pinhole_4']['fitted_foil_power_out'] = fitted_foil_power_out
 			temp_save['stand_off_0.045_pinhole_4']['time_per_iteration'] = time_per_iteration
-			np.savez_compressed(laser_to_analyse[:-4]+'_inverted_baiesian_test_export_radiator_scan',**temp_save)
+			np.savez_compressed(laser_to_analyse[:-4]+'_stand_off_0.045_pinhole_4_inverted_baiesian_test_export_radiator_scan',**temp_save)
 
 
 exit()
 
 # manual bit
 
-temp_save = np.load(laser_to_analyse[:-4]+'_inverted_baiesian_test_export.npz')
+temp_save = np.load(laser_to_analyse[:-4]+'_stand_off_0.045_pinhole_4_inverted_baiesian_test_export_radiator_scan.npz')
 temp_save.allow_pickle = True
 temp_save = dict(temp_save)
-x_optimal_all = temp_save['stand_off_0.045_pinhole_4'].all()['x_optimal_all']
-recompose_voxel_emissivity_all = temp_save['stand_off_0.045_pinhole_4'].all()['recompose_voxel_emissivity_all']
-voxels_centre = temp_save['stand_off_0.045_pinhole_4'].all()['voxels_centre']
-y_opt_all = temp_save['stand_off_0.045_pinhole_4'].all()['y_opt_all']
-opt_info_all = temp_save['stand_off_0.045_pinhole_4'].all()['opt_info_all']
-foil_power_residuals_simulated = temp_save['stand_off_0.045_pinhole_4'].all()['foil_power_residuals_simulated']
+x_optimal_out = temp_save['stand_off_0.045_pinhole_4'].all()['x_optimal_out']
+x_optimal_input_full_res_all = temp_save['stand_off_0.045_pinhole_4'].all()['x_optimal_input_full_res_all']
+recompose_voxel_emissivity_out = temp_save['stand_off_0.045_pinhole_4'].all()['recompose_voxel_emissivity_out']
 
+
+recompose_voxel_emissivity_output_all = []
+x_optimal_output_full_res_all = []
+for i_phantom_int,phantom_int in enumerate(phantom):
+	original_x_optimal = x_optimal_out[i_phantom_int] - np.concatenate([phantom_int,[0],[0]])
+	x_optimal_output_full_res,recompose_voxel_emissivity_output = coleval.translate_emissivity_profile_with_homo_temp(original_voxels_centre,original_x_optimal,np.mean(grid_data,axis=1))
+	x_optimal_output_full_res_all.append(x_optimal_output_full_res)
+	recompose_voxel_emissivity_output_all.append(recompose_voxel_emissivity_output)
+
+extent = [grid_data[:,:,0].min(), grid_data[:,:,0].max(), grid_data[:,:,1].min(), grid_data[:,:,1].max()]
+image_extent = [grid_data[:,:,0].min(), grid_data[:,:,0].max(), grid_data[:,:,1].min(), grid_data[:,:,1].max()]
+ani = coleval.movie_from_data_radial_profile(np.array([np.flip(np.transpose(np.abs(recompose_voxel_emissivity_output_all),(0,2,1)),axis=2)]), 1, extent = extent, image_extent=image_extent,timesteps=np.ones(len(recompose_voxel_emissivity_output_all))*0.5,integration=laser_int_time/1000,barlabel='Emissivity |output - phantom| [W/m3]',xlabel='R [m]', ylabel='Z [m]', prelude='shot '  + laser_to_analyse[-9:-4] + '\n'+binning_type+'\n' ,overlay_structure=True,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True,include_EFIT=True)#,extvmin=0,extvmax=4e4)
+ani.save('/home/ffederic/work/irvb/MAST-U' + '/' + str(shot_number)+'_'+ binning_type +'_gridres'+str(grid_resolution)+'cm_reconstruct_emissivity_bayesian_radiator_scan2.mp4', fps=5*(30)/383, writer='ffmpeg',codec='mpeg4')
+# plt.pause(0.01)
+plt.close()
+
+grid_resolution_m = grid_resolution*0.01
+spatial_coord=np.meshgrid(np.arange(np.shape(recompose_voxel_emissivity_out)[2]),np.arange(np.shape(recompose_voxel_emissivity_out)[1]))
+def gaussian_2D_fitting_plus_gradient(full_output,data):
+	def internal(args):
+		x = spatial_coord[0]	# horizontal
+		y = spatial_coord[1]	# vertical
+		diameter_2 = ((x-args[2])*grid_resolution_m)**2+((y-args[1])*grid_resolution_m)**2
+		out = args[0]*np.exp(- diameter_2/(2*(args[3]**2)) )
+		full_out = out-data
+		grad_a0 = np.nansum( 2*full_out*np.exp(- diameter_2/(2*(args[3]**2)) ) )
+		grad_a1 = -np.nansum( 2*full_out*out*(-1/(2*(args[3]**2)))*2*(grid_resolution_m**2)*(y-args[1]))
+		grad_a2 = -np.nansum( 2*full_out*out*(-1/(2*(args[3]**2)))*2*(grid_resolution_m**2)*(x-args[2]))
+		grad_a3 = np.nansum( 2*full_out*out*( diameter_2/(args[3]**3)) )
+		out = full_out**2
+		if full_output==True:
+			return np.nansum(out),np.array([grad_a0,grad_a1,grad_a2,grad_a3])
+		else:
+			return np.nansum(out)
+	return internal
+
+if False:	# only for testinf the prob_and_gradient function
+	temp = recompose_voxel_emissivity_out[-2]
+	temp[np.isnan(temp)] = 0
+	guess = [temp.max(),*np.unravel_index(temp.argmax(),np.shape(temp)),0.01]
+	# guess = [temp.max(),20,20,0.03]
+	target = 3
+	scale = 1e-4
+	# guess[target] = 1e5
+	temp1 = gaussian_2D_fitting_plus_gradient(True,temp)(guess)
+	guess[target] +=scale
+	temp2 = gaussian_2D_fitting_plus_gradient(True,temp)(guess)
+	guess[target] += -2*scale
+	temp3 = gaussian_2D_fitting_plus_gradient(True,temp)(guess)
+	guess[target] += scale
+	print('calculated derivated of %.7g vs true of %.7g' %(temp1[1][target],((temp2[0]-temp3[0])/(2*scale))))
+
+bds = [[0,np.inf],[-np.inf,np.inf],[-np.inf,np.inf],[0,np.inf]]
+x_optimal_all = []
+fit = []
+x = spatial_coord[0]	# horizontal
+y = spatial_coord[1]	# vertical
+for i_phantom_int,phantom_int in enumerate(phantom):
+	temp = recompose_voxel_emissivity_out[i_phantom_int]
+	temp[np.isnan(temp)] = 0
+	guess = [temp.max(),*np.unravel_index(temp.argmax(),np.shape(temp)),0.01]
+	x_optimal, y_opt, opt_info = scipy.optimize.fmin_l_bfgs_b(gaussian_2D_fitting_plus_gradient(True,recompose_voxel_emissivity_out[i_phantom_int]), x0=guess, iprint=0, factr=1e0, pgtol=1e-6,bounds=bds)#,m=1000, maxls=1000, pgtol=1e-10, factr=1e0)#,approx_grad = True)
+	x_optimal_all.append(x_optimal)
+	diameter_2 = ((x-x_optimal[2])*grid_resolution_m)**2+((y-x_optimal[1])*grid_resolution_m)**2
+	out = x_optimal[0]*np.exp(- diameter_2/(2*(x_optimal[3]**2)) )-temp
+	fit.append(out)
+
+
+extent = [grid_data_masked_crop[:,:,0].min(), grid_data_masked_crop[:,:,0].max(), grid_data_masked_crop[:,:,1].min(), grid_data_masked_crop[:,:,1].max()]
+image_extent = [grid_data_masked_crop[:,:,0].min(), grid_data_masked_crop[:,:,0].max(), grid_data_masked_crop[:,:,1].min(), grid_data_masked_crop[:,:,1].max()]
+ani = coleval.movie_from_data_radial_profile(np.array([np.flip(np.transpose(np.abs(fit),(0,2,1)),axis=2)]), 1, extent = extent, image_extent=image_extent,timesteps=np.ones(len(fit))*0.5,integration=laser_int_time/1000,barlabel='Emissivity |fit - output| [W/m3]',xlabel='R [m]', ylabel='Z [m]', prelude='shot '  + laser_to_analyse[-9:-4] + '\n'+binning_type+'\n' ,overlay_structure=True,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True,include_EFIT=True)#,extvmin=0,extvmax=4e4)
+ani.save('/home/ffederic/work/irvb/MAST-U' + '/' + str(shot_number)+'_'+ binning_type +'_gridres'+str(grid_resolution)+'cm_reconstruct_emissivity_bayesian_radiator_scan3.mp4', fps=5*(30)/383, writer='ffmpeg',codec='mpeg4')
+# plt.pause(0.01)
+plt.close()
 
 regolarisation_coeff_range = np.flip(regolarisation_coeff_range,axis=0)
 x_optimal_all = np.flip(x_optimal_all,axis=0)

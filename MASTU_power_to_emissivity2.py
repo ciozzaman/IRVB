@@ -43,7 +43,7 @@ for grid_resolution in all_grid_type:
 			ax[0,0].plot(leg_length_all,time_full_binned_crop,'--k')
 			im2 = ax[0,1].imshow(local_mean_emis_all,'rainbow',origin='lower',extent=[(0-0.5)*leg_resolution,(data_length+0.5)*leg_resolution,time_full_binned_crop[0]-np.diff(time_full_binned_crop)[0]/2,time_full_binned_crop[-1]+np.diff(time_full_binned_crop)[-1]/2],aspect=10,vmin=np.min(local_mean_emis_all[:-4]),vmax=np.max(local_mean_emis_all[:-4]))
 			ax[0,1].plot(leg_length_all,time_full_binned_crop,'--k')
-			fig.suptitle('tracking radiation on the outer leg')
+			fig.suptitle('tracking radiation on the outer leg\naveraged/summed %.3gcm above and below the separatrix'%(leg_resolution*100))
 			ax[0,0].set_xlabel('distance from the strike point [m]')
 			ax[0,0].grid()
 			ax[0,0].set_ylabel('time [s]')
@@ -90,8 +90,8 @@ for grid_resolution in all_grid_type:
 
 			inverted_dict[str(grid_resolution)].all()[str(shrink_factor_x)][str(shrink_factor_t)]['local_outer_leg_power'] = local_power_all
 			inverted_dict[str(grid_resolution)].all()[str(shrink_factor_x)][str(shrink_factor_t)]['local_outer_leg_mean_emissivity'] = local_mean_emis_all
-			inverted_dict[str(grid_resolution)].all()[str(shrink_factor_x)][str(shrink_factor_t)]['leg_length_all'] = leg_length_all
-			inverted_dict[str(grid_resolution)].all()[str(shrink_factor_x)][str(shrink_factor_t)]['leg_length_interval_all'] = leg_length_interval_all
+			inverted_dict[str(grid_resolution)].all()[str(shrink_factor_x)][str(shrink_factor_t)]['leg_outer_length_all'] = leg_length_all
+			inverted_dict[str(grid_resolution)].all()[str(shrink_factor_x)][str(shrink_factor_t)]['leg_outer_length_interval_all'] = leg_length_interval_all
 
 
 np.savez_compressed(laser_to_analyse[:-4]+'_inverted_baiesian',**inverted_dict)

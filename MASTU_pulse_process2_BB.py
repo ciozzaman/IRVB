@@ -14,7 +14,7 @@ except:
 	if laser_to_analyse[-4:]=='.ats':
 		full_saved_file_dict = coleval.ats_to_dict(laser_to_analyse)
 	else:
-		full_saved_file_dict = coleval.ptw_to_dict(laser_to_analyse)
+		full_saved_file_dict = coleval.ptw_to_dict(laser_to_analyse,max_time_s = 30)
 	np.savez_compressed(laser_to_analyse[:-4],**full_saved_file_dict)
 	laser_dict = np.load(laser_to_analyse[:-4]+'.npz')
 	laser_dict.allow_pickle=True
@@ -133,6 +133,8 @@ try:
 			if aggregated_correction_coefficients_present:
 				fit = [aggregated_correction_coefficients[i]]
 			else:
+				if i==1:
+					guess = fit[0]
 				fit = curve_fit(exponential_biased, time_of_experiment_digitizer_ID_seconds[select_time], reference[select_time]-np.mean(reference[-int(1*laser_framerate/len(laser_digitizer_ID)):]), p0=guess,bounds=bds,maxfev=int(1e6))
 				aggregated_correction_coefficients[i] = fit[0]
 			ax[plot_index,0].plot(time_of_experiment_digitizer_ID_seconds-start_time_of_pulse,exponential_biased(time_of_experiment_digitizer_ID_seconds,*fit[0])+np.mean(reference[-int(1*laser_framerate/len(laser_digitizer_ID)):]),':',color=color[i],label='fit of out of foil area')
@@ -322,6 +324,7 @@ try:
 		full_saved_file_dict_FAST['time_full_full'] = time_full_int
 		np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
 		print('generated FAST in %.3g min' %((tm.time()-start)/60))
+	filter_overwritten = False
 	try:
 		if overwrite_oscillation_filter==True:
 			blagna=sbluppa	# I want them all
@@ -339,8 +342,9 @@ try:
 		print('data filtering skipped')
 	except:
 		print('Filtering data')
-		full_saved_file_dict['only_foil'] = dict([])
 		if continue_after_FAST == True:
+			filter_overwritten = True
+			full_saved_file_dict['only_foil'] = dict([])
 			temp_counts = []
 			temp_counts_full = []
 			temp_bad_pixels_flag = []
@@ -363,7 +367,8 @@ try:
 				if external_clock_marker:
 					time_of_experiment_digitizer_ID_seconds = time_of_experiment_digitizer_ID_seconds-np.mean(aggregated_correction_coefficients[:,4])	# I use the mean of the coefficients because I want to avoid small unpredictable differences between the digitisers
 				select_time = np.logical_and(time_of_experiment_digitizer_ID_seconds>0-0.5,time_of_experiment_digitizer_ID_seconds<1.5)
-				if True:	# I'm not creating my problems by doing this before binning, but I have to do many cleanings
+				# if True:	# I'm not creating my problems by doing this before binning, but I have to do many cleanings
+				if laser_framerate>60:	# I skip this for low framerate as there is no t really oshillation in this case
 					if np.shape(laser_counts_corrected[i][0]) == (256, 320):
 						force_poscentre = [204,160]	# among the points that I monitor this is the one with the highest oscillations
 					else:
@@ -591,7 +596,7 @@ try:
 			laser_temperature,laser_temperature_std = coleval.count_to_temp_BB_multi_digitizer(temp_counts,params_BB,errparams_BB,laser_digitizer_ID,reference_background=temp_ref_counts,reference_background_std=temp_ref_counts_std,ref_temperature=ref_temperature,ref_temperature_std=ref_temperature_std,wavewlength_top=5,wavelength_bottom=2.5,inttime=laser_int_time/1000)
 			temp_counts_std = []
 			for i in range(len(laser_digitizer_ID)):
-				temp_counts_std.append(coleval.estimate_counts_std(temp_counts[i]))
+				temp_counts_std.append(coleval.estimate_counts_std(temp_counts[i]),int_time=laser_int_time/1000)
 
 			laser_temperature_no_dead_pixels = [coleval.replace_dead_pixels([data],flag)[0] for flag,data in zip(temp_bad_pixels_flag,laser_temperature)]
 			laser_temperature_std_no_dead_pixels = [coleval.replace_dead_pixels([data],flag)[0] for flag,data in zip(temp_bad_pixels_flag,laser_temperature_std)]
@@ -626,12 +631,12 @@ try:
 			full_saved_file_dict['ref_temperature'] = ref_temperature
 			full_saved_file_dict['ref_temperature_std'] = ref_temperature_std
 			full_saved_file_dict['photon_flux_over_temperature_interpolator'] = photon_flux_over_temperature_interpolator
-			print('arrived up to here 1')
+			print('data filtering done')
 			exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_pulse_process3_BB.py").read())
 		else:
 			print('analysis halted to save memory')
 
-	if continue_after_FAST == True:
+	if continue_after_FAST == True or filter_overwritten:
 		if False:	# there is no reason to keep doing these
 			if not(os.path.exists(laser_to_analyse[:-4]+ '_raw_short.mp4')):
 				for i in laser_digitizer_ID:
@@ -700,11 +705,23 @@ try:
 			pass
 		del laser_counts_corrected
 
+		try:
+			if overwrite_binning or filter_overwritten:
+				tregna = sba	# I want this to fail
+			saved_file_dict_short = np.load(laser_to_analyse[:-4]+'_short.npz')
+			saved_file_dict_short.allow_pickle=True
+			saved_file_dict_short = dict(saved_file_dict_short)
+			test = saved_file_dict_short['bin7x2x2'].all()['laser_framerate_binned']
+			print('binning skipped')
+		except:
+			print('binning data')
+			exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_temp_to_power3_BB.py").read())
+			print('binning done')
+
+		if do_inversions:
+			exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_power_to_emissivity.py").read())
+
 		print('completed ' + laser_to_analyse)
-
-		exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_temp_to_power3_BB.py").read())
-
-		exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_power_to_emissivity.py").read())
 
 except Exception as e:
 	print('FAILED ' + laser_to_analyse)

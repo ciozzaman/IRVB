@@ -120,7 +120,6 @@ try:
 except:
 	pass
 
-
 # for grid_resolution in [8, 4, 2]:
 # for grid_resolution in [2,4]:
 for grid_resolution in [2]:
@@ -130,8 +129,8 @@ for grid_resolution in [2]:
 	foil_res = '_foil_pixel_h_' + str(foil_resolution)
 
 	grid_type = 'core_res_' + str(grid_resolution) + 'cm'
-	path_sensitivity = '/home/ffederic/work/analysis_scripts/sensitivity_matrix_' + grid_type[5:] + foil_res + '_power'
-	# path_sensitivity = '/home/ffederic/work/analysis_scripts/sensitivity_matrix_res_2cm_foil_pixel_h_187_power_stand_off_0.045_pinhole_4'
+	# path_sensitivity = '/home/ffederic/work/analysis_scripts/sensitivity_matrix_' + grid_type[5:] + foil_res + '_power'
+	path_sensitivity = '/home/ffederic/work/analysis_scripts/sensitivity_matrix_res_2cm_foil_pixel_h_187_power_stand_off_0.06_pinhole_4'
 	try:
 		sensitivities = np.array((scipy.sparse.load_npz(path_sensitivity + '/sensitivity.npz')).todense())
 	except:
@@ -468,9 +467,7 @@ for grid_resolution in [2]:
 			time_full_binned_crop = inverted_dict[str(grid_resolution)]['time_full_binned_crop']
 			inverted_data = inverted_dict[str(grid_resolution)]['inverted_data']
 			x_optimal_ext = inverted_dict[str(grid_resolution)]['x_optimal_ext']
-			fitted_foil_power = inverted_dict[str(grid_resolution)]['fitted_foil_power']
 
-			# ani = coleval.movie_from_data(np.array([np.flip(np.transpose(fitted_foil_power,(0,2,1)),axis=2)]), 1/np.median(np.diff(time_full_binned_crop)),integration=laser_int_time/1000,time_offset=time_full_binned_crop[0],xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='brightness [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4]+'\n'+binning_type+'\n',overlay_structure=True,include_EFIT=True,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True)
 
 			# The sensitivity AND voxels indexing wil be different than before, so I need to find the correlation between the old and new geometry
 
@@ -578,8 +575,8 @@ for grid_resolution in [2]:
 			temp_save = np.load(laser_to_analyse[:-4]+'_inverted_baiesian_test_export.npz')
 			temp_save.allow_pickle = True
 			temp_save = dict(temp_save)
-			temp_save['stand_off_0.045_pinhole_4'] = dict([])
-			temp_save['stand_off_0.045_pinhole_4']['temperature_evolution'] = temperature_evolution
+			temp_save['stand_off_0.06_pinhole_4'] = dict([])
+			temp_save['stand_off_0.06_pinhole_4']['temperature_evolution'] = temperature_evolution
 			np.savez_compressed(laser_to_analyse[:-4]+'_inverted_baiesian_test_export',**temp_save)
 
 			# ani = coleval.movie_from_data(np.array([np.flip(np.transpose(temperature_evolution,(0,2,1)),axis=2)]), 1/np.median(np.diff(time_full_res)),integration=laser_int_time/1000,time_offset=time_full_res[0],xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='brightness [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4]+'\n'+binning_type+'\n',overlay_structure=True,include_EFIT=True,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True)
@@ -706,7 +703,6 @@ for grid_resolution in [2]:
 			# guess = np.ones(sensitivities_binned_crop.shape[1]+2)*1e2
 			guess,trash = coleval.translate_emissivity_profile_with_homo_temp(original_voxels_centre,temp_save['x_optimal_all'][0],np.mean(grid_data_masked_crop,axis=1))
 
-
 			# regolarisation_coeff_edge = 10
 			regolarisation_coeff_edge_multiplier = 50
 			regolarisation_coeff_central_border_Z_derivate_multiplier = 0
@@ -784,36 +780,33 @@ for grid_resolution in [2]:
 				# time_start = tm.time()
 				return likelihood,likelihood_derivate
 
-			# regolarisation_coeff_range = 10**np.linspace(1,-6,num=120)
+			# regolarisation_coeff_range = 10**np.linspace(1,-5,num=102)
 			regolarisation_coeff_range = 10**np.linspace(1,-7,num=137)
 			x_optimal_all,recompose_voxel_emissivity_all,y_opt_all,opt_info_all,voxels_centre = coleval.loop_fit_over_regularisation(prob_and_gradient,regolarisation_coeff_range,guess,grid_data_masked_crop,powernoback,sigma_powernoback,sigma_emissivity,pgtol=5e-8,factr=1e8)
 
 			temp_save = np.load(laser_to_analyse[:-4]+'_inverted_baiesian_test_export.npz')
 			temp_save.allow_pickle = True
 			temp_save = dict(temp_save)
-			temp_save['stand_off_0.045_pinhole_4'] = dict([])
-			temp_save['stand_off_0.045_pinhole_4']['x_optimal_all'] = x_optimal_all
-			temp_save['stand_off_0.045_pinhole_4']['recompose_voxel_emissivity_all'] = recompose_voxel_emissivity_all
-			temp_save['stand_off_0.045_pinhole_4']['y_opt_all'] = y_opt_all
-			temp_save['stand_off_0.045_pinhole_4']['opt_info_all'] = opt_info_all
-			temp_save['stand_off_0.045_pinhole_4']['voxels_centre'] = voxels_centre
-			# temp_save['stand_off_0.045_pinhole_4']['foil_power_residuals_simulated'] = foil_power_residuals_simulated
+			temp_save['stand_off_0.06_pinhole_4'] = dict([])
+			temp_save['stand_off_0.06_pinhole_4']['x_optimal_all'] = x_optimal_all
+			temp_save['stand_off_0.06_pinhole_4']['recompose_voxel_emissivity_all'] = recompose_voxel_emissivity_all
+			temp_save['stand_off_0.06_pinhole_4']['y_opt_all'] = y_opt_all
+			temp_save['stand_off_0.06_pinhole_4']['opt_info_all'] = opt_info_all
+			temp_save['stand_off_0.06_pinhole_4']['voxels_centre'] = voxels_centre
+			# temp_save['stand_off_0.06_pinhole_4']['foil_power_residuals_simulated'] = foil_power_residuals_simulated
 
-			temp_save['stand_off_0.045_pinhole_4']['i_t_new'] = i_t_new
-			temp_save['stand_off_0.045_pinhole_4']['temperature_evolution'] = temperature_evolution
-			temp_save['stand_off_0.045_pinhole_4']['temperature_evolution_with_noise'] = temperature_evolution_with_noise
-			temp_save['stand_off_0.045_pinhole_4']['powernoback_full_orig'] = powernoback_full_orig
-			temp_save['stand_off_0.045_pinhole_4']['sigma_powernoback_full'] = sigma_powernoback_full
-			temp_save['stand_off_0.045_pinhole_4']['powernoback_full'] = powernoback_full
-			temp_save['stand_off_0.045_pinhole_4']['powernoback_full_std'] = powernoback_full_std
-			temp_save['stand_off_0.045_pinhole_4']['powernoback'] = powernoback
-			temp_save['stand_off_0.045_pinhole_4']['time_binned'] = time_binned
-			temp_save['stand_off_0.045_pinhole_4']['x_optimal_input_full_res_int_binned'] = x_optimal_input_full_res_int_binned
+			temp_save['stand_off_0.06_pinhole_4']['i_t_new'] = i_t_new
+			temp_save['stand_off_0.06_pinhole_4']['temperature_evolution'] = temperature_evolution
+			temp_save['stand_off_0.06_pinhole_4']['temperature_evolution_with_noise'] = temperature_evolution_with_noise
+			temp_save['stand_off_0.06_pinhole_4']['powernoback_full_orig'] = powernoback_full_orig
+			temp_save['stand_off_0.06_pinhole_4']['sigma_powernoback_full'] = sigma_powernoback_full
+			temp_save['stand_off_0.06_pinhole_4']['powernoback_full'] = powernoback_full
+			temp_save['stand_off_0.06_pinhole_4']['powernoback_full_std'] = powernoback_full_std
+			temp_save['stand_off_0.06_pinhole_4']['powernoback'] = powernoback
+			temp_save['stand_off_0.06_pinhole_4']['time_binned'] = time_binned
+			temp_save['stand_off_0.06_pinhole_4']['x_optimal_input_full_res_int_binned'] = x_optimal_input_full_res_int_binned
 
 			np.savez_compressed(laser_to_analyse[:-4]+'_inverted_baiesian_test_export',**temp_save)
-
-
-
 
 
 exit()
@@ -823,20 +816,18 @@ exit()
 temp_save = np.load(laser_to_analyse[:-4]+'_inverted_baiesian_test_export.npz')
 temp_save.allow_pickle = True
 temp_save = dict(temp_save)
-x_optimal_all = temp_save['stand_off_0.045_pinhole_4'].all()['x_optimal_all']
-recompose_voxel_emissivity_all = temp_save['stand_off_0.045_pinhole_4'].all()['recompose_voxel_emissivity_all']
-voxels_centre = temp_save['stand_off_0.045_pinhole_4'].all()['voxels_centre']
-y_opt_all = temp_save['stand_off_0.045_pinhole_4'].all()['y_opt_all']
-opt_info_all = temp_save['stand_off_0.045_pinhole_4'].all()['opt_info_all']
-# foil_power_residuals_simulated = temp_save['stand_off_0.045_pinhole_4'].all()['foil_power_residuals_simulated']
-powernoback_full_orig = temp_save['stand_off_0.045_pinhole_4'].all()['powernoback_full_orig']
-sigma_powernoback_full = temp_save['stand_off_0.045_pinhole_4'].all()['sigma_powernoback_full']
-powernoback_full = temp_save['stand_off_0.045_pinhole_4'].all()['powernoback_full']
+x_optimal_all = temp_save['stand_off_0.06_pinhole_4'].all()['x_optimal_all']
+recompose_voxel_emissivity_all = temp_save['stand_off_0.06_pinhole_4'].all()['recompose_voxel_emissivity_all']
+voxels_centre = temp_save['stand_off_0.06_pinhole_4'].all()['voxels_centre']
+y_opt_all = temp_save['stand_off_0.06_pinhole_4'].all()['y_opt_all']
+opt_info_all = temp_save['stand_off_0.06_pinhole_4'].all()['opt_info_all']
+# foil_power_residuals_simulated = temp_save['stand_off_0.06_pinhole_4'].all()['foil_power_residuals_simulated']
+powernoback_full_orig = temp_save['stand_off_0.06_pinhole_4'].all()['powernoback_full_orig']
+sigma_powernoback_full = temp_save['stand_off_0.06_pinhole_4'].all()['sigma_powernoback_full']
 grid_laplacian_masked_crop_scaled = grid_laplacian_masked_crop/((1e-2*grid_resolution)**2)
 sigma_emissivity = 1e6	# this is completely arbitrary
 selected_ROI_internal = selected_ROI.flatten()
-x_optimal_input_full_res_int_binned = temp_save['stand_off_0.045_pinhole_4'].all()['x_optimal_input_full_res_int_binned']
-
+x_optimal_input_full_res_int_binned = temp_save['stand_off_0.06_pinhole_4'].all()['x_optimal_input_full_res_int_binned']
 
 regolarisation_coeff_range = np.flip(regolarisation_coeff_range,axis=0)
 x_optimal_all = np.flip(x_optimal_all,axis=0)
@@ -871,10 +862,7 @@ plt.ylabel('L-curve turvature')
 plt.title(csv_file.name[-60:-28])
 plt.pause(0.01)
 
-x_optimal_input_low_res,trash = coleval.translate_emissivity_profile_with_homo_temp(np.mean(grid_data,axis=1),x_optimal_input_full_res_int_binned,np.mean(grid_data_masked_crop,axis=1))
-
 fitted_foil_power = (np.dot(sensitivities_binned_crop,x_optimal[:-2])+x_optimal[-2]*select_foil_region_with_plasma*homogeneous_scaling+x_optimal[-1]*selected_ROI_internal*homogeneous_scaling).reshape(powernoback_full_orig.shape)
-fitted_foil_power_input = (np.dot(sensitivities_binned_crop,x_optimal_input_low_res[:-2])+x_optimal_input_low_res[-2]*select_foil_region_with_plasma*homogeneous_scaling+x_optimal_input_low_res[-1]*selected_ROI_internal*homogeneous_scaling).reshape(powernoback_full_orig.shape)
 foil_power = powernoback_full_orig
 foil_power_residuals = powernoback_full_orig-fitted_foil_power
 foil_power_std = cp.deepcopy(sigma_powernoback_full)
@@ -899,7 +887,6 @@ plt.title(csv_file.name[-60:-28])
 plt.pause(0.01)
 
 trash,recompose_voxel_emissivity_input_low_res_int_binned = coleval.translate_emissivity_profile_with_homo_temp(np.mean(grid_data,axis=1),x_optimal_input_full_res_int_binned,np.mean(grid_data_masked_crop,axis=1))
-reference_radious_around_x_point = 0.2	# m
 plt.figure(figsize=(12,13))
 # plt.scatter(np.mean(grid_data_masked_crop,axis=1)[:,0],np.mean(grid_data_masked_crop,axis=1)[:,1],c=x_optimal,s=100,marker='s',cmap='rainbow')
 plt.imshow(np.flip(np.flip(np.flip(np.transpose(recompose_voxel_emissivity_input_low_res_int_binned,(1,0)),axis=1),axis=1),axis=0),'rainbow',extent=[grid_data_masked_crop[:,:,0].min(),grid_data_masked_crop[:,:,0].max(),grid_data_masked_crop[:,:,1].min(),grid_data_masked_crop[:,:,1].max()])
@@ -914,18 +901,14 @@ except:
 plt.plot(efit_reconstruction.lower_xpoint_r[temp],efit_reconstruction.lower_xpoint_z[temp],'xr')
 plt.plot(efit_reconstruction.strikepointR[temp],efit_reconstruction.strikepointZ[temp],'xr')
 plt.colorbar().set_label('reference emissivity [W/m3]')
-plt.plot(efit_reconstruction.strikepointR[temp],efit_reconstruction.strikepointZ[temp],'xr')
-plt.plot([_MASTU_CORE_GRID_POLYGON[:, 0].min(),_MASTU_CORE_GRID_POLYGON[:, 0].min(),0.8,0.8,_MASTU_CORE_GRID_POLYGON[:, 0].min()],[-0.9,_MASTU_CORE_GRID_POLYGON[:, 1].min(),_MASTU_CORE_GRID_POLYGON[:, 1].min(),-0.9,-0.9],'--k')
-plt.plot([_MASTU_CORE_GRID_POLYGON[:, 0].max(),_MASTU_CORE_GRID_POLYGON[:, 0].max(),0.8,0.8,_MASTU_CORE_GRID_POLYGON[:, 0].max()],[-1.5,_MASTU_CORE_GRID_POLYGON[:, 1].min(),_MASTU_CORE_GRID_POLYGON[:, 1].min(),-1.5,-1.5],'--k')
-plt.plot(np.linspace(-reference_radious_around_x_point,reference_radious_around_x_point,20)+efit_reconstruction.lower_xpoint_r[temp] , efit_reconstruction.lower_xpoint_z[temp]+(reference_radious_around_x_point**2-np.linspace(-reference_radious_around_x_point,reference_radious_around_x_point,20)**2)**0.5,'--k')
-plt.plot(np.linspace(-reference_radious_around_x_point,reference_radious_around_x_point,20)+efit_reconstruction.lower_xpoint_r[temp] , efit_reconstruction.lower_xpoint_z[temp]-(reference_radious_around_x_point**2-np.linspace(-reference_radious_around_x_point,reference_radious_around_x_point,20)**2)**0.5,'--k')
 plt.ylim(top=0.5)
 plt.title(csv_file.name[-60:-28])
 plt.pause(0.01)
 
+reference_radious_around_x_point = 0.2	# m
 plt.figure(figsize=(12,13))
 # plt.scatter(np.mean(grid_data_masked_crop,axis=1)[:,0],np.mean(grid_data_masked_crop,axis=1)[:,1],c=x_optimal,s=100,marker='s',cmap='rainbow')
-plt.imshow(np.flip(np.flip(np.flip(np.transpose(recompose_voxel_emissivity-recompose_voxel_emissivity_input_low_res_int_binned,(1,0)),axis=1),axis=1),axis=0),'rainbow',extent=[grid_data_masked_crop[:,:,0].min(),grid_data_masked_crop[:,:,0].max(),grid_data_masked_crop[:,:,1].min(),grid_data_masked_crop[:,:,1].max()],vmax=6e4,vmin=-6e4)
+plt.imshow(np.flip(np.flip(np.flip(np.transpose(recompose_voxel_emissivity-recompose_voxel_emissivity_input_low_res_int_binned,(1,0)),axis=1),axis=1),axis=0),'rainbow',extent=[grid_data_masked_crop[:,:,0].min(),grid_data_masked_crop[:,:,0].max(),grid_data_masked_crop[:,:,1].min(),grid_data_masked_crop[:,:,1].max()],vmin=-6000,vmax=100000)
 plt.plot(_MASTU_CORE_GRID_POLYGON[:, 0], _MASTU_CORE_GRID_POLYGON[:, 1], 'k')
 plt.plot(FULL_MASTU_CORE_GRID_POLYGON[:, 0], FULL_MASTU_CORE_GRID_POLYGON[:, 1], 'k')
 temp = np.abs(efit_reconstruction.time-time_full_binned_crop[i_t]).argmin()
@@ -953,39 +936,35 @@ plt.plot([np.nanmin(recompose_voxel_emissivity_input_low_res_int_binned),np.nanm
 #	 all voxels
 # select = recompose_voxel_emissivity_input_low_res_int_binned>0
 select = np.ones_like(recompose_voxel_emissivity_input_low_res_int_binned).astype(bool)
-select = np.logical_and(select,np.isfinite(recompose_voxel_emissivity))
 mean = np.nanmean(recompose_voxel_emissivity[select]-recompose_voxel_emissivity_input_low_res_int_binned[select])
 std = np.nanstd(recompose_voxel_emissivity[select]-recompose_voxel_emissivity_input_low_res_int_binned[select])
 power_output = np.nansum(2*np.pi*r_[select]*np.mean(np.diff(np.unique(r_)))*np.mean(np.diff(np.unique(z_)))*recompose_voxel_emissivity[select])
 power_input = np.nansum(2*np.pi*r_[select]*np.mean(np.diff(np.unique(r_)))*np.mean(np.diff(np.unique(z_)))*recompose_voxel_emissivity_input_low_res_int_binned[select])
-select = np.logical_and(select,np.logical_and(recompose_voxel_emissivity_input_low_res_int_binned!=0,np.isfinite(recompose_voxel_emissivity_input_low_res_int_binned)))
+select = np.logical_and(select,np.logical_or(recompose_voxel_emissivity_input_low_res_int_binned!=0,np.isnan(recompose_voxel_emissivity_input_low_res_int_binned)))
 plt.plot(recompose_voxel_emissivity_input_low_res_int_binned.flatten(),recompose_voxel_emissivity.flatten(),'+b',label='all input emissivity\nmean=%.3gW/m3,%.3g' %(mean,100*np.nanmean((recompose_voxel_emissivity[select]-recompose_voxel_emissivity_input_low_res_int_binned[select])/recompose_voxel_emissivity_input_low_res_int_binned[select])) +r'$\%$' +' std=%.3gW,%.3g' %(std,100*np.nanstd((recompose_voxel_emissivity[select]-recompose_voxel_emissivity_input_low_res_int_binned[select])/recompose_voxel_emissivity_input_low_res_int_binned[select])) +r'$\%$' +' power error=%.3g' %(100*(power_output-power_input)/power_input) +r'$\%$')
 #	conventional divertor
 select = np.logical_and(r_<=0.80,z_<-0.9)
-select = np.logical_and(select,np.isfinite(recompose_voxel_emissivity))
 mean = np.nanmean(recompose_voxel_emissivity[select]-recompose_voxel_emissivity_input_low_res_int_binned[select])
 std = np.nanstd(recompose_voxel_emissivity[select]-recompose_voxel_emissivity_input_low_res_int_binned[select])
 power_output = np.nansum(2*np.pi*r_[select]*np.mean(np.diff(np.unique(r_)))*np.mean(np.diff(np.unique(z_)))*recompose_voxel_emissivity[select])
 power_input = np.nansum(2*np.pi*r_[select]*np.mean(np.diff(np.unique(r_)))*np.mean(np.diff(np.unique(z_)))*recompose_voxel_emissivity_input_low_res_int_binned[select])
-select = np.logical_and(select,np.logical_and(recompose_voxel_emissivity_input_low_res_int_binned!=0,np.isfinite(recompose_voxel_emissivity_input_low_res_int_binned)))
+select = np.logical_and(select,np.logical_or(recompose_voxel_emissivity_input_low_res_int_binned!=0,np.isnan(recompose_voxel_emissivity_input_low_res_int_binned)))
 plt.plot(recompose_voxel_emissivity_input_low_res_int_binned[select],recompose_voxel_emissivity[select],'+g',label='conv divertor region\nmean=%.3gW/m3,%.3g' %(mean,100*np.nanmean((recompose_voxel_emissivity[select]-recompose_voxel_emissivity_input_low_res_int_binned[select])/recompose_voxel_emissivity_input_low_res_int_binned[select])) +r'$\%$' +' std=%.3gW,%.3g' %(std,100*np.nanstd((recompose_voxel_emissivity[select]-recompose_voxel_emissivity_input_low_res_int_binned[select])/recompose_voxel_emissivity_input_low_res_int_binned[select])) +r'$\%$' +' power error=%.3g' %(100*(power_output-power_input)/power_input) +r'$\%$')
 #	x-point
 select = (efit_reconstruction.lower_xpoint_r[temp]-r_)**2 + (efit_reconstruction.lower_xpoint_z[temp]-z_)**2 <= reference_radious_around_x_point**2
-select = np.logical_and(select,np.isfinite(recompose_voxel_emissivity))
 mean = np.nanmean(recompose_voxel_emissivity[select]-recompose_voxel_emissivity_input_low_res_int_binned[select])
 std = np.nanstd(recompose_voxel_emissivity[select]-recompose_voxel_emissivity_input_low_res_int_binned[select])
 power_output = np.nansum(2*np.pi*r_[select]*np.mean(np.diff(np.unique(r_)))*np.mean(np.diff(np.unique(z_)))*recompose_voxel_emissivity[select])
 power_input = np.nansum(2*np.pi*r_[select]*np.mean(np.diff(np.unique(r_)))*np.mean(np.diff(np.unique(z_)))*recompose_voxel_emissivity_input_low_res_int_binned[select])
-select = np.logical_and(select,np.logical_and(recompose_voxel_emissivity_input_low_res_int_binned!=0,np.isfinite(recompose_voxel_emissivity_input_low_res_int_binned)))
+select = np.logical_and(select,np.logical_or(recompose_voxel_emissivity_input_low_res_int_binned!=0,np.isnan(recompose_voxel_emissivity_input_low_res_int_binned)))
 plt.plot(recompose_voxel_emissivity_input_low_res_int_binned[select],recompose_voxel_emissivity[select],'+r',label='within '+str(int(reference_radious_around_x_point*100))+'cm of x-point\nmean=%.3gW/m3,%.3g' %(mean,100*np.nanmean((recompose_voxel_emissivity[select]-recompose_voxel_emissivity_input_low_res_int_binned[select])/recompose_voxel_emissivity_input_low_res_int_binned[select])) +r'$\%$' +' std=%.3gW,%.3g' %(std,100*np.nanstd((recompose_voxel_emissivity[select]-recompose_voxel_emissivity_input_low_res_int_binned[select])/recompose_voxel_emissivity_input_low_res_int_binned[select])) +r'$\%$' +' power error=%.3g' %(100*(power_output-power_input)/power_input) +r'$\%$')
 #	super-x
 select = np.logical_and(r_>=0.80,z_<-1.5)
-select = np.logical_and(select,np.isfinite(recompose_voxel_emissivity))
 mean = np.nanmean(recompose_voxel_emissivity[select]-recompose_voxel_emissivity_input_low_res_int_binned[select])
 std = np.nanstd(recompose_voxel_emissivity[select]-recompose_voxel_emissivity_input_low_res_int_binned[select])
 power_output = np.nansum(2*np.pi*r_[select]*np.mean(np.diff(np.unique(r_)))*np.mean(np.diff(np.unique(z_)))*recompose_voxel_emissivity[select])
 power_input = np.nansum(2*np.pi*r_[select]*np.mean(np.diff(np.unique(r_)))*np.mean(np.diff(np.unique(z_)))*recompose_voxel_emissivity_input_low_res_int_binned[select])
-select = np.logical_and(select,np.logical_and(recompose_voxel_emissivity_input_low_res_int_binned!=0,np.isfinite(recompose_voxel_emissivity_input_low_res_int_binned)))
+select = np.logical_and(select,np.logical_or(recompose_voxel_emissivity_input_low_res_int_binned!=0,np.isnan(recompose_voxel_emissivity_input_low_res_int_binned)))
 plt.plot(recompose_voxel_emissivity_input_low_res_int_binned[select],recompose_voxel_emissivity[select],'+y',label='super-x region\nmean=%.3gW/m3,%.3g' %(mean,100*np.nanmean((recompose_voxel_emissivity[select]-recompose_voxel_emissivity_input_low_res_int_binned[select])/recompose_voxel_emissivity_input_low_res_int_binned[select])) +r'$\%$' +' std=%.3gW,%.3g' %(std,100*np.nanstd((recompose_voxel_emissivity[select]-recompose_voxel_emissivity_input_low_res_int_binned[select])/recompose_voxel_emissivity_input_low_res_int_binned[select])) +r'$\%$' +' power error=%.3g' %(100*(power_output-power_input)/power_input) +r'$\%$')
 plt.legend(loc='best', fontsize='x-small')
 plt.xlabel('input emissivity')
@@ -996,35 +975,9 @@ plt.pause(0.01)
 
 
 
-
-plt.figure(figsize=(12,13))
-# plt.scatter(np.mean(grid_data_masked_crop,axis=1)[:,0],np.mean(grid_data_masked_crop,axis=1)[:,1],c=x_optimal,s=100,marker='s',cmap='rainbow')
-plt.imshow(np.flip(np.flip(np.flip(np.transpose(recompose_voxel_emissivity-recompose_voxel_emissivity_input,(1,0)),axis=1),axis=1),axis=0),'rainbow',extent=[grid_data_masked_crop[:,:,0].min(),grid_data_masked_crop[:,:,0].max(),grid_data_masked_crop[:,:,1].min(),grid_data_masked_crop[:,:,1].max()])
-plt.plot(_MASTU_CORE_GRID_POLYGON[:, 0], _MASTU_CORE_GRID_POLYGON[:, 1], 'k')
-plt.plot(FULL_MASTU_CORE_GRID_POLYGON[:, 0], FULL_MASTU_CORE_GRID_POLYGON[:, 1], 'k')
-temp = np.abs(efit_reconstruction.time-time_full_binned_crop[i_t]).argmin()
-try:
-	for i in range(len(all_time_sep_r[temp])):
-		plt.plot(r_fine[all_time_sep_r[temp][i]],z_fine[all_time_sep_z[temp][i]],'--b')
-except:
-	pass
-plt.plot(efit_reconstruction.lower_xpoint_r[temp],efit_reconstruction.lower_xpoint_z[temp],'xr')
-plt.plot(efit_reconstruction.strikepointR[temp],efit_reconstruction.strikepointZ[temp],'xr')
-plt.colorbar().set_label('emissivity inversion error [W/m3]')
-plt.ylim(top=0.5)
-plt.title(csv_file.name[-60:-28])
-plt.pause(0.01)
-
-
 plt.figure(figsize=(15,12))
 plt.imshow(foil_power)
 plt.colorbar().set_label('foil_power [W/m2]')
-plt.title(csv_file.name[-60:-28])
-plt.pause(0.01)
-
-plt.figure(figsize=(15,12))
-plt.imshow(fitted_foil_power_input)
-plt.colorbar().set_label('fitted_foil_power_input [W/m2]')
 plt.title(csv_file.name[-60:-28])
 plt.pause(0.01)
 
@@ -1046,20 +999,7 @@ plt.colorbar().set_label('foil_power_std [W/m2]')
 plt.title(csv_file.name[-60:-28])
 plt.pause(0.01)
 
-plt.figure(figsize=(15,12))
-plt.imshow(foil_power_residuals_simulated)
-plt.colorbar().set_label('foil_power_residuals_simulated [W/m2]')
-plt.title(csv_file.name[-60:-28])
-plt.pause(0.01)
-
-plt.figure(figsize=(15,12))
-plt.plot(fitted_foil_power.flatten(),foil_power_residuals_simulated.flatten(),'+')
-plt.grid()
-plt.title(csv_file.name[-60:-28])
-plt.pause(0.01)
-
-
- # IMPORTANT - power / std correlation
+# # IMPORTANT - power / std correlation
 # plt.figure(figsize=(15,12))
 # plt.plot(np.abs(foil_power).flatten(),foil_power_std.flatten(),'+')
 # # plt.plot(np.sort(np.abs(foil_power).flatten()),np.polyval(np.polyfit(np.abs(foil_power[np.isfinite(foil_power_std)]).flatten(),foil_power_std[np.isfinite(foil_power_std)].flatten(),1),np.sort(np.abs(foil_power).flatten())),'--')
@@ -1069,12 +1009,12 @@ plt.pause(0.01)
 temp_save = np.load(laser_to_analyse[:-4]+'_inverted_baiesian_test_export.npz')
 temp_save.allow_pickle = True
 temp_save = dict(temp_save)
-temp_save['stand_off_0.045_pinhole_4']['fitted_foil_power'] = fitted_foil_power
-temp_save['stand_off_0.045_pinhole_4']['foil_power'] = foil_power
-temp_save['stand_off_0.045_pinhole_4']['foil_power_residuals'] = foil_power_residuals
-temp_save['stand_off_0.045_pinhole_4']['regolarisation_coeff'] = regolarisation_coeff
-temp_save['stand_off_0.045_pinhole_4']['x_optimal'] = x_optimal
-temp_save['stand_off_0.045_pinhole_4']['sigma_powernoback'] = sigma_powernoback
+temp_save['stand_off_0.06_pinhole_4']['fitted_foil_power'] = fitted_foil_power
+temp_save['stand_off_0.06_pinhole_4']['foil_power'] = foil_power
+temp_save['stand_off_0.06_pinhole_4']['foil_power_residuals'] = foil_power_residuals
+temp_save['stand_off_0.06_pinhole_4']['regolarisation_coeff'] = regolarisation_coeff
+temp_save['stand_off_0.06_pinhole_4']['x_optimal'] = x_optimal
+temp_save['stand_off_0.06_pinhole_4']['sigma_powernoback'] = sigma_powernoback
 np.savez_compressed(laser_to_analyse[:-4]+'_inverted_baiesian_test_export',**temp_save)
 
 

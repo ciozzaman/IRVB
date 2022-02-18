@@ -397,7 +397,7 @@ def function_a(index):
 	laser_temperature,laser_temperature_std = coleval.count_to_temp_BB_multi_digitizer(laser_counts_filtered,params_BB,errparams_BB,digitizer_ID,reference_background=reference_background,reference_background_std=reference_background_std,ref_temperature=ref_temperature,ref_temperature_std=ref_temperature_std,wavewlength_top=5,wavelength_bottom=2.5,inttime=int_time)
 	laser_counts_filtered_std = []
 	for i in range(len(digitizer_ID)):
-		laser_counts_filtered_std.append(coleval.estimate_counts_std(laser_counts_filtered[i]))
+		laser_counts_filtered_std.append(coleval.estimate_counts_std(laser_counts_filtered[i],int_time=int_time))
 
 	laser_temperature_minus_background = [laser_temperature[i]-ref_temperature for i in laser_digitizer_ID]
 	laser_temperature_std_minus_background = [(laser_temperature_std[i]**2+ref_temperature_std**2)**0.5 for i in laser_digitizer_ID]

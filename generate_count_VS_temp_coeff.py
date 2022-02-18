@@ -366,6 +366,15 @@ elif True:
 
 		plt.figure()
 		if len(temperature_window)<6:
+			plt.title('proportional window modifier BB curve fit NUC')
+		else:
+			plt.title('proportional window modifier BB curve fit BB source')
+		plt.imshow(params2[0,:,:,2])
+		plt.colorbar()
+		plt.pause(0.01)
+
+		plt.figure()
+		if len(temperature_window)<6:
 			plt.title('SNR additive factor window component BB curve fit NUC')
 		else:
 			plt.title('SNR additive factor window component BB curve fit BB source')
@@ -403,13 +412,13 @@ elif True:
 		a1a3 = params2[0,100,100,0]*params2[0,100,100,2]
 		sigma_a1a3 = a1a3 * ((errparams2[0,100,100,0,0]**0.5/params2[0,100,100,0])**2 + (errparams2[0,100,100,2,2]**0.5/params2[0,100,100,2])**2 + 2*errparams2[0,100,100,0,2]/a1a3)**0.5
 		ref = delta_counts/a1a3 + BB_rad_counts_to_delta_temp(1,T0)
-		sigma_ref = delta_counts/a1a3*(( (coleval.estimate_counts_std(counts)*2/delta_counts)**2 + (sigma_a1a3/(a1a3**2))**2 )**0.5)
+		sigma_ref = delta_counts/a1a3*(( (coleval.estimate_counts_std(counts,int_time=inttime)*2/delta_counts)**2 + (sigma_a1a3/(a1a3**2))**2 )**0.5)
 		# sigma_ref = (sigma_ref**2 + ((sigma_T_multimpier(300)*0.1)**2))**0.5	# I'm not sure if I should consider this
 		check = curve_fit(BB_rad_counts_to_delta_temp,1,ref,sigma=[sigma_ref],absolute_sigma=True,p0=[T0])
 		temperature_BB = [check[0][0],check[1].flatten()[0]**0.5]
 		print('temperature_BB '+str(temperature_BB))
 		temperature = params[0,100,100,-1] + params[0,100,100,-2] * counts + params[0,100,100,-3] * (counts**2) + 273.15
-		counts_std = coleval.estimate_counts_std(counts)
+		counts_std = coleval.estimate_counts_std(counts,int_time=inttime)
 		temperature_std = (errparams[0,100,100,2,2] + (counts_std**2)*(params[0,100,100,1]**2) + (counts**2+counts_std**2)*errparams[0,100,100,1,1] + (counts_std**2)*(4*counts**2+3*counts_std**2)*(params[0,100,100,0]**2) + (counts**4+6*(counts**2)*(counts_std**2)+3*counts_std**4)*errparams[0,100,100,0,0] + 2*counts*errparams[0,100,100,2,1] + 2*(counts**2+counts_std**2)*errparams[0,100,100,2,0] + 2*(counts**3+counts*(counts_std**2))*errparams[0,100,100,1,0])**0.5
 		temperature_POLY = [temperature,temperature_std]
 		print('temperature_POLY '+str(temperature_POLY))
