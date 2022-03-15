@@ -30,6 +30,10 @@ import numpy as np
 
 from pyqtgraph.dockarea import *
 
+# do fint automatically the date
+import pyuda
+client=pyuda.Client()
+
 #this is if working on a pc, use pc printer
 exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_import_pc.py").read())
 
@@ -324,6 +328,7 @@ params = [
 ]
 # creating all the flags and accessories needed
 params1 = [
+		{'name': 'Shot number', 'type': 'int', 'value': 0},
 		{'name': 'File Path', 'type': 'str', 'value': "insert full path", 'tip': 'try'},
 		{'name': 'Navigate Path', 'type': 'action'},
 ]
@@ -621,6 +626,7 @@ def NavigatePath():
 	print(laser_to_analyse)
 	param_ext1['File Path'] = laser_to_analyse
 	w2.shotID = laser_to_analyse[-5:]
+	param_ext1['Shot number'] = int(w2.shotID)
 	# p6.setTitle(title="shot " + str(w2.shotID))
 	# Load_EFIT()
 	Load()
@@ -683,6 +689,22 @@ def Select_next_pulse():
 				Load()
 			else:
 				print('SHOT  ' + str(shotID) + '  MISSING')
+
+def Select_specific_pulse():
+	global all_time_x_point_location,all_time_mag_axis_location,all_time_strike_points_location,all_time_strike_points_location_rot,all_time_separatrix,efit_reconstruction
+	laser_to_analyse = param_ext1['File Path']
+	if param_ext1['Shot number'] != 0:
+		shotID = int(param_ext1['Shot number'])
+		date = client.get_shot_date_time(shotID)[0]
+		laser_to_analyse = '/home/ffederic/work/irvb/MAST-U/' + date + '/IRVB-MASTU_shot-' + str(shotID)
+		if os.path.exists(laser_to_analyse+'.npz'):
+			param_ext1['File Path'] = laser_to_analyse
+			w2.shotID = str(shotID)
+			print(laser_to_analyse)
+			Load()
+		else:
+			print('SHOT  ' + str(shotID) + '  MISSING')
+
 
 def Load_EFIT():
 	global all_time_x_point_location,all_time_mag_axis_location,all_time_strike_points_location,all_time_strike_points_location_rot,all_time_separatrix,efit_reconstruction,all_time_sep_r,all_time_sep_z,r_fine,z_fine
@@ -990,6 +1012,7 @@ param_ext.param('Set display','Load data').sigActivated.connect(Load)
 param_ext.param('Set display','Load EFIT').sigActivated.connect(Load_EFIT)
 param_ext.param('Set display','Shot +').sigActivated.connect(Select_next_pulse)
 param_ext.param('Set display','Shot -').sigActivated.connect(Select_previous_pulse)
+param_ext1.param('Shot number').sigValueChanged.connect(Select_specific_pulse)
 
 
 update_hist_inhibit = False

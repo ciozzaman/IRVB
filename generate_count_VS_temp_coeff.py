@@ -256,67 +256,186 @@ elif False:
 elif True:
 	# his is created to fit simultaneously the curve with and without window
 
+	if False:	# BB source in focus and no window inttime=1.0	# ms
+		description = 'BB source in focus and no window inttime=1.0 # ms'
+		files = []
+		temperature = []
+		temperature_window = cp.deepcopy(temperature)
+		files_window = cp.deepcopy(files)
+		inttime=1.0	# ms
+		framerate=50	# Hz
+		n=3
+		files = files66
+		temperature = temperature66
+		temperature_no_window = cp.deepcopy(temperature)
+		files_no_window = cp.deepcopy(files)
+		pathparam='/home/ffederic/work/irvb/2022-02-24_no_window_multiple_search_for_parameters/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
+		if not os.path.exists(pathparam):
+			os.makedirs(pathparam)
+		coleval.build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5,wavelength_bottom=2.5)
 
-	files = files42
-	temperature = temperature42
-	temperature_window = cp.deepcopy(temperature)
-	files_window = cp.deepcopy(files)
-	inttime=1.0	# ms
-	framerate=50	# Hz
-	n=3
-	files = files48
-	temperature = temperature48
-	temperature_no_window = cp.deepcopy(temperature)
-	files_no_window = cp.deepcopy(files)
-	inttime=1.0	# ms
-	framerate=50	# Hz
-	n=3
-	pathparam='/home/ffederic/work/irvb/2021-12-07_window_multiple_search_for_parameters/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
-	if not os.path.exists(pathparam):
-		os.makedirs(pathparam)
-	coleval.build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5,wavelength_bottom=2.5)
+	if False:	# BB source in focus and no window inttime=2.0	# ms
+		description = 'BB source in focus and no window inttime=2.0 # ms'
+		files = []
+		temperature = []
+		temperature_window = cp.deepcopy(temperature)
+		files_window = cp.deepcopy(files)
+		inttime=2.0	# ms
+		framerate=50	# Hz
+		n=3
+		files = files65
+		temperature = temperature65
+		temperature_no_window = cp.deepcopy(temperature)
+		files_no_window = cp.deepcopy(files)
+		pathparam='/home/ffederic/work/irvb/2022-02-24_no_window_multiple_search_for_parameters/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
+		if not os.path.exists(pathparam):
+			os.makedirs(pathparam)
+		coleval.build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5,wavelength_bottom=2.5)
+
+	if False:	# BB source as far as possible with window inttime=1.0	# ms
+		description = 'BB source as far as possible with window inttime=1.0 # ms'
+		files = files58
+		temperature = temperature58
+		temperature_window = cp.deepcopy(temperature)
+		files_window = cp.deepcopy(files)
+		inttime=1.0	# ms
+		framerate=50	# Hz
+		n=3
+		files = files63
+		temperature = temperature63
+		temperature_no_window = cp.deepcopy(temperature)
+		files_no_window = cp.deepcopy(files)
+		pathparam='/home/ffederic/work/irvb/2022-02-24_window_multiple_search_for_parameters/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
+		if not os.path.exists(pathparam):
+			os.makedirs(pathparam)
+		coleval.build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5,wavelength_bottom=2.5)
+
+	if False:	# BB source as far as possible with window inttime=2.0	# ms
+		description = 'BB source as far as possible with window inttime=2.0 # ms'
+		files = files56
+		temperature = temperature56
+		temperature_window = cp.deepcopy(temperature)
+		files_window = cp.deepcopy(files)
+		inttime=2.0	# ms
+		framerate=50	# Hz
+		n=3
+		files = files61
+		temperature = temperature61
+		temperature_no_window = cp.deepcopy(temperature)
+		files_no_window = cp.deepcopy(files)
+		pathparam='/home/ffederic/work/irvb/2022-02-24_window_multiple_search_for_parameters/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
+		if not os.path.exists(pathparam):
+			os.makedirs(pathparam)
+		coleval.build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5,wavelength_bottom=2.5)
+
+	if False:	# BB source as close as possible with window inttime=1.0	# ms
+		description = 'BB source as close as possible with window inttime=1.0 # ms'
+		files = files42
+		temperature = temperature42
+		temperature_window = cp.deepcopy(temperature)
+		files_window = cp.deepcopy(files)
+		inttime=1.0	# ms
+		framerate=50	# Hz
+		n=3
+		files = files48
+		temperature = temperature48
+		temperature_no_window = cp.deepcopy(temperature)
+		files_no_window = cp.deepcopy(files)
+		pathparam='/home/ffederic/work/irvb/2021-12-07_window_multiple_search_for_parameters/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
+		if not os.path.exists(pathparam):
+			os.makedirs(pathparam)
+		coleval.build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5,wavelength_bottom=2.5)
+
+		if Flase:	# I think this is wrong. it was based to the fact that data fro 2018 has a3~1, but that dataset is unreliable
+			# this will be saved with a3=1 to be used as proper calibration for MU01
+			fullpathparams=os.path.join(pathparam,'coeff_polynomial_deg'+str(n-1)+'int_time'+str(inttime)+'ms.npz')
+			params_dict=np.load(fullpathparams)
+			params_dict.allow_pickle=True
+			params_dict['coeff2'][:,:,:,2]=1
+			pathparam='/home/ffederic/work/irvb/2021-12-07_MU01_modified_BB_params/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
+			if not os.path.exists(pathparam):
+				os.makedirs(pathparam)
+			fullpathparams=os.path.join(pathparam,'coeff_polynomial_deg'+str(n-1)+'int_time'+str(inttime)+'ms.npz')
+			np.savez_compressed(fullpathparams[:-4],**params_dict)
 
 
-	fileshot=np.array([files16[2:],files14[5:]])
-	temperaturehot=np.array([temperature16[2:],temperature14[5:]])
-	filescold=np.array([files18[4:],files20[2:]])
-	temperaturecold=np.array([temperature18[4:],temperature20[2:]])
-	temperature_window = temperaturehot.tolist()+temperaturecold.tolist()
-	files_window = fileshot.tolist()+filescold.tolist()
-	inttime=1.0	# ms
-	framerate=383	# Hz
-	fileshot=np.array([files2,files3,files4,files5])
-	temperaturehot=np.array([temperature2,temperature3,temperature4,temperature5])
-	filescold=np.array([files6])
-	temperaturecold=np.array([temperature6])
-	temperature_no_window = temperaturehot.tolist()+temperaturecold.tolist()
-	files_no_window = fileshot.tolist()+filescold.tolist()
-	n=3
-	pathparam='/home/ffederic/work/irvb/2021-09-25_multiple_search_for_parameters/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
-	if not os.path.exists(pathparam):
-		os.makedirs(pathparam)
-	coleval.build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5,wavelength_bottom=2.5)
+	if False:	# BB source as close as possible with window inttime=2.0	# ms
+		description = 'BB source as close as possible with window inttime=2.0 # ms'
+		files = files41
+		temperature = temperature41
+		temperature_window = cp.deepcopy(temperature)
+		files_window = cp.deepcopy(files)
+		inttime=2.0	# ms
+		framerate=50	# Hz
+		n=3
+		files = files46
+		temperature = temperature46
+		temperature_no_window = cp.deepcopy(temperature)
+		files_no_window = cp.deepcopy(files)
+		pathparam='/home/ffederic/work/irvb/2021-12-07_window_multiple_search_for_parameters/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
+		if not os.path.exists(pathparam):
+			os.makedirs(pathparam)
+		coleval.build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5,wavelength_bottom=2.5)
 
-	fileshot=np.array([files17[2:],files15[5:]])
-	temperaturehot=np.array([temperature17[2:],temperature15[5:]])
-	filescold=np.array([files19[4:],files21[2:]])
-	temperaturecold=np.array([temperature19[4:],temperature21[2:]])
-	temperature_window = temperaturehot.tolist()+temperaturecold.tolist()
-	files_window = fileshot.tolist()+filescold.tolist()
-	inttime=2.0	# ms
-	framerate=383	# Hz
-	fileshot=np.array([files8])
-	temperaturehot=np.array([temperature8])
-	filescold=np.array([files7])
-	temperaturecold=np.array([temperature7])
-	temperature_no_window = temperaturehot.tolist()+temperaturecold.tolist()
-	files_no_window = fileshot.tolist()+filescold.tolist()
-	n=3
-	pathparam='/home/ffederic/work/irvb/2021-09-25_multiple_search_for_parameters/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
-	if not os.path.exists(pathparam):
-		os.makedirs(pathparam)
-	coleval.build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5,wavelength_bottom=2.5)
+		if Flase:	# I think this is wrong. it was based to the fact that data fro 2018 has a3~1, but that dataset is unreliable
+			# this will be saved with a3=1 to be used as proper calibration for MU01
+			fullpathparams=os.path.join(pathparam,'coeff_polynomial_deg'+str(n-1)+'int_time'+str(inttime)+'ms.npz')
+			params_dict=np.load(fullpathparams)
+			params_dict.allow_pickle=True
+			params_dict['coeff2'][:,:,:,2]=1
+			pathparam='/home/ffederic/work/irvb/2021-12-07_MU01_modified_BB_params/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
+			if not os.path.exists(pathparam):
+				os.makedirs(pathparam)
+			fullpathparams=os.path.join(pathparam,'coeff_polynomial_deg'+str(n-1)+'int_time'+str(inttime)+'ms.npz')
+			np.savez_compressed(fullpathparams[:-4],**params_dict)
 
+	if False:	# NUC plate original scans with window inttime=1.0	# ms
+		description = 'NUC plate original scans with window inttime=1.0 # ms'
+		fileshot=np.array([files16[2:],files14[5:]])
+		temperaturehot=np.array([temperature16[2:],temperature14[5:]])
+		filescold=np.array([files18[4:],files20[2:]])
+		temperaturecold=np.array([temperature18[4:],temperature20[2:]])
+		temperature_window = temperaturehot.tolist()+temperaturecold.tolist()
+		files_window = fileshot.tolist()+filescold.tolist()
+		inttime=1.0	# ms
+		framerate=383	# Hz
+		fileshot=np.array([files2,files3,files4,files5])
+		temperaturehot=np.array([temperature2,temperature3,temperature4,temperature5])
+		filescold=np.array([files6])
+		temperaturecold=np.array([temperature6])
+		temperature_no_window = temperaturehot.tolist()+temperaturecold.tolist()
+		files_no_window = fileshot.tolist()+filescold.tolist()
+		n=3
+		pathparam='/home/ffederic/work/irvb/2021-09-25_multiple_search_for_parameters/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
+		if not os.path.exists(pathparam):
+			os.makedirs(pathparam)
+		coleval.build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5,wavelength_bottom=2.5)
+
+	if True:	# NUC plate original scans with window inttime=2.0	# ms
+		description = 'NUC plate original scans with window inttime=2.0 # ms'
+		fileshot=np.array([files17[2:],files15[5:]])
+		temperaturehot=np.array([temperature17[2:],temperature15[5:]])
+		filescold=np.array([files19[4:],files21[2:]])
+		temperaturecold=np.array([temperature19[4:],temperature21[2:]])
+		temperature_window = temperaturehot.tolist()+temperaturecold.tolist()
+		files_window = fileshot.tolist()+filescold.tolist()
+		inttime=2.0	# ms
+		framerate=383	# Hz
+		fileshot=np.array([files8])
+		temperaturehot=np.array([temperature8])
+		filescold=np.array([files7])
+		temperaturecold=np.array([temperature7])
+		temperature_no_window = temperaturehot.tolist()+temperaturecold.tolist()
+		files_no_window = fileshot.tolist()+filescold.tolist()
+		n=3
+		pathparam='/home/ffederic/work/irvb/2021-09-25_multiple_search_for_parameters/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
+		if not os.path.exists(pathparam):
+			os.makedirs(pathparam)
+		coleval.build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5,wavelength_bottom=2.5)
+
+
+
+	exit()
 	if False:	# only to compare results
 		fullpathparams=os.path.join(pathparam,'coeff_polynomial_deg'+str(n-1)+'int_time'+str(inttime)+'ms.npz')
 		params_dict=np.load(fullpathparams)
@@ -328,66 +447,116 @@ elif True:
 		errparams2 = params_dict['errcoeff2']
 		score2 = params_dict['score2']
 
-		plt.figure()
+		params3 = params_dict['coeff3']	# pure no window
+		errparams3 = params_dict['errcoeff3']
+		score3 = params_dict['score3']
+		params4 = params_dict['coeff4']	# pure window
+		errparams4 = params_dict['errcoeff4']
+		score4 = params_dict['score4']
+
+		plt.figure(figsize=(10, 10))
 		if len(temperature_window)<6:
-			plt.title('score polynomial fit NUC')
+			plt.title('score polynomial fit NUC\n'+description)
 		else:
-			plt.title('score polynomial fit BB source')
+			plt.title('score polynomial fit BB source\n'+description)
 		plt.imshow(score[0])
 		plt.colorbar()
 		plt.pause(0.01)
 
-		plt.figure()
+		plt.figure(figsize=(10, 10))
 		if len(temperature_window)<6:
-			plt.title('score BB curve fit NUC')
+			plt.title('score BB curve fit NUC\n'+description)
 		else:
-			plt.title('score BB curve fit BB source')
+			plt.title('score BB curve fit BB source\n'+description)
 		plt.imshow(score2[0])
 		plt.colorbar()
 		plt.pause(0.01)
 
-		plt.figure()
+		plt.figure(figsize=(10, 10))
 		if len(temperature_window)<6:
-			plt.title('proportional window component BB curve fit NUC')
+			plt.title('proportional window component BB curve fit NUC\n'+description)
 		else:
-			plt.title('proportional window component BB curve fit BB source')
-		plt.imshow(params2[0,:,:,0]*params2[0,:,:,2])
+			plt.title('proportional window component BB curve fit BB source\n'+description)
+		to_plot = median_filter(params2[0,:,:,0]*params2[0,:,:,2],[3,3])
+		plt.imshow(to_plot,vmin=to_plot[30:170,30:170].min(),vmax=to_plot[30:170,30:170].max())
 		plt.colorbar()
 		plt.pause(0.01)
 
-		plt.figure()
+		plt.figure(figsize=(10, 10))
 		if len(temperature_window)<6:
-			plt.title('proportional no window component BB curve fit NUC')
+			plt.title('proportional no window component BB curve fit NUC\n'+description)
 		else:
-			plt.title('proportional no window component BB curve fit BB source')
-		plt.imshow(params2[0,:,:,0])
+			plt.title('proportional no window component BB curve fit BB source\n'+description)
+		to_plot = median_filter(params2[0,:,:,0],[3,3])
+		plt.imshow(to_plot)#,vmin=to_plot[30:170,30:170].min(),vmax=to_plot[30:170,30:170].max())
+		plt.colorbar().set_label('a1 [counts/photons]')
+		plt.pause(0.01)
+
+		plt.figure(figsize=(10, 10))
+		if len(temperature_window)<6:
+			plt.title('proportional window modifier BB curve fit NUC\n'+description)
+		else:
+			plt.title('proportional window modifier BB curve fit BB source\n'+description)
+		to_plot = median_filter(params2[0,:,:,2],[3,3])
+		plt.imshow(to_plot)#,vmin=to_plot[30:170,30:170].min(),vmax=to_plot[30:170,30:170].max())
+		plt.colorbar().set_label('a3 [au]')
+		plt.pause(0.01)
+
+		plt.figure(figsize=(10, 10))
+		if len(temperature_window)<6:
+			plt.title('offset no window component BB curve fit NUC\n'+description)
+		else:
+			plt.title('offset no window component BB curve fit BB source\n'+description)
+		plt.imshow(median_filter(params2[0,:,:,1],[3,3]))
 		plt.colorbar()
 		plt.pause(0.01)
 
-		plt.figure()
+		plt.figure(figsize=(10, 10))
 		if len(temperature_window)<6:
-			plt.title('proportional window modifier BB curve fit NUC')
+			plt.title('offset window modifier BB curve fit NUC\n'+description)
 		else:
-			plt.title('proportional window modifier BB curve fit BB source')
-		plt.imshow(params2[0,:,:,2])
+			plt.title('offset window modifier BB curve fit BB source\n'+description)
+		plt.imshow(median_filter(params2[0,:,:,3],[3,3]))
 		plt.colorbar()
 		plt.pause(0.01)
 
-		plt.figure()
+		plt.figure(figsize=(10, 10))
 		if len(temperature_window)<6:
-			plt.title('SNR additive factor window component BB curve fit NUC')
+			plt.title('SNR additive factor window component BB curve fit NUC\n'+description)
 		else:
-			plt.title('SNR additive factor window component BB curve fit BB source')
-		plt.imshow((params2[0,:,:,1]+params2[0,:,:,3])/((errparams2[0,:,:,1,1]+errparams2[0,:,:,3,3]+2*errparams2[0,:,:,3,1])**0.5))
+			plt.title('SNR additive factor window component BB curve fit BB source\n'+description)
+		to_plot = median_filter((params2[0,:,:,1]+params2[0,:,:,3])/((errparams2[0,:,:,1,1]+errparams2[0,:,:,3,3]+2*errparams2[0,:,:,3,1])**0.5),[3,3])
+		plt.imshow(to_plot)
+		plt.colorbar().set_label('(a2+a4)/sigma(a2+a4) [au]')
+		plt.pause(0.01)
+
+		plt.figure(figsize=(10, 10))
+		if len(temperature_window)<6:
+			plt.title('SNR proportional factor window component BB curve fit NUC\n'+description)
+		else:
+			plt.title('SNR proportional factor window component BB curve fit BB source\n'+description)
+		to_plot = median_filter(1/((errparams2[0,:,:,0,0]**0.5/params2[0,:,:,0])**2 + (errparams2[0,:,:,2,2]**0.5/params2[0,:,:,2])**2 + 2*errparams2[0,:,:,2,0]/(params2[0,:,:,0]*params2[0,:,:,2]))**0.5 ,[3,3])
+		plt.imshow(to_plot)
+		plt.colorbar().set_label('(a1xa3)/sigma(a1xa3) [au]')
+		plt.pause(0.01)
+
+		plt.figure(figsize=(10, 10))
+		if len(temperature_window)<6:
+			plt.title('proportional pure no window component BB curve fit NUC\n'+description)
+		else:
+			plt.title('proportional pure no window component BB curve fit BB source\n'+description)
+		to_plot = median_filter(params3[0,:,:,0],[3,3])
+		plt.imshow(to_plot,vmin=to_plot[30:170,30:170].min(),vmax=to_plot[30:170,30:170].max())
 		plt.colorbar()
 		plt.pause(0.01)
 
-		plt.figure()
+		plt.figure(figsize=(10, 10))
 		if len(temperature_window)<6:
-			plt.title('SNR proportional factor window component BB curve fit NUC')
+			plt.title('proportional pure window component BB curve fit NUC\n'+description)
 		else:
-			plt.title('SNR proportional factor window component BB curve fit BB source')
-		plt.imshow(1/((errparams2[0,:,:,0,0]**0.5/params2[0,:,:,0])**2 + (errparams2[0,:,:,2,2]**0.5/params2[0,:,:,2])**2 + 2*errparams2[0,:,:,2,0]/(params2[0,:,:,0]*params2[0,:,:,2]))**0.5 )
+			plt.title('proportional pure window component BB curve fit BB source\n'+description)
+		to_plot = median_filter(params4[0,:,:,0],[3,3])
+		plt.imshow(to_plot,vmin=to_plot[30:170,30:170].min(),vmax=to_plot[30:170,30:170].max())
 		plt.colorbar()
 		plt.pause(0.01)
 	else:
@@ -406,8 +575,14 @@ elif True:
 			return temp1
 
 		delta_counts = 100
-		base_counts = 5800
+		base_counts = 11000
 		counts = base_counts+delta_counts
+		BB_proportional,BB_proportional_std,constant_offset,constant_offset_std,photon_dict = coleval.calc_BB_coefficients_multi_digitizer(params,errparams,digitizer_ID,reference_background,reference_background_std,ref_temperature=ref_temperature,ref_temperature_std=ref_temperature_std,wavewlength_top=wavewlength_top,wavelength_bottom=wavelength_bottom,inttime=inttime)
+		photon_dict = coleval.calc_interpolators_BB(wavewlength_top=wavewlength_top,wavelength_bottom=wavelength_bottom,inttime=inttime)
+		reverse_photon_flux_interpolator = photon_dict['reverse_photon_flux_interpolator']
+		photon_flux_over_temperature_interpolator = photon_dict['photon_flux_over_temperature_interpolator']
+		photon_flux_interpolator = photon_dict['photon_flux_interpolator']
+
 		T0 = params[0,100,100,-1] + params[0,100,100,-2] * base_counts + params[0,100,100,-3] * (base_counts**2) + 273.15
 		a1a3 = params2[0,100,100,0]*params2[0,100,100,2]
 		sigma_a1a3 = a1a3 * ((errparams2[0,100,100,0,0]**0.5/params2[0,100,100,0])**2 + (errparams2[0,100,100,2,2]**0.5/params2[0,100,100,2])**2 + 2*errparams2[0,100,100,0,2]/a1a3)**0.5

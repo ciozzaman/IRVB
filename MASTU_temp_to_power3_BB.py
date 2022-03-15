@@ -224,7 +224,7 @@ for shrink_factor_x in [1,2,3,5,10]:
 			laser_temperature_std_crop_binned = 1/(shrink_factor_t*shrink_factor_x**2)*coleval.proper_homo_binning_t_2D(laser_temperature_std_no_dead_pixels_crop[i]**2,shrink_factor_t,shrink_factor_x,type='np.nansum')[0]**0.5
 			# laser_temperature_std_minus_background_crop_binned = 1/(shrink_factor_t*shrink_factor_x**2)*coleval.proper_homo_binning_t_2D(laser_temperature_std_minus_background_no_dead_pixels_crop[i]**2,shrink_factor_t,shrink_factor_x,type='np.nansum')[0]**0.5
 			temp_counts_std_crop_binned = 1/(shrink_factor_t*shrink_factor_x**2)*coleval.proper_homo_binning_t_2D(temp_counts_std_no_dead_pixels_crop[i]**2,shrink_factor_t,shrink_factor_x,type='np.nansum')[0]**0.5
-			BB_proportional_std_crop_binned = 1/((shrink_factor_t**0.5)*shrink_factor_x**2)*(coleval.proper_homo_binning_2D(BB_proportional_std_no_dead_pixels_crop[i]**2,shrink_factor_x,type='np.nansum')**0.5)
+			BB_proportional_std_crop_binned = 1/(shrink_factor_x**2)*(coleval.proper_homo_binning_2D(BB_proportional_std_no_dead_pixels_crop[i]**2,shrink_factor_x,type='np.nansum')**0.5)
 			reference_background_std_crop_binned = 1/((shrink_factor_t**0.5)*shrink_factor_x**2)*(coleval.proper_homo_binning_2D(temp_ref_counts_std_no_dead_pixels_crop[i]**2,shrink_factor_x,type='np.nansum')**0.5)
 
 			laser_temperature_crop_binned_full.append(laser_temperature_minus_background_crop_binned[1:-1,1:-1,1:-1]+ref_temperature)
@@ -294,7 +294,7 @@ for shrink_factor_x in [1,2,3,5,10]:
 				horizontal_coord,vertical_coord = np.meshgrid(horizontal_coord,vertical_coord)
 				grid_binned = np.array([[horizontal_coord.flatten()]*4,[vertical_coord.flatten()]*4]).T
 				grid_laplacian_binned = -coleval.build_laplacian(grid_binned,diagonal_factor=0.5) / (dx**2) / 2	# the /2 comes from the fact that including the diagonals amounts to double counting, so i do a mean by summing half of it
-			dTdt,dTdt_std,d2Tdxy,d2Tdxy_std,negd2Tdxy,negd2Tdxy_std,T4_T04,T4_T04_std = coleval.calc_temp_to_power_BB_1(photon_flux_over_temperature_interpolator,laser_temperature_minus_background_crop_binned,ref_temperature,time_partial_binned,dx,temp_counts_std_crop_binned,BB_proportional_crop_binned,BB_proportional_std_crop_binned,reference_background_std_crop_binned,laser_temperature_std_crop_binned,nan_ROI_mask,grid_laplacian=grid_laplacian_binned)
+			dTdt,dTdt_std,d2Tdxy,d2Tdxy_std,negd2Tdxy,negd2Tdxy_std,T4_T04,T4_T04_std = coleval.calc_temp_to_power_BB_1(photon_flux_over_temperature_interpolator,laser_temperature_minus_background_crop_binned,ref_temperature,time_partial_binned,dx,temp_counts_std_crop_binned,BB_proportional_crop_binned,BB_proportional_std_crop_binned,reference_background_std_crop_binned,laser_temperature_std_crop_binned,nan_ROI_mask,grid_laplacian=grid_laplacian_binned,ref_temperature_std=ref_temperature_std)
 			BBrad,diffusion,timevariation,powernoback,BBrad_std,diffusion_std,timevariation_std,powernoback_std = coleval.calc_temp_to_power_BB_2(dTdt,dTdt_std,d2Tdxy,d2Tdxy_std,negd2Tdxy,negd2Tdxy_std,T4_T04,T4_T04_std,nan_ROI_mask,foilemissivityscaled,foilthicknessscaled,reciprdiffusivityscaled,Ptthermalconductivity)
 
 			BBrad_full.append(BBrad)

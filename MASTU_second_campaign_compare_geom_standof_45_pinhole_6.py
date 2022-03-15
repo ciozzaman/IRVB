@@ -460,7 +460,7 @@ for grid_resolution in [2]:
 
 		# for shrink_factor_t in np.flip(all_shrink_factor_t,axis=0):
 		# for shrink_factor_t in [3,5,2]:
-		for shrink_factor_t in [7]:
+		for shrink_factor_t in [14]:
 			binning_type = 'bin' + str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x)
 			print('starting '+binning_type)
 
@@ -530,7 +530,7 @@ for grid_resolution in [2]:
 				time_full_res = time_full_res[time_full_res<=np.max(time_full_binned_crop)]
 			else:
 				time_full_res = time_full_res[:shrink_factor_t*4]
-			dt = np.mean(np.diff(time_full_res))
+			dt = np.mean(np.diff(time_full_res))/2	# the /2 from the 2 digitizers that were averaged
 			temperature_evolution = []
 			temperature_evolution.append(temperature_full_resolution)
 			x_optimal_input_full_res_int = []
@@ -618,7 +618,7 @@ for grid_resolution in [2]:
 			temperature_minus_background_crop_binned = temperature_crop_binned-ref_temperature
 			counts_std_crop_binned = 1/(shrink_factor_t*shrink_factor_x**2)*(coleval.proper_homo_binning_t_2D(counts_full_resolution_std**2,shrink_factor_t,shrink_factor_x,type='np.nansum')[0]**0.5)
 			averaged_BB_proportional_crop_binned = 1.17347598197361e-13	* np.ones_like(temperature_minus_background_crop_binned[0])
-			averaged_BB_proportional_std_crop_binned = 1.1647691499440713e-17/((shrink_factor_t**0.5)*shrink_factor_x)*np.ones_like(temperature_minus_background_crop_binned[0])
+			averaged_BB_proportional_std_crop_binned = 1.1647691499440713e-17/shrink_factor_x*np.ones_like(temperature_minus_background_crop_binned[0])
 			temp_ref_counts_std_crop_binned = 5.077188644392399/((shrink_factor_t**0.5)*shrink_factor_x)*np.ones_like(temperature_minus_background_crop_binned[0])
 			photon_flux_over_temperature_interpolator = photon_flux_over_temperature_interpolator=coleval.calc_interpolators_BB()['photon_flux_over_temperature_interpolator']
 			photon_flux_over_temperature = photon_flux_over_temperature_interpolator(temperature_evolution_with_noise)
@@ -705,10 +705,10 @@ for grid_resolution in [2]:
 			guess,trash = coleval.translate_emissivity_profile_with_homo_temp(original_voxels_centre,temp_save['x_optimal_all'][0],np.mean(grid_data_masked_crop,axis=1))
 
 			# regolarisation_coeff_edge = 10
-			regolarisation_coeff_edge_multiplier = 50
+			regolarisation_coeff_edge_multiplier = 30
 			regolarisation_coeff_central_border_Z_derivate_multiplier = 0
 			regolarisation_coeff_central_column_border_R_derivate_multiplier = 0
-			regolarisation_coeff_edge_laplacian_multiplier = 1e1
+			regolarisation_coeff_edge_laplacian_multiplier = 5	# 1e1
 			regolarisation_coeff_divertor_multiplier = 1
 			regolarisation_coeff_non_negativity_multiplier = 10
 
@@ -974,6 +974,8 @@ plt.ylabel('output emissivity')
 plt.title(csv_file.name[-60:-28])
 plt.grid()
 plt.pause(0.01)
+
+
 
 
 plt.figure(figsize=(15,12))

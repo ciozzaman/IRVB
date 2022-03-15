@@ -255,9 +255,9 @@ files41=['/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000005','/hom
 full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files41':files41}))
 
 # integration time 1.5ms, freme rate 50Hz, view port, central aberration (copy from 44786), heating ramp with black body source starting from cold winter ambient temperature
-temperature42=[9.4,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45]
-files42=['/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000004','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000008','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000011','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000017','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000022','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000027','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000032','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000037','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000042','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000047','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000052','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000057','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000062','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000067','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000072','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000077','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000082','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000087','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000092','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000097','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000102','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000107','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000112','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000117','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000121','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000125','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000129','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000133','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000137','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000141','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000145','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000149','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000152','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000155','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000158','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000161','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000164']
-full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files42':files42}))
+temperature45=[9.4,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45]
+files45=['/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000004','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000008','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000011','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000017','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000022','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000027','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000032','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000037','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000042','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000047','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000052','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000057','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000062','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000067','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000072','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000077','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000082','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000087','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000092','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000097','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000102','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000107','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000112','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000117','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000121','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000125','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000129','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000133','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000137','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000141','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000145','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000149','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000152','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000155','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000158','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000161','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000164']
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files45':files45}))
 
 # integration time 1ms, freme rate 50Hz, view port, central aberration (copy from 44786), heating ramp with black body source starting from cold winter ambient temperature
 temperature42=[9.4,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45]
@@ -294,6 +294,89 @@ temperature49=[25,27,28,32,36,43]
 files49=['/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000171','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000176','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000181','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000185','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000189','/home/ffederic/work/irvb/flatfield/Dec07_2021/flat_field-000192']
 full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files49':files49}))
 
+
+# 24/02/2022 new scan with BB source keeping the camera as far as possible (~18cm) to try have the most homogeneous radiation field possible (smaller solid angle)
+# integration time 2.5ms, freme rate 10Hz, view port, ~ central aberration, heating ramp with black body source starting from cold winter ambient temperature
+temperature55=[17,19,21,23,25,27]
+files55=['/home/ffederic/work/irvb/flatfield/Feb24_2022/flat_field-000016','/home/ffederic/work/irvb/flatfield/Feb24_2022/flat_field-000026','/home/ffederic/work/irvb/flatfield/Feb24_2022/flat_field-000036','/home/ffederic/work/irvb/flatfield/Feb24_2022/flat_field-000046','/home/ffederic/work/irvb/flatfield/Feb24_2022/flat_field-000061','/home/ffederic/work/irvb/flatfield/Feb24_2022/flat_field-000071']
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files55':files55}))
+
+# 24/02/2022 new scan with BB source keeping the camera as far as possible (~18cm) to try have the most homogeneous radiation field possible (smaller solid angle)
+# integration time 2.0ms, freme rate 10Hz, view port, ~ central aberration, heating ramp with black body source starting from cold winter ambient temperature
+temperature56=[17,19,21,23,25,27,30,34]
+files56 = ['017','027','037','047','062','072','081','089']
+files56 = ['/home/ffederic/work/irvb/flatfield/Feb24_2022/flat_field-000'+value for value in files56]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files56':files56}))
+
+# 24/02/2022 new scan with BB source keeping the camera as far as possible (~18cm) to try have the most homogeneous radiation field possible (smaller solid angle)
+# integration time 1.5ms, freme rate 10Hz, view port, ~ central aberration, heating ramp with black body source starting from cold winter ambient temperature
+temperature57=[17,19,21,23,25,27,30,34]
+files57 = ['018','028','038','048','063','073','082','090']
+files57 = ['/home/ffederic/work/irvb/flatfield/Feb24_2022/flat_field-000'+value for value in files57]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files57':files57}))
+
+# 24/02/2022 new scan with BB source keeping the camera as far as possible (~18cm) to try have the most homogeneous radiation field possible (smaller solid angle)
+# integration time 1ms, freme rate 10Hz, view port, ~ central aberration, heating ramp with black body source starting from cold winter ambient temperature
+temperature58=[17,19,21,23,25,27,30,34]
+files58 = ['019','029','039','049','064','074','083','091']
+files58 = ['/home/ffederic/work/irvb/flatfield/Feb24_2022/flat_field-000'+value for value in files58]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files58':files58}))
+
+# 24/02/2022 new scan with BB source keeping the camera as far as possible (~18cm) to try have the most homogeneous radiation field possible (smaller solid angle)
+# integration time 0.5ms, freme rate 10Hz, view port, ~ central aberration, heating ramp with black body source starting from cold winter ambient temperature
+temperature59=[17,19,21,23,25,27,30,34]
+files59 = ['020','030','040','050','065','075','084','092']
+files59 = ['/home/ffederic/work/irvb/flatfield/Feb24_2022/flat_field-000'+value for value in files59]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files59':files59}))
+
+# 24/02/2022 new scan with BB source keeping the camera as far as possible (~18cm) to try have the most homogeneous radiation field possible (smaller solid angle)
+# integration time 2.5ms, freme rate 10Hz, no view port, heating ramp with black body source starting from cold winter ambient temperature
+temperature60=[17,19,21,23,25,27]
+files60 = ['011','021','031','041','056','066']
+files60 = ['/home/ffederic/work/irvb/flatfield/Feb24_2022/flat_field-000'+value for value in files60]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files60':files60}))
+
+# 24/02/2022 new scan with BB source keeping the camera as far as possible (~18cm) to try have the most homogeneous radiation field possible (smaller solid angle)
+# integration time 2ms, freme rate 10Hz, no view port, heating ramp with black body source starting from cold winter ambient temperature
+temperature61=[17,19,21,23,25,27,30,34]
+files61 = ['012','022','032','042','057','067','077','085']
+files61 = ['/home/ffederic/work/irvb/flatfield/Feb24_2022/flat_field-000'+value for value in files61]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files61':files61}))
+
+# 24/02/2022 new scan with BB source keeping the camera as far as possible (~18cm) to try have the most homogeneous radiation field possible (smaller solid angle)
+# integration time 1.5ms, freme rate 10Hz, no view port, heating ramp with black body source starting from cold winter ambient temperature
+temperature62=[17,19,21,23,25,27,30,34]
+files62 = ['013','023','033','043','058','068','078','086']
+files62 = ['/home/ffederic/work/irvb/flatfield/Feb24_2022/flat_field-000'+value for value in files62]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files62':files62}))
+
+# 24/02/2022 new scan with BB source keeping the camera as far as possible (~18cm) to try have the most homogeneous radiation field possible (smaller solid angle)
+# integration time 1ms, freme rate 10Hz, no view port, heating ramp with black body source starting from cold winter ambient temperature
+temperature63=[17,19,21,23,25,27,30,34]
+files63 = ['014','024','034','044','059','069','079','087']
+files63 = ['/home/ffederic/work/irvb/flatfield/Feb24_2022/flat_field-000'+value for value in files63]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files63':files63}))
+
+# 24/02/2022 new scan with BB source keeping the camera as far as possible (~18cm) to try have the most homogeneous radiation field possible (smaller solid angle)
+# integration time 0.5ms, freme rate 10Hz, no view port, heating ramp with black body source starting from cold winter ambient temperature
+temperature64=[17,19,21,23,25,27,30,34]
+files64 = ['015','025','035','045','060','070','080','088']
+files64 = ['/home/ffederic/work/irvb/flatfield/Feb24_2022/flat_field-000'+value for value in files64]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files64':files64}))
+
+# 24/02/2022 new scan with BB source keeping the camera such that the BB source is in focus (65.7cm) as prescribed by Andrew Thornton
+# integration time 2ms, freme rate 10Hz, no view port, heating ramp with black body source starting from cold winter ambient temperature
+temperature65=[17,19,22,25,27,30,34]
+files65 = ['096','098','100','102','104','106','108']
+files65 = ['/home/ffederic/work/irvb/flatfield/Feb24_2022/flat_field-000'+value for value in files65]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files65':files65}))
+
+# 24/02/2022 new scan with BB source keeping the camera such that the BB source is in focus (65.7cm) as prescribed by Andrew Thornton
+# integration time 1ms, freme rate 10Hz, no view port, heating ramp with black body source starting from cold winter ambient temperature
+temperature66=[17,19,22,25,27,30,34]
+files66 = ['097','099','101','103','105','107','109']
+files66 = ['/home/ffederic/work/irvb/flatfield/Feb24_2022/flat_field-000'+value for value in files66]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files66':files66}))
 
 
 

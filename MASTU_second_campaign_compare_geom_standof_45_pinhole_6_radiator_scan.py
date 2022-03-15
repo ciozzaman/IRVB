@@ -457,7 +457,7 @@ for grid_resolution in [2]:
 
 		# for shrink_factor_t in np.flip(all_shrink_factor_t,axis=0):
 		# for shrink_factor_t in [3,5,2]:
-		for shrink_factor_t in [7]:
+		for shrink_factor_t in [14]:
 			binning_type = 'bin' + str(shrink_factor_t) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x)
 			print('starting '+binning_type)
 
@@ -585,7 +585,7 @@ for grid_resolution in [2]:
 				diffusivity=1.0283685197530968e-05
 				Ptthermalconductivity=71.6
 				time_full_res = saved_file_dict_short['bin1x1x1'].all()['time_full_binned']
-				dt = np.mean(np.diff(time_full_res))
+				dt = np.mean(np.diff(time_full_res))/2	# the /2 from the 2 digitizers that were averaged
 				temperature_evolution = []
 				temperature_evolution.append(temperature_full_resolution)
 				time_full_res_int = []
@@ -629,7 +629,7 @@ for grid_resolution in [2]:
 				temperature_minus_background_crop_binned = temperature_crop_binned-ref_temperature
 				counts_std_crop_binned = 1/(shrink_factor_t*shrink_factor_x**2)*(coleval.proper_homo_binning_t_2D(counts_full_resolution_std**2,shrink_factor_t,shrink_factor_x,type='np.nansum')[0]**0.5)
 				averaged_BB_proportional_crop_binned = 1.17347598197361e-13	* np.ones_like(temperature_minus_background_crop_binned[0])
-				averaged_BB_proportional_std_crop_binned = 1.1647691499440713e-17/((shrink_factor_t**0.5)*shrink_factor_x)*np.ones_like(temperature_minus_background_crop_binned[0])
+				averaged_BB_proportional_std_crop_binned = 1.1647691499440713e-17/shrink_factor_x*np.ones_like(temperature_minus_background_crop_binned[0])
 				temp_ref_counts_std_crop_binned = 5.077188644392399/((shrink_factor_t**0.5)*shrink_factor_x)*np.ones_like(temperature_minus_background_crop_binned)
 				photon_flux_over_temperature_interpolator = interp1d([20,30,40,50],[2.22772831e+14, 3.10040403e+14, 4.22648744e+14, 5.65430883e+14],fill_value="extrapolate",bounds_error=False)
 				photon_flux_over_temperature = photon_flux_over_temperature_interpolator(temperature_evolution_with_noise)
@@ -718,11 +718,11 @@ for grid_resolution in [2]:
 				guess = cp.deepcopy(x_optimal_input_low_res)
 
 				# regolarisation_coeff_edge = 10
+				regolarisation_coeff_edge_multiplier = 30
 				regolarisation_coeff_central_border_Z_derivate_multiplier = 0
 				regolarisation_coeff_central_column_border_R_derivate_multiplier = 0
-				regolarisation_coeff_edge_laplacian_multiplier = 1e1
+				regolarisation_coeff_edge_laplacian_multiplier = 5	# 1e1
 				regolarisation_coeff_divertor_multiplier = 1
-				regolarisation_coeff_edge_multiplier = 2e2
 				regolarisation_coeff_non_negativity_multiplier = 10
 
 				def prob_and_gradient(emissivity_plus,*args):

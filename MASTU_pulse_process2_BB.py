@@ -61,9 +61,51 @@ try:
 			DetectorTemp = DetectorTemp[time_of_experiment_digitizer_ID[i][0] != time_of_experiment]
 			time_of_experiment_digitizer_ID[i] = time_of_experiment_digitizer_ID[i][1:]
 	time_of_experiment = np.sort(np.concatenate(time_of_experiment_digitizer_ID))
-
 	laser_framerate = 1e6/np.mean(np.sort(np.diff(time_of_experiment))[2:-2])
 	laser_int_time = full_saved_file_dict['IntegrationTime']
+
+	# added 8/3/22 I need to find the real beginning of the pulse. if framerate is 50H the error ir just too large
+	plt.figure(figsize=(12, 8))
+	if laser_framerate<60:
+		real_start_time_of_pulse = []
+		for i in range(len(laser_digitizer_ID)):
+			time_of_experiment_digitizer_ID_seconds = (time_of_experiment_digitizer_ID[i]-time_of_experiment[0])*1e-6
+			temp=np.sort(median_filter(laser_counts[i],[1,5,5]).reshape((len(laser_counts[i]),np.shape(laser_counts[i])[1]*np.shape(laser_counts[i])[2])),axis=(1))
+			temp = np.diff(np.mean(temp[:,-40:],axis=1))
+			time = time_of_experiment_digitizer_ID_seconds[:-1]+np.mean(np.diff(time_of_experiment_digitizer_ID_seconds))
+			std = np.std(temp[time>10])
+			plt.plot(time,temp)
+			plt.axhline(y=-std*10,color='y')
+			plt.axhline(y=std*10,color='y')
+			plt.axvline(x=time[(np.abs(temp)>6*std).argmax()-1],color='k')
+			real_start_time_of_pulse.append(time[(np.abs(temp)>6*std).argmax()-1])
+		start_time_of_pulse = np.mean(real_start_time_of_pulse)
+		plt.xlim(left=start_time_of_pulse-1,right=start_time_of_pulse+1)
+	else:
+		real_start_time_of_pulse = []
+		# plt.figure()
+		for i in range(len(laser_digitizer_ID)):
+			time_of_experiment_digitizer_ID_seconds = (time_of_experiment_digitizer_ID[i]-time_of_experiment[0])*1e-6
+			temp = np.mean(laser_counts[i],axis=(1,2))
+			add_time = 10/29.1	# 7 waves with frequency ~ 29Hz
+			def check(args):
+				c0,c1,t0=args
+				out = np.sum((temp[np.logical_and(time_of_experiment_digitizer_ID_seconds<=t0+add_time,time_of_experiment_digitizer_ID_seconds>=t0-2*add_time)]-c0-c1*np.maximum(0,time_of_experiment_digitizer_ID_seconds[np.logical_and(time_of_experiment_digitizer_ID_seconds<=t0+add_time,time_of_experiment_digitizer_ID_seconds>=t0-2*add_time)]-t0))**2)
+				# print(out)
+				return out
+			fit, y_opt, opt_info = scipy.optimize.fmin_l_bfgs_b(check, x0=[temp[0],100,start_time_of_pulse],approx_grad=True,bounds = [[0,np.inf],[0,np.inf],[start_time_of_pulse-0.1,start_time_of_pulse+0.1]]) #,m=1000, maxls=1000, pgtol=1e-10, factr=1e0)#,approx_grad = True)
+			plt.plot(time_of_experiment_digitizer_ID_seconds,temp)
+			plt.plot(time_of_experiment_digitizer_ID_seconds,fit[0]+fit[1]*np.maximum(0,time_of_experiment_digitizer_ID_seconds-fit[2]),'--')
+			plt.axvline(x=fit[2]+add_time,color='k')
+			plt.axvline(x=fit[2],color='k')
+			real_start_time_of_pulse.append(fit[2])
+		start_time_of_pulse = np.mean(real_start_time_of_pulse)
+		plt.xlim(left=start_time_of_pulse-add_time,right=start_time_of_pulse+add_time)
+		plt.ylim(bottom=temp[time_of_experiment_digitizer_ID_seconds<start_time_of_pulse+add_time].min(),top=temp[time_of_experiment_digitizer_ID_seconds<start_time_of_pulse+add_time].max())
+	plt.title(day+'/'+name+'\nint time %.3gms, framerate %.3gHz\nstart time = mean ' %(laser_int_time/1000,laser_framerate) +str(real_start_time_of_pulse))
+	plt.savefig(laser_to_analyse[:-4]+'_0.eps', bbox_inches='tight')
+	plt.close()
+
 
 	if False:
 		# using the new startup of the camera I reach steady state way before the pulse, so I can use the first frames as reference without any correction
@@ -79,42 +121,75 @@ try:
 		full_correction_coefficients_present = False
 		full_correction_coefficients = np.zeros((2,*np.shape(laser_counts[0])[1:],6))*np.nan
 
-	try:
-		temp = full_saved_file_dict['aggregated_correction_coeff'][0][5]
-		aggregated_correction_coefficients_present = True
-		aggregated_correction_coefficients = full_saved_file_dict['aggregated_correction_coeff']
-	except:
-		aggregated_correction_coefficients_present = False
-		aggregated_correction_coefficients = np.zeros((2,6))*np.nan
+	# try:
+	# 	temp = full_saved_file_dict['aggregated_correction_coeff'][0][4]
+	# 	if len(full_saved_file_dict['aggregated_correction_coeff'][0])>5:
+	# 		bla=sgna
+	# 	aggregated_correction_coefficients_present = True
+	# 	aggregated_correction_coefficients = full_saved_file_dict['aggregated_correction_coeff']
+	# except:
+	# it takes so little to do it that it doesn't matter
+	aggregated_correction_coefficients_present = False
+	aggregated_correction_coefficients = np.zeros((2,5))*np.nan
 
 	fig, ax = plt.subplots( 4,1,figsize=(10, 24), squeeze=False, sharex=True)
 	plot_index = 0
 	horizontal_coord = np.arange(np.shape(laser_counts[0])[2])
 	vertical_coord = np.arange(np.shape(laser_counts[0])[1])
 	horizontal_coord,vertical_coord = np.meshgrid(horizontal_coord,vertical_coord)
-	select_space = np.logical_or(np.logical_or(vertical_coord<30,vertical_coord>240),np.logical_or(horizontal_coord<30,horizontal_coord>290))
+	select_space_foil = np.logical_and(np.logical_and(vertical_coord>50,vertical_coord<220),np.logical_and(horizontal_coord>50,horizontal_coord<275))
+	select_space1 = np.logical_and(vertical_coord<30,np.logical_and(horizontal_coord>50,horizontal_coord<250))
+	select_space2 = np.logical_and(vertical_coord>240,np.logical_and(horizontal_coord>50,horizontal_coord<250))
+	select_space3 = np.logical_and(horizontal_coord<30,np.logical_and(vertical_coord>75,vertical_coord<200))
+	select_space4 = np.logical_and(horizontal_coord>290,np.logical_and(vertical_coord>75,vertical_coord<200))
+	# select_space = np.logical_or(np.logical_or(vertical_coord<30,vertical_coord>240),np.logical_or(horizontal_coord<30,horizontal_coord>290))
+	select_space = np.logical_or(np.logical_or(select_space1,select_space2),np.logical_or(select_space3,select_space4))
 	startup_correction = []
 	laser_counts_corrected = []
-	temp=0
+	max_counts_for_plot=0
 	exponential = lambda t,c1,c2,c3,c4,t0: -c1*np.exp(-c2*(t-t0)-c3*((t-t0)**2)-c4*((t-t0)**3))
-	exponential_biased = lambda t,c1,c2,c3,c4,c5,t0: -c1*np.exp(-c2*(t-t0)-c3*((t-t0)**2)-c4*((t-t0)**3))+c5*(t-t0)
+	exponential_biased = lambda t,c1,c2,c3,c5,t0: -c1*np.exp(-c2*(np.maximum(0,(t-t0))**c3))+c5*(t-t0)
+	def exponential_biased_with_grad(coeffs,*args):
+		print(coeffs)
+		c1,c2,c3,c5,t0 = coeffs
+		counts = args[0]
+		t = args[1]
+		exponential_biased = -c1*np.exp(-c2*(np.maximum(0,(t-t0))**c3))+c5*(t-t0)
+		residuals = np.nansum((counts-exponential_biased)**2)
+		temp = c2*c3*(np.maximum(0,(t-t0))**(c3-1))
+		temp[t-t0<0] = 0
+		grad = -2*np.nansum((counts-exponential_biased)*np.array([-np.exp(-c2*(np.maximum(0,(t-t0))**c3)) , -c1*np.exp(-c2*(np.maximum(0,(t-t0))**c3))*(-(np.maximum(0,(t-t0))**c3)) , -c1*np.exp(-c2*(np.maximum(0,(t-t0))**c3))*(-temp) , (t-t0) , -c1*np.exp(-c2*(np.maximum(0,(t-t0))**c3))*(temp*(t-t0>0))-c5]),axis=1)
+		print(residuals,grad)
+		return residuals,grad
 	# def exponential_biased(t,c1,c2,c3,c4,c5,t0):
 	# 	print(c1,c2,c3,c4,c5,t0)
 	# 	return -c1*np.exp(-c2*(t-t0)-c3*((t-t0)**2)-c4*((t-t0)**3))+c5*(t-t0)
 	external_clock_marker = False
 	for i in range(len(laser_digitizer_ID)):
 		reference = np.mean(laser_counts[i][:,select_space],axis=-1)
+		reference1 = np.mean(laser_counts[i][:,select_space1],axis=-1)
+		reference2 = np.mean(laser_counts[i][:,select_space2],axis=-1)
+		reference3 = np.mean(laser_counts[i][:,select_space3],axis=-1)
+		reference4 = np.mean(laser_counts[i][:,select_space4],axis=-1)
 		if np.abs(reference[-1]-reference[10])>30:
 			external_clock_marker = True
 		laser_counts_corrected.append(laser_counts[i].astype(np.float64))
-		temp = max(temp,np.max(np.mean(laser_counts[i][10:],axis=(-1,-2))))
-		time_of_experiment_digitizer_ID_seconds = (time_of_experiment_digitizer_ID[i]-time_of_experiment[0])*1e-6
-		select_time = np.logical_or(time_of_experiment_digitizer_ID_seconds<start_time_of_pulse,time_of_experiment_digitizer_ID_seconds>start_time_of_pulse+5)	# I avoid the period with the plasma
+		max_counts_for_plot = max(max_counts_for_plot,np.max(np.mean(laser_counts[i][10:],axis=(-1,-2))))
+		if laser_framerate<60:
+			time_of_experiment_digitizer_ID_seconds = (time_of_experiment_digitizer_ID[i][:min(len(laser_counts[0]),len(laser_counts[1]))]-time_of_experiment[0])*1e-6
+		else:
+			time_of_experiment_digitizer_ID_seconds = (time_of_experiment_digitizer_ID[i]-time_of_experiment[0])*1e-6
+		select_time = np.logical_and(time_of_experiment_digitizer_ID_seconds<start_time_of_pulse+30,np.logical_or(time_of_experiment_digitizer_ID_seconds<start_time_of_pulse+0.2,time_of_experiment_digitizer_ID_seconds>start_time_of_pulse+5))	# I avoid the period with the plasma
 		select_time[:8]=False	# to avoid the very firsts frames that can have unreasonable counts
-		bds = [[0,0,-np.inf,-np.inf,-np.inf,-np.inf],[np.inf,np.inf,np.inf,np.inf,np.inf,np.inf]]
-		guess=[np.abs((reference[select_time]-np.mean(reference[-int(1*laser_framerate/len(laser_digitizer_ID)):]))[0]),1,0,0,time_of_experiment_digitizer_ID_seconds[10],0]
-		ax[plot_index,0].plot(time_of_experiment_digitizer_ID_seconds-start_time_of_pulse,np.mean(laser_counts[i],axis=(-1,-2)),color=color[i],label='all foil mean DIG'+str(laser_digitizer_ID[i]))
-		ax[plot_index,0].plot(time_of_experiment_digitizer_ID_seconds-start_time_of_pulse,reference,'--',color=color[i],label='out of foil area DIG'+str(laser_digitizer_ID[i]))
+		bds = [[0,0,0,-np.inf,start_time_of_pulse-0.1],[np.inf,np.inf,np.inf,np.inf,start_time_of_pulse+0.1]]
+		guess=[np.abs((reference[select_time]-np.mean(reference[-int(1*laser_framerate/len(laser_digitizer_ID)):]))[0]),1,1.5,0,start_time_of_pulse]
+		# temp = np.mean(laser_counts[i],axis=(-1,-2))
+		# ax[plot_index,0].plot(time_of_experiment_digitizer_ID_seconds-start_time_of_pulse,temp-temp[0],color=color[i],label='all foil mean DIG'+str(laser_digitizer_ID[i]))
+		ax[plot_index,0].plot(time_of_experiment_digitizer_ID_seconds-start_time_of_pulse,reference-reference[0],'--',color=color[i],label='out of foil area DIG'+str(laser_digitizer_ID[i]))
+		ax[plot_index,0].plot(time_of_experiment_digitizer_ID_seconds-start_time_of_pulse,reference1-reference1[0],'.-',color=color[i])
+		ax[plot_index,0].plot(time_of_experiment_digitizer_ID_seconds-start_time_of_pulse,reference2-reference2[0],'.-')
+		ax[plot_index,0].plot(time_of_experiment_digitizer_ID_seconds-start_time_of_pulse,reference3-reference3[0],'.-')
+		ax[plot_index,0].plot(time_of_experiment_digitizer_ID_seconds-start_time_of_pulse,reference4-reference4[0],'.-')
 		if every_pixel_independent:	# I do the startup correction for every pixel independently
 			for v in range(np.shape(laser_counts[0])[1]):
 				for h in range(np.shape(laser_counts[0])[2]):
@@ -136,21 +211,43 @@ try:
 				if i==1:
 					guess = fit[0]
 				fit = curve_fit(exponential_biased, time_of_experiment_digitizer_ID_seconds[select_time], reference[select_time]-np.mean(reference[-int(1*laser_framerate/len(laser_digitizer_ID)):]), p0=guess,bounds=bds,maxfev=int(1e6))
+
+				if False:	# only for testinf the prob_and_gradient function
+					target = 2
+					scale = 1e-1
+					args = [reference[select_time]-np.mean(reference[-int(1*laser_framerate/len(laser_digitizer_ID)):]),time_of_experiment_digitizer_ID_seconds[select_time]]
+					# guess[target] = 1e5
+					temp1 = exponential_biased_with_grad(guess,*args)
+					guess[target] +=scale
+					temp2 = exponential_biased_with_grad(guess,*args)
+					guess[target] += -2*scale
+					temp3 = exponential_biased_with_grad(guess,*args)
+					guess[target] += scale
+					print('calculated derivated of %.7g vs true of %.7g' %(temp1[1][target],((temp2[0]-temp3[0])/(2*scale))))
+					guess=[np.abs((reference[select_time]-np.mean(reference[-int(1*laser_framerate/len(laser_digitizer_ID)):]))[0]),1,1.5,0,start_time_of_pulse]
+					bds = [[0,np.inf],[0,np.inf],[0,np.inf],[0,np.inf],[0,start_time_of_pulse+0.1]]
+					fit, y_opt, opt_info = scipy.optimize.fmin_l_bfgs_b(exponential_biased_with_grad, x0=guess, args = [reference[select_time]-np.mean(reference[-int(1*laser_framerate/len(laser_digitizer_ID)):]),time_of_experiment_digitizer_ID_seconds[select_time]] ,bounds = bds) #,m=1000, maxls=1000, pgtol=1e-10, factr=1e0)#,approx_grad = True)
+					fit = [fit.tolist()]
+
 				aggregated_correction_coefficients[i] = fit[0]
-			ax[plot_index,0].plot(time_of_experiment_digitizer_ID_seconds-start_time_of_pulse,exponential_biased(time_of_experiment_digitizer_ID_seconds,*fit[0])+np.mean(reference[-int(1*laser_framerate/len(laser_digitizer_ID)):]),':',color=color[i],label='fit of out of foil area')
+			temp = exponential_biased(time_of_experiment_digitizer_ID_seconds,*fit[0])+np.mean(reference[-int(1*laser_framerate/len(laser_digitizer_ID)):])
+			ax[plot_index,0].plot(time_of_experiment_digitizer_ID_seconds-start_time_of_pulse,temp-temp[0],':',color=color[i],label='fit of out of foil area')
 			# startup_correction.append(np.mean(reference[(time_of_experiment_digitizer_ID[i]-time_of_experiment_digitizer_ID[i][0])*1e-6>12]) - reference)
 			# startup_correction.append(-exponential((time_of_experiment_digitizer_ID[i]-time_of_experiment_digitizer_ID[i][0])*1e-6,*fit[0]))
-			ax[plot_index,0].axhline(y=np.mean(reference[-int(1*laser_framerate/len(laser_digitizer_ID)):]),linestyle=':',color=color[i])
+			# ax[plot_index,0].axhline(y=np.mean(reference[select_time][-int(1*laser_framerate/len(laser_digitizer_ID)):]),linestyle=':',color=color[i])
 
-			if not flag_use_of_first_frames_as_reference:
-				if False:	# I apply this correction after removing the oscillation
-					laser_counts_corrected[i] = (laser_counts_corrected[i].astype(np.float64).T -exponential_biased(time_of_experiment_digitizer_ID_seconds,*fit[0])).T
-				ax[plot_index,0].plot(time_of_experiment_digitizer_ID_seconds-start_time_of_pulse,np.mean(laser_counts_corrected[i][:,select_space],axis=-1),'-.',color=color[i],label='CORRECTED out of foil area DIG'+str(laser_digitizer_ID[i])+'\napplied after oscillation removal')
-			else:
-				ax[plot_index,0].plot(time_of_experiment_digitizer_ID_seconds-start_time_of_pulse,np.mean(laser_counts_corrected[i][:,select_space],axis=-1),'-.',color=color[i],label='correction NOT applied\nout of foil area DIG'+str(laser_digitizer_ID[i]))
+			# if not flag_use_of_first_frames_as_reference:
+			# 	if False:	# I apply this correction after removing the oscillation
+			# 		laser_counts_corrected[i] = (laser_counts_corrected[i].astype(np.float64).T -exponential_biased(time_of_experiment_digitizer_ID_seconds,*fit[0])).T
+			# 	temp = np.mean(laser_counts_corrected[i][:,np.logical_not(select_space)],axis=-1)
+			# 	ax[plot_index,0].plot(time_of_experiment_digitizer_ID_seconds-start_time_of_pulse,temp-temp[0],'-.',color=color[i],label='CORRECTED out of foil area DIG'+str(laser_digitizer_ID[i])+'\napplied after oscillation removal')
+			# else:
+			temp = np.mean(laser_counts_corrected[i][:,select_space_foil],axis=-1)
+			ax[plot_index,0].plot(time_of_experiment_digitizer_ID_seconds-start_time_of_pulse,temp-temp[0],'-.',color=color[i],label='correction NOT applied\nfoil area DIG'+str(laser_digitizer_ID[i]))
+			ax[plot_index,0].plot(time_of_experiment_digitizer_ID_seconds-start_time_of_pulse,temp-temp[0]-reference+reference[0],'-',color=color[i],label='correction applied\nfoil area DIG'+str(laser_digitizer_ID[i]))
 	ax[plot_index,0].set_ylabel('mean counts [au]')
 	fig.suptitle(day+'/'+name+'\nint time %.3gms, framerate %.3gHz\n' %(laser_int_time/1000,laser_framerate) + str(aggregated_correction_coefficients))
-	ax[plot_index,0].set_ylim(top=temp)
+	# ax[plot_index,0].set_ylim(top=max_counts_for_plot)
 	ax[plot_index,0].set_xlim(left=time_of_experiment_digitizer_ID_seconds[10]-10/(laser_framerate/len(laser_digitizer_ID))-start_time_of_pulse)
 	ax[plot_index,0].grid()
 	ax[plot_index,0].legend(loc='best', fontsize='x-small')
@@ -283,9 +380,13 @@ try:
 			temp_ref_counts.append(np.mean(laser_counts_corrected[i][-int(seconds_for_reference_frame*laser_framerate/len(laser_digitizer_ID)):],axis=0))
 			temp_ref_counts_std.append(np.std(laser_counts_corrected[i][-int(seconds_for_reference_frame*laser_framerate/len(laser_digitizer_ID)):],axis=0))
 	reference_background_temperature,reference_background_temperature_std = coleval.count_to_temp_poly_multi_digitizer(temp_ref_counts,params,errparams,laser_digitizer_ID,number_cpu_available,counts_std=temp_ref_counts_std,report=0,parallelised=False)
-	# here I should use the room temperature acquired by other means. it is availabl, but with a 1degC precision, so for now I use the camera as thermometer
-	ref_temperature = np.mean(reference_background_temperature)
-	ref_temperature_std = (np.sum(np.array(reference_background_temperature_std)**2)**0.5 / len(np.array(reference_background_temperature).flatten()))
+	if False:
+		# here I should use the room temperature acquired by other means. it is availabl, but with a 1degC precision, so for now I use the camera as thermometer
+		ref_temperature = np.mean(reference_background_temperature)
+		ref_temperature_std = (np.sum(np.array(reference_background_temperature_std)**2)**0.5 / len(np.array(reference_background_temperature).flatten()))
+	else:	# method reading the temp from the database of vessel temperature
+		ref_temperature = coleval.retrive_vessel_average_temp_archve(int(laser_to_analyse[-9:-4]))
+		ref_temperature_std = 0.25	# coming from the fact that there is no noise during transition, so the std must be quite below 1K
 
 	# Load BB parameters
 	# temp = pathparams+'/'+temp+'/numcoeff'+str(n)+'/average'
@@ -311,19 +412,36 @@ try:
 		print('FAST creastion skipped')
 	except:
 		print('generating FAST')
-		start = tm.time()
-		full_saved_file_dict_FAST = dict([])
-		# foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,FAST_counts_minus_background_crop_time = coleval.MASTU_pulse_process_FAST(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,laser_dict['height'],laser_dict['width'],flag_use_of_first_frames_as_reference)
-		foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,time_binned,powernoback,brightness,binning_type,inverted_dict = coleval.MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,laser_dict['height'],laser_dict['width'],flag_use_of_first_frames_as_reference,params,errparams,params_BB,errparams_BB,photon_flux_over_temperature_interpolator,BB_proportional,BB_proportional_std,foil_position_dict)
-		full_saved_file_dict_FAST['FAST_counts_minus_background_crop'] = np.float16(FAST_counts_minus_background_crop)
-		full_saved_file_dict_FAST['FAST_powernoback'] = np.float16(powernoback)
-		full_saved_file_dict_FAST['FAST_brightness'] = np.float32(brightness)
-		full_saved_file_dict_FAST['FAST_time_binned'] = time_binned
-		full_saved_file_dict_FAST['FAST_binning_type'] = binning_type
-		full_saved_file_dict_FAST['inverted_dict'] = inverted_dict
-		full_saved_file_dict_FAST['time_full_full'] = time_full_int
-		np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
-		print('generated FAST in %.3g min' %((tm.time()-start)/60))
+		try:
+			start = tm.time()
+			full_saved_file_dict_FAST = dict([])
+			# foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,FAST_counts_minus_background_crop_time = coleval.MASTU_pulse_process_FAST(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,laser_dict['height'],laser_dict['width'],flag_use_of_first_frames_as_reference)
+			foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,time_binned,powernoback,brightness,binning_type,inverted_dict = coleval.MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,laser_dict['height'],laser_dict['width'],flag_use_of_first_frames_as_reference,params,errparams,params_BB,errparams_BB,photon_flux_over_temperature_interpolator,BB_proportional,BB_proportional_std,foil_position_dict,pass_number = 0)
+			full_saved_file_dict_FAST['first_pass'] = dict([])
+			full_saved_file_dict_FAST['first_pass']['FAST_counts_minus_background_crop'] = np.float16(FAST_counts_minus_background_crop)
+			full_saved_file_dict_FAST['first_pass']['FAST_powernoback'] = np.float16(powernoback)
+			full_saved_file_dict_FAST['first_pass']['FAST_brightness'] = np.float32(brightness)
+			full_saved_file_dict_FAST['first_pass']['FAST_time_binned'] = time_binned
+			full_saved_file_dict_FAST['first_pass']['FAST_binning_type'] = binning_type
+			full_saved_file_dict_FAST['first_pass']['inverted_dict'] = inverted_dict
+			full_saved_file_dict_FAST['first_pass']['time_full_full'] = time_full_int
+			np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
+			print('generated FAST first pass in %.3g min' %((tm.time()-start)/60))
+			foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,time_binned,powernoback,brightness,binning_type,inverted_dict = coleval.MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,laser_dict['height'],laser_dict['width'],flag_use_of_first_frames_as_reference,params,errparams,params_BB,errparams_BB,photon_flux_over_temperature_interpolator,BB_proportional,BB_proportional_std,foil_position_dict,pass_number = 1)
+			full_saved_file_dict_FAST['second_pass'] = dict([])
+			full_saved_file_dict_FAST['second_pass']['FAST_counts_minus_background_crop'] = np.float16(FAST_counts_minus_background_crop)
+			full_saved_file_dict_FAST['second_pass']['FAST_powernoback'] = np.float16(powernoback)
+			full_saved_file_dict_FAST['second_pass']['FAST_brightness'] = np.float32(brightness)
+			full_saved_file_dict_FAST['second_pass']['FAST_time_binned'] = time_binned
+			full_saved_file_dict_FAST['second_pass']['FAST_binning_type'] = binning_type
+			full_saved_file_dict_FAST['second_pass']['inverted_dict'] = inverted_dict
+			full_saved_file_dict_FAST['second_pass']['time_full_full'] = time_full_int
+			np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
+			print('generated FAST second pass in %.3g min' %((tm.time()-start)/60))
+		except Exception as e:
+			print('FAST FAILED ' + laser_to_analyse)
+			logging.exception('with error: ' + str(e))
+	# print('with error: ' + str(e))
 	filter_overwritten = False
 	try:
 		if overwrite_oscillation_filter==True:
@@ -360,7 +478,7 @@ try:
 			frames_per_oscillation_2 = max(1,int(np.ceil(laser_framerate/len(laser_digitizer_ID)/30)))
 
 			seconds_for_bad_pixels = 2	# s
-			fig, ax = plt.subplots( 2,1,figsize=(8, 12), squeeze=False)
+			fig, ax = plt.subplots( 2,1,figsize=(8, 15), squeeze=False)
 			for i in range(len(laser_digitizer_ID)):
 				full_saved_file_dict['full_frame'][str(laser_digitizer_ID[i])] = dict([])
 				time_of_experiment_digitizer_ID_seconds = (time_of_experiment_digitizer_ID[i]-time_of_experiment[0])*1e-6-start_time_of_pulse
@@ -587,9 +705,14 @@ try:
 			plt.close('all')
 
 			reference_background_temperature,reference_background_temperature_std = coleval.count_to_temp_poly_multi_digitizer(temp_ref_counts,params,errparams,laser_digitizer_ID,number_cpu_available,counts_std=temp_ref_counts_std,report=0,parallelised=False)
-			# here I should use the room temperature acquired by other means. it is availabl, but with a 1degC precision, so for now I use the camera as thermometer
-			ref_temperature = np.mean(reference_background_temperature)
-			ref_temperature_std = (np.sum(np.array(reference_background_temperature_std)**2)**0.5 / len(np.array(reference_background_temperature).flatten()))
+			if False:
+				# here I should use the room temperature acquired by other means. it is availabl, but with a 1degC precision, so for now I use the camera as thermometer
+				ref_temperature = np.mean(reference_background_temperature)
+				ref_temperature_std = (np.sum(np.array(reference_background_temperature_std)**2)**0.5 / len(np.array(reference_background_temperature).flatten()))
+			else:	# method reading the temp from the database of vessel temperature
+				ref_temperature = coleval.retrive_vessel_average_temp_archve(int(laser_to_analyse[-9:-4]))
+				ref_temperature_std = 0.25	# coming from the fact that there is no noise during transition, so the std must be quite below 1K
+
 			# I recalculate coleval.calc_BB_coefficients_multi_digitizer here so it uses filtered data
 			BB_proportional,BB_proportional_std,constant_offset,constant_offset_std,photon_dict = coleval.calc_BB_coefficients_multi_digitizer(params_BB,errparams_BB,laser_digitizer_ID,temp_ref_counts,temp_ref_counts_std,ref_temperature=ref_temperature,ref_temperature_std=ref_temperature_std,wavewlength_top=5,wavelength_bottom=2.5,inttime=laser_int_time/1000)
 

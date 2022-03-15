@@ -82,12 +82,12 @@ else:
 	# name='IRVB-MASTU_shot-44863.ptw'
 	# i_day,day = 0,'2021-08-13'
 	# name='IRVB-MASTU_shot-44677.ptw'
-	i_day,day = 0,'2021-10-21'
-	name='IRVB-MASTU_shot-45371.ptw'
+	# i_day,day = 0,'2021-10-21'
+	# name='IRVB-MASTU_shot-45371.ptw'
 	# i_day,day = 0,'2021-10-12'
 	# name='IRVB-MASTU_shot-45239.ptw'
-	# i_day,day = 0,'2021-10-22'
-	# name='IRVB-MASTU_shot-45401.ptw'
+	i_day,day = 0,'2021-10-22'
+	name='IRVB-MASTU_shot-45401.ptw'
 	laser_to_analyse=path+day+'/'+name
 
 print('starting '+laser_to_analyse)
@@ -565,10 +565,10 @@ for grid_resolution in [2]:
 			guess = np.ones(sensitivities_binned_crop.shape[1]+2)*1e2
 
 			# regolarisation_coeff_edge = 10
-			regolarisation_coeff_edge_multiplier = 50
+			regolarisation_coeff_edge_multiplier = 30
 			regolarisation_coeff_central_border_Z_derivate_multiplier = 0
 			regolarisation_coeff_central_column_border_R_derivate_multiplier = 0
-			regolarisation_coeff_edge_laplacian_multiplier = 1e1
+			regolarisation_coeff_edge_laplacian_multiplier = 5	# 1e1
 			regolarisation_coeff_divertor_multiplier = 1
 			regolarisation_coeff_non_negativity_multiplier = 10
 
@@ -641,6 +641,68 @@ for grid_resolution in [2]:
 				# time_start = tm.time()
 				return likelihood,likelihood_derivate
 
+			def calc_hessian(emissivity_plus,*args):
+				# time_start = tm.time()
+				# emissivity_plus = emissivity_plus
+				powernoback = args[0]
+				sigma_powernoback = args[1]
+				sigma_emissivity = args[2]
+				regolarisation_coeff = args[3]
+				sigma_powernoback_2 = args[4]
+				sigma_emissivity_2 = args[5]
+				homogeneous_offset = emissivity_plus[-1]*homogeneous_scaling	# scaling added such that all variables have the same order of magnitude
+				homogeneous_offset_plasma = emissivity_plus[-2]*homogeneous_scaling	# scaling added such that all variables have the same order of magnitude
+				regolarisation_coeff_divertor = regolarisation_coeff*regolarisation_coeff_divertor_multiplier
+				regolarisation_coeff_central_column_border_R_derivate = regolarisation_coeff*regolarisation_coeff_central_column_border_R_derivate_multiplier
+				regolarisation_coeff_edge_laplacian = regolarisation_coeff*regolarisation_coeff_edge_laplacian_multiplier
+				# regolarisation_coeff_edge = regolarisation_coeff*regolarisation_coeff_edge_multiplier
+				# print(homogeneous_offset,homogeneous_offset_plasma)
+				emissivity = emissivity_plus[:-2]
+				# emissivity[emissivity==0] = 1e-10
+				# foil_power_guess = np.dot(sensitivities_binned_crop,emissivity) + selected_ROI_internal*homogeneous_offset + homogeneous_offset_plasma*select_foil_region_with_plasma
+				foil_power_error = powernoback - (np.dot(sensitivities_binned_crop,emissivity) + selected_ROI_internal*homogeneous_offset + homogeneous_offset_plasma*select_foil_region_with_plasma)
+				emissivity_laplacian = np.dot(grid_laplacian_masked_crop_scaled,emissivity)
+				emissivity_laplacian_not_selected_super_x_cells = emissivity_laplacian*not_selected_super_x_cells
+				emissivity_laplacian_selected_super_x_cells = emissivity_laplacian*selected_super_x_cells
+				emissivity_laplacian_selected_edge_cells_for_laplacian = emissivity_laplacian*selected_edge_cells_for_laplacian
+				if regolarisation_coeff_central_column_border_R_derivate!=0:
+					R_derivate = np.dot(grid_R_derivate_masked_crop_scaled,emissivity)
+					R_derivate_selected_central_column_border_cells = R_derivate*selected_central_column_border_cells
+				# print(tm.time()-time_start)
+				# time_start = tm.time()
+
+				# based on https://homepages.inf.ed.ac.uk/rbf/CVonline/LOCAL_COPIES/DAVIES1/rd_bhatt_cvonline/node9.html#SECTION00041000000000000000
+				likelihood_power_fit_derivate = np.dot(sensitivities_binned_crop.T*sigma_powernoback_2,sensitivities_binned_crop)
+				temp = np.zeros((np.shape(sensitivities_binned_crop)[1]+2,np.shape(sensitivities_binned_crop)[1]+2))
+				temp[:-2,:-2] = likelihood_power_fit_derivate
+				temp[-2:,:-2] = np.array([np.sum(-(sensitivities_binned_crop.T/sigma_powernoback_2*select_foil_region_with_plasma).T,axis=0)*homogeneous_scaling,np.sum(-(sensitivities_binned_crop.T/sigma_powernoback_2*selected_ROI_internal).T,axis=0)*homogeneous_scaling])
+				temp[:-2,-2:] = np.array([np.sum(-(sensitivities_binned_crop.T/sigma_powernoback_2*select_foil_region_with_plasma).T,axis=0)*homogeneous_scaling,np.sum(-(sensitivities_binned_crop.T/sigma_powernoback_2*selected_ROI_internal).T,axis=0)*homogeneous_scaling]).T
+				temp[-2,-2] = -np.sum(select_foil_region_with_plasma/sigma_powernoback_2*select_foil_region_with_plasma)*homogeneous_scaling
+				temp[-1,-1] = -np.sum(selected_ROI_internal/sigma_powernoback_2*selected_ROI_internal)*homogeneous_scaling
+				temp[-1,-2] = -np.sum(selected_ROI_internal/sigma_powernoback_2*select_foil_region_with_plasma)*homogeneous_scaling
+				temp[-2,-1] = -np.sum(selected_ROI_internal/sigma_powernoback_2*select_foil_region_with_plasma)*homogeneous_scaling
+				likelihood_power_fit_derivate = cp.deepcopy(temp)
+
+				likelihood_emissivity_pos_derivate = (regolarisation_coeff_non_negativity_multiplier**2)*np.diag((emissivity<0)*np.logical_not(selected_edge_cells)*r_int_2/sigma_emissivity_2*1)
+
+				# likelihood_emissivity_laplacian_derivate = 2*(regolarisation_coeff**2) * np.dot(emissivity_laplacian_not_selected_super_x_cells , grid_laplacian_masked_crop_scaled) / (sigma_emissivity**2)
+				# likelihood_emissivity_laplacian_derivate_superx = 2*(regolarisation_coeff_divertor**2) * np.dot(emissivity_laplacian_selected_super_x_cells , grid_laplacian_masked_crop_scaled) / (sigma_emissivity**2)
+				# likelihood_emissivity_edge_laplacian_derivate = 2*(regolarisation_coeff_edge_laplacian**2) * np.dot(emissivity_laplacian_selected_edge_cells_for_laplacian , grid_laplacian_masked_crop_scaled) / (sigma_emissivity**2)
+				likelihood_emissivity_laplacian_derivate_all = np.dot(grid_laplacian_masked_crop_scaled*( (regolarisation_coeff**2)*not_selected_super_x_cells + (regolarisation_coeff_edge_laplacian**2)*selected_edge_cells_for_laplacian + (regolarisation_coeff_divertor**2)*selected_super_x_cells) , grid_laplacian_masked_crop_scaled) / (sigma_emissivity**2)
+
+				likelihood_emissivity_edge_derivate = (regolarisation_coeff_edge_multiplier**2)*np.diag(selected_edge_cells*r_int_2/sigma_emissivity_2*1)
+				if regolarisation_coeff_central_column_border_R_derivate==0:
+					likelihood_emissivity_central_column_border_R_derivate_derivate = 0
+				else:
+					likelihood_emissivity_central_column_border_R_derivate_derivate = (regolarisation_coeff_central_column_border_R_derivate**2)*np.dot( grid_R_derivate_masked_crop_scaled*selected_central_column_border_cells ,grid_R_derivate_masked_crop_scaled)/sigma_emissivity_2
+				likelihood_derivate = likelihood_emissivity_pos_derivate + likelihood_emissivity_laplacian_derivate_all + likelihood_emissivity_edge_derivate + likelihood_emissivity_central_column_border_R_derivate_derivate
+				likelihood_homogeneous_offset_derivate = number_cells_ROI*homogeneous_scaling/(reference_sigma_powernoback**2)
+				likelihood_homogeneous_offset_plasma_derivate = number_cells_plasma*homogeneous_scaling/(reference_sigma_powernoback**2)
+				likelihood_power_fit_derivate[:-2,:-2]+=likelihood_derivate
+				likelihood_power_fit_derivate[-1,-1] += likelihood_homogeneous_offset_derivate
+				likelihood_power_fit_derivate[-2,-2] += likelihood_homogeneous_offset_plasma_derivate
+				return likelihood_power_fit_derivate
+
 			regolarisation_coeff_range = 10**np.linspace(1,-5,num=102)
 			# regolarisation_coeff_range = 10**np.linspace(1,-4.5,num=93)
 			x_optimal_all,recompose_voxel_emissivity_all,y_opt_all,opt_info_all,voxels_centre = coleval.loop_fit_over_regularisation(prob_and_gradient,regolarisation_coeff_range,guess,grid_data_masked_crop,powernoback,sigma_powernoback,sigma_emissivity,pgtol=5e-8,factr=1e8)
@@ -707,6 +769,23 @@ plt.title(csv_file.name[-60:-28])
 # plt.savefig(path_power_output + '/'+ str(shot_number)+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_L_curve_curvature_evolution.eps')
 plt.pause(0.01)
 
+args = [powernoback,sigma_powernoback,sigma_emissivity,regolarisation_coeff,sigma_powernoback**2,sigma_emissivity**2]
+hessian=calc_hessian(x_optimal,*args)
+covariance = np.linalg.inv(Hessian)
+plt.figure()
+plt.plot(np.abs(x_optimal))
+plt.plot(np.diag(covariance)**0.5,'--')
+plt.pause(0.01)
+
+SNR = np.abs(x_optimal)/(np.diag(covariance)**0.5)
+plt.figure()
+plt.plot(SNR)
+plt.pause(0.01)
+trash,recompose_voxel_sigma = coleval.translate_emissivity_profile_with_homo_temp(np.mean(grid_data_masked_crop,axis=1),np.diag(covariance)**0.5,np.mean(grid_data_masked_crop,axis=1))
+trash,recompose_voxel_SNR = coleval.translate_emissivity_profile_with_homo_temp(np.mean(grid_data_masked_crop,axis=1),SNR,np.mean(grid_data_masked_crop,axis=1))
+trash,recompose_voxel_SNRSR = coleval.translate_emissivity_profile_with_homo_temp(np.mean(grid_data_masked_crop,axis=1),SNR/np.abs(x_optimal),np.mean(grid_data_masked_crop,axis=1))
+
+
 fitted_foil_power = (np.dot(sensitivities_binned_crop,x_optimal[:-2])+x_optimal[-2]*select_foil_region_with_plasma*homogeneous_scaling+x_optimal[-1]*selected_ROI_internal*homogeneous_scaling).reshape(powernoback_full_orig[i_t].shape)
 foil_power = powernoback_full_orig[i_t]
 foil_power_residuals = powernoback_full_orig[i_t]-fitted_foil_power
@@ -715,7 +794,7 @@ foil_power_std[foil_power_std==1e10]=np.nan
 
 plt.figure(figsize=(12,13))
 # plt.scatter(np.mean(grid_data_masked_crop,axis=1)[:,0],np.mean(grid_data_masked_crop,axis=1)[:,1],c=x_optimal,s=100,marker='s',cmap='rainbow')
-plt.imshow(np.flip(np.flip(np.flip(np.transpose(recompose_voxel_emissivity,(1,0)),axis=1),axis=1),axis=0),'rainbow',extent=[grid_data_masked_crop[:,:,0].min(),grid_data_masked_crop[:,:,0].max(),grid_data_masked_crop[:,:,1].min(),grid_data_masked_crop[:,:,1].max()])
+plt.imshow(np.flip(np.flip(np.flip(np.transpose(recompose_voxel_sigma,(1,0)),axis=1),axis=1),axis=0),'rainbow',extent=[grid_data_masked_crop[:,:,0].min(),grid_data_masked_crop[:,:,0].max(),grid_data_masked_crop[:,:,1].min(),grid_data_masked_crop[:,:,1].max()])
 plt.plot(_MASTU_CORE_GRID_POLYGON[:, 0], _MASTU_CORE_GRID_POLYGON[:, 1], 'k')
 plt.plot(FULL_MASTU_CORE_GRID_POLYGON[:, 0], FULL_MASTU_CORE_GRID_POLYGON[:, 1], 'k')
 temp = np.abs(efit_reconstruction.time-time_full_binned_crop[i_t]).argmin()
