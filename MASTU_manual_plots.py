@@ -53,6 +53,7 @@ parameters_available_int_time_BB = np.array(parameters_available_int_time_BB)
 parameters_available_framerate_BB = np.array(parameters_available_framerate_BB)
 
 color = ['b', 'r', 'm', 'y', 'g', 'c', 'k', 'slategrey', 'darkorange', 'lime', 'pink', 'gainsboro', 'paleturquoise', 'teal', 'olive','blueviolet','tan','skyblue','brown','dimgray','hotpink']
+path = '/home/ffederic/work/irvb/MAST-U/'
 
 
 
@@ -62,31 +63,32 @@ laser_to_analyse=path+day+'/'+name
 
 full_saved_file_dict_FAST = np.load(laser_to_analyse[:-4]+'_FAST'+'.npz')
 full_saved_file_dict_FAST.allow_pickle=True
-inverted_dict = full_saved_file_dict_FAST['inverted_dict']
+inverted_dict = full_saved_file_dict_FAST['first_pass'].all()['inverted_dict']
 grid_resolution = 2	# cm
-time_full_binned_crop = inverted_dict.all()[str(grid_resolution)]['time_full_binned_crop']
-inverted_data = inverted_dict.all()[str(grid_resolution)]['inverted_data']
-foil_power = inverted_dict.all()[str(grid_resolution)]['foil_power']
-foil_power_std = inverted_dict.all()[str(grid_resolution)]['foil_power_std']
-outer_leg_tot_rad_power_all = inverted_dict.all()[str(grid_resolution)]['outer_leg_tot_rad_power_all']
-inner_leg_tot_rad_power_all = inverted_dict.all()[str(grid_resolution)]['inner_leg_tot_rad_power_all']
-core_tot_rad_power_all = inverted_dict.all()[str(grid_resolution)]['core_tot_rad_power_all']
-sxd_tot_rad_power_all = inverted_dict.all()[str(grid_resolution)]['sxd_tot_rad_power_all']
-x_point_tot_rad_power_all = inverted_dict.all()[str(grid_resolution)]['x_point_tot_rad_power_all']
-outer_leg_tot_rad_power_sigma_all = inverted_dict.all()[str(grid_resolution)]['outer_leg_tot_rad_power_sigma_all']
-inner_leg_tot_rad_power_sigma_all = inverted_dict.all()[str(grid_resolution)]['inner_leg_tot_rad_power_sigma_all']
-core_tot_rad_power_sigma_all = inverted_dict.all()[str(grid_resolution)]['core_tot_rad_power_sigma_all']
-sxd_tot_rad_power_sigma_all = inverted_dict.all()[str(grid_resolution)]['sxd_tot_rad_power_sigma_all']
-x_point_tot_rad_power_sigma_all = inverted_dict.all()[str(grid_resolution)]['x_point_tot_rad_power_sigma_all']
+time_full_binned_crop = inverted_dict[str(grid_resolution)]['time_full_binned_crop']
+inverted_data = inverted_dict[str(grid_resolution)]['inverted_data']
+inverted_data_sigma = inverted_dict[str(grid_resolution)]['inverted_data_sigma']
+foil_power = inverted_dict[str(grid_resolution)]['foil_power']
+foil_power_std = inverted_dict[str(grid_resolution)]['foil_power_std']
+outer_leg_tot_rad_power_all = inverted_dict[str(grid_resolution)]['outer_leg_tot_rad_power_all']
+inner_leg_tot_rad_power_all = inverted_dict[str(grid_resolution)]['inner_leg_tot_rad_power_all']
+core_tot_rad_power_all = inverted_dict[str(grid_resolution)]['core_tot_rad_power_all']
+sxd_tot_rad_power_all = inverted_dict[str(grid_resolution)]['sxd_tot_rad_power_all']
+x_point_tot_rad_power_all = inverted_dict[str(grid_resolution)]['x_point_tot_rad_power_all']
+outer_leg_tot_rad_power_sigma_all = inverted_dict[str(grid_resolution)]['outer_leg_tot_rad_power_sigma_all']
+inner_leg_tot_rad_power_sigma_all = inverted_dict[str(grid_resolution)]['inner_leg_tot_rad_power_sigma_all']
+core_tot_rad_power_sigma_all = inverted_dict[str(grid_resolution)]['core_tot_rad_power_sigma_all']
+sxd_tot_rad_power_sigma_all = inverted_dict[str(grid_resolution)]['sxd_tot_rad_power_sigma_all']
+x_point_tot_rad_power_sigma_all = inverted_dict[str(grid_resolution)]['x_point_tot_rad_power_sigma_all']
 
 
 plt.figure(figsize=(20, 15))
-plt.plot(time_full_binned_crop,outer_leg_tot_rad_power_all/1e3,label='outer_leg')
-plt.plot(time_full_binned_crop,sxd_tot_rad_power_all/1e3,label='sxd')
-plt.plot(time_full_binned_crop,inner_leg_tot_rad_power_all/1e3,label='inner_leg')
-plt.plot(time_full_binned_crop,core_tot_rad_power_all/1e3,label='core')
-plt.plot(time_full_binned_crop,x_point_tot_rad_power_all/1e3,label='x_point')
-plt.plot(time_full_binned_crop,(outer_leg_tot_rad_power_all+inner_leg_tot_rad_power_all+core_tot_rad_power_all)/1e3,label='tot')
+plt.errorbar(time_full_binned_crop,outer_leg_tot_rad_power_all/1e3,yerr=outer_leg_tot_rad_power_sigma_all/1e3,label='outer_leg')
+plt.errorbar(time_full_binned_crop,sxd_tot_rad_power_all/1e3,yerr=sxd_tot_rad_power_sigma_all/1e3,label='sxd')
+plt.errorbar(time_full_binned_crop,inner_leg_tot_rad_power_all/1e3,yerr=inner_leg_tot_rad_power_sigma_all/1e3,label='inner_leg')
+plt.errorbar(time_full_binned_crop,core_tot_rad_power_all/1e3,yerr=core_tot_rad_power_sigma_all/1e3,label='core')
+plt.errorbar(time_full_binned_crop,x_point_tot_rad_power_all/1e3,yerr=x_point_tot_rad_power_sigma_all/1e3,label='x_point')
+plt.errorbar(time_full_binned_crop,(outer_leg_tot_rad_power_all+inner_leg_tot_rad_power_all+core_tot_rad_power_all)/1e3,yerr=((outer_leg_tot_rad_power_sigma_all**2+inner_leg_tot_rad_power_sigma_all**2+core_tot_rad_power_sigma_all**2)**0.5)/1e3,label='tot')
 plt.title('radiated power in the lower half of the machine')
 plt.legend(loc='best', fontsize='x-small')
 plt.xlabel('time [s]')

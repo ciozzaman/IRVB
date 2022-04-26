@@ -267,7 +267,7 @@ d6.addWidget(w6)
 
 
 
-quantity_options = {'counts [au]': 'counts', 'FAST counts [au]': 'FAST_counts_minus_background_crop', 'FAST power [W/m2]': 'FAST_powernoback', 'FAST brightness [W/m2]': 'FAST_brightness', 'FAST foil fit [W/m2]': 'FAST/inverted/fitted_foil_power', 'FAST foil fit error [W/m2]': 'FAST/inverted/foil_power_residuals', 'FAST emissivity [W/m3]': 'FAST/inverted/inverted_data', "Temperature [°C]": 'laser_temperature_crop_binned_full', "Relative temp [K]": 'laser_temperature_minus_background_crop_binned_full', "tot power [W/m2]": 'powernoback_full', "tot power std [W/m2]": 'powernoback_std_full', "BB power [W/m2]": 'BBrad_full', "diff power [W/m2]": 'diffusion_full', "dt power [W/m2]": 'timevariation_full', "brightness [W/m2]": 'brightness_full', "emissivity [W/m3]": 'inverted/inverted_data', "fitted power [W/m2]": 'inverted/fitted_foil_power', "fitted power residuals [W/m2]": 'inverted/foil_power_residuals'}
+quantity_options = {'counts [au]': 'counts', '1st pass FAST counts [au]': 'first_pass-FAST_counts_minus_background_crop', '1st pass FAST power [W/m2]': 'first_pass-FAST_powernoback',  '1st pass FAST power std [W/m2]': 'first_pass-FAST/inverted/foil_power_std', '1st pass FAST brightness [W/m2]': 'first_pass-FAST_brightness', '1st pass FAST brightness fit [W/m2]': 'first_pass-FAST/inverted/fitted_brightness', '1st pass FAST foil fit [W/m2]': 'first_pass-FAST/inverted/fitted_foil_power', '1st pass FAST foil fit error [W/m2]': 'first_pass-FAST/inverted/foil_power_residuals', '1st pass FAST emissivity [W/m3]': 'first_pass-FAST/inverted/inverted_data', "Temperature [°C]": 'laser_temperature_crop_binned_full', "Relative temp [K]": 'laser_temperature_minus_background_crop_binned_full', "tot power [W/m2]": 'powernoback_full', "tot power std [W/m2]": 'powernoback_std_full', "BB power [W/m2]": 'BBrad_full', "diff power [W/m2]": 'diffusion_full', "dt power [W/m2]": 'timevariation_full', "brightness [W/m2]": 'brightness_full', "emissivity [W/m3]": 'inverted/inverted_data', "fitted power [W/m2]": 'inverted/fitted_foil_power', "fitted power residuals [W/m2]": 'inverted/foil_power_residuals'}
 
 # creating all the flags and accessories needed
 params = [
@@ -603,7 +603,7 @@ def export_image():
 			prelude = ''
 		image_extent = [full_range_hor[limit_left]-0.5, full_range_hor[limit_right]-1+0.5, full_range_ver[limit_bottom]-0.5, full_range_ver[limit_top]-1+0.5]
 		fig,efit_reconstruction = coleval.image_from_data(np.array([np.flip(np.transpose(np.flip([to_plot],axis=1),(0,2,1)),axis=2)]),form_factor_size=param_ext['Set display','Export size'],image_extent=image_extent,ref_time=param_ext['ROI', 'Time [ms]']*1e-3,extvmin=histogram_level_low_for_plot,extvmax=histogram_level_high_for_plot,xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel=barlabel, prelude=prelude,overlay_structure=param_ext['Overlays','Structure'],include_EFIT=include_EFIT,efit_reconstruction=efit_reconstruction,pulse_ID=w2.shotID,overlay_x_point=param_ext['Overlays','X-point'],overlay_mag_axis=param_ext['Overlays','Mag axis'],overlay_strike_points=param_ext['Overlays','Separatrix'],overlay_separatrix=param_ext['Overlays','Separatrix'],EFIT_output_requested=True)
-	plt.savefig(param_ext1['File Path'] + '_export_' + str(next_export) + '.png', bbox_inches='tight')
+	plt.savefig(param_ext1['File Path'] + '_export_' + str(next_export) + '.eps', bbox_inches='tight')
 	plt.close('all')
 	print('\n'+'\n'+param_ext1['File Path'] + '_export_' + str(next_export) + '.mp4 generated'+'\n'+'\n')
 
@@ -758,17 +758,20 @@ def Load():
 		param_ext['ROI', 'Time end [ms]'] = time_array[np.abs(time_array-1.5).argmin()]*1e3
 		param_ext['ROI', 'Time [ms]'] = time_array[np.abs(time_array-0.7).argmin()]*1e3
 		param_ext['ROI', 'Time start [ms]'] = time_array[np.abs(time_array-0).argmin()]*1e3
-	elif param_ext['Set display','Quantity'][:4] == 'FAST':
-		if param_ext['Set display','Quantity'][:13] == 'FAST/inverted':
-			to_load = param_ext['Set display','Quantity'][14:]
+	# elif param_ext['Set display','Quantity'][:4] == 'FAST':
+	elif param_ext['Set display','Quantity'][:10] == 'first_pass' or param_ext['Set display','Quantity'][:11] == 'second_pass':
+		pass_number = param_ext['Set display','Quantity'][:param_ext['Set display','Quantity'].find('-')]
+		quantity_of_FAST = param_ext['Set display','Quantity'][param_ext['Set display','Quantity'].find('-')+1:]
+		if quantity_of_FAST[:13] == 'FAST/inverted':
+			to_load = quantity_of_FAST[14:]
 			laser_dict = np.load(param_ext1['File Path']+'_FAST.npz')
 			laser_dict.allow_pickle=True
-			data = laser_dict['inverted_dict'].all()[param_ext['Set display','Voxel res']][to_load]
+			data = laser_dict[pass_number].all()['inverted_dict'][param_ext['Set display','Voxel res']][to_load]
 			# data[np.isnan(data)] = 0
-			time_array = laser_dict['inverted_dict'].all()[param_ext['Set display','Voxel res']]['time_full_binned_crop']
-			param_ext['Set display','Binning'] = laser_dict['inverted_dict'].all()[param_ext['Set display','Voxel res']]['binning_type']
-			inversion_R = laser_dict['inverted_dict'].all()[param_ext['Set display','Voxel res']]['geometry']['R']
-			inversion_Z = laser_dict['inverted_dict'].all()[param_ext['Set display','Voxel res']]['geometry']['Z']
+			time_array = laser_dict[pass_number].all()['inverted_dict'][param_ext['Set display','Voxel res']]['time_full_binned_crop']
+			param_ext['Set display','Binning'] = laser_dict[pass_number].all()['inverted_dict'][param_ext['Set display','Voxel res']]['binning_type']
+			inversion_R = laser_dict[pass_number].all()['inverted_dict'][param_ext['Set display','Voxel res']]['geometry']['R']
+			inversion_Z = laser_dict[pass_number].all()['inverted_dict'][param_ext['Set display','Voxel res']]['geometry']['Z']
 			dr = np.median(np.diff(inversion_R))
 			dz = np.median(np.diff(inversion_Z))
 			if to_load == 'inverted_data':
@@ -779,13 +782,13 @@ def Load():
 			if os.path.exists(param_ext1['File Path']+'_FAST.npz'):
 				laser_dict = np.load(param_ext1['File Path']+'_FAST.npz')
 				laser_dict.allow_pickle=True
-				data = laser_dict[param_ext['Set display','Quantity']]
-				time_array = laser_dict['FAST_time_binned']
-				param_ext['Set display','Binning'] = laser_dict['FAST_binning_type']
+				data = laser_dict[pass_number].all()[quantity_of_FAST]
+				time_array = laser_dict[pass_number].all()['FAST_time_binned']
+				param_ext['Set display','Binning'] = laser_dict[pass_number].all()['FAST_binning_type']
 			else:
 				laser_dict = np.load(param_ext1['File Path']+'.npz')
 				laser_dict.allow_pickle=True
-				data = laser_dict['only_foil'].all()[param_ext['Set display','Quantity']]
+				data = laser_dict['only_foil'].all()[quantity_of_FAST]
 				time_array = laser_dict['only_foil'].all()['FAST_time_binned']
 				param_ext['Set display','Binning'] = laser_dict['only_foil'].all()['FAST_binning_type']
 		framerate = 1/np.median(np.diff(time_array))

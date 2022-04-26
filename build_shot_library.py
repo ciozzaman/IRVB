@@ -120,14 +120,19 @@ try:
 	core_tot_rad_power_all = inverted_dict[str(grid_resolution)]['core_tot_rad_power_all']
 	sxd_tot_rad_power_all = inverted_dict[str(grid_resolution)]['sxd_tot_rad_power_all']
 	x_point_tot_rad_power_all = inverted_dict[str(grid_resolution)]['x_point_tot_rad_power_all']
+	outer_leg_tot_rad_power_sigma_all = inverted_dict[str(grid_resolution)]['outer_leg_tot_rad_power_sigma_all']
+	inner_leg_tot_rad_power_sigma_all = inverted_dict[str(grid_resolution)]['inner_leg_tot_rad_power_sigma_all']
+	core_tot_rad_power_sigma_all = inverted_dict[str(grid_resolution)]['core_tot_rad_power_sigma_all']
+	sxd_tot_rad_power_sigma_all = inverted_dict[str(grid_resolution)]['sxd_tot_rad_power_sigma_all']
+	x_point_tot_rad_power_sigma_all = inverted_dict[str(grid_resolution)]['x_point_tot_rad_power_sigma_all']
 	time_full_binned_crop = inverted_dict[str(grid_resolution)]['time_full_binned_crop']
 
-	ax[3,0].plot(time_full_binned_crop,outer_leg_tot_rad_power_all/1e3,label='outer_leg')
-	ax[3,0].plot(time_full_binned_crop,sxd_tot_rad_power_all/1e3,label='sxd')
-	ax[3,0].plot(time_full_binned_crop,inner_leg_tot_rad_power_all/1e3,label='inner_leg')
-	ax[3,0].plot(time_full_binned_crop,core_tot_rad_power_all/1e3,label='core')
-	ax[3,0].plot(time_full_binned_crop,x_point_tot_rad_power_all/1e3,label='x_point')
-	ax[3,0].plot(time_full_binned_crop,outer_leg_tot_rad_power_all/1e3+inner_leg_tot_rad_power_all/1e3+core_tot_rad_power_all/1e3,label='tot')
+	ax[3,0].errorbar(time_full_binned_crop,outer_leg_tot_rad_power_all/1e3,yerr=outer_leg_tot_rad_power_sigma_all/1e3,label='outer_leg')
+	ax[3,0].errorbar(time_full_binned_crop,sxd_tot_rad_power_all/1e3,yerr=sxd_tot_rad_power_sigma_all/1e3,label='sxd')
+	ax[3,0].errorbar(time_full_binned_crop,inner_leg_tot_rad_power_all/1e3,yerr=inner_leg_tot_rad_power_sigma_all/1e3,label='inner_leg')
+	ax[3,0].errorbar(time_full_binned_crop,core_tot_rad_power_all/1e3,yerr=core_tot_rad_power_sigma_all/1e3,label='core')
+	ax[3,0].errorbar(time_full_binned_crop,x_point_tot_rad_power_all/1e3,yerr=x_point_tot_rad_power_sigma_all/1e3,label='x_point')
+	ax[3,0].errorbar(time_full_binned_crop,(outer_leg_tot_rad_power_all+inner_leg_tot_rad_power_all+core_tot_rad_power_all)/1e3,yerr=((outer_leg_tot_rad_power_sigma_all**2+inner_leg_tot_rad_power_sigma_all**2+core_tot_rad_power_sigma_all**2)**0.5)/1e3,label='tot')
 	ax[3,0].legend(loc='best', fontsize='x-small')
 	ax[3,0].set_xlabel('time [s]')
 	ax[3,0].set_ylabel('power [kW]')
@@ -138,5 +143,6 @@ except:
 	pass
 ax[3,0].set_title('radiated power in the lower half of the machine')
 plt.savefig(laser_to_analyse[:-4]+'_manual_plot.eps', bbox_inches='tight')
+plt.close()
 
 plt.pause(0.01)
