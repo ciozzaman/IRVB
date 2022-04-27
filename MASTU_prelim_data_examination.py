@@ -114,7 +114,7 @@ skip_second_pass = False
 
 if overwrite_oscillation_filter:
 	overwrite_binning = True
-if False:
+if True:
 	# for i_day,day in enumerate(to_do):
 	for i_day,day in enumerate(np.flip(to_do,axis=0)):
 		# for name in shot_available[i_day]:
