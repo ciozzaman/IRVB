@@ -267,7 +267,7 @@ d6.addWidget(w6)
 
 
 
-quantity_options = {'counts [au]': 'counts', '1st pass FAST counts [au]': 'first_pass-FAST_counts_minus_background_crop', '1st pass FAST power [W/m2]': 'first_pass-FAST_powernoback',  '1st pass FAST power std [W/m2]': 'first_pass-FAST/inverted/foil_power_std', '1st pass FAST brightness [W/m2]': 'first_pass-FAST_brightness', '1st pass FAST brightness fit [W/m2]': 'first_pass-FAST/inverted/fitted_brightness', '1st pass FAST foil fit [W/m2]': 'first_pass-FAST/inverted/fitted_foil_power', '1st pass FAST foil fit error [W/m2]': 'first_pass-FAST/inverted/foil_power_residuals', '1st pass FAST emissivity [W/m3]': 'first_pass-FAST/inverted/inverted_data', "Temperature [°C]": 'laser_temperature_crop_binned_full', "Relative temp [K]": 'laser_temperature_minus_background_crop_binned_full', "tot power [W/m2]": 'powernoback_full', "tot power std [W/m2]": 'powernoback_std_full', "BB power [W/m2]": 'BBrad_full', "diff power [W/m2]": 'diffusion_full', "dt power [W/m2]": 'timevariation_full', "brightness [W/m2]": 'brightness_full', "emissivity [W/m3]": 'inverted/inverted_data', "fitted power [W/m2]": 'inverted/fitted_foil_power', "fitted power residuals [W/m2]": 'inverted/foil_power_residuals'}
+quantity_options = {'counts [au]': 'counts', '1st pass FAST counts [au]': 'first_pass-FAST_counts_minus_background_crop', '1st pass FAST power [W/m2]': 'first_pass-FAST_powernoback',  '1st pass FAST power std [W/m2]': 'first_pass-FAST/inverted/foil_power_std', '1st pass FAST brightness [W/m2]': 'first_pass-FAST_brightness', '1st pass FAST brightness fit [W/m2]': 'first_pass-FAST/inverted/fitted_brightness', '1st pass FAST foil fit [W/m2]': 'first_pass-FAST/inverted/fitted_foil_power', '1st pass FAST foil fit excluded [W/m2]': 'first_pass-FAST/inverted/fitted_foil_power_excluded', '1st pass FAST foil fit error [W/m2]': 'first_pass-FAST/inverted/foil_power_residuals', '1st pass FAST emissivity [W/m3]': 'first_pass-FAST/inverted/inverted_data', '1st pass FAST emissivity excluded [W/m3]': 'first_pass-FAST/inverted/inverted_data_excluded', '2nd pass FAST counts [au]': 'second_pass-FAST_counts_minus_background_crop', '2nd_pass FAST power [W/m2]': 'second_pass-FAST_powernoback',  '2nd_pass FAST power std [W/m2]': 'second_pass-FAST/inverted/foil_power_std', '2nd_pass FAST brightness [W/m2]': 'second_pass-FAST_brightness', '2nd_pass FAST brightness fit [W/m2]': 'second_pass-FAST/inverted/fitted_brightness', '2nd_pass FAST foil fit [W/m2]': 'second_pass-FAST/inverted/fitted_foil_power', '2nd_pass FAST foil fit error [W/m2]': 'second_pass-FAST/inverted/foil_power_residuals', '2nd_pass FAST emissivity [W/m3]': 'second_pass-FAST/inverted/inverted_data', "Temperature [°C]": 'laser_temperature_crop_binned_full', "Relative temp [K]": 'laser_temperature_minus_background_crop_binned_full', "tot power [W/m2]": 'powernoback_full', "tot power std [W/m2]": 'powernoback_std_full', "BB power [W/m2]": 'BBrad_full', "diff power [W/m2]": 'diffusion_full', "dt power [W/m2]": 'timevariation_full', "brightness [W/m2]": 'brightness_full', "emissivity [W/m3]": 'inverted/inverted_data', "fitted power [W/m2]": 'inverted/fitted_foil_power', "fitted power residuals [W/m2]": 'inverted/foil_power_residuals'}
 
 # creating all the flags and accessories needed
 params = [
@@ -302,7 +302,7 @@ params = [
 		{'name': 'Shot -', 'type': 'action'},
 		{'name': 'Quantity', 'type': 'list', 'values': quantity_options, 'value': 'FAST_counts_minus_background_crop'},
 		{'name': 'Binning', 'type': 'list', 'values': {'bin1x1x1': 'bin1x1x1', 'bin1x3x3': 'bin1x3x3', 'bin1x5x5': 'bin1x5x5', "bin1x10x10": 'bin1x10x10', "bin2x1x1": 'bin2x1x1', "bin2x3x3": 'bin2x3x3', "bin2x5x5": 'bin2x5x5', "bin2x10x10": 'bin2x10x10', "bin3x1x1": 'bin3x1x1', "bin3x3x3": 'bin3x3x3', "bin3x5x5": 'bin3x5x5', "bin3x10x10": 'bin3x10x10', "bin5x1x1": 'bin5x1x1', "bin5x3x3": 'bin5x3x3', "bin5x5x5": 'bin5x5x5', "bin5x10x10": 'bin5x10x10'}, 'value': 1},
-		{'name': 'Voxel res', 'type': 'list', 'values': {'2': '2', '4': '4'}, 'value': '4'},
+		{'name': 'Voxel res', 'type': 'list', 'values': {'2': '2', '4': '4'}, 'value': '2'},
 		{'name': 'Load data', 'type': 'action'},
 		{'name': 'Load EFIT', 'type': 'action'},
 		{'name': 'Play', 'type': 'action'},
@@ -774,7 +774,7 @@ def Load():
 			inversion_Z = laser_dict[pass_number].all()['inverted_dict'][param_ext['Set display','Voxel res']]['geometry']['Z']
 			dr = np.median(np.diff(inversion_R))
 			dz = np.median(np.diff(inversion_Z))
-			if to_load == 'inverted_data':
+			if to_load in ['inverted_data','inverted_data_excluded']:
 				# data = np.transpose(data,(0,2,1))
 				flag_radial_profile = True
 				data = np.flip(data,axis=1)

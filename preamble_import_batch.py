@@ -44,6 +44,16 @@ from uncertainties.unumpy import exp,nominal_values,std_devs,sqrt
 import time as tm
 from datetime import datetime
 
+# to read the amount of gas supplied to the plasma
+from mastu_exhaust_analysis.pyGas import get_gas_info
+from mastu_exhaust_analysis.calc_psol import calc_psol
+from mastu_exhaust_analysis.pyLangmuirProbe import LangmuirProbe, probe_array, compare_shots
+from mastu_exhaust_analysis.calc_ne_bar import calc_ne_bar
+from mastu_exhaust_analysis.calc_w_dot import calc_w_dot
+from mastu_exhaust_analysis.calc_pohm import calc_pohm
+from pyexcel_ods import get_data
+import pyuda
+
 def PrintException():
     exc_type, exc_obj, tb = sys.exc_info()
     f = tb.tb_frame

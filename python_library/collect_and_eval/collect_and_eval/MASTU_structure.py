@@ -1,10 +1,10 @@
 
 # position of the visible structure and the fueling location for the overlays
 # data for the fueling location
-fueling_r = [[0.260]]
+fueling_r = [[0.261]]
 fueling_z = [[-0.264]]
 fueling_t = [[105]]
-fueling_r.append([0.260])
+fueling_r.append([0.261])
 fueling_z.append([-0.264])
 fueling_t.append([195])
 # tile directly below the the string of bolts on the centre column
@@ -320,7 +320,8 @@ _MASTU_CORE_GRID_POLYGON = np.array([
     # (1.191, 1.007),
     # (1.49, 1.007)
     # (1.49, 0.8)     # point added just to cut the unnecessary voxels	# Replaced 04/02/2018
-	(1.49, 0.75)  # point added just to cut the unnecessary voxels the 04/02/2018
+	(1.49, 0.75),  # point added just to cut the unnecessary voxels the 04/02/2018
+	(1.49, -0.0)
 ])
 
 FULL_MASTU_CORE_GRID_POLYGON = np.array([

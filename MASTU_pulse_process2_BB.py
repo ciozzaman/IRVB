@@ -1,7 +1,7 @@
 # Created 2021-07-08
 # in order to facilitate a proper binning and remotion of the oscillation only after that, here I will only:
 # do the initial adjustment of the ramp up, convert to temperature
-print('starting ' + laser_to_analyse)
+print('starting ' + laser_to_analyse + '\n of \n' + str(np.flip(shot_available,axis=0)[i_day]))
 
 try:
 	laser_dict = np.load(laser_to_analyse[:-4]+'.npz')
@@ -390,13 +390,12 @@ try:
 			temp_ref_counts.append(np.mean(laser_counts_corrected[i][-int(seconds_for_reference_frame*laser_framerate/len(laser_digitizer_ID)):],axis=0))
 			temp_ref_counts_std.append(np.std(laser_counts_corrected[i][-int(seconds_for_reference_frame*laser_framerate/len(laser_digitizer_ID)):],axis=0))
 	reference_background_temperature,reference_background_temperature_std = coleval.count_to_temp_poly_multi_digitizer(temp_ref_counts,params,errparams,laser_digitizer_ID,number_cpu_available,counts_std=temp_ref_counts_std,report=0,parallelised=False)
-	if False:
-		# here I should use the room temperature acquired by other means. it is availabl, but with a 1degC precision, so for now I use the camera as thermometer
+
+	ref_temperature = coleval.retrive_vessel_average_temp_archve(int(laser_to_analyse[-9:-4]))
+	ref_temperature_std = 0.25	# coming from the fact that there is no noise during transition, so the std must be quite below 1K
+	if np.isnan(ref_temperature):
 		ref_temperature = np.mean(reference_background_temperature)
 		ref_temperature_std = (np.sum(np.array(reference_background_temperature_std)**2)**0.5 / len(np.array(reference_background_temperature).flatten()))
-	else:	# method reading the temp from the database of vessel temperature
-		ref_temperature = coleval.retrive_vessel_average_temp_archve(int(laser_to_analyse[-9:-4]))
-		ref_temperature_std = 0.25	# coming from the fact that there is no noise during transition, so the std must be quite below 1K
 
 	# Load BB parameters
 	# temp = pathparams+'/'+temp+'/numcoeff'+str(n)+'/average'
@@ -428,8 +427,9 @@ try:
 				test = full_saved_file_dict_FAST['second_pass']
 			except:
 				full_saved_file_dict_FAST = dict([])
+			pass_number = 0
 			# foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,FAST_counts_minus_background_crop_time = coleval.MASTU_pulse_process_FAST(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,laser_dict['height'],laser_dict['width'],flag_use_of_first_frames_as_reference)
-			foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,time_binned,powernoback,brightness,binning_type,inverted_dict = coleval.MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,laser_dict['height'],laser_dict['width'],flag_use_of_first_frames_as_reference,params,errparams,params_BB,errparams_BB,photon_flux_over_temperature_interpolator,BB_proportional,BB_proportional_std,foil_position_dict,pass_number = 0)
+			foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,time_binned,powernoback,brightness,binning_type,inverted_dict = coleval.MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,laser_dict['height'],laser_dict['width'],flag_use_of_first_frames_as_reference,params,errparams,params_BB,errparams_BB,photon_flux_over_temperature_interpolator,BB_proportional,BB_proportional_std,foil_position_dict,pass_number = pass_number)
 			full_saved_file_dict_FAST['first_pass'] = dict([])
 			full_saved_file_dict_FAST['first_pass']['FAST_counts_minus_background_crop'] = np.float16(FAST_counts_minus_background_crop)
 			full_saved_file_dict_FAST['first_pass']['FAST_powernoback'] = np.float16(powernoback)
@@ -441,12 +441,15 @@ try:
 			full_saved_file_dict_FAST['first_pass']['processing_start_time'] = str(datetime.fromtimestamp(start))
 			full_saved_file_dict_FAST['first_pass']['processing_end_time'] = str(datetime.fromtimestamp(tm.time()))
 			np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
+			exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_multi_instrument.py").read())
+			np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
 			print('generated FAST first pass in %.3g min' %((tm.time()-start)/60))
 			if skip_second_pass:
 				print('temporary: second FAST pass skipped to do them quicker')
 				stra = second_fast_skipped	# just to cause an error
 			start = tm.time()
-			foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,time_binned,powernoback,brightness,binning_type,inverted_dict = coleval.MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,laser_dict['height'],laser_dict['width'],flag_use_of_first_frames_as_reference,params,errparams,params_BB,errparams_BB,photon_flux_over_temperature_interpolator,BB_proportional,BB_proportional_std,foil_position_dict,pass_number = 1)
+			pass_number = 1
+			foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,time_binned,powernoback,brightness,binning_type,inverted_dict = coleval.MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,laser_dict['height'],laser_dict['width'],flag_use_of_first_frames_as_reference,params,errparams,params_BB,errparams_BB,photon_flux_over_temperature_interpolator,BB_proportional,BB_proportional_std,foil_position_dict,pass_number = pass_number)
 			full_saved_file_dict_FAST['second_pass'] = dict([])
 			full_saved_file_dict_FAST['second_pass']['FAST_counts_minus_background_crop'] = np.float16(FAST_counts_minus_background_crop)
 			full_saved_file_dict_FAST['second_pass']['FAST_powernoback'] = np.float16(powernoback)
@@ -457,6 +460,8 @@ try:
 			full_saved_file_dict_FAST['second_pass']['time_full_full'] = time_full_int
 			full_saved_file_dict_FAST['second_pass']['processing_start_time'] = str(datetime.fromtimestamp(start))
 			full_saved_file_dict_FAST['second_pass']['processing_end_time'] = str(datetime.fromtimestamp(tm.time()))
+			np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
+			exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_multi_instrument.py").read())
 			np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
 			print('generated FAST second pass in %.3g min' %((tm.time()-start)/60))
 		except Exception as e:
@@ -726,13 +731,14 @@ try:
 			plt.close('all')
 
 			reference_background_temperature,reference_background_temperature_std = coleval.count_to_temp_poly_multi_digitizer(temp_ref_counts,params,errparams,laser_digitizer_ID,number_cpu_available,counts_std=temp_ref_counts_std,report=0,parallelised=False)
-			if False:
-				# here I should use the room temperature acquired by other means. it is availabl, but with a 1degC precision, so for now I use the camera as thermometer
+
+			ref_temperature = coleval.retrive_vessel_average_temp_archve(int(laser_to_analyse[-9:-4]))
+			ref_temperature_std = 0.25	# coming from the fact that there is no noise during transition, so the std must be quite below 1K
+			if np.isnan(ref_temperature):
+				print('for this phase I want the true vessel temperature but the reading failed\nwrong shot number of pyuda fails')
+				exit()
 				ref_temperature = np.mean(reference_background_temperature)
 				ref_temperature_std = (np.sum(np.array(reference_background_temperature_std)**2)**0.5 / len(np.array(reference_background_temperature).flatten()))
-			else:	# method reading the temp from the database of vessel temperature
-				ref_temperature = coleval.retrive_vessel_average_temp_archve(int(laser_to_analyse[-9:-4]))
-				ref_temperature_std = 0.25	# coming from the fact that there is no noise during transition, so the std must be quite below 1K
 
 			# I recalculate coleval.calc_BB_coefficients_multi_digitizer here so it uses filtered data
 			BB_proportional,BB_proportional_std,constant_offset,constant_offset_std,photon_dict = coleval.calc_BB_coefficients_multi_digitizer(params_BB,errparams_BB,laser_digitizer_ID,temp_ref_counts,temp_ref_counts_std,ref_temperature=ref_temperature,ref_temperature_std=ref_temperature_std,wavewlength_top=5,wavelength_bottom=2.5,inttime=laser_int_time/1000)
