@@ -1,32 +1,40 @@
 
 # position of the visible structure and the fueling location for the overlays
 # data for the fueling location
-fueling_r = [[0.261]]
+fueling_r = [[0.2608]]	# fuelling HFS_MID_L02 sector 12
 fueling_z = [[-0.264]]
 fueling_t = [[105]]
-fueling_r.append([0.261])
+fueling_r.append([0.2608])	# fuelling HFS_MID_L08 sector 9
 fueling_z.append([-0.264])
 fueling_t.append([195])
-# tile directly below the the string of bolts on the centre column
+fueling_r.append([0.312])	# fuelling HFS_BOT_B03
+fueling_z.append([-0.929])
+fueling_t.append([65.3])
+fueling_r.append([0.552])	# fuelling PFR_BOT_B01
+fueling_z.append([-1.526])
+fueling_t.append([74.8])
+# tile directly below the the string of bolts on the centre column T1
 # neighbouring points
-stucture_r=[[0.333]*11]
-stucture_z=[[-1.304]*11]
-stucture_t=[np.linspace(60,195+15,11)]
-stucture_r.append([0.539]*11)
-stucture_z.append([-1.505]*11)
-stucture_t.append(np.linspace(60,195+15,11))
+stucture_r=[[0.333]*80]
+stucture_z=[[-1.304]*80]
+stucture_t=[np.linspace(60,195+15,80)]
+stucture_r.append([0.539]*80)
+stucture_z.append([-1.505]*80)
+stucture_t.append(np.linspace(60,195+15,80))
 for value in np.linspace(60,195+15,11):
 	stucture_r.append([0.333,0.539])
 	stucture_z.append([-1.304,-1.505])
 	stucture_t.append([value]*2)
+# neighbouring points tiles in the tilted section on the centre column
+stucture_r.append([0.305]*40)
+stucture_z.append([-0.853]*40)
+# stucture_t.append([33,93,153,213])
+stucture_t.append(np.linspace(33,213,40))
 # neighbouring points
-stucture_r.append([0.305]*4)
-stucture_z.append([-0.853]*4)
-stucture_t.append([33,93,153,213])
-# neighbouring points
-stucture_r.append([0.270]*4)
-stucture_z.append([-0.573]*4)
-stucture_t.append([33,93,153,213])
+stucture_r.append([0.270]*40)
+stucture_z.append([-0.573]*40)
+# stucture_t.append([33,93,153,213])
+stucture_t.append(np.linspace(33,213,40))
 for value in [33,93,153,213]:
 	stucture_r.append([0.305,0.270])
 	stucture_z.append([-0.853,-0.573])
@@ -108,14 +116,20 @@ for value in np.linspace(0-15,150,100):
 	stucture_t.append([value]*4)
 # silouette of the centre column
 # neighbouring points
-MASTU_silouette_z = [-1.881,-1.505,-1.304,-1.103,-0.853,-0.573,-0.505,-0.271,-0.147]
-MASTU_silouette_r = [0.906,0.539,0.333,0.333,0.305,0.270,0.261,0.261,0.261]
+MASTU_silouette_z = [-1.881,-1.8,-1.719,-1.505,-1.304,-1.103,-0.853,-0.573,-0.505,-0.271,-0.147]
+MASTU_silouette_r = [0.906,0.828,0.747,0.539,0.333,0.333,0.305,0.270,0.2608,0.2608,0.2608]
 from scipy.interpolate.interpolate import interp1d
 R_centre_column_interpolator = interp1d(MASTU_silouette_z+(-np.flip(MASTU_silouette_z,axis=0)).tolist(),MASTU_silouette_r+np.flip(MASTU_silouette_r,axis=0).tolist(),fill_value=np.nan,bounds_error=False)
-for value in [60,210]:
-	stucture_r.append(MASTU_silouette_r)
-	stucture_z.append(MASTU_silouette_z)
-	stucture_t.append([value]*9)
+if False:
+	for value in [60,210]:
+		stucture_r.append(MASTU_silouette_r)
+		stucture_z.append(MASTU_silouette_z)
+		stucture_t.append([value]*9)
+else:	# this looks at the real tangential point
+	for value in ['left','right']:
+		stucture_r.append(MASTU_silouette_r)
+		stucture_z.append(MASTU_silouette_z)
+		stucture_t.append(calculate_tangency_angle_for_poloidal_section(MASTU_silouette_r,side=value))
 # neighbouring points	# super-x divertor tiles
 stucture_r.append([1.391]*5)
 stucture_z.append([-2.048]*5)
@@ -224,12 +238,12 @@ core_poloidal_arrival.append([0.335,1.311,90])
 core_poloidal_arrival.append([0.335,1.093,90])
 core_poloidal_arrival.append([0.311,0.921,90])
 core_poloidal_arrival.append([0.285,0.703,90])
-core_poloidal_arrival.append([0.261,0.493,90])
-core_poloidal_arrival.append([0.261,0.285,90])
-core_poloidal_arrival.append([0.261,0.09,90])
-core_poloidal_arrival.append([0.261,-0.09,90])
-core_poloidal_arrival.append([0.261,-0.285,90])
-core_poloidal_arrival.append([0.261,-0.493,90])
+core_poloidal_arrival.append([0.2608,0.493,90])
+core_poloidal_arrival.append([0.2608,0.285,90])
+core_poloidal_arrival.append([0.2608,0.09,90])
+core_poloidal_arrival.append([0.2608,-0.09,90])
+core_poloidal_arrival.append([0.2608,-0.285,90])
+core_poloidal_arrival.append([0.2608,-0.493,90])
 core_poloidal_arrival.append([0.285,-0.703,90])
 core_poloidal_arrival.append([0.311,-0.921,90])
 core_poloidal_arrival.append([0.333,-1.095,90])
@@ -288,10 +302,10 @@ _MASTU_CORE_GRID_POLYGON = np.array([
     (0.36, -1.33),
     (0.333, -1.303),
     (0.333, -1.1),
-    (0.261, -0.5),
-    (0.261, 0.0),
-	(0.261, 0.2),     # point added just to cut the unnecessary voxels the 04/02/2018
-    # (0.261, 0.5),
+    (0.2608, -0.5),
+    (0.2608, 0.0),
+	(0.2608, 0.2),     # point added just to cut the unnecessary voxels the 04/02/2018
+    # (0.2608, 0.5),
     # (0.333, 0.8),     # point added just to cut the unnecessary voxels	# Replaced 04/02/2018
     # (0.333, 1.1),
     # (0.333, 1.303),
@@ -356,9 +370,9 @@ FULL_MASTU_CORE_GRID_POLYGON = np.array([
     (0.36, -1.33),
     (0.333, -1.303),
     (0.333, -1.1),
-    (0.261, -0.5),
-    (0.261, 0.0),
-    (0.261, 0.5),
+    (0.2608, -0.5),
+    (0.2608, 0.0),
+    (0.2608, 0.5),
     (0.333, 1.1),
     (0.333, 1.303),
     (0.36, 1.33),

@@ -767,7 +767,8 @@ def movie(extpath,framerate,integration,xlabel=(),ylabel=(),barlabel=(),cmap='ra
 EFIT_path_default = '/common/uda-scratch/lkogan/efitpp_eshed'
 foil_size = [0.07,0.09]
 
-exec(open("/home/ffederic/work/analysis_scripts/scripts/python_library/collect_and_eval/collect_and_eval/MASTU_structure.py").read())
+# done a bit later so that calculate_tangency_angle_for_poloidal_section is calculated
+# exec(open("/home/ffederic/work/analysis_scripts/scripts/python_library/collect_and_eval/collect_and_eval/MASTU_structure.py").read())
 
 # functions to draw the x-point on images or movies
 def point_toroidal_to_cartesian(coords):	# r,z,teta deg	to	x,y,z
@@ -775,6 +776,14 @@ def point_toroidal_to_cartesian(coords):	# r,z,teta deg	to	x,y,z
 	out.T[0]=coords.T[0] * np.cos(coords.T[2]*2*np.pi/360)
 	out.T[1]=coords.T[0] * np.sin(coords.T[2]*2*np.pi/360)
 	out.T[2]=coords.T[1]
+	return out
+
+def point_cartesian_to_toroidal(coords):	# x,y,z	to	r,z,teta deg
+	out = np.zeros_like(coords).astype(float)
+	out.T[0]=((coords.T[0]**2) + (coords.T[1]**2))**0.5
+	out.T[1]=coords.T[2]
+	out.T[2]=np.arctan(coords.T[1]/coords.T[0])/np.pi*180
+	out.T[2][coords.T[0]<0] += 180
 	return out
 
 stand_off_length = 0.045	# m
@@ -789,17 +798,28 @@ def locate_pinhole(centre_of_front_plate=centre_of_front_plate,pinhole_offset=pi
 	return point_toroidal_to_cartesian(pinhole_location_toroidal)	# x,y,z
 
 # pinhole_location = np.array([-1.04087,1.068856,-0.7198])	# x,y,z
-pinhole_location = locate_pinhole(pinhole_offset=pinhole_offset)
+pinhole_location = locate_pinhole(pinhole_offset=pinhole_offset)	# x,y,z
+pinhole_location_toroidal=point_cartesian_to_toroidal(np.array([pinhole_location]))[0]	# R,z,teta deg
 centre_of_foil = np.array([-Rf/(2**0.5), Rf/(2**0.5), -0.7])	# x,y,z
 foil_size = [0.07,0.09]
-R_centre_column = 0.261	# m
+R_centre_column = 0.2608	# m
 pinhole_relative_location = np.array(foil_size)/2 + 0.0198
 pinhole_radious = 0.004/2	# m
 
+def calculate_tangency_angle_for_poloidal_section(radius_to_trace,pinhole_location_toroidal=pinhole_location_toroidal,side='left'):
+	if side=='left':
+		reference_radius = pinhole_location_toroidal[2]-(90-np.arcsin(radius_to_trace/pinhole_location_toroidal[0])/np.pi*180)
+	elif side=='right':
+		reference_radius = pinhole_location_toroidal[2]+(90-np.arcsin(radius_to_trace/pinhole_location_toroidal[0])/np.pi*180)
+	return reference_radius
+
+# moved here so that calculate_tangency_angle_for_poloidal_section is calculated
+exec(open("/home/ffederic/work/analysis_scripts/scripts/python_library/collect_and_eval/collect_and_eval/MASTU_structure.py").read())
 
 def find_location_on_foil(point_coord,plane_equation=plane_equation,pinhole_location=pinhole_location):
-	t = (-plane_equation[-1] -np.sum(plane_equation[:-1]*point_coord,axis=-1)) / np.sum(plane_equation[:-1]*(pinhole_location-point_coord),axis=-1)
-	out = point_coord + ((pinhole_location-point_coord).T*t).T
+	# t = (-plane_equation[-1] -np.sum(plane_equation[:-1]*point_coord,axis=-1)) / np.sum(plane_equation[:-1]*(pinhole_location-point_coord),axis=-1)
+	# out = point_coord + ((pinhole_location-point_coord).T*t).T
+	out = pinhole_location-((pinhole_location-point_coord).T * ( np.sum(plane_equation[:-1]*pinhole_location,axis=-1) + plane_equation[-1] )/ ( np.sum(plane_equation[:-1]*(pinhole_location-point_coord),axis=-1) )).T
 	return out
 
 def absolute_position_on_foil_to_foil_coord(coords,centre_of_foil=centre_of_foil,foil_size=foil_size):	# out in [x,z]
@@ -851,13 +871,6 @@ for core_poloidal_arrival_ in core_poloidal_arrival:
 for divertor_poloidal_arrival_ in divertor_poloidal_arrival:
 	res_bolo_radial_profile.append(np.array([[divertor_poloidal_arrival_[0],divertor_poloidal_common_point[0]],[divertor_poloidal_arrival_[1],divertor_poloidal_common_point[1]]]).T)
 
-fueling_point_location_on_foil = []
-for time in range(len(fueling_r)):
-	point_location = np.array([fueling_r[time],fueling_z[time],fueling_t[time]]).T
-	point_location = point_toroidal_to_cartesian(point_location)
-	point_location = find_location_on_foil(point_location)
-	fueling_point_location_on_foil.append(absolute_position_on_foil_to_foil_coord(point_location))
-
 def return_fueling_point_location_on_foil(plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil):
 	fueling_point_location_on_foil = []
 	for time in range(len(fueling_r)):
@@ -866,6 +879,7 @@ def return_fueling_point_location_on_foil(plane_equation=plane_equation,pinhole_
 		point_location = find_location_on_foil(point_location,plane_equation=plane_equation,pinhole_location=pinhole_location)
 		fueling_point_location_on_foil.append(absolute_position_on_foil_to_foil_coord(point_location,centre_of_foil=centre_of_foil))
 	return fueling_point_location_on_foil
+fueling_point_location_on_foil = return_fueling_point_location_on_foil()
 
 def return_all_time_x_point_location(efit_reconstruction,resolution = 1000,plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil):
 	all_time_x_point_location = []
@@ -887,7 +901,7 @@ def return_all_time_mag_axis_location(efit_reconstruction,resolution = 1000,plan
 	all_time_mag_axis_location = np.array(all_time_mag_axis_location)
 	return all_time_mag_axis_location
 
-def return_all_time_strike_points_location(efit_reconstruction,all_time_sep_r,all_time_sep_z,r_fine,z_fine,resolution = 1000,plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil):
+def return_all_time_strike_points_location(efit_reconstruction,all_time_sep_r,all_time_sep_z,r_fine,z_fine,resolution = 1000,plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil,ref_angle=[]):
 	from scipy.signal import find_peaks, peak_prominences as get_proms
 	temp_R = np.ones((len(efit_reconstruction.time),20))*np.nan
 	temp_Z = np.ones((len(efit_reconstruction.time),20))*np.nan
@@ -918,7 +932,10 @@ def return_all_time_strike_points_location(efit_reconstruction,all_time_sep_r,al
 	all_time_strike_points_location = []
 	for time in range(len(efit_reconstruction.time)):
 		# strike_point_location = np.array([efit_reconstruction.strikepointR[time],-np.abs(efit_reconstruction.strikepointZ[time]),[60]*len(efit_reconstruction.strikepointZ[time])]).T
-		strike_point_location = np.array([temp_R[time],temp_Z[time],[60]*len(temp_Z[time])]).T
+		if ref_angle==[]:
+			strike_point_location = np.array([temp_R[time].tolist()*2,temp_Z[time].tolist()*2,calculate_tangency_angle_for_poloidal_section(temp_R[time],side='left').tolist()+calculate_tangency_angle_for_poloidal_section(temp_R[time],side='right').tolist()]).T
+		else:
+			strike_point_location = np.array([temp_R[time].tolist()*2,temp_Z[time].tolist()*2,[ref_angle[0]]*len(temp_Z[time])+[ref_angle[1]]*len(temp_Z[time])]).T
 		strike_point_location = point_toroidal_to_cartesian(strike_point_location)
 		strike_point_location = find_location_on_foil(strike_point_location,plane_equation=plane_equation,pinhole_location=pinhole_location)
 		all_time_strike_points_location.append(absolute_position_on_foil_to_foil_coord(strike_point_location,centre_of_foil=centre_of_foil))
@@ -964,15 +981,30 @@ def return_all_time_strike_points_location_radial(efit_reconstruction,all_time_s
 			temp_Z[time][:min(20,len(efit_reconstruction.strikepointZ[time]))] = -np.abs(efit_reconstruction.strikepointZ[time][:min(20,len(efit_reconstruction.strikepointZ[time]))])
 	return np.transpose([temp_R,temp_Z], axes=(1,0,2))
 
-def return_all_time_separatrix(efit_reconstruction,all_time_sep_r,all_time_sep_z,r_fine,z_fine,ref_angle=60,plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil):
+def return_all_time_separatrix(efit_reconstruction,all_time_sep_r,all_time_sep_z,r_fine,z_fine,ref_angle=[],plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil):
 	all_time_separatrix = []
 	for time in range(len(efit_reconstruction.time)):
 		separatrix = []
-		for i in range(len(all_time_sep_r[time])):
+		for i in range(len(all_time_sep_r[time])*2):
+			side = 'left'
+			if ref_angle!=[]:
+				i_ref_angle = ref_angle[0]
+			if i>=len(all_time_sep_r[time]):
+				i-=len(all_time_sep_r[time])
+				side = 'right'
+				if ref_angle!=[]:
+					i_ref_angle = ref_angle[1]
 			try:
-				point_location = np.array([r_fine[all_time_sep_r[time][i]],z_fine[all_time_sep_z[time][i]],[ref_angle]*len(all_time_sep_z[time][i])]).T
+				if ref_angle==[]:
+					# the other method consider a flat angle to look at tangency of separatrix and LOS through the pinhole. the next calculates the right angle
+					point_location = np.array([r_fine[all_time_sep_r[time][i]],z_fine[all_time_sep_z[time][i]],calculate_tangency_angle_for_poloidal_section(r_fine[all_time_sep_r[time][i]],side=side)]).T
+				else:
+					point_location = np.array([r_fine[all_time_sep_r[time][i]],z_fine[all_time_sep_z[time][i]],[i_ref_angle]*len(all_time_sep_z[time][i])]).T
 			except:
-				point_location = np.array([[0],[0],[ref_angle]]).T
+				if ref_angle==[]:
+					point_location = np.array([[0],[0],[calculate_tangency_angle_for_poloidal_section(0)]]).T
+				else:
+					point_location = np.array([[0],[0],[0]]).T
 			point_location = point_toroidal_to_cartesian(point_location)
 			point_location = find_location_on_foil(point_location,plane_equation=plane_equation,pinhole_location=pinhole_location)
 			separatrix.append(absolute_position_on_foil_to_foil_coord(point_location,centre_of_foil=centre_of_foil))
@@ -998,6 +1030,7 @@ def return_core_tangential_location_on_foil(resolution = 10000,plane_equation=pl
 		point_location = find_location_on_foil(point_location,plane_equation=plane_equation,pinhole_location=pinhole_location)
 		core_tangential_location_on_foil.append(absolute_position_on_foil_to_foil_coord(point_location,centre_of_foil=centre_of_foil))
 	return core_tangential_location_on_foil
+core_tangential_location_on_foil = return_core_tangential_location_on_foil()
 
 def return_core_poloidal_location_on_foil(angle=60,resolution = 10000,plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil):
 	core_poloidal_location_on_foil = []
@@ -1007,6 +1040,7 @@ def return_core_poloidal_location_on_foil(angle=60,resolution = 10000,plane_equa
 		point_location = find_location_on_foil(point_location,plane_equation=plane_equation,pinhole_location=pinhole_location)
 		core_poloidal_location_on_foil.append(absolute_position_on_foil_to_foil_coord(point_location,centre_of_foil=centre_of_foil))
 	return core_poloidal_location_on_foil
+core_poloidal_location_on_foil = return_core_poloidal_location_on_foil()
 
 def return_core_poloidal(resolution = 100):
 	core_poloidal = []
@@ -1037,7 +1071,7 @@ def return_divertor_poloidal(resolution = 100):
 			divertor_poloidal.append(np.array([np.linspace(arrival[0],divertor_poloidal_common_point[0],resolution),interp1(np.linspace(arrival[0],divertor_poloidal_common_point[0],resolution))]).T)
 	return divertor_poloidal
 
-def movie_from_data(data,framerate,integration=1,xlabel=(),ylabel=(),barlabel=(),cmap='rainbow',form_factor_size=15,timesteps='auto',extvmin='auto',extvmax='auto',image_extent=[],mask=[0],mask_alpha=0.2,time_offset=0,prelude='',vline=None,hline=None,EFIT_path=EFIT_path_default,include_EFIT=False,efit_reconstruction=None,EFIT_output_requested = False,pulse_ID=None,overlay_x_point=False,overlay_mag_axis=False,overlay_structure=False,overlay_strike_points=False,overlay_separatrix=False,structure_alpha=0.5,foil_size=foil_size,additional_polygons_dict = dict([])):
+def movie_from_data(data,framerate,integration=1,xlabel=(),ylabel=(),barlabel=(),cmap='rainbow',form_factor_size=15,timesteps='auto',extvmin='auto',extvmax='auto',image_extent=[],mask=[0],mask_alpha=0.2,time_offset=0,prelude='',vline=None,hline=None,EFIT_path=EFIT_path_default,include_EFIT=False,efit_reconstruction=None,EFIT_output_requested = False,pulse_ID=None,overlay_x_point=False,overlay_mag_axis=False,overlay_structure=False,overlay_strike_points=False,overlay_separatrix=False,overlay_res_bolo=False,structure_alpha=0.5,foil_size=foil_size,additional_polygons_dict = dict([])):
 	import matplotlib.animation as animation
 	import numpy as np
 
@@ -1122,7 +1156,7 @@ def movie_from_data(data,framerate,integration=1,xlabel=(),ylabel=(),barlabel=()
 			all_time_strike_points_location,all_time_strike_points_location_rot = return_all_time_strike_points_location(efit_reconstruction,all_time_sep_r,all_time_sep_z,r_fine,z_fine)
 			plot3 = ax.plot(0,0,'xr',markersize=20, alpha=1)[0]
 			plot4 = []
-			for __i in range(len(all_time_strike_points_location[0])):
+			for __i in range(len(all_time_strike_points_location_rot[0])):
 				plot4.append(ax.plot(0,0,'-r', alpha=1)[0])
 		if overlay_separatrix:
 			all_time_separatrix = return_all_time_separatrix(efit_reconstruction,all_time_sep_r,all_time_sep_z,r_fine,z_fine)
@@ -1135,6 +1169,11 @@ def movie_from_data(data,framerate,integration=1,xlabel=(),ylabel=(),barlabel=()
 			ax.plot(np.array(fueling_point_location_on_foil[i][:,0])*(np.shape(cv0)[1]-1)/foil_size[0],np.array(fueling_point_location_on_foil[i][:,1])*(np.shape(cv0)[0]-1)/foil_size[1],'ok',markersize=5,alpha=structure_alpha)
 		for i in range(len(structure_point_location_on_foil)):
 			ax.plot(np.array(structure_point_location_on_foil[i][:,0])*(np.shape(cv0)[1]-1)/foil_size[0],np.array(structure_point_location_on_foil[i][:,1])*(np.shape(cv0)[0]-1)/foil_size[1],'--k',alpha=structure_alpha)
+	if overlay_res_bolo:
+		for i in range(len(core_tangential_location_on_foil)):
+			ax.plot(np.array(core_tangential_location_on_foil[i][:,0])*(np.shape(cv0)[1]-1)/foil_size[0],np.array(core_tangential_location_on_foil[i][:,1])*(np.shape(cv0)[0]-1)/foil_size[1],'--r',alpha=1)
+		for i in range(len(core_poloidal_location_on_foil)):
+			ax.plot(np.array(core_poloidal_location_on_foil[i][:,0])*(np.shape(cv0)[1]-1)/foil_size[0],np.array(core_poloidal_location_on_foil[i][:,1])*(np.shape(cv0)[0]-1)/foil_size[1],'--r',alpha=1)
 	if len(list(additional_polygons_dict.keys()))!=0:
 		plot7 = []
 		for __i in range(additional_polygons_dict['number_of_polygons']):
@@ -1271,7 +1310,7 @@ def movie_from_data(data,framerate,integration=1,xlabel=(),ylabel=(),barlabel=()
 	else:
 		return ani,efit_reconstruction
 
-def image_from_data(data,xlabel=(),ylabel=(),barlabel=(),cmap='rainbow',form_factor_size=15,ref_time=None,extvmin='auto',extvmax='auto',image_extent=[],mask=[0],mask_alpha=0.2,prelude='',vline=None,hline=None,EFIT_path=EFIT_path_default,include_EFIT=False,efit_reconstruction=None,EFIT_output_requested = False,pulse_ID=None,overlay_x_point=False,overlay_mag_axis=False,overlay_structure=False,overlay_strike_points=False,overlay_separatrix=False,overlay_res_bolo=False,structure_alpha=0.5,foil_size=foil_size):
+def image_from_data(data,xlabel=(),ylabel=(),barlabel=(),cmap='rainbow',form_factor_size=15,ref_time=None,extvmin='auto',extvmax='auto',image_extent=[],mask=[0],mask_alpha=0.2,prelude='',vline=None,hline=None,EFIT_path=EFIT_path_default,include_EFIT=False,efit_reconstruction=None,EFIT_output_requested = False,pulse_ID=None,overlay_x_point=False,overlay_mag_axis=False,overlay_structure=False,overlay_strike_points=False,overlay_separatrix=False,overlay_res_bolo=False,structure_alpha=0.5,foil_size=foil_size,generic_overlays = []):
 	import matplotlib.animation as animation
 	import numpy as np
 	from matplotlib import cm	# to print nan as white
@@ -1365,7 +1404,7 @@ def image_from_data(data,xlabel=(),ylabel=(),barlabel=(),cmap='rainbow',form_fac
 			all_time_strike_points_location,all_time_strike_points_location_rot = return_all_time_strike_points_location(efit_reconstruction,all_time_sep_r,all_time_sep_z,r_fine,z_fine)
 			plot3 = ax.plot(0,0,'xr',markersize=20, alpha=1)[0]
 			plot4 = []
-			for __i in range(len(all_time_strike_points_location[0])):
+			for __i in range(len(all_time_strike_points_location_rot[0])):
 				plot4.append(ax.plot(0,0,'-r', alpha=1)[0])
 		if overlay_separatrix:
 			all_time_separatrix = return_all_time_separatrix(efit_reconstruction,all_time_sep_r,all_time_sep_z,r_fine,z_fine)
@@ -1378,6 +1417,11 @@ def image_from_data(data,xlabel=(),ylabel=(),barlabel=(),cmap='rainbow',form_fac
 			ax.plot(np.array(fueling_point_location_on_foil[i][:,0])*(np.shape(cv0)[1]-1)/foil_size[0],np.array(fueling_point_location_on_foil[i][:,1])*(np.shape(cv0)[0]-1)/foil_size[1],'ok',markersize=5,alpha=structure_alpha)
 		for i in range(len(structure_point_location_on_foil)):
 			ax.plot(np.array(structure_point_location_on_foil[i][:,0])*(np.shape(cv0)[1]-1)/foil_size[0],np.array(structure_point_location_on_foil[i][:,1])*(np.shape(cv0)[0]-1)/foil_size[1],'--k',alpha=structure_alpha)
+	if overlay_res_bolo:
+		for i in range(len(core_tangential_location_on_foil)):
+			ax.plot(np.array(core_tangential_location_on_foil[i][:,0])*(np.shape(cv0)[1]-1)/foil_size[0],np.array(core_tangential_location_on_foil[i][:,1])*(np.shape(cv0)[0]-1)/foil_size[1],'--r',alpha=1)
+		for i in range(len(core_poloidal_location_on_foil)):
+			ax.plot(np.array(core_poloidal_location_on_foil[i][:,0])*(np.shape(cv0)[1]-1)/foil_size[0],np.array(core_poloidal_location_on_foil[i][:,1])*(np.shape(cv0)[0]-1)/foil_size[1],'--r',alpha=1)
 
 	# if len(np.shape(mask)) == 2:
 	# im = ax.imshow(mask,'gray',interpolation='none',alpha=1)
@@ -1398,7 +1442,11 @@ def image_from_data(data,xlabel=(),ylabel=(),barlabel=(),cmap='rainbow',form_fac
 				hline[i] = max(0,min(hline[i],np.shape(cv0)[0]-1))
 				axhline = ax.axhline(y=hline[i],linestyle='--',color='k')
 
-	cb = fig.colorbar(im).set_label(barlabel)
+	if len(generic_overlays)>0:
+		for overlay_dict in generic_overlays:
+			ax.plot(overlay_dict['edges_horiz'],overlay_dict['edges_vert'],overlay_dict['linestyle'],alpha=overlay_dict['alpha'],linewidth=overlay_dict['linewidth'])
+
+	cb = fig.colorbar(im,fraction=0.0577, pad=0.04).set_label(barlabel)
 	cb = ax.set_xlabel(xlabel)
 	cb = ax.set_ylabel(ylabel)
 	tx = ax.set_title('Frame 0')
@@ -3058,6 +3106,9 @@ def clear_oscillation_central2(data,framerate,oscillation_search_window_begin='a
 	freq_to_erase_index = int(find_nearest_index(freq, freq_to_erase))
 	freq_to_erase_index_multiple = np.arange(-(multiple_frequencies_cleaned-1)//2,(multiple_frequencies_cleaned-1)//2+1) + freq_to_erase_index
 
+	# 2022/09/05 safety check: I don't wanto to remove real signal, therefore I limit the correction to something realistic
+	magnitude[magnitude>2*np.median(magnitude[freq_to_erase_index])] = 2*np.median(magnitude[freq_to_erase_index])
+
 	if plot_conparison==True and (2 in which_plot):
 		plt.figure(figure_index+1)
 		# plt.title('Amplitude from fast Fourier transform from %.3gs to %.3gs\naveraged in a window of ' %(force_start/framerate,(force_start+max_start)/framerate)+ str(window*2+1) + ' pixels around ' + str(
@@ -4385,6 +4436,9 @@ def find_dead_pixels(data, start_interval='auto',end_interval='auto', framerate=
 					continue
 				else:
 					temp2 = [x for x in temp if x != 0]
+					# following added to avoid problems when 2 dead pixels are adjacent. the 3 as multimplier is completely arbitrary, it's just to not modify the behaviour when this funcion is used somewhere else
+					temp2 = [x for x in temp2 if x < np.median(temp2)+3*treshold_for_bad_difference]
+					temp2 = [x for x in temp2 if x > np.median(temp2)-3*treshold_for_bad_difference]
 					if len(temp2) == 0:
 						# flag_check[i, j] += 3
 						# flag[i, j] = 0
@@ -5728,6 +5782,19 @@ def build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window
 		# temp1 = 2*scipy.constants.h*(scipy.constants.c**2)/(lambda_cam_x.max()**5) * 1/( np.exp(scipy.constants.h*scipy.constants.c/(lambda_cam_x.max()*scipy.constants.k*T_)) -1)
 		return temp1
 
+	# problem: how do I deal with dead pixels? if I apply the calibration retroactively I could have old good pixels that just became bad ones.
+	# also I cannot guarantee that digitizer 1 will stay digitiser 1 for a different temperature
+	# I find the dead pixels here and the coeffs are smoothed over ALL of them
+	flag = np.sum([find_dead_pixels([[data]],treshold_for_bad_low_std=-1,treshold_for_bad_difference=100*inttime/2) for data in meancounttot[-1]],axis=0)
+	meancounttot = [replace_dead_pixels([meancounttot[:,i]],flag)[0] for i in range(np.shape(meancounttot)[1])]
+	meancountstdtot = [replace_dead_pixels([meancountstdtot[:,i]],flag)[0] for i in range(np.shape(meancountstdtot)[1])]
+	meancounttot_no_window = [replace_dead_pixels([meancounttot_no_window[:,i]],flag)[0] for i in range(np.shape(meancounttot_no_window)[1])]
+	meancountstdtot_no_window = [replace_dead_pixels([meancountstdtot_no_window[:,i]],flag)[0] for i in range(np.shape(meancountstdtot_no_window)[1])]
+	meancounttot = np.transpose(meancounttot,(1,0,2,3))
+	meancountstdtot = np.transpose(meancountstdtot,(1,0,2,3))
+	meancounttot_no_window = np.transpose(meancounttot_no_window,(1,0,2,3))
+	meancountstdtot_no_window = np.transpose(meancountstdtot_no_window,(1,0,2,3))
+
 	number_of_window = len(temperature_window)
 	bds = [[0,0,0,-np.inf],[np.inf,np.inf,1,np.inf]]
 	bds1=np.array(bds)[:,:2]
@@ -5756,18 +5823,33 @@ def build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window
 				x__no_window=np.array(meancounttot_no_window[:,z==digitizer_ID,j,k]).flatten()
 				xerr__no_window=np.array(meancountstdtot_no_window[:,z==digitizer_ID,j,k]).flatten()
 				fit1 = curve_fit(BB_rad2(),np.array(temperature_no_window),x__no_window,sigma=xerr__no_window,absolute_sigma=True,p0=[1e-13,1000],bounds=bds1,x_scale=[1e-13,1])
-				if False:
-					plt.figure()
-					plt.errorbar(x,temperature_window,xerr=xerr,fmt='+',color='b')
-					plt.errorbar(x_[number_of_window:],temperature_no_window,xerr=xerr_[number_of_window:],fmt='+',color='r')
-					plt.plot(np.sort(x),np.polyval(temp1,np.sort(x)),'--',label='poly')
-					plt.plot(BB_rad2()(np.sort(temperature_window),*[fit[0][0]*fit[0][2],fit[0][1]+fit[0][3]]),np.sort(temperature_window),':b',label='BB window')
-					plt.plot(BB_rad2()(np.sort(temperature_window),*fit2[0]),np.sort(temperature_window),'-.b',label='BB window')
-					plt.plot(BB_rad2()(np.sort(temperature_no_window),*fit[0][:2]),np.sort(temperature_no_window),':r',label='BB no window')
+				if False:	# plot for paper
+					plt.figure(figsize=(10, 7))
+					plt.errorbar(x,temperature_window,yerr=np.zeros_like(temperature_window),xerr=xerr,fmt='+',color='b',label='view port')
+					plt.errorbar(x_[number_of_window:],temperature_no_window,yerr=np.zeros_like(temperature_no_window),xerr=xerr_[number_of_window:],fmt='+',color='r',label='no view port')
+					plt.plot(np.sort(x),np.polyval(temp1,np.sort(x)),'-b',label='polynomial fit n='+str(n-1)+', '+r'$R^2=%.5g$' %(rsquared(np.sort(x),np.polyval(temp1,np.sort(x)))))
+					plt.plot(BB_rad2()(np.sort(temperature_window),*fit2[0]),np.sort(temperature_window),'-.b',label='BB window'+', '+r'$R^2=%.5g$' %(rsquared(np.sort(temperature_window),BB_rad2()(np.sort(temperature_window),*fit2[0]))))
+					plt.plot(BB_rad2()(np.sort(temperature_window),*[fit[0][0]*fit[0][2],fit[0][1]+fit[0][3]]),np.sort(temperature_window),'--y',label='BB fit window+no window, '+r'$R^2=%.5g$' %(rsquared(BB_rad(number_of_window)(temperature,*fit[0]),x_)) + '\n'+r'$C_1=%.3g, C_2=%.3g, C_3=%.3g, C_4=%.3g$' %(fit[0][0],fit[0][1],fit[0][2],fit[0][3]))
 					plt.plot(BB_rad2()(np.sort(temperature_no_window),*fit1[0]),np.sort(temperature_no_window),'-.r',label='BB no window')
+					plt.plot(BB_rad2()(np.sort(temperature_no_window),*fit[0][:2]),np.sort(temperature_no_window),'--y')
 					plt.grid()
-					plt.legend()
-					plt.pause(0.01)
+					plt.legend(loc='upper left', fontsize='small')
+					plt.ylabel('temperature [°C]')
+					plt.xlabel('counts [au]')
+					plt.title('digitizer,j,k='+str((z,j,k)))
+					# plt.pause(0.01)
+					plt.savefig('/home/ffederic/work/irvb/flatfield'+'/example_BB_fit'+str((z,j,k))+'.png', bbox_inches='tight')
+				if False:	# same but with only window
+					plt.figure(figsize=(10, 7))
+					plt.errorbar(x,temperature_window,yerr=np.zeros_like(temperature_window),xerr=xerr,fmt='+',color='r')
+					plt.plot(BB_rad2()(np.sort(temperature_window),*fit2[0]),np.sort(temperature_window),'--r',label='fit '+str((z,j,k))+' \n'+r'$a_1=%.3g\pm%.3g$''\n'r'$a_2=%.3g\pm%.3g$''\n'r'$R^2=%.5g$' %(fit2[0][0],fit2[1][0,0]**0.5,fit2[0][1],fit2[1][1,1]**0.5,rsquared(np.sort(temperature_window),BB_rad2()(np.sort(temperature_window),*fit2[0]))))
+					plt.grid()
+					plt.legend(loc='upper left', fontsize='small')
+					plt.ylabel('temperature [°C]')
+					plt.xlabel('counts [au]')
+					plt.title('digitizer,j,k='+str((z,j,k)))
+					# plt.pause(0.01)
+					plt.savefig('/home/ffederic/work/irvb/flatfield'+'/example_BB_fit'+str((z,j,k))+'.png', bbox_inches='tight')
 				if False:	# small piece to check how the uncertainty goes between the 2 models
 					delta_counts = 7194-5800
 					a1a3 = fit[0][0]*fit[0][2]
@@ -6012,13 +6094,22 @@ def calc_BB_coefficients_multi_digitizer(params,errparams,digitizer_ID,reference
 	BB_proportional = []
 	BB_proportional_std = []
 	for i in range(len(digitizer_ID)):
-		BB_proportional.append(params[i,:,:,0]*params[i,:,:,2])
-		BB_proportional_std.append(((errparams[i,:,:,0,0]**0.5 * params[i,:,:,2])**2 + (errparams[i,:,:,2,2]**0.5 * params[i,:,:,0])**2 + 2*params[i,:,:,0]*params[i,:,:,2]*errparams[i,:,:,2,0])**0.5)
-		# I think I had a different formula for the temperature when I wrote the sext 2 lines
-		# constant_offset.append( reference_background[i]-BB_proportional[-1]*photon_flux_interpolator(ref_temperature) )
-		# constant_offset_std.append( ((photon_flux_interpolator(ref_temperature)*BB_proportional_std[-1])**2 + (BB_proportional[-1]*photon_flux_std)**2 + reference_background_std[i]**2 )**0.5 )
-		constant_offset.append( params[i,:,:,1]+params[i,:,:,3] )
-		constant_offset_std.append( ( errparams[i,:,:,1,1]**2 + errparams[i,:,:,3,3]**2 + errparams[i,:,:,1,3] )**0.5 )
+		if len(params[0,0,0])==4:	# this is for the case when I fit both the data with window and without
+			BB_proportional.append(params[i,:,:,0]*params[i,:,:,2])
+			BB_proportional_std.append(((errparams[i,:,:,0,0]**0.5 * params[i,:,:,2])**2 + (errparams[i,:,:,2,2]**0.5 * params[i,:,:,0])**2 + 2*params[i,:,:,0]*params[i,:,:,2]*errparams[i,:,:,2,0])**0.5)
+			# I think I had a different formula for the temperature when I wrote the sext 2 lines
+			# constant_offset.append( reference_background[i]-BB_proportional[-1]*photon_flux_interpolator(ref_temperature) )
+			# constant_offset_std.append( ((photon_flux_interpolator(ref_temperature)*BB_proportional_std[-1])**2 + (BB_proportional[-1]*photon_flux_std)**2 + reference_background_std[i]**2 )**0.5 )
+			constant_offset.append( params[i,:,:,1]+params[i,:,:,3] )
+			constant_offset_std.append( ( errparams[i,:,:,1,1]**2 + errparams[i,:,:,3,3]**2 + errparams[i,:,:,1,3] )**0.5 )
+		elif len(params[0,0,0])==2:	# this is for the case when I fit only the data with window
+			BB_proportional.append(params[i,:,:,0])
+			BB_proportional_std.append(errparams[i,:,:,0,0])
+			# I think I had a different formula for the temperature when I wrote the sext 2 lines
+			# constant_offset.append( reference_background[i]-BB_proportional[-1]*photon_flux_interpolator(ref_temperature) )
+			# constant_offset_std.append( ((photon_flux_interpolator(ref_temperature)*BB_proportional_std[-1])**2 + (BB_proportional[-1]*photon_flux_std)**2 + reference_background_std[i]**2 )**0.5 )
+			constant_offset.append( params[i,:,:,1] )
+			constant_offset_std.append( errparams[i,:,:,1,1] )
 	BB_proportional = np.array(BB_proportional)
 	BB_proportional_std = np.array(BB_proportional_std)
 	constant_offset = np.array(constant_offset)
@@ -6043,6 +6134,27 @@ def count_to_temp_BB_multi_digitizer_int(counts,counts_std,params,errparams,digi
 		temperature.append(reverse_photon_flux_interpolator(photon_flux))	# in degC
 		photon_flux_over_temperature = photon_flux_over_temperature_interpolator(temperature[-1])
 		temperature_std.append( ( (counts_std[i]/(photon_flux_over_temperature*BB_proportional[i]))**2 + (reference_background_std[i]/(photon_flux_over_temperature_interpolator(ref_temperature)*BB_proportional[i]))**2 + (BB_proportional_std[i]*(counts[i] - reference_background[i])/((BB_proportional[i]**2)*photon_flux_over_temperature))**2 + (ref_temperature_std)**2 )**0.5 )	# in degC
+	temperature = np.array(temperature)
+	temperature_std = np.array(temperature_std)
+
+	return temperature,temperature_std
+
+def count_to_temp_BB_multi_digitizer_no_reference(counts,counts_std,params,errparams,digitizer_ID,wavewlength_top=5,wavelength_bottom=2.5,inttime=2):
+	# by definition resetting the constant value such that it matches ref_temperature means that the reference temperature is a flat ref_temperature, so I'm not sure if this function will ever be usefull
+
+	BB_proportional,BB_proportional_std,constant_offset,constant_offset_std,photon_dict = calc_BB_coefficients_multi_digitizer(params,errparams,digitizer_ID,0,0,wavewlength_top=wavewlength_top,wavelength_bottom=wavelength_bottom,inttime=inttime)
+	photon_dict = calc_interpolators_BB(wavewlength_top=wavewlength_top,wavelength_bottom=wavelength_bottom,inttime=inttime)
+	reverse_photon_flux_interpolator = photon_dict['reverse_photon_flux_interpolator']
+	photon_flux_over_temperature_interpolator = photon_dict['photon_flux_over_temperature_interpolator']
+	photon_flux_interpolator = photon_dict['photon_flux_interpolator']
+
+	temperature = []
+	temperature_std = []
+	for i in range(len(digitizer_ID)):
+		photon_flux = (counts[i] - constant_offset[i])/BB_proportional[i]
+		temperature.append(reverse_photon_flux_interpolator(photon_flux))	# in degC
+		photon_flux_over_temperature = photon_flux_over_temperature_interpolator(temperature[-1])
+		temperature_std.append( ( (counts_std[i]/(photon_flux_over_temperature*BB_proportional[i]))**2 + (constant_offset[i]/(photon_flux_over_temperature_interpolator(temperature[-1])*BB_proportional[i]))**2 + (BB_proportional_std[i]*(counts[i] - constant_offset[i])/((BB_proportional[i]**2)*photon_flux_over_temperature))**2 + (0)**2 )**0.5 )	# in degC
 	temperature = np.array(temperature)
 	temperature_std = np.array(temperature_std)
 
@@ -7542,53 +7654,55 @@ def MASTU_pulse_process_FAST3(laser_counts_corrected,time_of_experiment_digitize
 
 	dt = time_binned[2:]-time_binned[:-2]
 	dx=foil_position_dict['foilhorizw']/foil_position_dict['foilhorizwpixel']*shrink_factor_x
-	dTdt=np.divide((temperature_crop_binned[2:,1:-1,1:-1]-temperature_crop_binned[:-2,1:-1,1:-1]).T,dt).T.astype(np.float32)
-	temp = averaged_errparams[2,2] + counts_crop_binned[2:,1:-1,1:-1]*counts_crop_binned[:-2,1:-1,1:-1]*averaged_errparams[1,1] + (counts_crop_binned[2:,1:-1,1:-1]**2)*(counts_crop_binned[:-2,1:-1,1:-1]**2)*averaged_errparams[0,0] + (estimate_counts_std(counts_crop_binned[2:,1:-1,1:-1])**2)*(estimate_counts_std(counts_crop_binned[:-2,1:-1,1:-1])**2)*(averaged_params[0]**2)/((shrink_factor_t*shrink_factor_x**2)**2) + (counts_crop_binned[2:,1:-1,1:-1]+counts_crop_binned[:-2,1:-1,1:-1])*averaged_errparams[1,2] + (counts_crop_binned[2:,1:-1,1:-1]**2 + counts_crop_binned[:-2,1:-1,1:-1]**2)*averaged_errparams[0,2] + (counts_crop_binned[2:,1:-1,1:-1]*(counts_crop_binned[:-2,1:-1,1:-1]**2)+counts_crop_binned[:-2,1:-1,1:-1]*(counts_crop_binned[2:,1:-1,1:-1]**2))*averaged_errparams[0,1]
-	dTdt_std=np.divide((temperature_std_crop_binned[2:,1:-1,1:-1]**2 + temperature_std_crop_binned[:-2,1:-1,1:-1]**2 - 2*temp).T**0.5,dt).T.astype(np.float32)
-	d2Tdx2=np.divide(temperature_minus_background_crop_binned[1:-1,1:-1,2:]-np.multiply(2,temperature_minus_background_crop_binned[1:-1,1:-1,1:-1])+temperature_minus_background_crop_binned[1:-1,1:-1,:-2],dx**2).astype(np.float32)
-	d2Tdy2=np.divide(temperature_minus_background_crop_binned[1:-1,2:,1:-1]-np.multiply(2,temperature_minus_background_crop_binned[1:-1,1:-1,1:-1])+temperature_minus_background_crop_binned[1:-1,:-2,1:-1],dx**2).astype(np.float32)
-	d2Tdxy = np.ones_like(dTdt).astype(np.float32)*np.nan
-	d2Tdxy[:,nan_ROI_mask[1:-1,1:-1]]=np.add(d2Tdx2[:,nan_ROI_mask[1:-1,1:-1]],d2Tdy2[:,nan_ROI_mask[1:-1,1:-1]])
-	del d2Tdx2,d2Tdy2
-	d2Tdx2_std=np.divide((temperature_std_crop_binned[1:-1,1:-1,2:]**2+np.multiply(2**2,temperature_std_crop_binned[1:-1,1:-1,1:-1])**2+temperature_std_crop_binned[1:-1,1:-1,:-2]**2)**0.5,dx**2).astype(np.float32)
-	d2Tdy2_std=np.divide((temperature_std_crop_binned[1:-1,2:,1:-1]**2+np.multiply(2**2,temperature_std_crop_binned[1:-1,1:-1,1:-1])**2+temperature_std_crop_binned[1:-1,:-2,1:-1]**2)**0.5,dx**2).astype(np.float32)
-	d2Tdxy_std = np.ones_like(dTdt).astype(np.float32)*np.nan
-	temp1 = averaged_errparams[2,2] + counts_crop_binned[1:-1,1:-1,2:]*counts_crop_binned[1:-1,1:-1,:-2]*averaged_errparams[1,1] + (counts_crop_binned[1:-1,1:-1,2:]**2)*(counts_crop_binned[1:-1,1:-1,:-2]**2)*averaged_errparams[0,0] + (estimate_counts_std(counts_crop_binned[1:-1,1:-1,2:],int_time=laser_int_time/1000)**2)*(estimate_counts_std(counts_crop_binned[1:-1,1:-1,:-2],int_time=laser_int_time/1000)**2)*(averaged_params[0]**2)/((shrink_factor_t*shrink_factor_x**2)**2) + (counts_crop_binned[1:-1,1:-1,2:]+counts_crop_binned[1:-1,1:-1,:-2])*averaged_errparams[1,2] + (counts_crop_binned[1:-1,1:-1,2:]**2+counts_crop_binned[1:-1,1:-1,:-2]**2)*averaged_errparams[0,2] + (counts_crop_binned[1:-1,1:-1,2:]*(counts_crop_binned[1:-1,1:-1,:-2]**2)+counts_crop_binned[1:-1,1:-1,:-2]*(counts_crop_binned[1:-1,1:-1,2:]**2))*averaged_errparams[0,1]
-	temp2 = averaged_errparams[2,2] + counts_crop_binned[1:-1,1:-1,2:]*counts_crop_binned[1:-1,1:-1,1:-1]*averaged_errparams[1,1] + (counts_crop_binned[1:-1,1:-1,2:]**2)*(counts_crop_binned[1:-1,1:-1,1:-1]**2)*averaged_errparams[0,0] + (estimate_counts_std(counts_crop_binned[1:-1,1:-1,2:],int_time=laser_int_time/1000)**2)*(estimate_counts_std(counts_crop_binned[1:-1,1:-1,1:-1],int_time=laser_int_time/1000)**2)*(averaged_params[0]**2)/((shrink_factor_t*shrink_factor_x**2)**2) + (counts_crop_binned[1:-1,1:-1,2:]+counts_crop_binned[1:-1,1:-1,1:-1])*averaged_errparams[1,2] + (counts_crop_binned[1:-1,1:-1,2:]**2+counts_crop_binned[1:-1,1:-1,1:-1]**2)*averaged_errparams[0,2] + (counts_crop_binned[1:-1,1:-1,2:]*(counts_crop_binned[1:-1,1:-1,1:-1]**2)+counts_crop_binned[1:-1,1:-1,1:-1]*(counts_crop_binned[1:-1,1:-1,2:]**2))*averaged_errparams[0,1]
-	temp3 = averaged_errparams[2,2] + counts_crop_binned[1:-1,1:-1,1:-1]*counts_crop_binned[1:-1,1:-1,:-2]*averaged_errparams[1,1] + (counts_crop_binned[1:-1,1:-1,1:-1]**2)*(counts_crop_binned[1:-1,1:-1,:-2]**2)*averaged_errparams[0,0] + (estimate_counts_std(counts_crop_binned[1:-1,1:-1,1:-1],int_time=laser_int_time/1000)**2)*(estimate_counts_std(counts_crop_binned[1:-1,1:-1,:-2],int_time=laser_int_time/1000)**2)*(averaged_params[0]**2)/((shrink_factor_t*shrink_factor_x**2)**2) + (counts_crop_binned[1:-1,1:-1,1:-1]+counts_crop_binned[1:-1,1:-1,:-2])*averaged_errparams[1,2] + (counts_crop_binned[1:-1,1:-1,1:-1]**2+counts_crop_binned[1:-1,1:-1,:-2]**2)*averaged_errparams[0,2] + (counts_crop_binned[1:-1,1:-1,1:-1]*(counts_crop_binned[1:-1,1:-1,:-2]**2)+counts_crop_binned[1:-1,1:-1,:-2]*(counts_crop_binned[1:-1,1:-1,1:-1]**2))*averaged_errparams[0,1]
-	temp = 2*temp1-4*temp2-4*temp3
-	temp1 = averaged_errparams[2,2] + counts_crop_binned[1:-1,2:,1:-1]*counts_crop_binned[1:-1,:-2,1:-1]*averaged_errparams[1,1] + (counts_crop_binned[1:-1,2:,1:-1]**2)*(counts_crop_binned[1:-1,:-2,1:-1]**2)*averaged_errparams[0,0] + (estimate_counts_std(counts_crop_binned[1:-1,2:,1:-1],int_time=laser_int_time/1000)**2)*(estimate_counts_std(counts_crop_binned[1:-1,:-2,1:-1],int_time=laser_int_time/1000)**2)*(averaged_params[0]**2)/((shrink_factor_t*shrink_factor_x**2)**2) + (counts_crop_binned[1:-1,2:,1:-1]+counts_crop_binned[1:-1,:-2,1:-1])*averaged_errparams[1,2] + (counts_crop_binned[1:-1,2:,1:-1]**2+counts_crop_binned[1:-1,:-2,1:-1]**2)*averaged_errparams[0,2] + (counts_crop_binned[1:-1,2:,1:-1]*(counts_crop_binned[1:-1,:-2,1:-1]**2)+counts_crop_binned[1:-1,:-2,1:-1]*(counts_crop_binned[1:-1,2:,1:-1]**2))*averaged_errparams[0,1]
-	temp2 = averaged_errparams[2,2] + counts_crop_binned[1:-1,2:,1:-1]*counts_crop_binned[1:-1,1:-1,1:-1]*averaged_errparams[1,1] + (counts_crop_binned[1:-1,2:,1:-1]**2)*(counts_crop_binned[1:-1,1:-1,1:-1]**2)*averaged_errparams[0,0] + (estimate_counts_std(counts_crop_binned[1:-1,2:,1:-1],int_time=laser_int_time/1000)**2)*(estimate_counts_std(counts_crop_binned[1:-1,1:-1,1:-1],int_time=laser_int_time/1000)**2)*(averaged_params[0]**2)/((shrink_factor_t*shrink_factor_x**2)**2) + (counts_crop_binned[1:-1,2:,1:-1]+counts_crop_binned[1:-1,1:-1,1:-1])*averaged_errparams[1,2] + (counts_crop_binned[1:-1,2:,1:-1]**2+counts_crop_binned[1:-1,1:-1,1:-1]**2)*averaged_errparams[0,2] + (counts_crop_binned[1:-1,2:,1:-1]*(counts_crop_binned[1:-1,1:-1,1:-1]**2)+counts_crop_binned[1:-1,1:-1,1:-1]*(counts_crop_binned[1:-1,2:,1:-1]**2))*averaged_errparams[0,1]
-	temp3 = averaged_errparams[2,2] + counts_crop_binned[1:-1,1:-1,1:-1]*counts_crop_binned[1:-1,:-2,1:-1]*averaged_errparams[1,1] + (counts_crop_binned[1:-1,1:-1,1:-1]**2)*(counts_crop_binned[1:-1,:-2,1:-1]**2)*averaged_errparams[0,0] + (estimate_counts_std(counts_crop_binned[1:-1,1:-1,1:-1],int_time=laser_int_time/1000)**2)*(estimate_counts_std(counts_crop_binned[1:-1,:-2,1:-1],int_time=laser_int_time/1000)**2)*(averaged_params[0]**2)/((shrink_factor_t*shrink_factor_x**2)**2) + (counts_crop_binned[1:-1,1:-1,1:-1]+counts_crop_binned[1:-1,:-2,1:-1])*averaged_errparams[1,2] + (counts_crop_binned[1:-1,1:-1,1:-1]**2+counts_crop_binned[1:-1,:-2,1:-1]**2)*averaged_errparams[0,2] + (counts_crop_binned[1:-1,1:-1,1:-1]*(counts_crop_binned[1:-1,:-2,1:-1]**2)+counts_crop_binned[1:-1,:-2,1:-1]*(counts_crop_binned[1:-1,1:-1,1:-1]**2))*averaged_errparams[0,1]
-	temp += 2*temp1-4*temp2-4*temp3
-	d2Tdxy_std[:,nan_ROI_mask[1:-1,1:-1]]=np.add(temp[:,nan_ROI_mask[1:-1,1:-1]]/(dx**4),np.add(d2Tdx2_std[:,nan_ROI_mask[1:-1,1:-1]]**2,d2Tdy2_std[:,nan_ROI_mask[1:-1,1:-1]]**2))**0.5
-	del d2Tdx2_std,d2Tdy2_std
-	negd2Tdxy=np.multiply(-1,d2Tdxy)
-	negd2Tdxy_std=d2Tdxy_std
-	T4=(temperature_minus_background_crop_binned[1:-1,1:-1,1:-1]+np.nanmean(temperature_ref_crop_binned)+zeroC)**4
-	T04=(np.nanmean(temperature_ref_crop_binned)+zeroC)**4 *np.ones_like(temperature_minus_background_crop_binned[1:-1,1:-1,1:-1])
-	T4_T04 = np.ones_like(dTdt).astype(np.float32)*np.nan
-	T4_T04[:,nan_ROI_mask[1:-1,1:-1]] = (T4[:,nan_ROI_mask[1:-1,1:-1]]-T04[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
-	T4_std=T4**(3/4) *4 *temperature_std_crop_binned[1:-1,1:-1,1:-1]	# the error resulting from doing the average on the whole ROI is completely negligible
-	T04_std=0
-	T4_T04_std = np.ones_like(dTdt).astype(np.float32)*np.nan
-	T4_T04_std[:,nan_ROI_mask[1:-1,1:-1]] = ((T4_std[:,nan_ROI_mask[1:-1,1:-1]]**2+T04_std**2)**0.5).astype(np.float32)
+	dTdt,dTdt_std,d2Tdxy,d2Tdxy_std,negd2Tdxy,negd2Tdxy_std,T4_T04,T4_T04_std = calc_temp_to_power_1(dx,dt,averaged_params,counts_crop_binned,averaged_errparams,shrink_factor_t,shrink_factor_x,temperature_std_crop_binned,temperature_minus_background_crop_binned,laser_int_time,nan_ROI_mask,temperature_ref_crop_binned)
+	# dTdt=np.divide((temperature_crop_binned[2:,1:-1,1:-1]-temperature_crop_binned[:-2,1:-1,1:-1]).T,dt).T.astype(np.float32)
+	# temp = averaged_errparams[2,2] + counts_crop_binned[2:,1:-1,1:-1]*counts_crop_binned[:-2,1:-1,1:-1]*averaged_errparams[1,1] + (counts_crop_binned[2:,1:-1,1:-1]**2)*(counts_crop_binned[:-2,1:-1,1:-1]**2)*averaged_errparams[0,0] + (estimate_counts_std(counts_crop_binned[2:,1:-1,1:-1])**2)*(estimate_counts_std(counts_crop_binned[:-2,1:-1,1:-1])**2)*(averaged_params[0]**2)/((shrink_factor_t*shrink_factor_x**2)**2) + (counts_crop_binned[2:,1:-1,1:-1]+counts_crop_binned[:-2,1:-1,1:-1])*averaged_errparams[1,2] + (counts_crop_binned[2:,1:-1,1:-1]**2 + counts_crop_binned[:-2,1:-1,1:-1]**2)*averaged_errparams[0,2] + (counts_crop_binned[2:,1:-1,1:-1]*(counts_crop_binned[:-2,1:-1,1:-1]**2)+counts_crop_binned[:-2,1:-1,1:-1]*(counts_crop_binned[2:,1:-1,1:-1]**2))*averaged_errparams[0,1]
+	# dTdt_std=np.divide((temperature_std_crop_binned[2:,1:-1,1:-1]**2 + temperature_std_crop_binned[:-2,1:-1,1:-1]**2 - 2*temp).T**0.5,dt).T.astype(np.float32)
+	# d2Tdx2=np.divide(temperature_minus_background_crop_binned[1:-1,1:-1,2:]-np.multiply(2,temperature_minus_background_crop_binned[1:-1,1:-1,1:-1])+temperature_minus_background_crop_binned[1:-1,1:-1,:-2],dx**2).astype(np.float32)
+	# d2Tdy2=np.divide(temperature_minus_background_crop_binned[1:-1,2:,1:-1]-np.multiply(2,temperature_minus_background_crop_binned[1:-1,1:-1,1:-1])+temperature_minus_background_crop_binned[1:-1,:-2,1:-1],dx**2).astype(np.float32)
+	# d2Tdxy = np.ones_like(dTdt).astype(np.float32)*np.nan
+	# d2Tdxy[:,nan_ROI_mask[1:-1,1:-1]]=np.add(d2Tdx2[:,nan_ROI_mask[1:-1,1:-1]],d2Tdy2[:,nan_ROI_mask[1:-1,1:-1]])
+	# del d2Tdx2,d2Tdy2
+	# d2Tdx2_std=np.divide((temperature_std_crop_binned[1:-1,1:-1,2:]**2+np.multiply(2**2,temperature_std_crop_binned[1:-1,1:-1,1:-1])**2+temperature_std_crop_binned[1:-1,1:-1,:-2]**2)**0.5,dx**2).astype(np.float32)
+	# d2Tdy2_std=np.divide((temperature_std_crop_binned[1:-1,2:,1:-1]**2+np.multiply(2**2,temperature_std_crop_binned[1:-1,1:-1,1:-1])**2+temperature_std_crop_binned[1:-1,:-2,1:-1]**2)**0.5,dx**2).astype(np.float32)
+	# d2Tdxy_std = np.ones_like(dTdt).astype(np.float32)*np.nan
+	# temp1 = averaged_errparams[2,2] + counts_crop_binned[1:-1,1:-1,2:]*counts_crop_binned[1:-1,1:-1,:-2]*averaged_errparams[1,1] + (counts_crop_binned[1:-1,1:-1,2:]**2)*(counts_crop_binned[1:-1,1:-1,:-2]**2)*averaged_errparams[0,0] + (estimate_counts_std(counts_crop_binned[1:-1,1:-1,2:],int_time=laser_int_time/1000)**2)*(estimate_counts_std(counts_crop_binned[1:-1,1:-1,:-2],int_time=laser_int_time/1000)**2)*(averaged_params[0]**2)/((shrink_factor_t*shrink_factor_x**2)**2) + (counts_crop_binned[1:-1,1:-1,2:]+counts_crop_binned[1:-1,1:-1,:-2])*averaged_errparams[1,2] + (counts_crop_binned[1:-1,1:-1,2:]**2+counts_crop_binned[1:-1,1:-1,:-2]**2)*averaged_errparams[0,2] + (counts_crop_binned[1:-1,1:-1,2:]*(counts_crop_binned[1:-1,1:-1,:-2]**2)+counts_crop_binned[1:-1,1:-1,:-2]*(counts_crop_binned[1:-1,1:-1,2:]**2))*averaged_errparams[0,1]
+	# temp2 = averaged_errparams[2,2] + counts_crop_binned[1:-1,1:-1,2:]*counts_crop_binned[1:-1,1:-1,1:-1]*averaged_errparams[1,1] + (counts_crop_binned[1:-1,1:-1,2:]**2)*(counts_crop_binned[1:-1,1:-1,1:-1]**2)*averaged_errparams[0,0] + (estimate_counts_std(counts_crop_binned[1:-1,1:-1,2:],int_time=laser_int_time/1000)**2)*(estimate_counts_std(counts_crop_binned[1:-1,1:-1,1:-1],int_time=laser_int_time/1000)**2)*(averaged_params[0]**2)/((shrink_factor_t*shrink_factor_x**2)**2) + (counts_crop_binned[1:-1,1:-1,2:]+counts_crop_binned[1:-1,1:-1,1:-1])*averaged_errparams[1,2] + (counts_crop_binned[1:-1,1:-1,2:]**2+counts_crop_binned[1:-1,1:-1,1:-1]**2)*averaged_errparams[0,2] + (counts_crop_binned[1:-1,1:-1,2:]*(counts_crop_binned[1:-1,1:-1,1:-1]**2)+counts_crop_binned[1:-1,1:-1,1:-1]*(counts_crop_binned[1:-1,1:-1,2:]**2))*averaged_errparams[0,1]
+	# temp3 = averaged_errparams[2,2] + counts_crop_binned[1:-1,1:-1,1:-1]*counts_crop_binned[1:-1,1:-1,:-2]*averaged_errparams[1,1] + (counts_crop_binned[1:-1,1:-1,1:-1]**2)*(counts_crop_binned[1:-1,1:-1,:-2]**2)*averaged_errparams[0,0] + (estimate_counts_std(counts_crop_binned[1:-1,1:-1,1:-1],int_time=laser_int_time/1000)**2)*(estimate_counts_std(counts_crop_binned[1:-1,1:-1,:-2],int_time=laser_int_time/1000)**2)*(averaged_params[0]**2)/((shrink_factor_t*shrink_factor_x**2)**2) + (counts_crop_binned[1:-1,1:-1,1:-1]+counts_crop_binned[1:-1,1:-1,:-2])*averaged_errparams[1,2] + (counts_crop_binned[1:-1,1:-1,1:-1]**2+counts_crop_binned[1:-1,1:-1,:-2]**2)*averaged_errparams[0,2] + (counts_crop_binned[1:-1,1:-1,1:-1]*(counts_crop_binned[1:-1,1:-1,:-2]**2)+counts_crop_binned[1:-1,1:-1,:-2]*(counts_crop_binned[1:-1,1:-1,1:-1]**2))*averaged_errparams[0,1]
+	# temp = 2*temp1-4*temp2-4*temp3
+	# temp1 = averaged_errparams[2,2] + counts_crop_binned[1:-1,2:,1:-1]*counts_crop_binned[1:-1,:-2,1:-1]*averaged_errparams[1,1] + (counts_crop_binned[1:-1,2:,1:-1]**2)*(counts_crop_binned[1:-1,:-2,1:-1]**2)*averaged_errparams[0,0] + (estimate_counts_std(counts_crop_binned[1:-1,2:,1:-1],int_time=laser_int_time/1000)**2)*(estimate_counts_std(counts_crop_binned[1:-1,:-2,1:-1],int_time=laser_int_time/1000)**2)*(averaged_params[0]**2)/((shrink_factor_t*shrink_factor_x**2)**2) + (counts_crop_binned[1:-1,2:,1:-1]+counts_crop_binned[1:-1,:-2,1:-1])*averaged_errparams[1,2] + (counts_crop_binned[1:-1,2:,1:-1]**2+counts_crop_binned[1:-1,:-2,1:-1]**2)*averaged_errparams[0,2] + (counts_crop_binned[1:-1,2:,1:-1]*(counts_crop_binned[1:-1,:-2,1:-1]**2)+counts_crop_binned[1:-1,:-2,1:-1]*(counts_crop_binned[1:-1,2:,1:-1]**2))*averaged_errparams[0,1]
+	# temp2 = averaged_errparams[2,2] + counts_crop_binned[1:-1,2:,1:-1]*counts_crop_binned[1:-1,1:-1,1:-1]*averaged_errparams[1,1] + (counts_crop_binned[1:-1,2:,1:-1]**2)*(counts_crop_binned[1:-1,1:-1,1:-1]**2)*averaged_errparams[0,0] + (estimate_counts_std(counts_crop_binned[1:-1,2:,1:-1],int_time=laser_int_time/1000)**2)*(estimate_counts_std(counts_crop_binned[1:-1,1:-1,1:-1],int_time=laser_int_time/1000)**2)*(averaged_params[0]**2)/((shrink_factor_t*shrink_factor_x**2)**2) + (counts_crop_binned[1:-1,2:,1:-1]+counts_crop_binned[1:-1,1:-1,1:-1])*averaged_errparams[1,2] + (counts_crop_binned[1:-1,2:,1:-1]**2+counts_crop_binned[1:-1,1:-1,1:-1]**2)*averaged_errparams[0,2] + (counts_crop_binned[1:-1,2:,1:-1]*(counts_crop_binned[1:-1,1:-1,1:-1]**2)+counts_crop_binned[1:-1,1:-1,1:-1]*(counts_crop_binned[1:-1,2:,1:-1]**2))*averaged_errparams[0,1]
+	# temp3 = averaged_errparams[2,2] + counts_crop_binned[1:-1,1:-1,1:-1]*counts_crop_binned[1:-1,:-2,1:-1]*averaged_errparams[1,1] + (counts_crop_binned[1:-1,1:-1,1:-1]**2)*(counts_crop_binned[1:-1,:-2,1:-1]**2)*averaged_errparams[0,0] + (estimate_counts_std(counts_crop_binned[1:-1,1:-1,1:-1],int_time=laser_int_time/1000)**2)*(estimate_counts_std(counts_crop_binned[1:-1,:-2,1:-1],int_time=laser_int_time/1000)**2)*(averaged_params[0]**2)/((shrink_factor_t*shrink_factor_x**2)**2) + (counts_crop_binned[1:-1,1:-1,1:-1]+counts_crop_binned[1:-1,:-2,1:-1])*averaged_errparams[1,2] + (counts_crop_binned[1:-1,1:-1,1:-1]**2+counts_crop_binned[1:-1,:-2,1:-1]**2)*averaged_errparams[0,2] + (counts_crop_binned[1:-1,1:-1,1:-1]*(counts_crop_binned[1:-1,:-2,1:-1]**2)+counts_crop_binned[1:-1,:-2,1:-1]*(counts_crop_binned[1:-1,1:-1,1:-1]**2))*averaged_errparams[0,1]
+	# temp += 2*temp1-4*temp2-4*temp3
+	# d2Tdxy_std[:,nan_ROI_mask[1:-1,1:-1]]=np.add(temp[:,nan_ROI_mask[1:-1,1:-1]]/(dx**4),np.add(d2Tdx2_std[:,nan_ROI_mask[1:-1,1:-1]]**2,d2Tdy2_std[:,nan_ROI_mask[1:-1,1:-1]]**2))**0.5
+	# del d2Tdx2_std,d2Tdy2_std
+	# negd2Tdxy=np.multiply(-1,d2Tdxy)
+	# negd2Tdxy_std=d2Tdxy_std
+	# T4=(temperature_minus_background_crop_binned[1:-1,1:-1,1:-1]+np.nanmean(temperature_ref_crop_binned)+zeroC)**4
+	# T04=(np.nanmean(temperature_ref_crop_binned)+zeroC)**4 *np.ones_like(temperature_minus_background_crop_binned[1:-1,1:-1,1:-1])
+	# T4_T04 = np.ones_like(dTdt).astype(np.float32)*np.nan
+	# T4_T04[:,nan_ROI_mask[1:-1,1:-1]] = (T4[:,nan_ROI_mask[1:-1,1:-1]]-T04[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
+	# T4_std=T4**(3/4) *4 *temperature_std_crop_binned[1:-1,1:-1,1:-1]	# the error resulting from doing the average on the whole ROI is completely negligible
+	# T04_std=0
+	# T4_T04_std = np.ones_like(dTdt).astype(np.float32)*np.nan
+	# T4_T04_std[:,nan_ROI_mask[1:-1,1:-1]] = ((T4_std[:,nan_ROI_mask[1:-1,1:-1]]**2+T04_std**2)**0.5).astype(np.float32)
 
-	BBrad = np.ones_like(dTdt).astype(np.float32)*np.nan
-	BBrad[:,nan_ROI_mask[1:-1,1:-1]] = (2*sigmaSB*T4_T04[:,nan_ROI_mask[1:-1,1:-1]] * foilemissivityscaled[nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
-	diffusion = np.ones_like(dTdt).astype(np.float32)*np.nan
-	diffusion[:,nan_ROI_mask[1:-1,1:-1]] = (Ptthermalconductivity*negd2Tdxy[:,nan_ROI_mask[1:-1,1:-1]]*foilthicknessscaled[nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
-	timevariation = np.ones_like(dTdt).astype(np.float32)*np.nan
-	timevariation[:,nan_ROI_mask[1:-1,1:-1]] = (Ptthermalconductivity*dTdt[:,nan_ROI_mask[1:-1,1:-1]]*foilthicknessscaled[nan_ROI_mask[1:-1,1:-1]]*reciprdiffusivityscaled[nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
-	powernoback = (diffusion + timevariation + BBrad).astype(np.float32)
-	BBrad_std = np.ones_like(dTdt).astype(np.float32)*np.nan
-	BBrad_std[:,nan_ROI_mask[1:-1,1:-1]] = (2*sigmaSB*T4_T04_std[:,nan_ROI_mask[1:-1,1:-1]]*foilemissivityscaled[nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
-	diffusion_std = np.ones_like(dTdt).astype(np.float32)*np.nan
-	diffusion_std[:,nan_ROI_mask[1:-1,1:-1]] = (Ptthermalconductivity*negd2Tdxy_std[:,nan_ROI_mask[1:-1,1:-1]]*foilthicknessscaled[nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
-	timevariation_std = np.ones_like(dTdt).astype(np.float32)*np.nan
-	timevariation_std[:,nan_ROI_mask[1:-1,1:-1]] = (Ptthermalconductivity*dTdt_std[:,nan_ROI_mask[1:-1,1:-1]]*foilthicknessscaled[nan_ROI_mask[1:-1,1:-1]]*reciprdiffusivityscaled[nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
-	powernoback_std = np.ones_like(powernoback)*np.nan
-	powernoback_std[:,nan_ROI_mask[1:-1,1:-1]] = ((diffusion_std[:,nan_ROI_mask[1:-1,1:-1]]**2 + timevariation_std[:,nan_ROI_mask[1:-1,1:-1]]**2 + BBrad_std[:,nan_ROI_mask[1:-1,1:-1]]**2)**0.5).astype(np.float32)
+	BBrad,diffusion,timevariation,powernoback,BBrad_std,diffusion_std,timevariation_std,powernoback_std = calc_temp_to_power_BB_2(dTdt,dTdt_std,d2Tdxy,d2Tdxy_std,negd2Tdxy,negd2Tdxy_std,T4_T04,T4_T04_std,nan_ROI_mask,foilemissivityscaled,foilthicknessscaled,reciprdiffusivityscaled,Ptthermalconductivity)
+	# BBrad = np.ones_like(dTdt).astype(np.float32)*np.nan
+	# BBrad[:,nan_ROI_mask[1:-1,1:-1]] = (2*sigmaSB*T4_T04[:,nan_ROI_mask[1:-1,1:-1]] * foilemissivityscaled[nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
+	# diffusion = np.ones_like(dTdt).astype(np.float32)*np.nan
+	# diffusion[:,nan_ROI_mask[1:-1,1:-1]] = (Ptthermalconductivity*negd2Tdxy[:,nan_ROI_mask[1:-1,1:-1]]*foilthicknessscaled[nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
+	# timevariation = np.ones_like(dTdt).astype(np.float32)*np.nan
+	# timevariation[:,nan_ROI_mask[1:-1,1:-1]] = (Ptthermalconductivity*dTdt[:,nan_ROI_mask[1:-1,1:-1]]*foilthicknessscaled[nan_ROI_mask[1:-1,1:-1]]*reciprdiffusivityscaled[nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
+	# powernoback = (diffusion + timevariation + BBrad).astype(np.float32)
+	# BBrad_std = np.ones_like(dTdt).astype(np.float32)*np.nan
+	# BBrad_std[:,nan_ROI_mask[1:-1,1:-1]] = (2*sigmaSB*T4_T04_std[:,nan_ROI_mask[1:-1,1:-1]]*foilemissivityscaled[nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
+	# diffusion_std = np.ones_like(dTdt).astype(np.float32)*np.nan
+	# diffusion_std[:,nan_ROI_mask[1:-1,1:-1]] = (Ptthermalconductivity*negd2Tdxy_std[:,nan_ROI_mask[1:-1,1:-1]]*foilthicknessscaled[nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
+	# timevariation_std = np.ones_like(dTdt).astype(np.float32)*np.nan
+	# timevariation_std[:,nan_ROI_mask[1:-1,1:-1]] = (Ptthermalconductivity*dTdt_std[:,nan_ROI_mask[1:-1,1:-1]]*foilthicknessscaled[nan_ROI_mask[1:-1,1:-1]]*reciprdiffusivityscaled[nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
+	# powernoback_std = np.ones_like(powernoback)*np.nan
+	# powernoback_std[:,nan_ROI_mask[1:-1,1:-1]] = ((diffusion_std[:,nan_ROI_mask[1:-1,1:-1]]**2 + timevariation_std[:,nan_ROI_mask[1:-1,1:-1]]**2 + BBrad_std[:,nan_ROI_mask[1:-1,1:-1]]**2)**0.5).astype(np.float32)
 
 	horizontal_coord = np.arange(np.shape(powernoback[0])[1])
 	vertical_coord = np.arange(np.shape(powernoback[0])[0])
@@ -8204,7 +8318,7 @@ def MASTU_pulse_process_FAST3(laser_counts_corrected,time_of_experiment_digitize
 
 		else:
 
-			# ani = coleval.movie_from_data(np.array([np.flip(np.transpose(recompose_voxel_emissivity,(0,2,1)),axis=2)]), 1/(np.mean(np.diff(time_full_binned_crop))),integration=laser_int_time/1000,barlabel='Emissivity [W/m3]')#,extvmin=0,extvmax=4e4)
+			# ani = movie_from_data(np.array([np.flip(np.transpose(recompose_voxel_emissivity,(0,2,1)),axis=2)]), 1/(np.mean(np.diff(time_full_binned_crop))),integration=laser_int_time/1000,barlabel='Emissivity [W/m3]')#,extvmin=0,extvmax=4e4)
 			extent = [grid_data_masked_crop[:,:,0].min(), grid_data_masked_crop[:,:,0].max(), grid_data_masked_crop[:,:,1].min(), grid_data_masked_crop[:,:,1].max()]
 			image_extent = [grid_data_masked_crop[:,:,0].min(), grid_data_masked_crop[:,:,0].max(), grid_data_masked_crop[:,:,1].min(), grid_data_masked_crop[:,:,1].max()]
 			ani,trash = movie_from_data_radial_profile(np.array([np.flip(np.transpose(inverted_data,(0,2,1)),axis=2)]), 1/(np.mean(np.diff(time_full_binned_crop))), extent = extent, image_extent=image_extent,timesteps=time_full_binned_crop,integration=laser_int_time/1000,barlabel='Emissivity [W/m3]',xlabel='R [m]', ylabel='Z [m]', prelude='shot '  + laser_to_analyse[-9:-4] + '\n'+binning_type+'\n'+'sigma_emissivity %.3g\nregolarisation_coeff %.3g\nregolarisation_coeff_edge %.3g\nregolarisation_coeff_central_border_Z_derivate %.3g\nregolarisation_coeff_central_column_border_R_derivate %.3g\nregolarisation_coeff_divertor %.3g\ngrid resolution %.3g\n' %(sigma_emissivity,regolarisation_coeff,regolarisation_coeff_edge,regolarisation_coeff_central_border_Z_derivate,regolarisation_coeff_central_column_border_R_derivate,regolarisation_coeff_divertor,grid_resolution) ,overlay_structure=True,include_EFIT=True,EFIT_output_requested=True,efit_reconstruction=efit_reconstruction,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True)#,extvmin=0,extvmax=4e4)
@@ -8310,7 +8424,7 @@ def MASTU_pulse_process_FAST3(laser_counts_corrected,time_of_experiment_digitize
 	return foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop_binned,time_binned,powernoback_output,brightness,binning_type,inverted_dict
 
 
-def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,height,width,flag_use_of_first_frames_as_reference,params,errparams,params_BB,errparams_BB,photon_flux_over_temperature_interpolator,BB_proportional,BB_proportional_std,foil_position_dict,pass_number = 0):
+def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,height,width,flag_use_of_first_frames_as_reference,params,errparams,params_BB,errparams_BB,photon_flux_over_temperature_interpolator,BB_proportional,BB_proportional_std,foil_position_dict,pass_number = 0,disruption_check=False):
 	# created 2022/01/11
 	# created modifying MASTU_pulse_process_FAST3 to go from polynomial temperature calibration fo black body
 
@@ -8342,6 +8456,7 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 	for i in range(1,len(shot_list['Sheet1'])):
 		if shot_list['Sheet1'][i][temp1] == int(laser_to_analyse[-9:-4]):
 			scenario = shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0])=='Scenario').argmax()]
+			break
 
 	max_ROI = [[0,255],[0,319]]
 	# foil_position_dict = dict([('angle',0.5),('foilcenter',[158,136]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',241)])	# fixed orientation, for now, this is from 2021-06-04/44168
@@ -8385,7 +8500,7 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 		time_partial.append(time_of_experiment_digitizer_ID_seconds[select_time])
 		timesteps = min(timesteps,len(temp_counts_minus_background[-1]))
 
-	for i in range(len(laser_digitizer_ID)):
+	for i in range(len(laser_digitizer_ID)):	# this is also a way to have 2 digitizers with the same size. redundant but I leave it
 		temp_counts_minus_background[i] = temp_counts_minus_background[i][:timesteps]
 		counts_std[i] = counts_std[i][:timesteps]
 		time_partial[i] = time_partial[i][:timesteps]
@@ -8496,6 +8611,13 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 		temperature_minus_background_std_crop = [rotate_and_crop_3D(temperature_minus_background_std[i],foilrotdeg,max_ROI,height,width,out_of_ROI_mask,foildw,foilup,foillx,foilrx) for i in range(len(laser_digitizer_ID))]
 		counts_crop = [rotate_and_crop_3D(counts[i],foilrotdeg,max_ROI,height,width,out_of_ROI_mask,foildw,foilup,foillx,foilrx) for i in range(len(laser_digitizer_ID))]
 		counts_std_crop = [rotate_and_crop_3D(counts_std[i],foilrotdeg,max_ROI,height,width,out_of_ROI_mask,foildw,foilup,foillx,foilrx) for i in range(len(laser_digitizer_ID))]
+
+
+	# this is only for checking at disruptions. it will be heavily effected by noise
+	temperature_minus_background_crop_dt = np.mean(np.diff(temperature_minus_background_crop,axis=1),axis=0).astype(np.float16)
+	temperature_minus_background_crop_dt_time = np.array(time_partial)
+	temperature_minus_background_crop_dt_time = (temperature_minus_background_crop_dt_time[:,1:]+temperature_minus_background_crop_dt_time[:,:-1])/2
+	temperature_minus_background_crop_dt_time = np.mean(temperature_minus_background_crop_dt_time,axis=0)
 
 
 	# rotation and crop
@@ -8641,6 +8763,7 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 	pinhole_to_pixel_distance = (pinhole_to_foil_vertical**2 + distance_from_vertical**2)**0.5
 
 	etendue = np.ones_like(powernoback[0][0]) * (np.pi*(0.002**2)) / (pinhole_to_pixel_distance**2)	# I should include also the area of the pixel, but that is already in the w/m2 power
+	# in next step i multiply for the cos of the angle from the normal of the pinhole to the pixels and from the normal of the pixel to the pinhole
 	etendue *= (pinhole_to_foil_vertical/pinhole_to_pixel_distance)**2	 # cos(a)*cos(b). for pixels not directly under the pinhole both pinhole and pixel are tilted respect to the vertical, with same angle.
 	brightness = 4*np.pi*np.mean(powernoback,axis=0)/etendue
 
@@ -8769,8 +8892,8 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 
 		temp = brightness[:,:,:int(np.shape(brightness)[2]*0.75)]
 		temp = np.sort(temp[np.max(temp,axis=(1,2)).argmax()].flatten())
-		ani,efit_reconstruction = movie_from_data(np.array([np.flip(np.transpose(brightness,(0,2,1)),axis=2)]), 1/np.median(np.diff(time_binned)),timesteps=time_binned[1:-1],integration=laser_int_time/1000,time_offset=time_binned[0],extvmin=0,xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='brightness [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4]+' '+scenario+'\n'+binning_type+'\n',overlay_structure=True,include_EFIT=True,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True,EFIT_output_requested=True,additional_polygons_dict=additional_polygons_dict)
-		ani.save('/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+ '_FAST_brightness.mp4', fps=5*(1/np.mean(np.diff(time_binned)))/383, writer='ffmpeg',codec='mpeg4')
+		ani,efit_reconstruction = movie_from_data(np.array([np.flip(np.transpose(brightness,(0,2,1)),axis=2)]), 1/np.median(np.diff(time_full_binned)),timesteps=time_full_binned,integration=laser_int_time/1000,time_offset=time_full_binned[0],extvmin=0,xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='brightness [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4]+' '+scenario+'\n'+binning_type+'\n',overlay_structure=True,include_EFIT=True,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True,EFIT_output_requested=True,additional_polygons_dict=additional_polygons_dict)
+		ani.save('/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+ '_FAST_brightness.mp4', fps=5*(1/np.mean(np.diff(time_full_binned)))/383, writer='ffmpeg',codec='mpeg4')
 		plt.close('all')
 
 		if grid_resolution==8:
@@ -8902,7 +9025,7 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 			sigma_powernoback_full = ( (diffusion_full_crop**2)*((diffusion_std_full_crop/diffusion_full_crop)**2+sigma_thickness**2) + (timevariation_full_crop**2)*((timevariation_std_full_crop/timevariation_full_crop)**2+sigma_thickness**2+sigma_rec_diffusivity**2) + (BBrad_full_crop**2)*((BBrad_std_full_crop/BBrad_full_crop)**2+sigma_emissivity**2) )**0.5
 
 		powernoback_full_orig[:,np.logical_not(selected_ROI)] = 0
-		sigma_powernoback_full[:,np.logical_not(selected_ROI)] = 0
+		sigma_powernoback_full[:,np.logical_not(selected_ROI)] = np.nan
 
 		grid_laplacian_masked_crop_scaled = grid_laplacian_masked_crop/((1e-2*grid_resolution)**2)
 		grid_Z_derivate_masked_crop_scaled = grid_Z_derivate_masked_crop/((1e-2*grid_resolution)**1)
@@ -9311,8 +9434,8 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 
 			temp = brightness[:,:,:int(np.shape(brightness)[2]*0.75)]
 			temp = np.sort(temp[np.max(temp,axis=(1,2)).argmax()].flatten())
-			ani,efit_reconstruction = movie_from_data(np.array([np.flip(np.transpose(brightness,(0,2,1)),axis=2)]), 1/np.median(np.diff(time_binned)),timesteps=time_binned[1:-1],integration=laser_int_time/1000,time_offset=time_binned[0],extvmin=0,xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='brightness [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4]+' '+scenario+'\n'+binning_type+'\n',overlay_structure=True,include_EFIT=True,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True,EFIT_output_requested=True,efit_reconstruction=efit_reconstruction,additional_polygons_dict=additional_polygons_dict)
-			ani.save('/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+ '_FAST_brightness.mp4', fps=5*(1/np.mean(np.diff(time_binned)))/383, writer='ffmpeg',codec='mpeg4')
+			ani,efit_reconstruction = movie_from_data(np.array([np.flip(np.transpose(brightness,(0,2,1)),axis=2)]), 1/np.median(np.diff(time_full_binned)),timesteps=time_full_binned,integration=laser_int_time/1000,time_offset=time_full_binned[0],extvmin=0,xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='brightness [W/m2]', prelude='shot ' + laser_to_analyse[-9:-4]+' '+scenario+'\n'+binning_type+'\n',overlay_structure=True,include_EFIT=True,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True,EFIT_output_requested=True,efit_reconstruction=efit_reconstruction,additional_polygons_dict=additional_polygons_dict)
+			ani.save('/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+ '_FAST_brightness.mp4', fps=5*(1/np.mean(np.diff(time_full_binned)))/383, writer='ffmpeg',codec='mpeg4')
 			plt.close('all')
 
 			all_time_sep_r,all_time_sep_z,r_fine,z_fine = efit_reconstruction_to_separatrix_on_foil(efit_reconstruction)
@@ -9540,7 +9663,7 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 
 		else:
 
-			# ani = coleval.movie_from_data(np.array([np.flip(np.transpose(recompose_voxel_emissivity,(0,2,1)),axis=2)]), 1/(np.mean(np.diff(time_full_binned_crop))),integration=laser_int_time/1000,barlabel='Emissivity [W/m3]')#,extvmin=0,extvmax=4e4)
+			# ani = movie_from_data(np.array([np.flip(np.transpose(recompose_voxel_emissivity,(0,2,1)),axis=2)]), 1/(np.mean(np.diff(time_full_binned_crop))),integration=laser_int_time/1000,barlabel='Emissivity [W/m3]')#,extvmin=0,extvmax=4e4)
 			extent = [grid_data_masked_crop[:,:,0].min(), grid_data_masked_crop[:,:,0].max(), grid_data_masked_crop[:,:,1].min(), grid_data_masked_crop[:,:,1].max()]
 			image_extent = [grid_data_masked_crop[:,:,0].min(), grid_data_masked_crop[:,:,0].max(), grid_data_masked_crop[:,:,1].min(), grid_data_masked_crop[:,:,1].max()]
 			additional_each_frame_label_description = ['reg coeff=']*len(inverted_data)
@@ -9737,7 +9860,10 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 			inverted_dict[str(grid_resolution)]['leg_inner_length_all'] = leg_length_all
 			inverted_dict[str(grid_resolution)]['leg_inner_length_interval_all'] = leg_length_interval_all
 
-	return foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop_binned,time_binned,powernoback_output,brightness,binning_type,inverted_dict
+	if disruption_check:
+		return foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop_binned,time_full_binned,powernoback_output,brightness,binning_type,inverted_dict,temperature_minus_background_crop_dt,temperature_minus_background_crop_dt_time
+	else:
+		return foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop_binned,time_full_binned,powernoback_output,brightness,binning_type,inverted_dict
 
 
 def loop_fit_over_regularisation(prob_and_gradient,regolarisation_coeff_range,guess,grid_data_masked_crop,powernoback,sigma_powernoback,sigma_emissivity,factr=1e9,pgtol=5e-7,x_optimal_all_guess=[],iprint=0,excluded_cells = []):
@@ -10058,8 +10184,10 @@ def select_region_with_plasma(sensitivities_binned_crop,selected_ROI):
 	return select_foil_region_with_plasma
 
 
-def calc_temp_to_power_BB_1(photon_flux_over_temperature_interpolator,temperature_minus_background_crop_binned,ref_temperature,time_binned,dx,counts_std_crop_binned,BB_proportional_crop_binned,BB_proportional_std_crop_binned,reference_background_std_crop_binned,temperature_std_crop_binned,nan_ROI_mask,grid_laplacian=[],ref_temperature_std=0):
+def calc_temp_to_power_BB_1(photon_flux_over_temperature_interpolator,temperature_minus_background_crop_binned,ref_temperature,time_binned,dx,counts_std_crop_binned,BB_proportional_crop_binned,BB_proportional_std_crop_binned,reference_background_std_crop_binned,temperature_std_crop_binned,nan_ROI_mask,grid_laplacian=[],ref_temperature_std=0,return_grid_laplacian=False):
 	zeroC=273.15 #K / C
+
+	# from scipy.sparse import csc_matrix
 
 	dt = time_binned[2:]-time_binned[:-2]
 	photon_flux_over_temperature = photon_flux_over_temperature_interpolator(temperature_minus_background_crop_binned+ref_temperature)
@@ -10069,13 +10197,14 @@ def calc_temp_to_power_BB_1(photon_flux_over_temperature_interpolator,temperatur
 	dTdt_std=np.divide(( ((counts_std_crop_binned[2:,1:-1,1:-1]/(photon_flux_over_temperature[2:,1:-1,1:-1]*BB_proportional_crop_binned[1:-1,1:-1]))**2 + (counts_std_crop_binned[:-2,1:-1,1:-1] /(photon_flux_over_temperature[:-2,1:-1,1:-1]*BB_proportional_crop_binned[1:-1,1:-1]))**2 + (dT*BB_proportional_std_crop_binned[1:-1,1:-1]/BB_proportional_crop_binned[1:-1,1:-1])**2)**0.5 ).T,dt).T.astype(np.float32)
 
 	if len(np.shape(grid_laplacian))!=2:
-		horizontal_coord = np.arange(np.shape(temperature_minus_background_crop_binned)[2])
-		vertical_coord = np.arange(np.shape(temperature_minus_background_crop_binned)[1])
+		horizontal_coord = np.arange(np.shape(temperature_minus_background_crop_binned)[2]).astype(np.int16)
+		vertical_coord = np.arange(np.shape(temperature_minus_background_crop_binned)[1]).astype(np.int16)
 		horizontal_coord,vertical_coord = np.meshgrid(horizontal_coord,vertical_coord)
 		grid = np.array([[horizontal_coord.flatten()]*4,[vertical_coord.flatten()]*4]).T
 		grid_laplacian = -build_laplacian(grid,diagonal_factor=0.5) / (dx**2) / 2	# the /2 comes from the fact that including the diagonals amounts to double counting, so i do a mean by summing half of it
-	d2Tdxy = np.dot(temperature_minus_background_crop_binned.reshape((len(temperature_minus_background_crop_binned),len(grid_laplacian))),grid_laplacian).reshape(np.shape(temperature_minus_background_crop_binned))[1:-1,1:-1,1:-1]
-	d2Tdxy_std = (np.dot( ((counts_std_crop_binned/(BB_proportional_crop_binned*photon_flux_over_temperature))**2+(reference_background_std_crop_binned/(BB_proportional_crop_binned*photon_flux_over_temperature_interpolator(ref_temperature)))**2 + (temperature_minus_background_crop_binned*BB_proportional_std_crop_binned/BB_proportional_crop_binned)**2 ).reshape((len(temperature_minus_background_crop_binned),len(grid_laplacian))),grid_laplacian**2)**0.5).reshape(np.shape(temperature_minus_background_crop_binned))[1:-1,1:-1,1:-1]
+	# grid_laplacian = csc_matrix(grid_laplacian)
+	d2Tdxy = np.dot(temperature_minus_background_crop_binned.reshape((len(temperature_minus_background_crop_binned),np.shape(grid_laplacian)[0])),grid_laplacian).reshape(np.shape(temperature_minus_background_crop_binned))[1:-1,1:-1,1:-1]
+	d2Tdxy_std = (np.dot( ((counts_std_crop_binned/(BB_proportional_crop_binned*photon_flux_over_temperature))**2+(reference_background_std_crop_binned/(BB_proportional_crop_binned*photon_flux_over_temperature_interpolator(ref_temperature)))**2 + (temperature_minus_background_crop_binned*BB_proportional_std_crop_binned/BB_proportional_crop_binned)**2 ).reshape((len(temperature_minus_background_crop_binned),np.shape(grid_laplacian)[0])),grid_laplacian**2)**0.5).reshape(np.shape(temperature_minus_background_crop_binned))[1:-1,1:-1,1:-1]
 
 	# temp = np.ones_like(dTdt).astype(np.float32)*np.nan
 	# temp[:,nan_ROI_mask[1:-1,1:-1]]=d2Tdxy[:,nan_ROI_mask[1:-1,1:-1]]
@@ -10104,7 +10233,11 @@ def calc_temp_to_power_BB_1(photon_flux_over_temperature_interpolator,temperatur
 	# temp[:,nan_ROI_mask[1:-1,1:-1]]=dTdt_std[:,nan_ROI_mask[1:-1,1:-1]]
 	# dTdt_std = cp.copy(temp)
 
-	return dTdt,dTdt_std,d2Tdxy,d2Tdxy_std,negd2Tdxy,negd2Tdxy_std,T4_T04,T4_T04_std
+	if return_grid_laplacian:
+		return dTdt,dTdt_std,d2Tdxy,d2Tdxy_std,negd2Tdxy,negd2Tdxy_std,T4_T04,T4_T04_std,grid_laplacian
+	else:
+		return dTdt,dTdt_std,d2Tdxy,d2Tdxy_std,negd2Tdxy,negd2Tdxy_std,T4_T04,T4_T04_std
+
 
 def calc_temp_to_power_BB_2(dTdt,dTdt_std,d2Tdxy,d2Tdxy_std,negd2Tdxy,negd2Tdxy_std,T4_T04,T4_T04_std,nan_ROI_mask,foilemissivityscaled,foilthicknessscaled,reciprdiffusivityscaled,Ptthermalconductivity):
 	sigmaSB=5.6704e-08 #[W/(m2 K4)]
@@ -10125,6 +10258,43 @@ def calc_temp_to_power_BB_2(dTdt,dTdt_std,d2Tdxy,d2Tdxy_std,negd2Tdxy,negd2Tdxy_
 	powernoback_std = np.ones_like(powernoback)*np.nan
 	powernoback_std[:,nan_ROI_mask[1:-1,1:-1]] = ((diffusion_std[:,nan_ROI_mask[1:-1,1:-1]]**2 + timevariation_std[:,nan_ROI_mask[1:-1,1:-1]]**2 + BBrad_std[:,nan_ROI_mask[1:-1,1:-1]]**2)**0.5).astype(np.float32)
 	return BBrad,diffusion,timevariation,powernoback,BBrad_std,diffusion_std,timevariation_std,powernoback_std
+
+
+def calc_temp_to_power_1(dx,dt,averaged_params,counts_crop_binned,averaged_errparams,shrink_factor_t,shrink_factor_x,temperature_std_crop_binned,temperature_minus_background_crop_binned,laser_int_time,nan_ROI_mask,temperature_ref_crop_binned):
+	zeroC=273.15 #K / C
+
+	dTdt=np.divide((temperature_minus_background_crop_binned[2:,1:-1,1:-1]-temperature_minus_background_crop_binned[:-2,1:-1,1:-1]).T,dt).T.astype(np.float32)
+	temp = averaged_errparams[2,2] + counts_crop_binned[2:,1:-1,1:-1]*counts_crop_binned[:-2,1:-1,1:-1]*averaged_errparams[1,1] + (counts_crop_binned[2:,1:-1,1:-1]**2)*(counts_crop_binned[:-2,1:-1,1:-1]**2)*averaged_errparams[0,0] + (estimate_counts_std(counts_crop_binned[2:,1:-1,1:-1],int_time=laser_int_time/1000)**2)*(estimate_counts_std(counts_crop_binned[:-2,1:-1,1:-1],int_time=laser_int_time/1000)**2)*(averaged_params[0]**2)/((shrink_factor_t*shrink_factor_x**2)**2) + (counts_crop_binned[2:,1:-1,1:-1]+counts_crop_binned[:-2,1:-1,1:-1])*averaged_errparams[1,2] + (counts_crop_binned[2:,1:-1,1:-1]**2 + counts_crop_binned[:-2,1:-1,1:-1]**2)*averaged_errparams[0,2] + (counts_crop_binned[2:,1:-1,1:-1]*(counts_crop_binned[:-2,1:-1,1:-1]**2)+counts_crop_binned[:-2,1:-1,1:-1]*(counts_crop_binned[2:,1:-1,1:-1]**2))*averaged_errparams[0,1]
+	dTdt_std=np.divide((temperature_std_crop_binned[2:,1:-1,1:-1]**2 + temperature_std_crop_binned[:-2,1:-1,1:-1]**2 - 2*temp).T**0.5,dt).T.astype(np.float32)
+	d2Tdx2=np.divide(temperature_minus_background_crop_binned[1:-1,1:-1,2:]-np.multiply(2,temperature_minus_background_crop_binned[1:-1,1:-1,1:-1])+temperature_minus_background_crop_binned[1:-1,1:-1,:-2],dx**2).astype(np.float32)
+	d2Tdy2=np.divide(temperature_minus_background_crop_binned[1:-1,2:,1:-1]-np.multiply(2,temperature_minus_background_crop_binned[1:-1,1:-1,1:-1])+temperature_minus_background_crop_binned[1:-1,:-2,1:-1],dx**2).astype(np.float32)
+	d2Tdxy = np.ones_like(dTdt).astype(np.float32)*np.nan
+	d2Tdxy[:,nan_ROI_mask[1:-1,1:-1]]=np.add(d2Tdx2[:,nan_ROI_mask[1:-1,1:-1]],d2Tdy2[:,nan_ROI_mask[1:-1,1:-1]])
+	del d2Tdx2,d2Tdy2
+	d2Tdx2_std=np.divide((temperature_std_crop_binned[1:-1,1:-1,2:]**2+np.multiply(2**2,temperature_std_crop_binned[1:-1,1:-1,1:-1])**2+temperature_std_crop_binned[1:-1,1:-1,:-2]**2)**0.5,dx**2).astype(np.float32)
+	d2Tdy2_std=np.divide((temperature_std_crop_binned[1:-1,2:,1:-1]**2+np.multiply(2**2,temperature_std_crop_binned[1:-1,1:-1,1:-1])**2+temperature_std_crop_binned[1:-1,:-2,1:-1]**2)**0.5,dx**2).astype(np.float32)
+	d2Tdxy_std = np.ones_like(dTdt).astype(np.float32)*np.nan
+	temp1 = averaged_errparams[2,2] + counts_crop_binned[1:-1,1:-1,2:]*counts_crop_binned[1:-1,1:-1,:-2]*averaged_errparams[1,1] + (counts_crop_binned[1:-1,1:-1,2:]**2)*(counts_crop_binned[1:-1,1:-1,:-2]**2)*averaged_errparams[0,0] + (estimate_counts_std(counts_crop_binned[1:-1,1:-1,2:],int_time=laser_int_time/1000)**2)*(estimate_counts_std(counts_crop_binned[1:-1,1:-1,:-2],int_time=laser_int_time/1000)**2)*(averaged_params[0]**2)/((shrink_factor_t*shrink_factor_x**2)**2) + (counts_crop_binned[1:-1,1:-1,2:]+counts_crop_binned[1:-1,1:-1,:-2])*averaged_errparams[1,2] + (counts_crop_binned[1:-1,1:-1,2:]**2+counts_crop_binned[1:-1,1:-1,:-2]**2)*averaged_errparams[0,2] + (counts_crop_binned[1:-1,1:-1,2:]*(counts_crop_binned[1:-1,1:-1,:-2]**2)+counts_crop_binned[1:-1,1:-1,:-2]*(counts_crop_binned[1:-1,1:-1,2:]**2))*averaged_errparams[0,1]
+	temp2 = averaged_errparams[2,2] + counts_crop_binned[1:-1,1:-1,2:]*counts_crop_binned[1:-1,1:-1,1:-1]*averaged_errparams[1,1] + (counts_crop_binned[1:-1,1:-1,2:]**2)*(counts_crop_binned[1:-1,1:-1,1:-1]**2)*averaged_errparams[0,0] + (estimate_counts_std(counts_crop_binned[1:-1,1:-1,2:],int_time=laser_int_time/1000)**2)*(estimate_counts_std(counts_crop_binned[1:-1,1:-1,1:-1],int_time=laser_int_time/1000)**2)*(averaged_params[0]**2)/((shrink_factor_t*shrink_factor_x**2)**2) + (counts_crop_binned[1:-1,1:-1,2:]+counts_crop_binned[1:-1,1:-1,1:-1])*averaged_errparams[1,2] + (counts_crop_binned[1:-1,1:-1,2:]**2+counts_crop_binned[1:-1,1:-1,1:-1]**2)*averaged_errparams[0,2] + (counts_crop_binned[1:-1,1:-1,2:]*(counts_crop_binned[1:-1,1:-1,1:-1]**2)+counts_crop_binned[1:-1,1:-1,1:-1]*(counts_crop_binned[1:-1,1:-1,2:]**2))*averaged_errparams[0,1]
+	temp3 = averaged_errparams[2,2] + counts_crop_binned[1:-1,1:-1,1:-1]*counts_crop_binned[1:-1,1:-1,:-2]*averaged_errparams[1,1] + (counts_crop_binned[1:-1,1:-1,1:-1]**2)*(counts_crop_binned[1:-1,1:-1,:-2]**2)*averaged_errparams[0,0] + (estimate_counts_std(counts_crop_binned[1:-1,1:-1,1:-1],int_time=laser_int_time/1000)**2)*(estimate_counts_std(counts_crop_binned[1:-1,1:-1,:-2],int_time=laser_int_time/1000)**2)*(averaged_params[0]**2)/((shrink_factor_t*shrink_factor_x**2)**2) + (counts_crop_binned[1:-1,1:-1,1:-1]+counts_crop_binned[1:-1,1:-1,:-2])*averaged_errparams[1,2] + (counts_crop_binned[1:-1,1:-1,1:-1]**2+counts_crop_binned[1:-1,1:-1,:-2]**2)*averaged_errparams[0,2] + (counts_crop_binned[1:-1,1:-1,1:-1]*(counts_crop_binned[1:-1,1:-1,:-2]**2)+counts_crop_binned[1:-1,1:-1,:-2]*(counts_crop_binned[1:-1,1:-1,1:-1]**2))*averaged_errparams[0,1]
+	temp = 2*temp1-4*temp2-4*temp3
+	temp1 = averaged_errparams[2,2] + counts_crop_binned[1:-1,2:,1:-1]*counts_crop_binned[1:-1,:-2,1:-1]*averaged_errparams[1,1] + (counts_crop_binned[1:-1,2:,1:-1]**2)*(counts_crop_binned[1:-1,:-2,1:-1]**2)*averaged_errparams[0,0] + (estimate_counts_std(counts_crop_binned[1:-1,2:,1:-1],int_time=laser_int_time/1000)**2)*(estimate_counts_std(counts_crop_binned[1:-1,:-2,1:-1],int_time=laser_int_time/1000)**2)*(averaged_params[0]**2)/((shrink_factor_t*shrink_factor_x**2)**2) + (counts_crop_binned[1:-1,2:,1:-1]+counts_crop_binned[1:-1,:-2,1:-1])*averaged_errparams[1,2] + (counts_crop_binned[1:-1,2:,1:-1]**2+counts_crop_binned[1:-1,:-2,1:-1]**2)*averaged_errparams[0,2] + (counts_crop_binned[1:-1,2:,1:-1]*(counts_crop_binned[1:-1,:-2,1:-1]**2)+counts_crop_binned[1:-1,:-2,1:-1]*(counts_crop_binned[1:-1,2:,1:-1]**2))*averaged_errparams[0,1]
+	temp2 = averaged_errparams[2,2] + counts_crop_binned[1:-1,2:,1:-1]*counts_crop_binned[1:-1,1:-1,1:-1]*averaged_errparams[1,1] + (counts_crop_binned[1:-1,2:,1:-1]**2)*(counts_crop_binned[1:-1,1:-1,1:-1]**2)*averaged_errparams[0,0] + (estimate_counts_std(counts_crop_binned[1:-1,2:,1:-1],int_time=laser_int_time/1000)**2)*(estimate_counts_std(counts_crop_binned[1:-1,1:-1,1:-1],int_time=laser_int_time/1000)**2)*(averaged_params[0]**2)/((shrink_factor_t*shrink_factor_x**2)**2) + (counts_crop_binned[1:-1,2:,1:-1]+counts_crop_binned[1:-1,1:-1,1:-1])*averaged_errparams[1,2] + (counts_crop_binned[1:-1,2:,1:-1]**2+counts_crop_binned[1:-1,1:-1,1:-1]**2)*averaged_errparams[0,2] + (counts_crop_binned[1:-1,2:,1:-1]*(counts_crop_binned[1:-1,1:-1,1:-1]**2)+counts_crop_binned[1:-1,1:-1,1:-1]*(counts_crop_binned[1:-1,2:,1:-1]**2))*averaged_errparams[0,1]
+	temp3 = averaged_errparams[2,2] + counts_crop_binned[1:-1,1:-1,1:-1]*counts_crop_binned[1:-1,:-2,1:-1]*averaged_errparams[1,1] + (counts_crop_binned[1:-1,1:-1,1:-1]**2)*(counts_crop_binned[1:-1,:-2,1:-1]**2)*averaged_errparams[0,0] + (estimate_counts_std(counts_crop_binned[1:-1,1:-1,1:-1],int_time=laser_int_time/1000)**2)*(estimate_counts_std(counts_crop_binned[1:-1,:-2,1:-1],int_time=laser_int_time/1000)**2)*(averaged_params[0]**2)/((shrink_factor_t*shrink_factor_x**2)**2) + (counts_crop_binned[1:-1,1:-1,1:-1]+counts_crop_binned[1:-1,:-2,1:-1])*averaged_errparams[1,2] + (counts_crop_binned[1:-1,1:-1,1:-1]**2+counts_crop_binned[1:-1,:-2,1:-1]**2)*averaged_errparams[0,2] + (counts_crop_binned[1:-1,1:-1,1:-1]*(counts_crop_binned[1:-1,:-2,1:-1]**2)+counts_crop_binned[1:-1,:-2,1:-1]*(counts_crop_binned[1:-1,1:-1,1:-1]**2))*averaged_errparams[0,1]
+	temp += 2*temp1-4*temp2-4*temp3
+	d2Tdxy_std[:,nan_ROI_mask[1:-1,1:-1]]=np.add(temp[:,nan_ROI_mask[1:-1,1:-1]]/(dx**4),np.add(d2Tdx2_std[:,nan_ROI_mask[1:-1,1:-1]]**2,d2Tdy2_std[:,nan_ROI_mask[1:-1,1:-1]]**2))**0.5
+	del d2Tdx2_std,d2Tdy2_std
+	negd2Tdxy=np.multiply(-1,d2Tdxy)
+	negd2Tdxy_std=d2Tdxy_std
+	T4=(temperature_minus_background_crop_binned[1:-1,1:-1,1:-1]+np.nanmean(temperature_ref_crop_binned)+zeroC)**4
+	T04=(np.nanmean(temperature_ref_crop_binned)+zeroC)**4 *np.ones_like(temperature_minus_background_crop_binned[1:-1,1:-1,1:-1])
+	T4_T04 = np.ones_like(dTdt).astype(np.float32)*np.nan
+	T4_T04[:,nan_ROI_mask[1:-1,1:-1]] = (T4[:,nan_ROI_mask[1:-1,1:-1]]-T04[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
+	T4_std=T4**(3/4) *4 *temperature_std_crop_binned[1:-1,1:-1,1:-1]	# the error resulting from doing the average on the whole ROI is completely negligible
+	T04_std=0
+	T4_T04_std = np.ones_like(dTdt).astype(np.float32)*np.nan
+	T4_T04_std[:,nan_ROI_mask[1:-1,1:-1]] = ((T4_std[:,nan_ROI_mask[1:-1,1:-1]]**2+T04_std**2)**0.5).astype(np.float32)
+	return dTdt,dTdt_std,d2Tdxy,d2Tdxy_std,negd2Tdxy,negd2Tdxy_std,T4_T04,T4_T04_std
 
 
 def rotate_and_crop_2D(data,foilrotdeg,max_ROI,height,width,out_of_ROI_mask,foildw,foilup,foillx,foilrx):
@@ -10225,7 +10395,7 @@ def find_temperature_from_power_residuals(dt,grid_laplacian,input_foil_power,tem
 
 #######################################################################################################################################################################################################################################
 
-def movie_from_data_radial_profile(data,framerate,integration=1,xlabel=(),ylabel=(),barlabel=(),cmap='rainbow',form_factor_size=15,extent = [], image_extent = [],timesteps='auto',extvmin='auto',extvmax='auto',time_offset=0,prelude='',vline=None,hline=None,EFIT_path=EFIT_path_default,include_EFIT=False,efit_reconstruction=None,EFIT_output_requested = False,pulse_ID=None,overlay_x_point=False,overlay_mag_axis=False,overlay_structure=False,overlay_strike_points=False,overlay_separatrix=False,structure_alpha=0.5,foil_size=foil_size,additional_points_dict = dict([]), additional_each_frame_label_description=[], additional_each_frame_label_number=[],x_markersize=30,x_linewidth=3):
+def movie_from_data_radial_profile(data,framerate,integration=1,xlabel=(),ylabel=(),barlabel=(),cmap='rainbow',form_factor_size=15,extent = [], image_extent = [],timesteps='auto',extvmin='auto',extvmax='auto',time_offset=0,prelude='',vline=None,hline=None,EFIT_path=EFIT_path_default,include_EFIT=False,efit_reconstruction=None,EFIT_output_requested = False,pulse_ID=None,overlay_x_point=False,overlay_mag_axis=False,overlay_structure=False,overlay_strike_points=False,overlay_separatrix=False,overlay_res_bolo=False,structure_alpha=0.5,foil_size=foil_size,additional_points_dict = dict([]), additional_each_frame_label_description=[], additional_each_frame_label_number=[],x_markersize=30,x_linewidth=3):
 	import matplotlib.animation as animation
 	import numpy as np
 
@@ -10313,9 +10483,9 @@ def movie_from_data_radial_profile(data,framerate,integration=1,xlabel=(),ylabel
 	if overlay_structure:
 		for i in range(len(structure_radial_profile)):
 			ax.plot(structure_radial_profile[i][:,0],structure_radial_profile[i][:,1],'--k',alpha=structure_alpha)
-	if overlay_structure:
+	if overlay_res_bolo:
 		for i in range(len(res_bolo_radial_profile)):
-			ax.plot(res_bolo_radial_profile[i][:,0],res_bolo_radial_profile[i][:,1],'--r',alpha=structure_alpha)
+			ax.plot(res_bolo_radial_profile[i][:,0],res_bolo_radial_profile[i][:,1],'--r',alpha=1)
 	if len(list(additional_points_dict.keys()))!=0:
 		plot6 = []
 		for __i in range(additional_points_dict['number_of_points']):
@@ -10557,7 +10727,7 @@ def image_from_data_radial_profile(data,xlabel=(),ylabel=(),barlabel=(),cmap='ra
 			ax.plot(structure_radial_profile[i][:,0],structure_radial_profile[i][:,1],'--k',alpha=structure_alpha)
 	if overlay_res_bolo:
 		for i in range(len(res_bolo_radial_profile)):
-			ax.plot(res_bolo_radial_profile[i][:,0],res_bolo_radial_profile[i][:,1],'--r',alpha=structure_alpha)
+			ax.plot(res_bolo_radial_profile[i][:,0],res_bolo_radial_profile[i][:,1],'--r',alpha=1)
 	if len(list(additional_points_dict.keys()))!=0:
 		plot6 = []
 		for __i in range(additional_points_dict['number_of_points']):
@@ -10653,7 +10823,7 @@ def image_from_data_radial_profile(data,xlabel=(),ylabel=(),barlabel=(),cmap='ra
 
 ##############################################################################################################################################################################################################
 
-def estimate_counts_std(counts,int_time=2):#framerate=383):
+def estimate_counts_std(counts,int_time=2,framerate=383):
 	# if framerate<994+3:
 	if np.abs(int_time-2)<0.001:
 		# counts_std_fit = np.array([6.96431538e-20, -3.26767625e-15,  5.84235577e-11, -4.97550821e-07, 2.18103951e-03])	# found 2021-10-06 by looking at 383Hz 1ms and 2ms data. it is likely not correct for 0.5ms integration time
@@ -10715,7 +10885,7 @@ def check_beams_on(shot_id):
 def build_laplacian(grid,diagonal_factor=0.5,cells_to_exclude=[]):
 	# Try making grid laplacian matrix for spatial regularisation
 	num_cells = len(grid)
-	grid_laplacian = np.zeros((num_cells, num_cells))
+	grid_laplacian = np.zeros((num_cells, num_cells),dtype=np.float32)
 	unique_x = np.unique(np.mean(grid,axis=1)[:,0])
 	unique_y = np.unique(np.mean(grid,axis=1)[:,1])
 	if diagonal_factor==0:
@@ -10864,7 +11034,7 @@ def build_laplacian(grid,diagonal_factor=0.5,cells_to_exclude=[]):
 def build_Z_derivate(grid,cells_to_exclude=[]):
 	# Try making grid Z direction derivate matrix for spatial regularisation
 	num_cells = len(grid)
-	grid_laplacian = np.zeros((num_cells, num_cells))
+	grid_laplacian = np.zeros((num_cells, num_cells),dtype=np.float32)
 	unique_x = np.unique(np.mean(grid,axis=1)[:,0])
 	unique_y = np.unique(np.mean(grid,axis=1)[:,1])
 
@@ -10922,7 +11092,7 @@ def build_Z_derivate(grid,cells_to_exclude=[]):
 def build_R_derivate(grid,cells_to_exclude=[]):
 	# Try making grid R direction derivate matrix for spatial regularisation
 	num_cells = len(grid)
-	grid_laplacian = np.zeros((num_cells, num_cells))
+	grid_laplacian = np.zeros((num_cells, num_cells),dtype=np.float32)
 	unique_x = np.unique(np.mean(grid,axis=1)[:,0])
 	unique_y = np.unique(np.mean(grid,axis=1)[:,1])
 
@@ -11136,7 +11306,7 @@ def baricentre_outer_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 	b_flat = b.flatten()
 	grid_resolution = np.median(np.concatenate([np.diff(inversion_Z),np.diff(inversion_R)]))
 	# leg_resolution = 0.1	# m
-	# structure_radial_profile = coleval.return_structure_radial_profile()
+	# structure_radial_profile = return_structure_radial_profile()
 
 	data_length = 0
 	local_mean_emis_all = []
@@ -11377,7 +11547,7 @@ def baricentre_inner_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 	b_flat = b.flatten()
 	grid_resolution = np.median(np.concatenate([np.diff(inversion_Z),np.diff(inversion_R)]))
 	# leg_resolution = 0.1	# m
-	# structure_radial_profile = coleval.return_structure_radial_profile()
+	# structure_radial_profile = return_structure_radial_profile()
 
 	data_length = 0
 	local_mean_emis_all = []
@@ -11624,7 +11794,7 @@ def inside_vs_outside_separatrix_radiation(inverted_data,inverted_data_sigma,inv
 	b_flat = b.flatten()
 	grid_resolution = np.median(np.concatenate([np.diff(inversion_Z),np.diff(inversion_R)]))
 	# leg_resolution = 0.1	# m
-	# structure_radial_profile = coleval.return_structure_radial_profile()
+	# structure_radial_profile = return_structure_radial_profile()
 
 	real_core_radiation_all = []
 	real_non_core_radiation_all = []
@@ -11751,3 +11921,66 @@ def shift_beam_to_pulse_time(xnb_time, beam, shot):
     # new_signal = np.roll(signal, int(shift/(time[1] - time[0])))
 
     return shifted_time
+
+
+# 9/9/22 from James Harrison, functions to read fast camera data
+
+def high_speed_visible_load_cih(filename):
+	"""
+	Load HSV metadata.
+
+	source: https://github.com/ladisk/pyMRAW
+
+	:param int/str shot: MAST-U shot number.
+	:param str fpath_data: Path to data directory, see above.
+	:return: dict of metadata.
+	"""
+
+	cih = dict()
+	with open(filename, 'r') as f:
+		for line in f:
+			if line == '\n':  # end of cif header
+				break
+			line_sp = line.replace('\n', '').split(' : ')
+			if len(line_sp) == 2:
+				key, value = line_sp
+				try:
+					if '.' in value:
+						value = float(value)
+					else:
+						value = int(value)
+					cih[key] = value
+				except:
+					cih[key] = value
+	return cih
+
+def high_speed_visible_mraw_to_numpy(data_dir,filename,T0,downsample=1):
+	full_filename = data_dir+filename+'.mraw'
+	fname, ext = full_filename.split('.')
+	cih = high_speed_visible_load_cih(fname+'.cih')
+	num, denom = cih['Shutter Speed(s)'].split('/')
+	cih['Shutter Speed(s)'] = float(num) / float(denom)
+	nframes = cih['Total Frame']
+	height = cih['Image Height']
+	width = cih['Image Width']
+	fps = cih['Record Rate(fps)']
+
+	HEIGHT_FULL=1024
+	WIDTH_FULL=1024
+
+
+	xpix = np.arange(width) - width // 2 + WIDTH_FULL // 2
+	ypix = np.arange(height)
+
+	times = np.arange(nframes) * 1 / fps + T0
+	with open(full_filename, 'rb') as f:
+		data = np.frombuffer(f.read(), dtype=np.uint8)
+
+	# optimised loading of 12-bit uint data from binary file into numpy array
+	# source: https://stackoverflow.com/questions/44735756/python-reading-12-bit-binary-files
+	fst_uint8, mid_uint8, lst_uint8 = np.reshape(data, (data.shape[0] // 3, 3)).T
+	fst_uint12 = (fst_uint8.astype(np.uint16) << 4) + (mid_uint8.astype(np.uint16) >> 4)
+	snd_uint12 = ((mid_uint8.astype(np.uint16) % 16) << 8) + lst_uint8.astype(np.uint16)
+	data = np.reshape(np.concatenate((fst_uint12[:, None], snd_uint12[:, None]), axis=1), 2 * fst_uint12.shape[0])
+	data = data.reshape([nframes, height, width, ])
+	return data,times
