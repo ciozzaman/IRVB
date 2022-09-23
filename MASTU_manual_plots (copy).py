@@ -139,7 +139,7 @@ try:
 	# reading LP data
 	try:
 		try:
-			fdir = coleval.uda_transfer(efit_reconstruction.shotnumber,'elp',extra_path='/0'+str(efit_reconstruction.shotnumber)[:2])
+			fdir = uda_transfer(efit_reconstruction.shotnumber,'elp',extra_path='/0'+str(efit_reconstruction.shotnumber)[:2])
 			lp_data,output_contour1 = coleval.read_LP_data(efit_reconstruction.shotnumber,path = os.path.split(fdir)[0])
 			os.remove(fdir)
 		except:
@@ -219,8 +219,6 @@ try:
 			plt.close('all')
 
 			closeness_limit_to_dead_channels = 0.01	# m
-			s10_lower_s,s4_lower_s,s4_upper_s,s10_upper_std_s,s10_upper_large_s
-			closeness_limit_for_good_channels = np.median(np.abs(np.diff(s10_lower_s).tolist()+np.diff(s4_lower_s).tolist()+np.diff(s4_upper_s).tolist()+np.diff(s10_upper_std_s).tolist()+np.diff(s10_upper_large_s).tolist()))*3
 			jsat_upper_inner_small_max = []
 			jsat_upper_outer_small_max = []
 			jsat_upper_inner_mid_max = []
@@ -287,51 +285,45 @@ try:
 				mid_strike_point = [np.mean(efit_reconstruction.strikepointR[i_efit_time][:2]),-np.mean(efit_reconstruction.strikepointZ[i_efit_time][:2])]
 
 				# upper
-				s4_upper_inner_test = np.sum(np.logical_not(s4_upper_good_probes)[np.abs(s4_upper_r-inner_strike_point[0])<closeness_limit_to_dead_channels])==0 and np.sum(s4_upper_good_probes[np.abs(s4_upper_r-inner_strike_point[0])<closeness_limit_for_good_channels])>0
-				s10_upper_std_inner_test = np.sum(np.logical_not(s10_upper_std_good_probes)[np.abs(s10_upper_std_r-inner_strike_point[0])<closeness_limit_to_dead_channels])==0 and np.sum(s10_upper_std_good_probes[np.abs(s10_upper_std_r-inner_strike_point[0])<closeness_limit_for_good_channels])>0
-				s10_upper_large_inner_test = np.sum(np.logical_not(s10_upper_large_good_probes)[np.abs(s10_upper_large_r-inner_strike_point[0])<closeness_limit_to_dead_channels])==0 and np.sum(s10_upper_large_good_probes[np.abs(s10_upper_large_r-inner_strike_point[0])<closeness_limit_for_good_channels])>0
-				s4_upper_outer_test = np.sum(np.logical_not(s4_upper_good_probes)[np.abs(s4_upper_r-outer_strike_point[0])<closeness_limit_to_dead_channels])==0 and np.sum(s4_upper_good_probes[np.abs(s4_upper_r-outer_strike_point[0])<closeness_limit_for_good_channels])>0
-				s10_upper_std_outer_test = np.sum(np.logical_not(s10_upper_std_good_probes)[np.abs(s10_upper_std_r-outer_strike_point[0])<closeness_limit_to_dead_channels])==0 and np.sum(s10_upper_std_good_probes[np.abs(s10_upper_std_r-outer_strike_point[0])<closeness_limit_for_good_channels])>0
-				s10_upper_large_outer_test = np.sum(np.logical_not(s10_upper_large_good_probes)[np.abs(s10_upper_large_r-outer_strike_point[0])<closeness_limit_to_dead_channels])==0 and np.sum(s10_upper_large_good_probes[np.abs(s10_upper_large_r-outer_strike_point[0])<closeness_limit_for_good_channels])>0
+				s4_upper_inner_test = np.sum(np.logical_not(s4_upper_good_probes)[np.abs(s4_upper_r-inner_strike_point[0])<closeness_limit_to_dead_channels])==0
+				s10_upper_std_inner_test = np.sum(np.logical_not(s10_upper_std_good_probes)[np.abs(s10_upper_std_r-inner_strike_point[0])<closeness_limit_to_dead_channels])==0
+				s10_upper_large_inner_test = np.sum(np.logical_not(s10_upper_large_good_probes)[np.abs(s10_upper_large_r-inner_strike_point[0])<closeness_limit_to_dead_channels])==0
+				s4_upper_outer_test = np.sum(np.logical_not(s4_upper_good_probes)[np.abs(s4_upper_r-outer_strike_point[0])<closeness_limit_to_dead_channels])==0
+				s10_upper_std_outer_test = np.sum(np.logical_not(s10_upper_std_good_probes)[np.abs(s10_upper_std_r-outer_strike_point[0])<closeness_limit_to_dead_channels])==0
+				s10_upper_large_outer_test = np.sum(np.logical_not(s10_upper_large_good_probes)[np.abs(s10_upper_large_r-outer_strike_point[0])<closeness_limit_to_dead_channels])==0
 
 				jsat_upper_inner_small_max.append(0)
 				jsat_upper_outer_small_max.append(0)
 				jsat_upper_inner_small_integrated.append(0)
 				jsat_upper_outer_small_integrated.append(0)
 				temp = [np.nan]
-				if s4_upper_inner_test:
+				if s4_upper_inner_test and s10_upper_std_inner_test:	# I should consider them independently, but s10 upper has too many dead channes and it's not trustworthy on its own
 					temp = np.concatenate([[0],temp,s4_upper_jsat[i_time][s4_upper_jsat_r[i_time]<mid_strike_point[0]]])
-				if s10_upper_std_inner_test:	# I should consider them independently, but s10 upper has too many dead channes and it's not trustworthy on its own
 					temp = np.concatenate([[0],temp,s10_upper_std_jsat[i_time][s10_upper_std_jsat_r[i_time]<mid_strike_point[0]]])
 				jsat_upper_inner_mid_max.append(np.nanmax(temp))
 				temp = 0
-				if s4_upper_inner_test:
-					temp = np.nanmax([temp,np.trapz(s4_upper_jsat[i_time][s4_upper_jsat_r[i_time]<mid_strike_point[0]]*2*np.pi*s4_upper_jsat_r[i_time][s4_upper_jsat_r[i_time]<mid_strike_point[0]],x=s4_upper_jsat_s[i_time][s4_upper_jsat_r[i_time]<mid_strike_point[0]])])
-				if s10_upper_std_inner_test:	# I should consider them independently, but s10 upper has too many dead channes and it's not trustworthy on its own
-					temp = np.nanmax([temp,np.trapz(s10_upper_std_jsat[i_time][s10_upper_std_jsat_r[i_time]<mid_strike_point[0]]*2*np.pi*s10_upper_std_jsat_r[i_time][s10_upper_std_jsat_r[i_time]<mid_strike_point[0]],x=s10_upper_std_jsat_s[i_time][s10_upper_std_jsat_r[i_time]<mid_strike_point[0]])])
+				if s4_upper_inner_test and s10_upper_std_inner_test:	# I should consider them independently, but s10 upper has too many dead channes and it's not trustworthy on its own
+					temp += max(np.trapz(s4_upper_jsat[i_time][s4_upper_jsat_r[i_time]<mid_strike_point[0]]*2*np.pi*s4_upper_jsat_r[i_time][s4_upper_jsat_r[i_time]<mid_strike_point[0]],x=s4_upper_jsat_s[i_time][s4_upper_jsat_r[i_time]<mid_strike_point[0]]),np.trapz(s10_upper_std_jsat[i_time][s10_upper_std_jsat_r[i_time]<mid_strike_point[0]]*2*np.pi*s10_upper_std_jsat_r[i_time][s10_upper_std_jsat_r[i_time]<mid_strike_point[0]],x=s10_upper_std_jsat_s[i_time][s10_upper_std_jsat_r[i_time]<mid_strike_point[0]]))
 				# elif s4_upper_inner_test:
 				# 	temp += np.trapz(s4_upper_jsat[i_time][s4_upper_jsat_r[i_time]<mid_strike_point[0]]*2*np.pi*s4_upper_jsat_r[i_time][s4_upper_jsat_r[i_time]<mid_strike_point[0]],x=s4_upper_jsat_s[i_time][s4_upper_jsat_r[i_time]<mid_strike_point[0]])
 				# elif s10_upper_std_inner_test:
 				# 	temp += np.trapz(s10_upper_std_jsat[i_time][s10_upper_std_jsat_r[i_time]<mid_strike_point[0]]*2*np.pi*s10_upper_std_jsat_r[i_time][s10_upper_std_jsat_r[i_time]<mid_strike_point[0]],x=s10_upper_std_jsat_s[i_time][s10_upper_std_jsat_r[i_time]<mid_strike_point[0]])
-				if not(s4_upper_inner_test) and not(s10_upper_std_inner_test):
+				else:
 					temp = np.nan
 				jsat_upper_inner_mid_integrated.append(temp)
 				temp = [np.nan]
-				if s4_upper_outer_test:
+				if s4_upper_outer_test and s10_upper_std_outer_test:	# I should consider them independently, but s10 upper has too many dead channes and it's not trustworthy on its own
 					temp = np.concatenate([[0],temp,s4_upper_jsat[i_time][s4_upper_jsat_r[i_time]>mid_strike_point[0]]])
-				if s10_upper_std_outer_test:	# I should consider them independently, but s10 upper has too many dead channes and it's not trustworthy on its own
 					temp = np.concatenate([[0],temp,s10_upper_std_jsat[i_time][s10_upper_std_jsat_r[i_time]>mid_strike_point[0]]])
 				jsat_upper_outer_mid_max.append(np.nanmax(temp))
 				temp = 0
-				if s4_upper_outer_test:
-					temp = np.nanmax([temp,np.trapz(s4_upper_jsat[i_time][s4_upper_jsat_r[i_time]>mid_strike_point[0]]*2*np.pi*s4_upper_jsat_r[i_time][s4_upper_jsat_r[i_time]>mid_strike_point[0]],x=s4_upper_jsat_s[i_time][s4_upper_jsat_r[i_time]>mid_strike_point[0]])])
-				if s10_upper_std_outer_test:	# I should consider them independently, but s10 upper has too many dead channes and it's not trustworthy on its own
-					temp = np.nanmax([temp,np.trapz(s10_upper_std_jsat[i_time][s10_upper_std_jsat_r[i_time]>mid_strike_point[0]]*2*np.pi*s10_upper_std_jsat_r[i_time][s10_upper_std_jsat_r[i_time]>mid_strike_point[0]],x=s10_upper_std_jsat_s[i_time][s10_upper_std_jsat_r[i_time]>mid_strike_point[0]])])
+				if s4_upper_outer_test and s10_upper_std_outer_test:	# I should consider them independently, but s10 upper has too many dead channes and it's not trustworthy on its own
+					temp += max(np.trapz(s4_upper_jsat[i_time][s4_upper_jsat_r[i_time]>mid_strike_point[0]]*2*np.pi*s4_upper_jsat_r[i_time][s4_upper_jsat_r[i_time]>mid_strike_point[0]],x=s4_upper_jsat_s[i_time][s4_upper_jsat_r[i_time]>mid_strike_point[0]]),np.trapz(s10_upper_std_jsat[i_time][s10_upper_std_jsat_r[i_time]>mid_strike_point[0]]*2*np.pi*s10_upper_std_jsat_r[i_time][s10_upper_std_jsat_r[i_time]>mid_strike_point[0]],x=s10_upper_std_jsat_s[i_time][s10_upper_std_jsat_r[i_time]>mid_strike_point[0]]))
 				# elif s4_upper_outer_test:
 				# 	temp += np.trapz(s4_upper_jsat[i_time][s4_upper_jsat_r[i_time]>mid_strike_point[0]]*2*np.pi*s4_upper_jsat_r[i_time][s4_upper_jsat_r[i_time]>mid_strike_point[0]],x=s4_upper_jsat_s[i_time][s4_upper_jsat_r[i_time]>mid_strike_point[0]])
 				# elif s10_upper_std_outer_test:
 				# 	temp += np.trapz(s10_upper_std_jsat[i_time][s10_upper_std_jsat_r[i_time]>mid_strike_point[0]]*2*np.pi*s10_upper_std_jsat_r[i_time][s10_upper_std_jsat_r[i_time]>mid_strike_point[0]],x=s10_upper_std_jsat_s[i_time][s10_upper_std_jsat_r[i_time]>mid_strike_point[0]])
-				if not(s4_upper_outer_test) and not(s10_upper_std_outer_test):
+				else:
 					temp = np.nan
 				jsat_upper_outer_mid_integrated.append(temp)
 
@@ -358,11 +350,10 @@ try:
 
 
 				# lower
-				# I add the second part to exluce the case there are NO good channel close to the strike point, diving a bit of slack allowing twice the normal distance between probes
-				s4_lower_inner_test = np.sum(np.logical_not(s4_lower_good_probes)[np.abs(s4_lower_z-inner_strike_point[1])<closeness_limit_to_dead_channels])==0 and np.sum(s4_lower_good_probes[np.abs(s4_lower_z-inner_strike_point[1])<closeness_limit_for_good_channels])>0
-				s10_lower_inner_test = np.sum(np.logical_not(s10_lower_good_probes)[np.abs(s10_lower_r-inner_strike_point[0])<closeness_limit_to_dead_channels])==0 and np.sum(s10_lower_good_probes[np.abs(s10_lower_r-inner_strike_point[0])<closeness_limit_for_good_channels])>0
-				s4_lower_outer_test = np.sum(np.logical_not(s4_lower_good_probes)[np.abs(s4_lower_z-outer_strike_point[1])<closeness_limit_to_dead_channels])==0 and np.sum(s4_lower_good_probes[np.abs(s4_lower_z-outer_strike_point[1])<closeness_limit_for_good_channels])>0
-				s10_lower_outer_test = np.sum(np.logical_not(s10_lower_good_probes)[np.abs(s10_lower_r-outer_strike_point[0])<closeness_limit_to_dead_channels])==0 and np.sum(s10_lower_good_probes[np.abs(s10_lower_r-outer_strike_point[0])<closeness_limit_for_good_channels])>0
+				s4_lower_inner_test = np.sum(np.logical_not(s4_lower_good_probes)[np.abs(s4_lower_z-inner_strike_point[1])<closeness_limit_to_dead_channels])==0
+				s10_lower_inner_test = np.sum(np.logical_not(s10_lower_good_probes)[np.abs(s10_lower_r-inner_strike_point[0])<closeness_limit_to_dead_channels])==0
+				s4_lower_outer_test = np.sum(np.logical_not(s4_lower_good_probes)[np.abs(s4_lower_z-outer_strike_point[1])<closeness_limit_to_dead_channels])==0
+				s10_lower_outer_test = np.sum(np.logical_not(s10_lower_good_probes)[np.abs(s10_lower_r-outer_strike_point[0])<closeness_limit_to_dead_channels])==0
 
 				temp = [np.nan]
 				if s4_lower_inner_test:

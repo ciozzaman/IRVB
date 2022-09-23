@@ -112,8 +112,7 @@ for i_day,day in enumerate(to_do):
 # to_do = ['IRVB-MASTU_shot-44816.ptw','IRVB-MASTU_shot-44817.ptw','IRVB-MASTU_shot-44818.ptw','IRVB-MASTU_shot-44819.ptw','IRVB-MASTU_shot-44820.ptw','IRVB-MASTU_shot-44821.ptw','IRVB-MASTU_shot-44822.ptw','IRVB-MASTU_shot-45391.ptw','IRVB-MASTU_shot-45397.ptw','IRVB-MASTU_shot-45398.ptw','IRVB-MASTU_shot-45399.ptw','IRVB-MASTU_shot-45400.ptw','IRVB-MASTU_shot-45401.ptw']
 # for the paper
 # to_do = ['IRVB-MASTU_shot-44647.ptw','IRVB-MASTU_shot-45409.ptw','IRVB-MASTU_shot-45225.ptw','IRVB-MASTU_shot-45351.ptw']
-# to_do = ['IRVB-MASTU_shot-45401.ptw','IRVB-MASTU_shot-44892.ptw']
-to_do = ['IRVB-MASTU_shot-45295.ptw']
+to_do = ['IRVB-MASTU_shot-45401.ptw','IRVB-MASTU_shot-44892.ptw']
 
 continue_after_FAST = False
 override_FAST_analysis = True
@@ -122,7 +121,7 @@ do_inversions = False
 every_pixel_independent = False
 overwrite_oscillation_filter = True
 overwrite_binning = True
-skip_second_pass = False
+skip_second_pass = True
 
 if overwrite_oscillation_filter:
 	overwrite_binning = True
@@ -176,7 +175,7 @@ else:
 	# i_day,day = 0,'2021-10-12'
 	# name='IRVB-MASTU_shot-45239.ptw'
 	# i_day,day = 0,'2021-10-22'
-	name='IRVB-MASTU_shot-45295.ptw'
+	name='IRVB-MASTU_shot-45225.ptw'
 	# i_day,day = 0,'2021-10-21'
 	# name='IRVB-MASTU_shot-45371.ptw'
 

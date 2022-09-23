@@ -1271,37 +1271,6 @@ vacuumtime8=[820, 833, 844, 853, 885, 957] #[min]
 full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'vacuum8':vacuum8}))
 
 
-# Experiment 25/08/2022 2ms low frequency with the BB source getting closer to the camera to see what is the effect on counts. TBB=35degC
-files50=['/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000001','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000002','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000003','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000004','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000005','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000006','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000007','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000008','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000009','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000010','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000011','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000012','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000013','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000014']
-distance50=[65.7,60.7,55.7,50.7,45.7,40.7,35.7,30.7,25.7,20.7,15.7,10.7,5.7,3.7] #[cm] camera to source distance
-collection_of_records['files50'] = dict([])
-collection_of_records['files50']['path_files_laser'] = files50
-collection_of_records['files50']['distance'] = distance50
-
-# Experiment 25/08/2022 2ms low frequency with the BB source getting closer to the camera to see what is the effect on counts. TBB=50degC.
-# WARNING! SATURATED!!
-files51=['/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000015','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000016','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000017','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000018','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000019','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000020','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000021','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000022','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000023','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000024','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000025','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000026','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000027','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000028']
-distance51=[65.7,60.7,55.7,50.7,45.7,40.7,35.7,30.7,25.7,20.7,15.7,10.7,5.7,3.7] #[cm] camera to source distance
-collection_of_records['files51'] = dict([])
-collection_of_records['files51']['path_files_laser'] = files51
-collection_of_records['files51']['distance'] = distance51
-
-# Experiment 25/08/2022 2ms low frequency with the NUC PLATE getting closer to the camera to see what is the effect on counts. TNUC ~ 27degC.
-files52=['/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000029','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000030','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000031','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000032','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000033','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000034','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000035','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000036','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000037','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000038','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000039','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000040','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000041','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000042']
-distance52=[65.7,60.7,55.7,50.7,45.7,40.7,35.7,30.7,25.7,20.7,15.7,10.7,5.7,4.7] #[cm] camera to source distance
-collection_of_records['files52'] = dict([])
-collection_of_records['files52']['path_files_laser'] = files52
-collection_of_records['files52']['distance'] = distance52
-
-# Experiment 25/08/2022 2ms low frequency with the BB source getting closer to the camera to see what is the effect on counts. TBB ~ 26.4degC.
-# WARNING! SATURATED!!
-files53=['/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000043','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000044','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000045','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000046','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000047','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000048','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000049','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000050','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000051','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000052','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000053','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000054','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000055','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000056','/home/ffederic/work/irvb/flatfield/Aug25_2022/flat_field-000057']
-distance53=[65.7,60.7,55.7,50.7,45.7,40.7,35.7,30.7,25.7,20.7,15.7,9.7,10.7,5.7,3.7] #[cm] camera to source distance
-collection_of_records['files53'] = dict([])
-collection_of_records['files53']['path_files_laser'] = files53
-collection_of_records['files53']['distance'] = distance53
-
-
 
 # Experiment 26/10/2018 1ms samples with one of the other IR cameras from Andrew Thorton to see if the oscillation is still there
 vacuum9=['/home/ffederic/work/irvb/vacuum_chamber_testing/Oct26_2018/irvb_sample-000001','/home/ffederic/work/irvb/vacuum_chamber_testing/Oct26_2018/irvb_sample-000002','/home/ffederic/work/irvb/vacuum_chamber_testing/Oct26_2018/irvb_sample-000003']

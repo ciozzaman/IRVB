@@ -31,7 +31,8 @@ for path in f1[0]:
 	for (dirpath, dirnames, filenames) in os.walk('/home/ffederic/work/irvb/laser/results/'+path):
 		f2.append(dirnames)
 	for f3 in f2[0]:
-		f.append([path,f3])
+		if f3[-3:]!='old':
+			f.append([path,f3])
 
 cases_to_include = np.array(f)[:,1]
 for i_name,name in enumerate(cases_to_include):
@@ -42,7 +43,11 @@ for i_name,name in enumerate(cases_to_include):
 	for i_laser_to_analyse,laser_to_analyse in enumerate(collection_of_records[name]['path_files_laser']):
 		try:
 			laser_dict = np.load(laser_to_analyse+'.npz')
-			laser_location.append(laser_dict['laser_location'])
+			laser_dict.allow_pickle = True
+			try:
+				laser_location.append(laser_dict['laser_location'])
+			except:
+				laser_location.append(laser_dict['NUC_plate'].all()['laser_location'])
 			freqlaser.append(collection_of_records[name]['freqlaser'][i_laser_to_analyse])
 			voltlaser.append(collection_of_records[name]['voltlaser'][i_laser_to_analyse])
 			FrameRate.append(laser_dict['FrameRate'])
@@ -71,15 +76,23 @@ for array in f:
 	x=float(array[2])*dx+np.random.random()/4*dx
 	y=float(array[4])*dx+np.random.random()/4*dx
 	if array[0]=='fully_defocused':
-		plt.plot(x,y,'o',fillstyle='none',color=color[index1],label='full def'+' FR%.5gHz ' %(float(array[-1])) + array[1],markersize=5+index1*2)
+		plt.plot(x,y,'o',fillstyle='none',color=color[index1],label='full def'+' FR%.5gHz ' %(float(array[-1])) + array[1],markersize=5+index1*3)
 		index1+=1
 	elif array[0]=='partially_defocused':
-		plt.plot(x,y,'v',fillstyle='none',color=color[index2],label='part def'+' FR%.5gHz ' %(float(array[-1])) + array[1],markersize=5+index2*2)
+		plt.plot(x,y,'v',fillstyle='none',color=color[index2],label='part def'+' FR%.5gHz ' %(float(array[-1])) + array[1],markersize=5+index2*3)
 		index2+=1
 	else:
-		plt.plot(x,y,'+',color=color[index3],label='focus'+' FR%.5gHz ' %(float(array[-1])) + array[1],markersize=5+index3*2)
+		plt.plot(x,y,'P',fillstyle='none',color=color[index3],label='focus'+' FR%.5gHz ' %(float(array[-1])) + array[1],markersize=5+index3*3)
 		index3+=1
-	plt.annotate(array[1][-2:],(x+1e-4,y+1e-4),fontsize=10)
+	if np.random.random()>0.5:
+		x_=1
+	else:
+		x_=-5
+	if np.random.random()>0.5:
+		y_=1
+	else:
+		y_=-5
+	plt.annotate(array[1][-2:],(x+x_*1e-4,y+y_*1e-4),fontsize=10)
 plt.plot([0,foilhorizw,foilhorizw,0,0],[0,0,foilvertw,foilvertw,0],'k')
 plt.grid()
 plt.legend(loc='best', fontsize='x-small',ncol=2)
@@ -90,13 +103,27 @@ plt.close()
 
 power_reduction_window = (6.4+6.3)/2/6.8	# known from a dedicated investigation done 2021/09/14
 # threshold_freq_list = [1,10,60,100,160,240,300]
-minimum_ON_period_list = 0.1	# seconds
+minimum_ON_period_list = 0.00003	# seconds
+minimum_frames_for_ON_phase = 2# 4 frames
 # cases_to_include = ['laser17']
 # cases_to_include = ['laser39','laser37']	# FR ~2kHz
 # cases_to_include = ['laser38','laser36']	# FR ~1kHz
 # cases_to_include = ['laser34','laser35']	# FR ~383Hz
 # all_cases_to_include = [['laser34','laser35'] , ['laser38','laser36'] , ['laser39','laser37']]
 # all_cases_to_include = [['laser34','laser35'], ['laser34'], ['laser35'] , ['laser38','laser36'], ['laser38'], ['laser36'] , ['laser39','laser37'], ['laser39'], ['laser37']]
+
+sample_properties = dict([])
+# sample_properties['thickness'] = 3.2*1e-6
+# sample_properties['emissivity'] = 1
+# sample_properties['diffusivity'] = 1.32*1e-5
+sample_properties['thickness'] = 2.093616658223934e-06
+sample_properties['emissivity'] = 1
+sample_properties['diffusivity'] = 1.03*1e-5
+
+# WARNING 'laser20' has bad data in it
+# also laser25 101 has something wrong
+# apparently laser 35 is too different from the other defocused ones
+
 
 # cases_to_include = ['laser22','laser25','laser33','laser30']	# FR ~383Hz
 # cases_to_include = ['laser15','laser16','laser23','laser21']	# FR ~1kHz
@@ -105,6 +132,15 @@ all_cases_to_include = [['laser22','laser25','laser33','laser30'] , ['laser15','
 all_cases_to_include = [['laser34','laser35'], ['laser38','laser36'] , ['laser39','laser37'], ['laser34','laser35','laser38','laser36','laser39','laser37']]
 all_cases_to_include = [['laser22','laser25','laser33','laser30','laser34','laser35']]
 all_cases_to_include = [['laser22','laser25','laser34']]	# defocused scans avoided for now
+all_cases_to_include = [['laser17','laser18','laser19','laser22','laser32','laser34','laser30','laser33']]	# all cases with correct fraq and no windowing
+all_cases_to_include = [['laser19','laser22','laser30','laser33']]	# all cases in the same location
+all_cases_to_include = [['laser19','laser22','laser30','laser33']]	# all cases in the same location
+all_cases_to_include = [['laser22','laser33']]	# all cases in the same location
+include_large_area_data = False
+# type_of_calibration = 'NUC_plate'
+type_of_calibration = 'BB_source_w/o_window'
+# type_of_calibration = 'BB_source_w_window'
+# all_cases_to_include = [['laser34','laser35']]	# all cases in the same location
 for cases_to_include in all_cases_to_include:
 	figure_index = 0
 	coefficients = []
@@ -143,6 +179,18 @@ for cases_to_include in all_cases_to_include:
 	all_partial_diffusion_std = []
 	all_partial_timevariation = []
 	all_partial_timevariation_std = []
+	all_partial_BBrad_large = []
+	all_partial_BBrad_std_large = []
+	all_partial_diffusion_large = []
+	all_partial_diffusion_std_large = []
+	all_partial_timevariation_large = []
+	all_partial_timevariation_std_large = []
+	all_partial_BBrad_small = []
+	all_partial_BBrad_std_small = []
+	all_partial_diffusion_small = []
+	all_partial_diffusion_std_small = []
+	all_partial_timevariation_small = []
+	all_partial_timevariation_std_small = []
 	all_time_of_experiment = []
 	all_laser_framerate = []
 	all_laser_to_analyse_frequency_end = []
@@ -182,13 +230,30 @@ for cases_to_include in all_cases_to_include:
 		success_read = False
 		try:
 			laser_dict = np.load(laser_to_analyse+'.npz')
-			partial_BBrad = laser_dict['partial_BBrad_small']
-			partial_BBrad_std = laser_dict['partial_BBrad_std_small']
-			partial_diffusion = laser_dict['partial_diffusion_small']
-			partial_diffusion_std = laser_dict['partial_diffusion_std_small']
-			partial_timevariation = laser_dict['partial_timevariation_small']
-			partial_timevariation_std = laser_dict['partial_timevariation_std_small']
-			time_of_experiment = laser_dict['time_of_experiment']	# microseconds
+			laser_dict.allow_pickle=True
+			temp = laser_dict[type_of_calibration].all()
+			# temp = laser_dict['BB_source_w/o_window'].all()
+			# temp = laser_dict['BB_source_w_window'].all()
+			partial_BBrad_small = temp['partial_BBrad_small']
+			partial_BBrad_std_small = temp['partial_BBrad_std_small']
+			partial_diffusion_small = temp['partial_diffusion_small']
+			partial_diffusion_std_small = temp['partial_diffusion_std_small']
+			partial_timevariation_small = temp['partial_timevariation_small']
+			partial_timevariation_std_small = temp['partial_timevariation_std_small']
+			partial_BBrad_large = temp['partial_BBrad']
+			partial_BBrad_std_large = temp['partial_BBrad_std']
+			partial_diffusion_large = temp['partial_diffusion']
+			partial_diffusion_std_large = temp['partial_diffusion_std']
+			partial_timevariation_large = temp['partial_timevariation']
+			partial_timevariation_std_large = temp['partial_timevariation_std']
+			if type_of_calibration=='NUC_plate':
+				partial_timevariation_small /=2
+				partial_timevariation_std_small /=2
+				partial_timevariation_large /=2
+				partial_timevariation_std_large /=2
+			partial_timevariation_large *=1.15
+			partial_timevariation_std_large *=1.15
+			time_of_experiment = temp['time_of_experiment']	# microseconds
 			if np.diff(time_of_experiment).max()>np.median(np.diff(time_of_experiment))*1.1:
 				hole_pos = np.diff(time_of_experiment).argmax()
 				if hole_pos<len(time_of_experiment)/2:
@@ -196,7 +261,10 @@ for cases_to_include in all_cases_to_include:
 				else:
 					time_of_experiment = time_of_experiment[:-(hole_pos+1)]
 			laser_framerate = laser_dict['FrameRate']	# Hz
-			laser_location = laser_dict['laser_location']
+			try:
+				laser_location = temp['laser_location']
+			except:
+				laser_location = laser_dict['laser_location']
 			success_read = True
 		except Exception as e:
 			print('failed reading '+laser_to_analyse+'.npz')
@@ -207,7 +275,7 @@ for cases_to_include in all_cases_to_include:
 
 
 		frames_for_one_pulse = laser_framerate/experimental_laser_frequency
-		if frames_for_one_pulse*experimental_laser_duty<4:
+		if frames_for_one_pulse*experimental_laser_duty<minimum_frames_for_ON_phase:
 			print('skipped for laser frequency too high compared to camera framerate')
 			continue
 
@@ -218,25 +286,59 @@ for cases_to_include in all_cases_to_include:
 		# else:
 		# 	sharpness_degradation_high_frequency.append(1)
 
-		all_partial_BBrad.append(partial_BBrad)
-		all_partial_BBrad_std.append(partial_BBrad_std)
-		all_partial_diffusion.append(partial_diffusion)
-		all_partial_diffusion_std.append(partial_diffusion_std)
-		all_partial_timevariation.append(partial_timevariation)
-		all_partial_timevariation_std.append(partial_timevariation_std)
+		all_partial_BBrad.append(partial_BBrad_small)
+		all_partial_BBrad_std.append(partial_BBrad_std_small)
+		all_partial_diffusion.append(partial_diffusion_small)
+		all_partial_diffusion_std.append(partial_diffusion_std_small)
+		all_partial_timevariation.append(partial_timevariation_small)
+		all_partial_timevariation_std.append(partial_timevariation_std_small)
+		if include_large_area_data:
+			all_partial_BBrad.append(partial_BBrad_large)
+			all_partial_BBrad_std.append(partial_BBrad_std_large)
+			all_partial_diffusion.append(partial_diffusion_large)
+			all_partial_diffusion_std.append(partial_diffusion_std_large)
+			all_partial_timevariation.append(partial_timevariation_large)
+			all_partial_timevariation_std.append(partial_timevariation_std_large)
+		all_partial_BBrad_small.append(partial_BBrad_small)
+		all_partial_BBrad_std_small.append(partial_BBrad_std_small)
+		all_partial_diffusion_small.append(partial_diffusion_small)
+		all_partial_diffusion_std_small.append(partial_diffusion_std_small)
+		all_partial_timevariation_small.append(partial_timevariation_small)
+		all_partial_timevariation_std_small.append(partial_timevariation_std_small)
+		all_partial_BBrad_large.append(partial_BBrad_large)
+		all_partial_BBrad_std_large.append(partial_BBrad_std_large)
+		all_partial_diffusion_large.append(partial_diffusion_large)
+		all_partial_diffusion_std_large.append(partial_diffusion_std_large)
+		all_partial_timevariation_large.append(partial_timevariation_large)
+		all_partial_timevariation_std_large.append(partial_timevariation_std_large)
 		all_time_of_experiment.append(time_of_experiment)
 		all_laser_framerate.append(laser_framerate)
 		all_laser_to_analyse_frequency_end.append(experimental_laser_frequency)
 		all_laser_to_analyse_voltage_end.append(experimental_laser_voltage)
 		all_laser_to_analyse_duty_end.append(experimental_laser_duty)
+		if include_large_area_data:
+			all_time_of_experiment.append(time_of_experiment)
+			all_laser_framerate.append(laser_framerate)
+			all_laser_to_analyse_frequency_end.append(experimental_laser_frequency)
+			all_laser_to_analyse_voltage_end.append(experimental_laser_voltage)
+			all_laser_to_analyse_duty_end.append(experimental_laser_duty)
 		if focus_status=='fully_defocused':
 			all_laser_to_analyse_power_end.append(power_interpolator(experimental_laser_voltage)*1)
+			if include_large_area_data:
+				all_laser_to_analyse_power_end.append(power_interpolator(experimental_laser_voltage)*1)
 		else:
 			all_laser_to_analyse_power_end.append(power_interpolator(experimental_laser_voltage))
+			if include_large_area_data:
+				all_laser_to_analyse_power_end.append(power_interpolator(experimental_laser_voltage))
 		all_focus_status_end.append(focus_status)
 		all_case_ID_end.append(case_ID)
 		all_laser_to_analyse_end.append(laser_to_analyse)
 		all_laser_location_end.append(laser_location)
+		if include_large_area_data:
+			all_focus_status_end.append(focus_status)
+			all_case_ID_end.append(case_ID)
+			all_laser_to_analyse_end.append(laser_to_analyse)
+			all_laser_location_end.append(laser_location)
 
 		print('FINISHED '+laser_to_analyse)
 
@@ -256,9 +358,10 @@ for cases_to_include in all_cases_to_include:
 	# sharpness_degradation_high_frequency = np.array(sharpness_degradation_high_frequency)
 
 	# power_reduction_window = 0.9
-	def calculate_laser_power_given_parameters_1(trash,search_emissivity,search_thickness,search_diffusivity,search_defocused_to_focused_power):
-		print([search_emissivity,search_thickness,search_diffusivity,search_defocused_to_focused_power])
-		thickness_over_diffusivity = search_thickness/search_diffusivity
+	def calculate_laser_power_given_parameters_1(trash,search_emissivity,search_thickness,search_thickness_over_diffusivity,search_defocused_to_focused_power,search_laser_through_mirror_correction):
+		search_diffusivity = search_thickness/search_thickness_over_diffusivity
+		print([search_emissivity,search_thickness,search_diffusivity,search_defocused_to_focused_power,search_laser_through_mirror_correction])
+		# thickness_over_diffusivity = search_thickness/search_diffusivity
 		# search_diffusivity = Ptthermaldiffusivity
 		all_fitted_power = []
 		all_fitted_zero_power = []
@@ -270,20 +373,23 @@ for cases_to_include in all_cases_to_include:
 			# partial_diffusion_std = all_partial_diffusion_std[index]
 			partial_timevariation = all_partial_timevariation[index]
 			# partial_timevariation_std = all_partial_timevariation_std[index]
-			laser_framerate = all_laser_framerate[index]
+			laser_framerate = all_laser_framerate[index]/2
 			experimental_laser_frequency = all_laser_to_analyse_frequency_end[index]
 			experimental_laser_voltage = all_laser_to_analyse_voltage_end[index]
 			experimental_laser_duty = all_laser_to_analyse_duty_end[index]
 			focus_status = all_focus_status_end[index]
+			case_ID = all_case_ID_end[index]
 			if focus_status == 'fully_defocused':
 				defocused_to_focused_power = search_defocused_to_focused_power
 			else:
 				defocused_to_focused_power = 1
+			# if int(case_ID[-2:]) >=41 and int(case_ID[-2:]) <=47:
+			defocused_to_focused_power *= search_laser_through_mirror_correction
 			BBrad = partial_BBrad * search_emissivity
 			# BBrad_std = partial_BBrad_std * 1
 			diffusion = partial_diffusion * search_thickness
 			# diffusion_std = partial_diffusion_std * search_thickness
-			timevariation = thickness_over_diffusivity * partial_timevariation
+			timevariation = search_thickness_over_diffusivity * partial_timevariation
 			# timevariation_std = (1/search_diffusivity)*search_thickness * partial_timevariation_std
 			powernoback = diffusion + timevariation + BBrad
 			# powernoback = timevariation + BBrad
@@ -303,16 +409,24 @@ for cases_to_include in all_cases_to_include:
 				peaks_low = find_peaks(-totalpower_filtered_2,distance=frames_for_one_pulse*0.95)[0]
 				peaks_low = peaks_low[np.logical_and(peaks_low>frames_for_one_pulse,peaks_low<len(powernoback)-10)].tolist()
 				all_fitted_power.append(np.array([totalpower_filtered_1.max()-totalpower_filtered_1.min(),np.mean(totalpower_filtered_2[peaks_low])+all_laser_to_analyse_power_end[index]*power_reduction_window*defocused_to_focused_power])/(all_laser_to_analyse_power_end[index]*power_reduction_window*defocused_to_focused_power))
-			else:
-				time_axis = (time_of_experiment[1:-1]-time_of_experiment[1])/1e6
-				totalpower_filtered_2_full = generic_filter(powernoback,np.mean,size=[max(1,int(frames_for_one_pulse*experimental_laser_duty))])
+			elif True:
+				time_axis = time_of_experiment
+				totalpower_filtered_2_full = generic_filter(powernoback,np.mean,size=[max(1,int(frames_for_one_pulse*experimental_laser_duty)-2)])
 				totalpower_filtered_2 = totalpower_filtered_2_full#[int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5))]
-				time_axis_crop = time_axis[int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5))]
+				time_axis_crop = time_axis#[int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5))]
 				temp = max(1,int((len(totalpower_filtered_2)-len(totalpower_filtered_2)//frames_for_one_pulse*frames_for_one_pulse)/2))
 				totalpower_filtered_2 = totalpower_filtered_2[temp:-temp]
 				time_axis_crop = time_axis_crop[temp:-temp]
 				peaks_loc = find_peaks(totalpower_filtered_2,distance=frames_for_one_pulse*0.95)[0]
 				peaks_loc = peaks_loc[np.logical_and(peaks_loc>5,peaks_loc<len(totalpower_filtered_2)-6)]
+				if len(peaks_loc)==0:
+					peaks_loc = find_peaks(totalpower_filtered_2,distance=frames_for_one_pulse*0.95)[0]
+					if len(peaks_loc)==0:
+						peaks_loc = totalpower_filtered_2.argmax()
+					else:
+						peaks_loc = peaks_loc[0]
+				if len(peaks_loc)>=3:
+					peaks_loc = peaks_loc[np.logical_and(peaks_loc>peaks_loc.min(),peaks_loc<peaks_loc.max())]
 				peaks = totalpower_filtered_2[peaks_loc]
 				peak = np.mean(peaks)
 
@@ -324,14 +438,25 @@ for cases_to_include in all_cases_to_include:
 					totalpower_filtered_2 = totalpower_filtered_2[temp:-temp]
 				throughs_loc = find_peaks(-totalpower_filtered_2,distance=frames_for_one_pulse*0.95)[0]
 				throughs_loc = throughs_loc[np.logical_and(throughs_loc>1,throughs_loc<len(totalpower_filtered_2)-1)]
+				if len(throughs_loc)==0:
+					throughs_loc = find_peaks(-totalpower_filtered_2,distance=frames_for_one_pulse*0.95)[0]
+					if len(throughs_loc)==0:
+						throughs_loc = totalpower_filtered_2.argmin()
+					else:
+						throughs_loc[0]
+				if len(throughs_loc)>=3:
+					throughs_loc = throughs_loc[np.logical_and(throughs_loc>throughs_loc.min(),throughs_loc<throughs_loc.max())]
 				throughs = totalpower_filtered_2[throughs_loc]
 				through = np.mean(throughs)
 				footprint = np.concatenate([np.ones((time_ON_after_SS)),np.zeros((time_ON_after_SS))])
-				totalpower_filtered_1 = generic_filter(powernoback,np.mean,footprint=footprint)
-				totalpower_filtered_1 = generic_filter(totalpower_filtered_1,np.mean,size=[max(time_ON_after_SS//10,3)])
-				sharpness_indicator = ((np.std(totalpower_filtered_1[totalpower_filtered_1>(peak+through)/2]) + np.std(totalpower_filtered_1[totalpower_filtered_1<(peak+through)/2]) + (peak-through)))/(peak-through)
+				# totalpower_filtered_1 = generic_filter(powernoback,np.mean,footprint=footprint)
+				# totalpower_filtered_1 = generic_filter(totalpower_filtered_1,np.mean,size=[max(time_ON_after_SS//10,3)])
+				# sharpness_indicator = ((np.std(totalpower_filtered_1[totalpower_filtered_1>(peak+through)/2]) + np.std(totalpower_filtered_1[totalpower_filtered_1<(peak+through)/2]) + (all_laser_to_analyse_power_end[index]*power_reduction_window*defocused_to_focused_power)))/(all_laser_to_analyse_power_end[index]*power_reduction_window*defocused_to_focused_power)
+				# sharpness_indicator = ((np.std(powernoback[powernoback>through+(peak-through)/2]) + np.std(powernoback[powernoback<through+(peak-through)/2]) -np.mean(np.diff(powernoback)**2)**0.5 + (peak-through)))/(peak-through)
+				sharpness_indicator = (np.std(powernoback[powernoback>through+(peak-through)/2]) + np.std(powernoback[powernoback<through+(peak-through)/2]))/(np.mean(np.diff(powernoback)**2)**0.5)
 
-				all_fitted_power.append((np.array([peak-through,through+all_laser_to_analyse_power_end[index]*power_reduction_window*defocused_to_focused_power])/(all_laser_to_analyse_power_end[index]*power_reduction_window*defocused_to_focused_power)).tolist()+[sharpness_indicator])
+				# all_fitted_power.append((np.array([peak,through+all_laser_to_analyse_power_end[index]*power_reduction_window*defocused_to_focused_power])/(all_laser_to_analyse_power_end[index]*power_reduction_window*defocused_to_focused_power)).tolist()+[sharpness_indicator])
+				all_fitted_power.append((np.array([peak,peak-through])/(all_laser_to_analyse_power_end[index]*power_reduction_window*defocused_to_focused_power)).tolist()+[sharpness_indicator])
 
 			# totalpower_filtered_1 = totalpower_filtered_1[int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5))]
 			# plt.figure()
@@ -355,11 +480,21 @@ for cases_to_include in all_cases_to_include:
 	y = np.concatenate([np.ones_like(all_laser_to_analyse_power_end),np.ones_like(all_laser_to_analyse_power_end),np.ones_like(all_laser_to_analyse_power_end)])
 	# weigth = np.array([np.ones_like(all_laser_to_analyse_power_end)*1,np.ones_like(all_laser_to_analyse_power_end)*0.1,np.ones_like(all_laser_to_analyse_power_end)*0.001*sharpness_degradation_high_frequency]).T.flatten()
 	# sigma = np.ones_like(y)
-	sigma = (np.abs(all_laser_to_analyse_power_end-all_laser_to_analyse_power_end.max()) + all_laser_to_analyse_power_end.max())/np.array(all_laser_to_analyse_frequency_end)
-	sigma = np.array([sigma,sigma*2,sigma]).T.flatten()
-	bds = [[0.7,0.1*2.5e-6,0.1*Ptthermaldiffusivity,0.8],[1,10*2.5e-6,10*Ptthermaldiffusivity,1.2]]
+	# sigma = ((np.abs(all_laser_to_analyse_power_end-all_laser_to_analyse_power_end.max()) + all_laser_to_analyse_power_end.max())/np.array(all_laser_to_analyse_frequency_end))**2
+	sigma = []
+	for index,value in enumerate(all_laser_to_analyse_power_end):
+		case_ID = all_case_ID_end[index]
+		max_power = all_laser_to_analyse_power_end[case_ID == np.array(all_case_ID_end)].max()
+		temp = (np.abs(value-max_power) + max_power)/max_power
+		sigma.append(temp)
+		# sigma.append(1)
+	sigma = np.array(sigma)# * ((all_laser_to_analyse_frequency_end/(all_laser_to_analyse_frequency_end.min()))**0.1)
+	sigma = np.array([sigma,sigma*3,sigma*np.inf]).T.flatten()
+	# bds = [[0.7,0.2*2.5e-6,0.2*Ptthermaldiffusivity,0.4,0.8],[1,5*2.5e-6,5*Ptthermaldiffusivity,1.5,1.5]]
+	bds = [[0.0,0.2*2.5e-6,0.2*2.5e-6/Ptthermaldiffusivity,0.4,0.99999991],[1,5*2.5e-6,5*2.5e-6/Ptthermaldiffusivity,1.5,1.0000002]]
 	# guess=[0.98,2.5e-6,Ptthermaldiffusivity,1]
-	guess=[0.98,2.5e-6,1e-5,1]
+	# guess=[0.98,2.0e-6,1e-5,0.753,1]
+	guess=[0.9,2.0e-6,2.0e-6/1e-5,0.78,1]
 	fit = curve_fit(calculate_laser_power_given_parameters_1, x, y, sigma=sigma, p0=guess,bounds=bds,maxfev=int(1e6),verbose=2,diff_step=np.array(guess)/100,xtol=1e-10)
 	guess = fit[0]
 	fit = curve_fit(calculate_laser_power_given_parameters_1, x, y, sigma=sigma, p0=guess,bounds=bds,maxfev=int(1e6),verbose=2,diff_step=np.array(guess)/10000,xtol=1e-10)
@@ -368,8 +503,11 @@ for cases_to_include in all_cases_to_include:
 	# fit = curve_fit(calculate_laser_power_given_parameters_1, x, y, sigma=sigma, p0=fit[0],bounds=bds,maxfev=int(1e6),verbose=2,diff_step=np.array(fit[0])/10000,xtol=1e-10)
 	best_power = calculate_laser_power_given_parameters_1(1,*fit[0])
 	guess_best_power = calculate_laser_power_given_parameters_1(1,*guess)
-	emissivity_first_stage, thickness_first_stage, diffusivity_first_stage,defocused_to_focused_power_first_stage = fit[0]
-	coefficients_first_stage.append(fit[0])
+	emissivity_first_stage, thickness_first_stage,thickness_over_diffusivity_first_stage,defocused_to_focused_power_first_stage,laser_through_mirror_correction_first_stage = fit[0]
+	diffusivity_first_stage = thickness_first_stage/thickness_over_diffusivity_first_stage
+	emissivity_first_stage_sigma, thickness_first_stage_sigma, thickness_over_diffusivity_first_stage_sigma, defocused_to_focused_power_first_stage_sigma, laser_through_mirror_correction_first_stage_sigma = np.diag(fit[1])**0.5
+	diffusivity_first_stage_sigma = thickness_first_stage/thickness_over_diffusivity_first_stage *( (thickness_first_stage_sigma/thickness_first_stage)**2 + (thickness_over_diffusivity_first_stage_sigma/thickness_over_diffusivity_first_stage)**2 )**0.5
+	# coefficients_first_stage.append(fit[0])
 	# all_sharpness_first.append(np.nanmean(best_sharpness))
 
 
@@ -387,11 +525,252 @@ for cases_to_include in all_cases_to_include:
 		defocused_to_focused_power_first_stage = 0.826382122298828
 		# this to me is the best I ever got. I'll use this
 
+	if cases_to_include==['laser19', 'laser22', 'laser30', 'laser33']:
+		diffusivity_first_stage = 1.0748873883996856e-05
+		thickness_first_stage = 2.041275758399619e-06
+		emissivity_first_stage = 0.9957284275401461
+		defocused_to_focused_power_first_stage = 0.7591477777823928
+		# 23/08/2022 used the BB temperature. this seems the better one for now
+
+	if cases_to_include==['laser19', 'laser22', 'laser33']:	# with max frew 10Hz, BB source
+		diffusivity_first_stage = 1.0541064256459692e-05
+		thickness_first_stage = 1.8212362455836903e-06
+		emissivity_first_stage = 0.9999720335475922
+		defocused_to_focused_power_first_stage = 0.9023132100212834
+		laser_through_mirror_correction_first_stage = 1
+		# 02/09/2022 I will need to use this, but for now it is not set yet
+
+	if cases_to_include==['laser19', 'laser22', 'laser33']:	# with max frew 10Hz, NUC poly
+		diffusivity_first_stage = 1.0834175364809539e-05
+		thickness_first_stage = 2.171960404217933e-06
+		emissivity_first_stage = 0.9968454239843706
+		defocused_to_focused_power_first_stage = 0.8438514098053702
+		laser_through_mirror_correction_first_stage = 1
+		# 02/09/2022 I will need to use this, but for now it is not set yet
+
+
 	if cases_to_include==['laser17', 'laser18', 'laser19', 'laser22', 'laser25', 'laser32', 'laser34', 'laser41', 'laser42', 'laser43', 'laser44', 'laser45', 'laser46', 'laser47']:
 
 
 
+	if include_large_area_data:
+		temp=int(len(all_laser_to_analyse_power_end)/2)
+	else:
+		temp=len(all_laser_to_analyse_power_end)
+	for index in np.arange(temp):
+		# index=2
+		# index=len(all_case_ID_end)-1
+		case_ID = all_case_ID_end[index]
+		laser_to_analyse = all_laser_to_analyse_end[index]
+		partial_BBrad = all_partial_BBrad_small[index]
+		partial_BBrad_std = all_partial_BBrad_std_small[index]
+		partial_diffusion = all_partial_diffusion_small[index]
+		partial_diffusion_std = all_partial_diffusion_std_small[index]
+		partial_timevariation = all_partial_timevariation_small[index]
+		partial_timevariation_std = all_partial_timevariation_std_small[index]
+		if include_large_area_data:
+			partial_BBrad_large = all_partial_BBrad_large[index]
+			partial_BBrad_std_large = all_partial_BBrad_std_large[index]
+			partial_diffusion_large = all_partial_diffusion_large[index]
+			partial_diffusion_std_large = all_partial_diffusion_std_large[index]
+			partial_timevariation_large = all_partial_timevariation_large[index]
+			partial_timevariation_std_large = all_partial_timevariation_std_large[index]
+			time_of_experiment = all_time_of_experiment[index*2]
+			laser_framerate = all_laser_framerate[index*2]/2
+			experimental_laser_frequency = all_laser_to_analyse_frequency_end[index*2]
+			experimental_laser_voltage = all_laser_to_analyse_voltage_end[index*2]
+			experimental_laser_duty = all_laser_to_analyse_duty_end[index*2]
+			laser_to_analyse_power_end = all_laser_to_analyse_power_end[index*2]
+			focus_status = all_focus_status_end[index*2]
+		else:
+			time_of_experiment = all_time_of_experiment[index]
+			laser_framerate = all_laser_framerate[index]/2
+			experimental_laser_frequency = all_laser_to_analyse_frequency_end[index]
+			experimental_laser_voltage = all_laser_to_analyse_voltage_end[index]
+			experimental_laser_duty = all_laser_to_analyse_duty_end[index]
+			laser_to_analyse_power_end = all_laser_to_analyse_power_end[index]
+			focus_status = all_focus_status_end[index]
+		# defocused_to_focused_power = 1
+		if focus_status=='fully_defocused':
+			defocused_to_focused_power = defocused_to_focused_power_first_stage
+		else:
+			defocused_to_focused_power = 1
+		# if int(case_ID[-2:]) >=41 and int(case_ID[-2:]) <=47:
+		defocused_to_focused_power *= laser_through_mirror_correction_first_stage
+		# power_reduction_window = 0.9
+		BBrad = partial_BBrad * emissivity_first_stage
+		BBrad_first = partial_BBrad * emissivity_first_stage
+		BBrad_std = partial_BBrad_std * emissivity_first_stage
+		diffusion_first = partial_diffusion * thickness_first_stage
+		diffusion = partial_diffusion * thickness_first_stage
+		diffusion_std = partial_diffusion_std * thickness_first_stage
+		timevariation = (1/diffusivity_first_stage)*thickness_first_stage * partial_timevariation
+		timevariation_first = (1/diffusivity_first_stage)*thickness_first_stage * partial_timevariation
+		timevariation_std = (1/diffusivity_first_stage)*thickness_first_stage * partial_timevariation_std
+		powernoback = diffusion + timevariation + BBrad
+		powernoback_first = diffusion_first + timevariation_first + BBrad_first
+		powernoback_std = (diffusion_std**2 + timevariation_std**2 + BBrad_std**2)**0.5
+		if include_large_area_data:
+			BBrad_large = partial_BBrad_large * emissivity_first_stage
+			diffusion_large = partial_diffusion_large * thickness_first_stage
+			timevariation_large = (1/diffusivity_first_stage)*thickness_first_stage * partial_timevariation_large
+			powernoback_large = BBrad_large + diffusion_large + timevariation_large
 
+		frames_for_one_pulse = int(laser_framerate/experimental_laser_frequency)
+		time_ON_after_SS = max(1,int(frames_for_one_pulse*experimental_laser_duty - minimum_ON_period*laser_framerate))
+		# totalpower_filtered_1 = generic_filter(nominal_values(powernoback)[:int(len(powernoback)//frames_for_one_pulse*frames_for_one_pulse)],np.mean,size=[max(1,int(frames_for_one_pulse*experimental_laser_duty/15//2*2+1))])
+
+		# part_powernoback = np.sort(nominal_values(powernoback)[:int(len(powernoback)//frames_for_one_pulse*frames_for_one_pulse)])
+		# # fitted_power_2 = [ufloat(np.median(np.sort(totalpower_filtered_1)[:-int(len(totalpower_filtered_1)*experimental_laser_duty)]),np.std(np.sort(totalpower_filtered_1)[:-int(len(totalpower_filtered_1)*experimental_laser_duty)])),ufloat(np.median(np.sort(totalpower_filtered_1)[-int(len(totalpower_filtered_1)*experimental_laser_duty):]),np.std(np.sort(totalpower_filtered_1)[-int(len(totalpower_filtered_1)*experimental_laser_duty):]))]
+		# fitted_power_2 = [np.median(part_powernoback[:-int(max(len(powernoback)*experimental_laser_duty*1,1))]),np.std(part_powernoback[:-int(max(len(powernoback)*experimental_laser_duty*1,1))]),np.median(part_powernoback[-int(max(len(powernoback)*experimental_laser_duty*1,1)):]),np.std(part_powernoback[-int(max(len(powernoback)*experimental_laser_duty*1,1)):])]
+
+		time_axis = time_of_experiment
+		totalpower_filtered_2_full = generic_filter(powernoback,np.mean,size=[max(1,int(frames_for_one_pulse*experimental_laser_duty)-2)])
+		totalpower_filtered_2 = totalpower_filtered_2_full#[int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5))]
+		time_axis_crop = time_axis#[int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5))]
+		temp = max(1,int((len(totalpower_filtered_2)-len(totalpower_filtered_2)//frames_for_one_pulse*frames_for_one_pulse)/2))
+		totalpower_filtered_2 = totalpower_filtered_2[temp:-temp]
+		# time_axis_crop = time_axis_crop[temp:-temp]
+		peaks_loc = find_peaks(totalpower_filtered_2,distance=frames_for_one_pulse*0.95)[0]
+		peaks_loc = peaks_loc[np.logical_and(peaks_loc>5,peaks_loc<len(totalpower_filtered_2)-6)]
+		if len(peaks_loc)==0:
+			peaks_loc = find_peaks(totalpower_filtered_2,distance=frames_for_one_pulse*0.95)[0]
+			if len(peaks_loc)==0:
+				peaks_loc = totalpower_filtered_2.argmax()
+			else:
+				peaks_loc = peaks_loc[0]
+		if len(peaks_loc)>=3:
+			peaks_loc = peaks_loc[np.logical_and(peaks_loc>peaks_loc.min(),peaks_loc<peaks_loc.max())]
+		peaks = totalpower_filtered_2[peaks_loc]
+		time_peaks = time_axis_crop[peaks_loc+temp]
+		peak = np.mean(peaks)
+		peaks_std = np.std(peaks)
+
+		if experimental_laser_duty!=0.5:
+			totalpower_filtered_2_full_negative = generic_filter(powernoback,np.mean,size=[max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))])
+			totalpower_filtered_2 = totalpower_filtered_2_full_negative[int(max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))*0.5))]
+			time_axis_crop = time_axis[int(max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))*0.5))]
+			temp = max(1,int((len(totalpower_filtered_2)-len(totalpower_filtered_2)//frames_for_one_pulse*frames_for_one_pulse)/2))
+			totalpower_filtered_2 = totalpower_filtered_2[temp:-temp]
+		throughs_loc = find_peaks(-totalpower_filtered_2,distance=frames_for_one_pulse*0.95)[0]
+		throughs_loc = throughs_loc[np.logical_and(throughs_loc>1,throughs_loc<len(totalpower_filtered_2)-1)]
+		if len(throughs_loc)==0:
+			throughs_loc = find_peaks(-totalpower_filtered_2,distance=frames_for_one_pulse*0.95)[0]
+			if len(throughs_loc)==0:
+				throughs_loc = totalpower_filtered_2.argmin()
+			else:
+				throughs_loc[0]
+		if len(throughs_loc)>=3:
+			throughs_loc = throughs_loc[np.logical_and(throughs_loc>throughs_loc.min(),throughs_loc<throughs_loc.max())]
+		throughs = totalpower_filtered_2[throughs_loc]
+		time_throughs = time_axis_crop[throughs_loc+temp]
+		through = np.mean(throughs)
+		throughs_std = np.std(throughs)
+
+		footprint = np.concatenate([np.ones((time_ON_after_SS)),np.zeros((time_ON_after_SS))])
+		totalpower_filtered_1 = generic_filter(powernoback,np.mean,footprint=footprint)
+		totalpower_filtered_1 = generic_filter(totalpower_filtered_1,np.mean,size=[max(time_ON_after_SS//10,3)])
+		# sharpness_indicator = ((np.std(totalpower_filtered_1[totalpower_filtered_1>(peak+through)/2]) + np.std(totalpower_filtered_1[totalpower_filtered_1<(peak+through)/2]) + (all_laser_to_analyse_power_end[index]*power_reduction_window*defocused_to_focused_power)))/(all_laser_to_analyse_power_end[index]*power_reduction_window*defocused_to_focused_power)
+		# sharpness_indicator = ((np.std(powernoback[powernoback>through+(peak-through)/2]) + np.std(powernoback[powernoback<through+(peak-through)/2]) -np.mean(np.diff(powernoback)**2)**0.5 + (peak-through)))/(peak-through)
+		sharpness_indicator = (np.std(powernoback[powernoback>through+(peak-through)/2]) + np.std(powernoback[powernoback<through+(peak-through)/2]))/(np.mean(np.diff(powernoback)**2)**0.5)
+
+		noise_amplitude = 4e-5
+		fitted_power_2 = [through,throughs_std,peak,peaks_std]
+
+		if include_large_area_data:
+			totalpower_filtered_2_full_large = generic_filter(powernoback_large,np.mean,size=[max(1,int(frames_for_one_pulse*experimental_laser_duty)-2)])
+
+		if False:	# plots for me to see how things are
+			plt.figure(figsize=(20, 10))
+			plt.plot(time_axis,powernoback_first,'--',label='totalpower first pass')
+			plt.plot(time_axis,totalpower_filtered_1,'--',label='totalpower filtered first pass')
+			ax,=plt.plot(time_axis,powernoback,label='totalpower')
+			if include_large_area_data:
+				plt.plot(time_axis,generic_filter(powernoback_large,np.mean,size=max(int(0.01*frames_for_one_pulse*experimental_laser_duty),2)),'--',label='totalpower_large',color=ax.get_color())
+			ax,=plt.plot(time_axis,BBrad,label='totalBBrad')
+			if include_large_area_data:
+				plt.plot(time_axis,generic_filter(BBrad_large,np.mean,size=max(int(0.01*frames_for_one_pulse*experimental_laser_duty),2)),'--',label='totalBBrad_large',color=ax.get_color())
+			ax,=plt.plot(time_axis,diffusion,label='totaldiffusion')
+			if include_large_area_data:
+				plt.plot(time_axis,generic_filter(diffusion_large,np.mean,size=max(int(0.01*frames_for_one_pulse*experimental_laser_duty),2)),'--',label='totaldiffusion_large',color=ax.get_color())
+			ax,=plt.plot(time_axis,timevariation,label='totaltimevariation')
+			if include_large_area_data:
+				plt.plot(time_axis,generic_filter(timevariation_large,np.mean,size=max(int(0.01*frames_for_one_pulse*experimental_laser_duty),2)),'--',label='totaltimevariation',color=ax.get_color())
+			if experimental_laser_duty!=0.5:
+				plt.plot(time_axis,totalpower_filtered_1,linewidth=3,label='totalpower filtered ON')
+				plt.plot(time_axis,totalpower_filtered_1,linewidth=3,label='totalpower filtered OFF')
+				ax,=plt.plot(time_axis,totalpower_filtered_2_full,linewidth=3,label='totalpower super filtered')
+				plt.plot(time_axis,totalpower_filtered_2_full_negative,linewidth=3,color=ax.get_color())
+			else:
+				plt.plot(time_axis,totalpower_filtered_1,linewidth=3,label='totalpower filtered')
+				ax,=plt.plot(time_axis,totalpower_filtered_2_full,linewidth=3,label='totalpower super filtered')
+			if include_large_area_data:
+				plt.plot(time_axis,totalpower_filtered_2_full_large,'--',linewidth=1,label='totalpower super filtered_large',color=ax.get_color())
+			plt.plot(time_peaks,peaks,'o',markersize=10,label='peaks')
+			plt.plot(time_throughs,throughs,'o',markersize=10,label='through')
+			plt.errorbar([time_axis[0],time_axis[-1]],[fitted_power_2[0]]*2,yerr=[fitted_power_2[1]]*2,color='k',linestyle=':',linewidth=2,label='power upper/lower median')
+			plt.errorbar([time_axis[0],time_axis[-1]],[fitted_power_2[2]]*2,yerr=[fitted_power_2[3]]*2,color='k',linestyle=':',linewidth=2)
+			plt.plot([time_axis[0],time_axis[-1]],[through+noise_amplitude]*2,'--k',label='sharpness limits')
+			plt.plot([time_axis[0],time_axis[-1]],[through-noise_amplitude]*2,'--k')
+			plt.plot([time_axis[0],time_axis[-1]],[peak-noise_amplitude]*2,'--k')
+			plt.plot([time_axis[0],time_axis[-1]],[peak+noise_amplitude]*2,'--k')
+			plt.plot([time_axis[0],time_axis[-1]],[laser_to_analyse_power_end*defocused_to_focused_power*power_reduction_window]*2,'--r',label='power input')
+			# plt.plot([time_axis[0],time_axis[-1]],[fitted_power_2[0]]*2,color='k',linestyle=':',linewidth=2,label='power upper/lower median')
+			# plt.plot([time_axis[0],time_axis[-1]],[fitted_power_2[1]]*2,color='k',linestyle=':',linewidth=2)
+			plt.legend(loc='best', fontsize='small')
+			plt.xlabel('time [s]')
+			plt.ylabel('power [W]')
+			plt.grid()
+			plt.title(laser_to_analyse+' in '+case_ID+'\nInput '+focus_status+', spot location '+ str([int(laser_location[0]),int(laser_location[2])]) +' power %.3gW, freq %.3gHz, duty%.3g\nHigh Power=%.3g+/-%.3gW, Low Power=%.3g+/-%.3gW, sharpness=%.3g\ndiffusivity %.3g,thickness %.3g,emissivity %.3g,defocused_to_focused %.3g,laser_through_mirror_correction %.3g' %(laser_to_analyse_power_end*defocused_to_focused_power*power_reduction_window,experimental_laser_frequency,experimental_laser_duty,fitted_power_2[2],fitted_power_2[3],fitted_power_2[0],fitted_power_2[1],sharpness_indicator,diffusivity_first_stage,thickness_first_stage,emissivity_first_stage,defocused_to_focused_power_first_stage,laser_through_mirror_correction_first_stage))
+			# plt.pause(0.01)
+			figure_index+=1
+			plt.savefig(path_where_to_save_everything_int + 'example_' + str(figure_index) +'.eps', bbox_inches='tight')
+			plt.close()
+		else:	# these are for the paper
+			plt.figure(figsize=(13, 8))
+			# plt.plot(time_axis,powernoback_first,'--',label='totalpower first pass')
+			# plt.plot(time_axis,totalpower_filtered_1,'--',label='totalpower filtered first pass')
+			plt.plot(time_axis,powernoback,label='P',alpha=1)
+			plt.plot(time_axis,BBrad,label=r'$P_{BB}$',alpha=0.7)
+			plt.plot(time_axis,diffusion,label=r'$P_{\Delta T}$',alpha=0.7)
+			plt.plot(time_axis,timevariation,label=r'$P_{\frac {\partial T} {\partial t}}$',alpha=0.7)
+			# if experimental_laser_duty!=0.5:
+			# 	plt.plot(time_axis,totalpower_filtered_1,linewidth=3,label='totalpower filtered ON')
+			# 	plt.plot(time_axis,totalpower_filtered_1,linewidth=3,label='totalpower filtered OFF')
+			# 	ax,=plt.plot(time_axis,totalpower_filtered_2_full,linewidth=3,label='totalpower filtered')
+			# 	plt.plot(time_axis,totalpower_filtered_2_full_negative,linewidth=3,color=ax.get_color())
+			# else:
+			# 	# plt.plot(time_axis,totalpower_filtered_1,linewidth=3,label='totalpower filtered')
+			# 	plt.plot(time_axis,totalpower_filtered_2_full,linewidth=3,label='P filtered')
+			plt.plot(time_peaks,peaks,'o',markersize=10,label=r'$P_{h}$')
+			plt.plot(time_throughs,throughs,'o',markersize=10,label=r'$P_{l}$')
+			# plt.plot([time_axis[0],time_axis[-1]],[fitted_power_2[0]]*2,color='k',linestyle=':',linewidth=2,label='power high/low')
+			# plt.plot([time_axis[0],time_axis[-1]],[fitted_power_2[2]]*2,color='k',linestyle=':',linewidth=2)
+			# plt.plot([time_axis[0],time_axis[-1]],[through+noise_amplitude]*2,'--k',label='sharpness limits')
+			# plt.plot([time_axis[0],time_axis[-1]],[through-noise_amplitude]*2,'--k')
+			# plt.plot([time_axis[0],time_axis[-1]],[peak-noise_amplitude]*2,'--k')
+			# plt.plot([time_axis[0],time_axis[-1]],[peak+noise_amplitude]*2,'--k')
+			plt.axhline(y=laser_to_analyse_power_end*defocused_to_focused_power*power_reduction_window,linestyle='--',color='k',label=r'$P_{in}$')
+			plt.axhline(y=0,linestyle='--',color='k')
+			# plt.plot([time_axis[0],time_axis[-1]],[fitted_power_2[0]]*2,color='k',linestyle=':',linewidth=2,label='power upper/lower median')
+			# plt.plot([time_axis[0],time_axis[-1]],[fitted_power_2[1]]*2,color='k',linestyle=':',linewidth=2)
+			plt.legend(loc='best', fontsize='medium')
+			plt.xlabel('time [s]')
+			plt.ylabel('power [W]')
+			plt.grid()
+			plt.title(laser_to_analyse+' in '+case_ID+'\nInput '+focus_status+', spot location '+ str([int(laser_location[0]),int(laser_location[2])]) +' power %.3gW, freq %.3gHz, duty%.3g\nHigh Power=%.3g+/-%.3gW, Low Power=%.3g+/-%.3gW, sharpness=%.3g\ndiffusivity %.3g,thickness %.3g,emissivity %.3g,defocused_to_focused %.3g,laser_through_mirror_correction %.3g' %(laser_to_analyse_power_end*defocused_to_focused_power*power_reduction_window,experimental_laser_frequency,experimental_laser_duty,fitted_power_2[2],fitted_power_2[3],fitted_power_2[0],fitted_power_2[1],sharpness_indicator,diffusivity_first_stage,thickness_first_stage,emissivity_first_stage,defocused_to_focused_power_first_stage,laser_through_mirror_correction_first_stage))
+			# plt.pause(0.01)
+			figure_index+=1
+			plt.savefig(path_where_to_save_everything_int + 'example_for_paper_' + str(figure_index) +'.png', bbox_inches='tight')
+			plt.close()
+
+
+
+	all_peak = []
+	all_peak_std = []
+	all_through = []
+	all_through_std = []
+	all_sharpness_indicator = []
 	for index in np.arange(len(all_laser_to_analyse_power_end)):
 		# index=2
 		# index=len(all_case_ID_end)-1
@@ -404,7 +783,7 @@ for cases_to_include in all_cases_to_include:
 		partial_timevariation = all_partial_timevariation[index]
 		partial_timevariation_std = all_partial_timevariation_std[index]
 		time_of_experiment = all_time_of_experiment[index]
-		laser_framerate = all_laser_framerate[index]
+		laser_framerate = all_laser_framerate[index]/2
 		experimental_laser_frequency = all_laser_to_analyse_frequency_end[index]
 		experimental_laser_voltage = all_laser_to_analyse_voltage_end[index]
 		experimental_laser_duty = all_laser_to_analyse_duty_end[index]
@@ -415,6 +794,8 @@ for cases_to_include in all_cases_to_include:
 			defocused_to_focused_power = defocused_to_focused_power_first_stage
 		else:
 			defocused_to_focused_power = 1
+		# if int(case_ID[-2:]) >=41 and int(case_ID[-2:]) <=47:
+		defocused_to_focused_power *= laser_through_mirror_correction_first_stage
 		# power_reduction_window = 0.9
 		BBrad = partial_BBrad * emissivity_first_stage
 		BBrad_first = partial_BBrad * emissivity_first_stage
@@ -423,22 +804,22 @@ for cases_to_include in all_cases_to_include:
 		diffusion = partial_diffusion * thickness_first_stage
 		diffusion_std = partial_diffusion_std * thickness_first_stage
 		timevariation = (1/diffusivity_first_stage)*thickness_first_stage * partial_timevariation
-		timevariation_first = (1/Ptthermaldiffusivity)*thickness_first_stage * partial_timevariation
+		timevariation_first = (1/diffusivity_first_stage)*thickness_first_stage * partial_timevariation
 		timevariation_std = (1/diffusivity_first_stage)*thickness_first_stage * partial_timevariation_std
 		powernoback = diffusion + timevariation + BBrad
 		powernoback_first = diffusion_first + timevariation_first + BBrad_first
 		powernoback_std = (diffusion_std**2 + timevariation_std**2 + BBrad_std**2)**0.5
 
-		frames_for_one_pulse = laser_framerate/experimental_laser_frequency
+		frames_for_one_pulse = int(laser_framerate/experimental_laser_frequency)
+		time_ON_after_SS = max(1,int(frames_for_one_pulse*experimental_laser_duty - minimum_ON_period*laser_framerate))
 		# totalpower_filtered_1 = generic_filter(nominal_values(powernoback)[:int(len(powernoback)//frames_for_one_pulse*frames_for_one_pulse)],np.mean,size=[max(1,int(frames_for_one_pulse*experimental_laser_duty/15//2*2+1))])
 
 		# part_powernoback = np.sort(nominal_values(powernoback)[:int(len(powernoback)//frames_for_one_pulse*frames_for_one_pulse)])
 		# # fitted_power_2 = [ufloat(np.median(np.sort(totalpower_filtered_1)[:-int(len(totalpower_filtered_1)*experimental_laser_duty)]),np.std(np.sort(totalpower_filtered_1)[:-int(len(totalpower_filtered_1)*experimental_laser_duty)])),ufloat(np.median(np.sort(totalpower_filtered_1)[-int(len(totalpower_filtered_1)*experimental_laser_duty):]),np.std(np.sort(totalpower_filtered_1)[-int(len(totalpower_filtered_1)*experimental_laser_duty):]))]
 		# fitted_power_2 = [np.median(part_powernoback[:-int(max(len(powernoback)*experimental_laser_duty*1,1))]),np.std(part_powernoback[:-int(max(len(powernoback)*experimental_laser_duty*1,1))]),np.median(part_powernoback[-int(max(len(powernoback)*experimental_laser_duty*1,1)):]),np.std(part_powernoback[-int(max(len(powernoback)*experimental_laser_duty*1,1)):])]
 
-		time_axis = (time_of_experiment[1:-1]-time_of_experiment[1])/1e6
-		totalpower_filtered_2_full = generic_filter(powernoback,np.mean,size=[max(1,int(frames_for_one_pulse*experimental_laser_duty))])
-		totalpower_filtered_2_full_first = generic_filter(powernoback_first,np.mean,size=[max(1,int(frames_for_one_pulse*experimental_laser_duty))])
+		time_axis = time_of_experiment
+		totalpower_filtered_2_full = generic_filter(powernoback,np.mean,size=[max(1,int(frames_for_one_pulse*experimental_laser_duty)-2)])
 		totalpower_filtered_2 = totalpower_filtered_2_full#[int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5))]
 		time_axis_crop = time_axis[int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5))]
 		temp = max(1,int((len(totalpower_filtered_2)-len(totalpower_filtered_2)//frames_for_one_pulse*frames_for_one_pulse)/2))
@@ -446,9 +827,16 @@ for cases_to_include in all_cases_to_include:
 		time_axis_crop = time_axis_crop[temp:-temp]
 		peaks_loc = find_peaks(totalpower_filtered_2,distance=frames_for_one_pulse*0.95)[0]
 		peaks_loc = peaks_loc[np.logical_and(peaks_loc>5,peaks_loc<len(totalpower_filtered_2)-6)]
+		if len(peaks_loc)==0:
+			peaks_loc = find_peaks(totalpower_filtered_2,distance=frames_for_one_pulse*0.95)[0]
+			if len(peaks_loc)==0:
+				peaks_loc = totalpower_filtered_2.argmax()
+			else:
+				peaks_loc = peaks_loc[0]
+		if len(peaks_loc)>=3:
+			peaks_loc = peaks_loc[np.logical_and(peaks_loc>peaks_loc.min(),peaks_loc<peaks_loc.max())]
 		peaks = totalpower_filtered_2[peaks_loc]
 		peak = np.mean(peaks)
-		time_peaks =  time_axis_crop[peaks_loc]
 		peaks_std = np.std(peaks)
 
 		if experimental_laser_duty!=0.5:
@@ -458,68 +846,331 @@ for cases_to_include in all_cases_to_include:
 			temp = max(1,int((len(totalpower_filtered_2)-len(totalpower_filtered_2)//frames_for_one_pulse*frames_for_one_pulse)/2))
 			totalpower_filtered_2 = totalpower_filtered_2[temp:-temp]
 		throughs_loc = find_peaks(-totalpower_filtered_2,distance=frames_for_one_pulse*0.95)[0]
-		throughs_loc = throughs_loc[np.logical_and(throughs_loc>5,throughs_loc<len(totalpower_filtered_2)-6)]
+		throughs_loc = throughs_loc[np.logical_and(throughs_loc>1,throughs_loc<len(totalpower_filtered_2)-1)]
+		if len(throughs_loc)==0:
+			throughs_loc = find_peaks(-totalpower_filtered_2,distance=frames_for_one_pulse*0.95)[0]
+			if len(throughs_loc)==0:
+				throughs_loc = totalpower_filtered_2.argmin()
+			else:
+				throughs_loc[0]
+		if len(throughs_loc)>=3:
+			throughs_loc = throughs_loc[np.logical_and(throughs_loc>throughs_loc.min(),throughs_loc<throughs_loc.max())]
 		throughs = totalpower_filtered_2[throughs_loc]
 		through = np.mean(throughs)
-		time_throughs =  time_axis_crop[throughs_loc]
 		throughs_std = np.std(throughs)
-		fitted_power_2 = [through,throughs_std,peak,peaks_std]
 
-		totalpower_filtered_1_full = generic_filter(powernoback,np.mean,size=[max(1,int(frames_for_one_pulse*experimental_laser_duty/15//2*2+1))])
-		totalpower_filtered_1_full_first = generic_filter(powernoback_first,np.mean,size=[max(1,int(frames_for_one_pulse*experimental_laser_duty/15//2*2+1))])
-		totalpower_filtered_1 = totalpower_filtered_1_full[int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5))]
-		totalpower_filtered_1 = totalpower_filtered_1[temp:-temp]
-		len_totalpower_filtered_1 = len(totalpower_filtered_1)
-		# noise_amplitude = min(max(np.std(nominal_values(powernoback) - totalpower_filtered_1_full)*2,(peaks-through)*0.1),(peaks-through)*0.4)
-		# noise_amplitude = (peaks-through)*0.03
-		noise_amplitude = 4e-5
-		# sharpness_indicator = 1-np.sum(np.logical_and(totalpower_filtered_1 > (peaks-through)*0.1+through , totalpower_filtered_1 < (peaks-through)*0.9+through))/len(totalpower_filtered_1)
-		# sharpness_indicator = np.logical_and(totalpower_filtered_1 > through+noise_amplitude , totalpower_filtered_1 < peaks-noise_amplitude)
-		# sharpness_indicator = np.logical_or(sharpness_indicator,totalpower_filtered_1<through-noise_amplitude)
-		# sharpness_indicator = np.logical_or(sharpness_indicator,totalpower_filtered_1>peaks+noise_amplitude)
-		sharpness_indicator = np.sum(np.logical_and(totalpower_filtered_1 > peak-noise_amplitude , totalpower_filtered_1 < peak+noise_amplitude))
-		if experimental_laser_duty!=0.5:
-			totalpower_filtered_1_full_negative = generic_filter(powernoback,np.mean,size=[max(2,int(frames_for_one_pulse*(1-experimental_laser_duty)/15//2*2+1))])
-			totalpower_filtered_1 = totalpower_filtered_1_full_negative[int(max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))*0.5))]
-			totalpower_filtered_1 = totalpower_filtered_1[temp:-temp]
-		sharpness_indicator = sharpness_indicator + np.sum(np.logical_and(totalpower_filtered_1 > through-noise_amplitude , totalpower_filtered_1 < through+noise_amplitude))
-		len_totalpower_filtered_1 = max(len_totalpower_filtered_1,len(totalpower_filtered_1))
-		sharpness_indicator = sharpness_indicator/len_totalpower_filtered_1
+		sharpness_indicator = (np.std(powernoback[powernoback>through+(peak-through)/2]) + np.std(powernoback[powernoback<through+(peak-through)/2]))/(np.mean(np.diff(powernoback)**2)**0.5)
 
+		all_peak.append(peak)
+		all_peak_std.append(peaks_std)
+		all_through.append(through)
+		all_through_std.append(throughs_std)
+		all_sharpness_indicator.append(sharpness_indicator)
+	all_peak = np.array(all_peak)/laser_through_mirror_correction_first_stage
+	all_peak_std = np.array(all_peak_std)/laser_through_mirror_correction_first_stage
+	all_through = np.array(all_through)/laser_through_mirror_correction_first_stage
+	all_through_std = np.array(all_through_std)/laser_through_mirror_correction_first_stage
+	all_sharpness_indicator = np.array(all_sharpness_indicator)
 
-		plt.figure(figsize=(20, 10))
-		plt.plot()
-		plt.plot(time_axis,powernoback_first,'--',label='totalpower first pass')
-		plt.plot(time_axis,totalpower_filtered_1_full_first,'--',label='totalpower filtered first pass')
-		plt.plot(time_axis,powernoback,label='totalpower')
-		plt.plot(time_axis,BBrad,label='totalBBrad')
-		plt.plot(time_axis,diffusion,label='totaldiffusion')
-		plt.plot(time_axis,timevariation,label='totaltimevariation')
-		if experimental_laser_duty!=0.5:
-			plt.plot(time_axis,totalpower_filtered_1_full,linewidth=3,label='totalpower filtered ON')
-			plt.plot(time_axis,totalpower_filtered_1_full_negative,linewidth=3,label='totalpower filtered OFF')
-			ax,=plt.plot(time_axis,totalpower_filtered_2_full,linewidth=3,label='totalpower super filtered')
-			plt.plot(time_axis,totalpower_filtered_2_full_negative,linewidth=3,color=ax.get_color())
-		else:
-			plt.plot(time_axis,totalpower_filtered_1_full,linewidth=3,label='totalpower filtered')
-			plt.plot(time_axis,totalpower_filtered_2_full,linewidth=3,label='totalpower super filtered')
-		plt.plot(time_peaks,peaks,'o',markersize=10,label='peaks')
-		plt.plot(time_throughs,throughs,'o',markersize=10,label='through')
-		plt.errorbar([time_axis[0],time_axis[-1]],[fitted_power_2[0]]*2,yerr=[fitted_power_2[1]]*2,color='k',linestyle=':',linewidth=2,label='power upper/lower median')
-		plt.errorbar([time_axis[0],time_axis[-1]],[fitted_power_2[2]]*2,yerr=[fitted_power_2[3]]*2,color='k',linestyle=':',linewidth=2)
-		plt.plot([time_axis[0],time_axis[-1]],[through+noise_amplitude]*2,'--k',label='sharpness limits')
-		plt.plot([time_axis[0],time_axis[-1]],[through-noise_amplitude]*2,'--k')
-		plt.plot([time_axis[0],time_axis[-1]],[peak-noise_amplitude]*2,'--k')
-		plt.plot([time_axis[0],time_axis[-1]],[peak+noise_amplitude]*2,'--k')
-		plt.plot([time_axis[0],time_axis[-1]],[laser_to_analyse_power_end*defocused_to_focused_power*power_reduction_window]*2,'--r',label='power input')
-		# plt.plot([time_axis[0],time_axis[-1]],[fitted_power_2[0]]*2,color='k',linestyle=':',linewidth=2,label='power upper/lower median')
-		# plt.plot([time_axis[0],time_axis[-1]],[fitted_power_2[1]]*2,color='k',linestyle=':',linewidth=2)
-		plt.legend(loc='best', fontsize='small')
-		plt.xlabel('time [s]')
-		plt.ylabel('power [W]')
-		plt.grid()
-		plt.title(laser_to_analyse+' in '+case_ID+'\nInput '+focus_status+', spot location '+ str([int(laser_location[0]),int(laser_location[2])]) +' power %.3gW, freq %.3gHz, duty%.3g\nHigh Power=%.3g+/-%.3gW, Low Power=%.3g+/-%.3gW, sharpness=%.3g\ndiffusivity %.3g,thickness %.3g,emissivity %.3g,defocused_to_focused %.3g' %(laser_to_analyse_power_end*defocused_to_focused_power*power_reduction_window,experimental_laser_frequency,experimental_laser_duty,fitted_power_2[2],fitted_power_2[3],fitted_power_2[0],fitted_power_2[1],sharpness_indicator,diffusivity_first_stage,thickness_first_stage,emissivity_first_stage,defocused_to_focused_power_first_stage))
-		# plt.pause(0.01)
-		figure_index+=1
-		plt.savefig(path_where_to_save_everything_int + 'example_' + str(figure_index) +'.eps', bbox_inches='tight')
-		plt.close()
+	capsize = 5
+	fig, ax = plt.subplots( 2,1,figsize=(12, 14), squeeze=False,sharex=False)
+	select = np.logical_and(all_focus_status_end!='fully_defocused',all_laser_to_analyse_frequency_end==all_laser_to_analyse_frequency_end.min())
+	ax[0,0].errorbar(np.sort(all_laser_to_analyse_power_end[select]*power_reduction_window)/(np.pi*(0.001**2)),[y for _, y in sorted(zip(all_laser_to_analyse_power_end[select], (all_peak[select]-all_through[select])/(np.pi*(0.001**2))))],yerr=[y for _, y in sorted(zip(all_laser_to_analyse_power_end[select], (all_peak_std[select]**2+all_through_std[select]**2)**0.5/(np.pi*(0.001**2))))],fmt='^',color='r',mfc='none',linestyle='--',capsize=capsize)
+	# ax[1,0].errorbar(np.sort(all_laser_to_analyse_power_end[select]*power_reduction_window)/(np.pi*(0.001**2)),[y for _, y in sorted(zip(all_laser_to_analyse_power_end[select], all_through[select]/(np.pi*(0.001**2))))],yerr=[y for _, y in sorted(zip(all_laser_to_analyse_power_end[select], all_through_std[select]/(np.pi*(0.001**2))))],fmt='v',color='r',mfc='none',linestyle='--',capsize=capsize)
+	ax[0,0].plot([0,all_laser_to_analyse_power_end.max()*power_reduction_window/(np.pi*(0.001**2))],[0,all_laser_to_analyse_power_end.max()*power_reduction_window/(np.pi*(0.001**2))],'k--')
+	# ax[1,0].plot([0,all_laser_to_analyse_power_end.max()*power_reduction_window/(np.pi*(0.001**2))],[0,0],'k--')
+
+	# ax2 = ax[0,0].twinx()  # instantiate a second axes that shares the same x-axis
+	# ax2.plot(all_laser_to_analyse_power_end[select]*power_reduction_window,all_sharpness_indicator[select],marker='s',color='r',linestyle="None",mfc='none')
+	# ax2.plot([0,all_laser_to_analyse_power_end.max()*power_reduction_window],[1,1],'k--')
+
+	select = np.logical_and(all_focus_status_end=='fully_defocused',all_laser_to_analyse_frequency_end==all_laser_to_analyse_frequency_end.min())
+	ax[0,0].errorbar(np.sort(all_laser_to_analyse_power_end[select]*power_reduction_window*defocused_to_focused_power_first_stage)/(np.pi*(0.0026**2)),[y for _, y in sorted(zip(all_laser_to_analyse_power_end[select], (all_peak[select]-all_through[select])/(np.pi*(0.0026**2))))],yerr=[y for _, y in sorted(zip(all_laser_to_analyse_power_end[select], (all_peak_std[select]**2+all_through_std[select]**2)**0.5/(np.pi*(0.0026**2))))],fmt='^',color='b',mfc='none',linestyle='--',capsize=capsize)
+	# ax[1,0].errorbar(np.sort(all_laser_to_analyse_power_end[select]*power_reduction_window*defocused_to_focused_power_first_stage)/(np.pi*(0.0026**2)),[y for _, y in sorted(zip(all_laser_to_analyse_power_end[select], all_through[select]/(np.pi*(0.0026**2))))],yerr=[y for _, y in sorted(zip(all_laser_to_analyse_power_end[select], all_through_std[select]/(np.pi*(0.0026**2))))],fmt='v',color='b',mfc='none',linestyle='--',capsize=capsize)
+	# ax2.plot(all_laser_to_analyse_power_end[select]*power_reduction_window*defocused_to_focused_power_first_stage,all_sharpness_indicator[select],marker='s',color='b',linestyle="None",mfc='none')
+	# ax2.set_ylabel('Interested area found [mm2]', color='k')  # we already handled the x-label with ax1
+	# ax2.tick_params(axis='y', labelcolor='k')
+	# # ax2.set_ylim(bottom=min(ax[0,0].get_ylim()))
+	ax[0,0].semilogx()
+	ax[0,0].semilogy()
+	# ax[1,0].semilogx()
+
+	select = np.logical_and(all_focus_status_end!='fully_defocused',all_laser_to_analyse_voltage_end>=0.5)
+	ax[1,0].errorbar(np.sort(all_laser_to_analyse_frequency_end[select]),[y for _, y in sorted(zip(all_laser_to_analyse_frequency_end[select], ((all_peak-all_through)/(all_laser_to_analyse_power_end*power_reduction_window))[select]))],yerr=[y for _, y in sorted(zip(all_laser_to_analyse_frequency_end[select], ((all_peak_std**2+all_through_std**2)**0.5/(all_laser_to_analyse_power_end*power_reduction_window))[select]))],fmt='^',color='r',mfc='none',linestyle='-',capsize=capsize)
+	# ax[2,0].errorbar(np.sort(all_laser_to_analyse_frequency_end[select]),[y for _, y in sorted(zip(all_laser_to_analyse_frequency_end[select], (all_through/(all_laser_to_analyse_power_end*power_reduction_window))[select]))],yerr=[y for _, y in sorted(zip(all_laser_to_analyse_frequency_end[select], (all_through_std/(all_laser_to_analyse_power_end*power_reduction_window))[select]))],fmt='v',color='r',mfc='none',linestyle='-',capsize=capsize)
+	# ax[1,0].plot(all_laser_to_analyse_frequency_end[select]*power_reduction_window,all_sharpness_indicator[select],marker='s',color='r',linestyle="None",mfc='none')
+	ax[1,0].plot([0,all_laser_to_analyse_frequency_end.max()],[1,1],'k--')
+	ax[1,0].plot([0,all_laser_to_analyse_frequency_end.max()],[0,0],'k--')
+
+	select = np.logical_and(all_focus_status_end=='fully_defocused',all_laser_to_analyse_voltage_end>=0.5)
+	ax[1,0].errorbar(np.sort(all_laser_to_analyse_frequency_end[select]),[y for _, y in sorted(zip(all_laser_to_analyse_frequency_end[select], ((all_peak-all_through)/(all_laser_to_analyse_power_end*power_reduction_window*defocused_to_focused_power_first_stage))[select]))],yerr=[y for _, y in sorted(zip(all_laser_to_analyse_frequency_end[select], ((all_peak_std**2+all_through_std**2)**0.5/(all_laser_to_analyse_power_end*power_reduction_window*defocused_to_focused_power_first_stage))[select]))],fmt='^',color='b',mfc='none',linestyle='-',capsize=capsize)
+	# ax[2,0].errorbar(np.sort(all_laser_to_analyse_frequency_end[select]),[y for _, y in sorted(zip(all_laser_to_analyse_frequency_end[select], (all_through/(all_laser_to_analyse_power_end*power_reduction_window*defocused_to_focused_power_first_stage))[select]))],yerr=[y for _, y in sorted(zip(all_laser_to_analyse_frequency_end[select], (all_through_std/(all_laser_to_analyse_power_end*power_reduction_window*defocused_to_focused_power_first_stage))[select]))],fmt='v',color='b',mfc='none',linestyle='-',capsize=capsize)
+	# ax[1,0].plot(all_laser_to_analyse_frequency_end[select]*power_reduction_window,all_sharpness_indicator[select],marker='s',color='b',linestyle="None",mfc='none')
+	ax[0,0].grid()
+	ax[0,0].set_xlabel(r'$P_{in}/area \; [W/m^2]$')
+	ax[0,0].set_ylabel(r'$(P_{h}-P_{l})/area \; [W/m^2]$')
+	# ax[1,0].grid()
+	ax[1,0].semilogx()
+	ax[1,0].grid()
+	ax[1,0].set_xlabel('frequency [Hz]')
+	ax[1,0].set_ylabel(r'$(P_{h}-P_{l})/P_{in} [au]$')
+	# plt.pause(0.01)
+	fig.suptitle('nominal properties\n'+'spot location '+ str([int(laser_location[0]),int(laser_location[2])]) +' \ndiffusivity %.3g,thickness %.3g,emissivity %.3g,defocused_to_focused %.3g,laser_through_mirror_correction %.3g' %(diffusivity_first_stage,thickness_first_stage,emissivity_first_stage,defocused_to_focused_power_first_stage,laser_through_mirror_correction_first_stage))
+
+	figure_index+=1
+	plt.savefig(path_where_to_save_everything_int + 'example_for_paper_' + str(figure_index) +'.png', bbox_inches='tight')
+	plt.close()
+
+	fig, ax = plt.subplots( 2,1,figsize=(8, 15), squeeze=False,sharex=False)
+	capsize = 0
+	style = [':','-','--']
+	colors1 = ['r','k','r']
+	colors1 = ['b','k','b']
+	for i_,thickness_first_stage_scan in enumerate([thickness_first_stage*1.2,thickness_first_stage,thickness_first_stage*0.8]):
+		all_peak = []
+		all_peak_std = []
+		all_through = []
+		all_through_std = []
+		all_sharpness_indicator = []
+		for index in np.arange(len(all_laser_to_analyse_power_end)):
+			# index=2
+			# index=len(all_case_ID_end)-1
+			case_ID = all_case_ID_end[index]
+			laser_to_analyse = all_laser_to_analyse_end[index]
+			partial_BBrad = all_partial_BBrad[index]
+			partial_BBrad_std = all_partial_BBrad_std[index]
+			partial_diffusion = all_partial_diffusion[index]
+			partial_diffusion_std = all_partial_diffusion_std[index]
+			partial_timevariation = all_partial_timevariation[index]
+			partial_timevariation_std = all_partial_timevariation_std[index]
+			time_of_experiment = all_time_of_experiment[index]
+			laser_framerate = all_laser_framerate[index]/2
+			experimental_laser_frequency = all_laser_to_analyse_frequency_end[index]
+			experimental_laser_voltage = all_laser_to_analyse_voltage_end[index]
+			experimental_laser_duty = all_laser_to_analyse_duty_end[index]
+			laser_to_analyse_power_end = all_laser_to_analyse_power_end[index]
+			focus_status = all_focus_status_end[index]
+			# defocused_to_focused_power = 1
+			if focus_status=='fully_defocused':
+				defocused_to_focused_power = defocused_to_focused_power_first_stage
+			else:
+				defocused_to_focused_power = 1
+			if int(case_ID[-2:]) >=41 and int(case_ID[-2:]) <=47:
+				defocused_to_focused_power *= laser_through_mirror_correction_first_stage
+			# power_reduction_window = 0.9
+			BBrad = partial_BBrad * emissivity_first_stage
+			BBrad_first = partial_BBrad * emissivity_first_stage
+			BBrad_std = partial_BBrad_std * emissivity_first_stage
+			diffusion_first = partial_diffusion * thickness_first_stage_scan
+			diffusion = partial_diffusion * thickness_first_stage_scan
+			diffusion_std = partial_diffusion_std * thickness_first_stage_scan
+			timevariation = (1/diffusivity_first_stage)*thickness_first_stage_scan * partial_timevariation
+			timevariation_first = (1/Ptthermaldiffusivity)*thickness_first_stage_scan * partial_timevariation
+			timevariation_std = (1/diffusivity_first_stage)*thickness_first_stage_scan * partial_timevariation_std
+			powernoback = diffusion + timevariation + BBrad
+			powernoback_first = diffusion_first + timevariation_first + BBrad_first
+			powernoback_std = (diffusion_std**2 + timevariation_std**2 + BBrad_std**2)**0.5
+
+			frames_for_one_pulse = int(laser_framerate/experimental_laser_frequency)
+			time_ON_after_SS = max(1,int(frames_for_one_pulse*experimental_laser_duty - minimum_ON_period*laser_framerate))
+			# totalpower_filtered_1 = generic_filter(nominal_values(powernoback)[:int(len(powernoback)//frames_for_one_pulse*frames_for_one_pulse)],np.mean,size=[max(1,int(frames_for_one_pulse*experimental_laser_duty/15//2*2+1))])
+
+			# part_powernoback = np.sort(nominal_values(powernoback)[:int(len(powernoback)//frames_for_one_pulse*frames_for_one_pulse)])
+			# # fitted_power_2 = [ufloat(np.median(np.sort(totalpower_filtered_1)[:-int(len(totalpower_filtered_1)*experimental_laser_duty)]),np.std(np.sort(totalpower_filtered_1)[:-int(len(totalpower_filtered_1)*experimental_laser_duty)])),ufloat(np.median(np.sort(totalpower_filtered_1)[-int(len(totalpower_filtered_1)*experimental_laser_duty):]),np.std(np.sort(totalpower_filtered_1)[-int(len(totalpower_filtered_1)*experimental_laser_duty):]))]
+			# fitted_power_2 = [np.median(part_powernoback[:-int(max(len(powernoback)*experimental_laser_duty*1,1))]),np.std(part_powernoback[:-int(max(len(powernoback)*experimental_laser_duty*1,1))]),np.median(part_powernoback[-int(max(len(powernoback)*experimental_laser_duty*1,1)):]),np.std(part_powernoback[-int(max(len(powernoback)*experimental_laser_duty*1,1)):])]
+
+			time_axis = time_of_experiment
+			totalpower_filtered_2_full = generic_filter(powernoback,np.mean,size=[max(1,int(frames_for_one_pulse*experimental_laser_duty))])
+			totalpower_filtered_2 = totalpower_filtered_2_full#[int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5))]
+			time_axis_crop = time_axis[int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5))]
+			temp = max(1,int((len(totalpower_filtered_2)-len(totalpower_filtered_2)//frames_for_one_pulse*frames_for_one_pulse)/2))
+			totalpower_filtered_2 = totalpower_filtered_2[temp:-temp]
+			time_axis_crop = time_axis_crop[temp:-temp]
+			peaks_loc = find_peaks(totalpower_filtered_2,distance=frames_for_one_pulse*0.95)[0]
+			peaks_loc = peaks_loc[np.logical_and(peaks_loc>5,peaks_loc<len(totalpower_filtered_2)-6)]
+			if len(peaks_loc)==0:
+				peaks_loc = find_peaks(totalpower_filtered_2,distance=frames_for_one_pulse*0.95)[0]
+				if len(peaks_loc)==0:
+					peaks_loc = totalpower_filtered_2.argmax()
+				else:
+					peaks_loc = peaks_loc[0]
+			peaks = totalpower_filtered_2[peaks_loc]
+			peak = np.mean(peaks)
+			peaks_std = np.std(peaks)
+
+			if experimental_laser_duty!=0.5:
+				totalpower_filtered_2_full_negative = generic_filter(powernoback,np.mean,size=[max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))])
+				totalpower_filtered_2 = totalpower_filtered_2_full_negative[int(max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))*0.5))]
+				time_axis_crop = time_axis[int(max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))*0.5))]
+				temp = max(1,int((len(totalpower_filtered_2)-len(totalpower_filtered_2)//frames_for_one_pulse*frames_for_one_pulse)/2))
+				totalpower_filtered_2 = totalpower_filtered_2[temp:-temp]
+			throughs_loc = find_peaks(-totalpower_filtered_2,distance=frames_for_one_pulse*0.95)[0]
+			throughs_loc = throughs_loc[np.logical_and(throughs_loc>1,throughs_loc<len(totalpower_filtered_2)-1)]
+			if len(throughs_loc)==0:
+				throughs_loc = find_peaks(-totalpower_filtered_2,distance=frames_for_one_pulse*0.95)[0]
+				if len(throughs_loc)==0:
+					throughs_loc = totalpower_filtered_2.argmin()
+				else:
+					throughs_loc[0]
+			throughs = totalpower_filtered_2[throughs_loc]
+			through = np.mean(throughs)
+			throughs_std = np.std(throughs)
+
+			sharpness_indicator = (np.std(powernoback[powernoback>through+(peak-through)/2]) + np.std(powernoback[powernoback<through+(peak-through)/2]))/(np.mean(np.diff(powernoback)**2)**0.5)
+
+			all_peak.append(peak)
+			all_peak_std.append(peaks_std)
+			all_through.append(through)
+			all_through_std.append(throughs_std)
+			all_sharpness_indicator.append(sharpness_indicator)
+		all_peak = np.array(all_peak)
+		all_peak_std = np.array(all_peak_std)
+		all_through = np.array(all_through)
+		all_through_std = np.array(all_through_std)
+		all_sharpness_indicator = np.array(all_sharpness_indicator)
+
+		select = np.logical_and(all_focus_status_end!='fully_defocused',all_laser_to_analyse_power_end==all_laser_to_analyse_power_end.max())
+		ax[1,0].plot(np.sort(all_laser_to_analyse_frequency_end[select]),[y for _, y in sorted(zip(all_laser_to_analyse_frequency_end[select], (all_peak/(all_laser_to_analyse_power_end*power_reduction_window))[select]))],marker='^',color='r',mfc='none',linestyle=style[i_])
+		ax[1,0].plot(np.sort(all_laser_to_analyse_frequency_end[select]),[y for _, y in sorted(zip(all_laser_to_analyse_frequency_end[select], (all_through/(all_laser_to_analyse_power_end*power_reduction_window))[select]))],marker='v',color='r',mfc='none',linestyle=style[i_])
+		# ax[1,0].plot(all_laser_to_analyse_frequency_end[select]*power_reduction_window,all_sharpness_indicator[select],marker='s',color='r',linestyle="None",mfc='none')
+		ax[1,0].plot([0,all_laser_to_analyse_frequency_end.max()],[1,1],'k--')
+		ax[1,0].plot([0,all_laser_to_analyse_frequency_end.max()],[0,0],'k--')
+
+		select = np.logical_and(all_focus_status_end=='fully_defocused',all_laser_to_analyse_power_end==all_laser_to_analyse_power_end[all_focus_status_end=='fully_defocused'].max())
+		ax[1,0].plot(np.sort(all_laser_to_analyse_frequency_end[select]),[y for _, y in sorted(zip(all_laser_to_analyse_frequency_end[select], (all_peak/(all_laser_to_analyse_power_end*power_reduction_window*defocused_to_focused_power_first_stage))[select]))],marker='^',color='b',mfc='none',linestyle=style[i_])
+		ax[1,0].plot(np.sort(all_laser_to_analyse_frequency_end[select]),[y for _, y in sorted(zip(all_laser_to_analyse_frequency_end[select], (all_through/(all_laser_to_analyse_power_end*power_reduction_window*defocused_to_focused_power_first_stage))[select]))],marker='v',color='b',mfc='none',linestyle=style[i_])
+
+	ax[0,0].grid()
+	ax[1,0].semilogx()
+	ax[1,0].grid()
+	# plt.pause(0.01)
+	fig.suptitle('variation in thickness\n'+'spot location '+ str([int(laser_location[0]),int(laser_location[2])]) +' \ndiffusivity %.3g,thickness %.3g,emissivity %.3g,defocused_to_focused %.3g,laser_through_mirror_correction %.3g' %(diffusivity_first_stage,thickness_first_stage,emissivity_first_stage,defocused_to_focused_power_first_stage,laser_through_mirror_correction_first_stage))
+	figure_index+=1
+	plt.savefig(path_where_to_save_everything_int + 'example_for_paper_' + str(figure_index) +'.eps', bbox_inches='tight')
+	plt.close()
+
+	fig, ax = plt.subplots( 2,1,figsize=(8, 12), squeeze=False,sharex=False)
+	capsize = 0
+	style = [':','-','--']
+	for i_,diffusivity_first_stage_scan in enumerate([diffusivity_first_stage*1.2,diffusivity_first_stage,diffusivity_first_stage*0.8]):
+		all_peak = []
+		all_peak_std = []
+		all_through = []
+		all_through_std = []
+		all_sharpness_indicator = []
+		for index in np.arange(len(all_laser_to_analyse_power_end)):
+			# index=2
+			# index=len(all_case_ID_end)-1
+			case_ID = all_case_ID_end[index]
+			laser_to_analyse = all_laser_to_analyse_end[index]
+			partial_BBrad = all_partial_BBrad[index]
+			partial_BBrad_std = all_partial_BBrad_std[index]
+			partial_diffusion = all_partial_diffusion[index]
+			partial_diffusion_std = all_partial_diffusion_std[index]
+			partial_timevariation = all_partial_timevariation[index]
+			partial_timevariation_std = all_partial_timevariation_std[index]
+			time_of_experiment = all_time_of_experiment[index]
+			laser_framerate = all_laser_framerate[index]/2
+			experimental_laser_frequency = all_laser_to_analyse_frequency_end[index]
+			experimental_laser_voltage = all_laser_to_analyse_voltage_end[index]
+			experimental_laser_duty = all_laser_to_analyse_duty_end[index]
+			laser_to_analyse_power_end = all_laser_to_analyse_power_end[index]
+			focus_status = all_focus_status_end[index]
+			# defocused_to_focused_power = 1
+			if focus_status=='fully_defocused':
+				defocused_to_focused_power = defocused_to_focused_power_first_stage
+			else:
+				defocused_to_focused_power = 1
+			if int(case_ID[-2:]) >=41 and int(case_ID[-2:]) <=47:
+				defocused_to_focused_power *= laser_through_mirror_correction_first_stage
+			# power_reduction_window = 0.9
+			BBrad = partial_BBrad * emissivity_first_stage
+			BBrad_first = partial_BBrad * emissivity_first_stage
+			BBrad_std = partial_BBrad_std * emissivity_first_stage
+			diffusion_first = partial_diffusion * thickness_first_stage
+			diffusion = partial_diffusion * thickness_first_stage
+			diffusion_std = partial_diffusion_std * thickness_first_stage
+			timevariation = (1/diffusivity_first_stage_scan)*thickness_first_stage * partial_timevariation
+			timevariation_first = (1/Ptthermaldiffusivity)*thickness_first_stage * partial_timevariation
+			timevariation_std = (1/diffusivity_first_stage_scan)*thickness_first_stage * partial_timevariation_std
+			powernoback = diffusion + timevariation + BBrad
+			powernoback_first = diffusion_first + timevariation_first + BBrad_first
+			powernoback_std = (diffusion_std**2 + timevariation_std**2 + BBrad_std**2)**0.5
+
+			frames_for_one_pulse = int(laser_framerate/experimental_laser_frequency)
+			time_ON_after_SS = max(1,int(frames_for_one_pulse*experimental_laser_duty - minimum_ON_period*laser_framerate))
+			# totalpower_filtered_1 = generic_filter(nominal_values(powernoback)[:int(len(powernoback)//frames_for_one_pulse*frames_for_one_pulse)],np.mean,size=[max(1,int(frames_for_one_pulse*experimental_laser_duty/15//2*2+1))])
+
+			# part_powernoback = np.sort(nominal_values(powernoback)[:int(len(powernoback)//frames_for_one_pulse*frames_for_one_pulse)])
+			# # fitted_power_2 = [ufloat(np.median(np.sort(totalpower_filtered_1)[:-int(len(totalpower_filtered_1)*experimental_laser_duty)]),np.std(np.sort(totalpower_filtered_1)[:-int(len(totalpower_filtered_1)*experimental_laser_duty)])),ufloat(np.median(np.sort(totalpower_filtered_1)[-int(len(totalpower_filtered_1)*experimental_laser_duty):]),np.std(np.sort(totalpower_filtered_1)[-int(len(totalpower_filtered_1)*experimental_laser_duty):]))]
+			# fitted_power_2 = [np.median(part_powernoback[:-int(max(len(powernoback)*experimental_laser_duty*1,1))]),np.std(part_powernoback[:-int(max(len(powernoback)*experimental_laser_duty*1,1))]),np.median(part_powernoback[-int(max(len(powernoback)*experimental_laser_duty*1,1)):]),np.std(part_powernoback[-int(max(len(powernoback)*experimental_laser_duty*1,1)):])]
+
+			time_axis = time_of_experiment
+			totalpower_filtered_2_full = generic_filter(powernoback,np.mean,size=[max(1,int(frames_for_one_pulse*experimental_laser_duty))])
+			totalpower_filtered_2 = totalpower_filtered_2_full#[int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5))]
+			time_axis_crop = time_axis[int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*experimental_laser_duty))*0.5))]
+			temp = max(1,int((len(totalpower_filtered_2)-len(totalpower_filtered_2)//frames_for_one_pulse*frames_for_one_pulse)/2))
+			totalpower_filtered_2 = totalpower_filtered_2[temp:-temp]
+			time_axis_crop = time_axis_crop[temp:-temp]
+			peaks_loc = find_peaks(totalpower_filtered_2,distance=frames_for_one_pulse*0.95)[0]
+			peaks_loc = peaks_loc[np.logical_and(peaks_loc>5,peaks_loc<len(totalpower_filtered_2)-6)]
+			if len(peaks_loc)==0:
+				peaks_loc = find_peaks(totalpower_filtered_2,distance=frames_for_one_pulse*0.95)[0]
+				if len(peaks_loc)==0:
+					peaks_loc = totalpower_filtered_2.argmax()
+				else:
+					peaks_loc = peaks_loc[0]
+			peaks = totalpower_filtered_2[peaks_loc]
+			peak = np.mean(peaks)
+			peaks_std = np.std(peaks)
+
+			if experimental_laser_duty!=0.5:
+				totalpower_filtered_2_full_negative = generic_filter(powernoback,np.mean,size=[max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))])
+				totalpower_filtered_2 = totalpower_filtered_2_full_negative[int(max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))*0.5))]
+				time_axis_crop = time_axis[int(max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))*0.5):-max(1,int(max(1,int(frames_for_one_pulse*(1-experimental_laser_duty)))*0.5))]
+				temp = max(1,int((len(totalpower_filtered_2)-len(totalpower_filtered_2)//frames_for_one_pulse*frames_for_one_pulse)/2))
+				totalpower_filtered_2 = totalpower_filtered_2[temp:-temp]
+			throughs_loc = find_peaks(-totalpower_filtered_2,distance=frames_for_one_pulse*0.95)[0]
+			throughs_loc = throughs_loc[np.logical_and(throughs_loc>1,throughs_loc<len(totalpower_filtered_2)-1)]
+			if len(throughs_loc)==0:
+				throughs_loc = find_peaks(-totalpower_filtered_2,distance=frames_for_one_pulse*0.95)[0]
+				if len(throughs_loc)==0:
+					throughs_loc = totalpower_filtered_2.argmin()
+				else:
+					throughs_loc[0]
+			throughs = totalpower_filtered_2[throughs_loc]
+			through = np.mean(throughs)
+			throughs_std = np.std(throughs)
+
+			sharpness_indicator = (np.std(powernoback[powernoback>through+(peak-through)/2]) + np.std(powernoback[powernoback<through+(peak-through)/2]))/(np.mean(np.diff(powernoback)**2)**0.5)
+
+			all_peak.append(peak)
+			all_peak_std.append(peaks_std)
+			all_through.append(through)
+			all_through_std.append(throughs_std)
+			all_sharpness_indicator.append(sharpness_indicator)
+		all_peak = np.array(all_peak)
+		all_peak_std = np.array(all_peak_std)
+		all_through = np.array(all_through)
+		all_through_std = np.array(all_through_std)
+		all_sharpness_indicator = np.array(all_sharpness_indicator)
+
+		select = np.logical_and(all_focus_status_end!='fully_defocused',all_laser_to_analyse_power_end==all_laser_to_analyse_power_end.max())
+		ax[1,0].plot(np.sort(all_laser_to_analyse_frequency_end[select]),[y for _, y in sorted(zip(all_laser_to_analyse_frequency_end[select], (all_peak/(all_laser_to_analyse_power_end*power_reduction_window))[select]))],marker='^',color='r',mfc='none',linestyle=style[i_])
+		ax[1,0].plot(np.sort(all_laser_to_analyse_frequency_end[select]),[y for _, y in sorted(zip(all_laser_to_analyse_frequency_end[select], (all_through/(all_laser_to_analyse_power_end*power_reduction_window))[select]))],marker='v',color='r',mfc='none',linestyle=style[i_])
+		# ax[1,0].plot(all_laser_to_analyse_frequency_end[select]*power_reduction_window,all_sharpness_indicator[select],marker='s',color='r',linestyle="None",mfc='none')
+		ax[1,0].plot([0,all_laser_to_analyse_frequency_end.max()],[1,1],'k--')
+		ax[1,0].plot([0,all_laser_to_analyse_frequency_end.max()],[0,0],'k--')
+
+		select = np.logical_and(all_focus_status_end=='fully_defocused',all_laser_to_analyse_power_end==all_laser_to_analyse_power_end[all_focus_status_end=='fully_defocused'].max())
+		ax[1,0].plot(np.sort(all_laser_to_analyse_frequency_end[select]),[y for _, y in sorted(zip(all_laser_to_analyse_frequency_end[select], (all_peak/(all_laser_to_analyse_power_end*power_reduction_window*defocused_to_focused_power_first_stage))[select]))],marker='^',color='b',mfc='none',linestyle=style[i_])
+		ax[1,0].plot(np.sort(all_laser_to_analyse_frequency_end[select]),[y for _, y in sorted(zip(all_laser_to_analyse_frequency_end[select], (all_through/(all_laser_to_analyse_power_end*power_reduction_window*defocused_to_focused_power_first_stage))[select]))],marker='v',color='b',mfc='none',linestyle=style[i_])
+
+	ax[0,0].grid()
+	ax[1,0].semilogx()
+	ax[1,0].grid()
+	# plt.pause(0.01)
+	fig.suptitle('variation in diffusivity\n'+'spot location '+ str([int(laser_location[0]),int(laser_location[2])]) +' \ndiffusivity %.3g,thickness %.3g,emissivity %.3g,defocused_to_focused %.3g,laser_through_mirror_correction %.3g' %(diffusivity_first_stage,thickness_first_stage,emissivity_first_stage,defocused_to_focused_power_first_stage,laser_through_mirror_correction_first_stage))
+	figure_index+=1
+	plt.savefig(path_where_to_save_everything_int + 'example_for_paper_' + str(figure_index) +'.eps', bbox_inches='tight')
+	plt.close()

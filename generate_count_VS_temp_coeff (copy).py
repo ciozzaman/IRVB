@@ -291,25 +291,8 @@ elif True:
 		if not os.path.exists(pathparam):
 			os.makedirs(pathparam)
 		coleval.build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5,wavelength_bottom=2.5)
-		if False:	# just a bit of comparison between NUC and BB source. are they even close in terms of counts?
-			files = cp.deepcopy(files_no_window)
-			temperature_BB = cp.deepcopy(temperature_no_window)
-			counts_BB = []
-			counts_std_BB = []
-			for i_file,file in enumerate(files):
-				full_saved_file_dict=coleval.read_IR_file(file)
-				data = full_saved_file_dict['data']
-				data_median = full_saved_file_dict['data_median']
-				data += data_median
-				counts_BB.append(np.mean(data,axis=(0)))
-				counts_std_BB.append(np.std(data,axis=(0)))
 
-			fullpathparams=os.path.join(pathparam,'coeff_polynomial_deg'+str(n-1)+'int_time'+str(inttime)+'ms.npz')
-			params_dict=np.load(fullpathparams)
-			params_dict.allow_pickle=True
-			params3 = params_dict['coeff3']	# BB fit without window coefficiens
-
-	if True:	# BB source as far as possible while encompussing the whole FOV with window inttime=1.0	# ms
+	if False:	# BB source as far as possible with window inttime=1.0	# ms
 		description = 'BB source as far as possible with window inttime=1.0 # ms'
 		files = files58
 		temperature = temperature58
@@ -327,7 +310,7 @@ elif True:
 			os.makedirs(pathparam)
 		coleval.build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5,wavelength_bottom=2.5)
 
-	if True:	# BB source as far as possible while encompussing the whole FOV with window inttime=2.0	# ms
+	if False:	# BB source as far as possible with window inttime=2.0	# ms
 		description = 'BB source as far as possible with window inttime=2.0 # ms'
 		files = files56
 		temperature = temperature56
@@ -344,25 +327,8 @@ elif True:
 		if not os.path.exists(pathparam):
 			os.makedirs(pathparam)
 		coleval.build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5,wavelength_bottom=2.5)
-		if False:	# just a bit of comparison between NUC and BB source. are they even close in terms of counts?
-			files = cp.deepcopy(files_no_window)
-			temperature_BB = cp.deepcopy(temperature_no_window)
-			counts_BB = []
-			counts_std_BB = []
-			for i_file,file in enumerate(files):
-				full_saved_file_dict=coleval.read_IR_file(file)
-				data = full_saved_file_dict['data']
-				data_median = full_saved_file_dict['data_median']
-				data += data_median
-				counts_BB.append(np.mean(data,axis=(0)))
-				counts_std_BB.append(np.std(data,axis=(0)))
 
-			fullpathparams=os.path.join(pathparam,'coeff_polynomial_deg'+str(n-1)+'int_time'+str(inttime)+'ms.npz')
-			params_dict=np.load(fullpathparams)
-			params_dict.allow_pickle=True
-			params2 = params_dict['coeff3']	# BB fit without window coefficiens
-
-	if True:	# BB source as close as possible with window inttime=1.0	# ms
+	if False:	# BB source as close as possible with window inttime=1.0	# ms
 		description = 'BB source as close as possible with window inttime=1.0 # ms'
 		files = files42
 		temperature = temperature42
@@ -393,7 +359,7 @@ elif True:
 			np.savez_compressed(fullpathparams[:-4],**params_dict)
 
 
-	if True:	# BB source as close as possible with window inttime=2.0	# ms
+	if False:	# BB source as close as possible with window inttime=2.0	# ms
 		description = 'BB source as close as possible with window inttime=2.0 # ms'
 		files = files41
 		temperature = temperature41
@@ -410,31 +376,6 @@ elif True:
 		if not os.path.exists(pathparam):
 			os.makedirs(pathparam)
 		coleval.build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5,wavelength_bottom=2.5)
-		if False:	# just a bit of comparison between NUC and BB source. are they even close in terms of counts?
-			files = cp.deepcopy(files_no_window)
-			temperature_BB_close = cp.deepcopy(temperature_no_window)
-			counts_BB_close = []
-			counts_std_BB_close = []
-			for i_file,file in enumerate(files):
-				full_saved_file_dict=coleval.read_IR_file(file)
-				data = full_saved_file_dict['data']
-				data_median = full_saved_file_dict['data_median']
-				data += data_median
-				counts_BB_close.append(np.mean(data,axis=(0)))
-				counts_std_BB_close.append(np.std(data,axis=(0)))
-
-			fullpathparams=os.path.join(pathparam,'coeff_polynomial_deg'+str(n-1)+'int_time'+str(inttime)+'ms.npz')
-			params_dict=np.load(fullpathparams)
-			params_dict.allow_pickle=True
-			params1 = params_dict['coeff3']	# BB fit without window coefficiens
-
-			plt.figure()
-			plt.errorbar([10,18,65.7],[np.mean(params1[0,50:150,50:150,0]),np.mean(params2[0,50:150,50:150,0]),np.mean(params3[0,50:150,50:150,0])],yerr=[np.std(params1[0,50:150,50:150,0]),np.std(params2[0,50:150,50:150,0]),np.std(params3[0,50:150,50:150,0])])
-			plt.xlabel('camera/source distance [cm]')
-			plt.ylabel('a1 coefficient [counts/photons]')
-			# plt.legend(loc='best', fontsize='small')
-			plt.grid()
-			plt.pause(0.01)
 
 		if Flase:	# I think this is wrong. it was based to the fact that data fro 2018 has a3~1, but that dataset is unreliable
 			# this will be saved with a3=1 to be used as proper calibration for MU01
@@ -491,50 +432,6 @@ elif True:
 		if not os.path.exists(pathparam):
 			os.makedirs(pathparam)
 		coleval.build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5,wavelength_bottom=2.5)
-		if False:	# just a bit of comparison between NUC and BB source. are they even close in terms of counts?
-			files = np.concatenate(files_no_window)
-			temperature_NUC = np.concatenate(temperature_no_window)
-			counts_NUC = []
-			counts_std_NUC = []
-			for i_file,file in enumerate(files):
-				full_saved_file_dict=coleval.read_IR_file(file)
-				data = full_saved_file_dict['data']
-				try:
-					data_median = full_saved_file_dict['data_median']
-					data += data_median
-				except:
-					pass
-				counts_NUC.append(np.mean(data,axis=(0)))
-				counts_std_NUC.append(np.std(data,axis=(0)))
-
-		if False:	# plots to show the effect of the narcissus for the paper
-			plt.figure(figsize=(10, 10))
-			im=plt.imshow(median_filter(meancounttot[15][0],size=[3,3]),'rainbow',origin='bottom')
-			plt.colorbar(im,fraction=0.0367, pad=0.04).set_label('counts [au]')
-			plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/NUC_calib1.png', bbox_inches='tight')
-			plt.close()
-
-			plt.figure(figsize=(10, 10))
-			im=plt.imshow(median_filter(meancounttot_no_window[11][0],size=[3,3]),'rainbow',vmin=median_filter(meancounttot[15][0],size=[3,3]).min(),vmax=median_filter(meancounttot[15][0],size=[3,3]).max(),origin='bottom')
-			plt.colorbar(im,fraction=0.0367, pad=0.04).set_label('counts [au]')
-			# plt.pause(0.01)
-			plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/NUC_calib2.png', bbox_inches='tight')
-			plt.close()
-
-			plt.figure(figsize=(10, 10))
-			im=plt.imshow(median_filter(meancounttot_no_window[0][0],size=[3,3]),'rainbow',origin='bottom')
-			plt.colorbar(im,fraction=0.0367, pad=0.04).set_label('counts [au]')
-			plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/NUC_calib3.png', bbox_inches='tight')
-			plt.close()
-
-			plt.figure(figsize=(10, 10))
-			im=plt.imshow(median_filter(meancounttot_no_window[15][0],size=[3,3]),'rainbow',origin='bottom')
-			plt.colorbar(im,fraction=0.0367, pad=0.04).set_label('counts [au]')
-			plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/NUC_calib4.png', bbox_inches='tight')
-			plt.close()
-
-
-
 
 
 
@@ -543,19 +440,19 @@ elif True:
 		fullpathparams=os.path.join(pathparam,'coeff_polynomial_deg'+str(n-1)+'int_time'+str(inttime)+'ms.npz')
 		params_dict=np.load(fullpathparams)
 		params_dict.allow_pickle=True
-		params = params_dict['coeff']	# polynomial coefficiens with only window
-		errparams = params_dict['errcoeff']	# polynomial error coefficiens with only window
-		score = params_dict['score']	# polynomial score with only window
-		params2 = params_dict['coeff2']	# full BB fit with window coefficiens
-		errparams2 = params_dict['errcoeff2']	# full BB fit with window error coefficiens
-		score2 = params_dict['score2']	# full BB fit with window score
+		params = params_dict['coeff']
+		errparams = params_dict['errcoeff']
+		score = params_dict['score']
+		params2 = params_dict['coeff2']
+		errparams2 = params_dict['errcoeff2']
+		score2 = params_dict['score2']
 
-		params3 = params_dict['coeff3']	# BB fit without window coefficiens
-		errparams3 = params_dict['errcoeff3']	# BB fit without window error coefficiens
-		score3 = params_dict['score3']	# BB fit without window score
-		params4 = params_dict['coeff4']	# BB fit with only window coefficiens
-		errparams4 = params_dict['errcoeff4']	# BB fit with only window error coefficiens
-		score4 = params_dict['score4']	# BB fit with only window score
+		params3 = params_dict['coeff3']	# pure no window
+		errparams3 = params_dict['errcoeff3']
+		score3 = params_dict['score3']
+		params4 = params_dict['coeff4']	# pure window
+		errparams4 = params_dict['errcoeff4']
+		score4 = params_dict['score4']
 
 		plt.figure(figsize=(10, 10))
 		if len(temperature_window)<6:
@@ -582,7 +479,7 @@ elif True:
 			plt.title('proportional window component BB curve fit BB source\n'+description)
 		to_plot = median_filter(params2[0,:,:,0]*params2[0,:,:,2],[3,3])
 		plt.imshow(to_plot,vmin=to_plot[30:170,30:170].min(),vmax=to_plot[30:170,30:170].max())
-		plt.colorbar().set_label('a1*a3 [counts/photons]')
+		plt.colorbar()
 		plt.pause(0.01)
 
 		plt.figure(figsize=(10, 10))
@@ -650,72 +547,18 @@ elif True:
 			plt.title('proportional pure no window component BB curve fit BB source\n'+description)
 		to_plot = median_filter(params3[0,:,:,0],[3,3])
 		plt.imshow(to_plot,vmin=to_plot[30:170,30:170].min(),vmax=to_plot[30:170,30:170].max())
-		plt.colorbar().set_label('a1 [counts/photons]')
+		plt.colorbar()
 		plt.pause(0.01)
 
 		plt.figure(figsize=(10, 10))
 		if len(temperature_window)<6:
-			plt.title('proportional pure window component BB curve fit NUC\n'+description+'\n\n')
+			plt.title('proportional pure window component BB curve fit NUC\n'+description)
 		else:
-			plt.title('proportional pure window component BB curve fit BB source\n'+description+'\n\n')
+			plt.title('proportional pure window component BB curve fit BB source\n'+description)
 		to_plot = median_filter(params4[0,:,:,0],[3,3])
-		im=plt.imshow(to_plot,'rainbow',origin='bottom',vmin=to_plot[30:170,30:170].min(),vmax=to_plot[30:170,30:170].max())
-		plt.colorbar(im,fraction=0.0367, pad=0.04).set_label('a1 [counts/photons]')
-		plt.plot([157-240/2,157+240/2,157+240/2,157-240/2,157-240/2],[136-187/2,136-187/2,136+187/2,136+187/2,136-187/2],'--k')
-		plt.pause(0.01)
-
-		plt.figure(figsize=(10, 10))
-		if len(temperature_window)<6:
-			plt.title('constant pure window component BB curve fit NUC\n'+description+'\n\n')
-		else:
-			plt.title('constant pure window component BB curve fit BB source\n'+description+'\n\n')
-		to_plot = median_filter(params4[0,:,:,1],[3,3])
-		im=plt.imshow(to_plot,'rainbow',origin='bottom',vmin=to_plot[30:170,30:170].min(),vmax=to_plot[30:170,30:170].max())
-		plt.colorbar(im,fraction=0.0367, pad=0.04).set_label('a2 [counts]')
-		plt.plot([157-240/2,157+240/2,157+240/2,157-240/2,157-240/2],[136-187/2,136-187/2,136+187/2,136+187/2,136-187/2],'--k')
-		plt.pause(0.01)
-
-		plt.figure(figsize=(10, 10))
-		if len(temperature_window)<6:
-			plt.title('score pure window component BB curve fit NUC\n'+description)
-		else:
-			plt.title('score pure window component BB curve fit BB source\n'+description)
-		to_plot = median_filter(score[0,:,:],[3,3])
 		plt.imshow(to_plot,vmin=to_plot[30:170,30:170].min(),vmax=to_plot[30:170,30:170].max())
 		plt.colorbar()
 		plt.pause(0.01)
-
-		plt.figure(figsize=(10, 10))
-		if len(temperature_window)<6:
-			plt.title('C0 polynomial fit NUC\n'+description)
-		else:
-			plt.title('C0 polynomial fit BB source\n'+description)
-		to_plot = median_filter(params[0,:,:,2],[3,3])
-		plt.imshow(to_plot,vmin=to_plot[30:170,30:170].min(),vmax=to_plot[30:170,30:170].max())
-		plt.colorbar()
-		plt.pause(0.01)
-
-		plt.figure(figsize=(10, 10))
-		if len(temperature_window)<6:
-			plt.title('C1 polynomial fit NUC\n'+description)
-		else:
-			plt.title('C1 polynomial fit BB source\n'+description)
-		to_plot = median_filter(params[0,:,:,1],[3,3])
-		plt.imshow(to_plot,vmin=to_plot[30:170,30:170].min(),vmax=to_plot[30:170,30:170].max())
-		plt.colorbar()
-		plt.pause(0.01)
-
-		plt.figure(figsize=(10, 10))
-		if len(temperature_window)<6:
-			plt.title('C2 polynomial fit NUC\n'+description)
-		else:
-			plt.title('C2 polynomial fit BB source\n'+description)
-		to_plot = median_filter(params[0,:,:,0],[3,3])
-		plt.imshow(to_plot,vmin=to_plot[30:170,30:170].min(),vmax=to_plot[30:170,30:170].max())
-		plt.colorbar()
-		plt.pause(0.01)
-
-
 	else:
 		pass
 
@@ -762,189 +605,6 @@ elif True:
 			flux_array.append(BB_rad_counts_to_delta_temp(1,T))
 		flux_array = np.array(flux_array)
 
-if False:	# compare the effect of the distance of the BB source from the camera
-	files_no_window_1 = ['/home/ffederic/work/irvb/flatfield/Feb24_2022/flat_field-000085','/home/ffederic/work/irvb/flatfield/Feb24_2022/flat_field-000093','/home/ffederic/work/irvb/flatfield/Feb24_2022/flat_field-000095']
-	files_no_window_2 = ['/home/ffederic/work/irvb/flatfield/Feb24_2022/flat_field-000001','/home/ffederic/work/irvb/flatfield/Feb24_2022/flat_field-000002','/home/ffederic/work/irvb/flatfield/Feb24_2022/flat_field-000003']
-	files_no_window = files_no_window_1 + files_no_window_2
-	distance = np.array([18,10.5,65.7]+[65.7,7,10.5])	# discance camera to source
-	temperature = np.array([34,34,34]+[16,16,16])	# temp of BB source
-	files = cp.deepcopy(files_no_window)
-	counts = []
-	counts_std = []
-	for i_file,file in enumerate(files):
-		full_saved_file_dict=coleval.read_IR_file(file)
-		data = full_saved_file_dict['data']
-		data_median = full_saved_file_dict['data_median']
-		data += data_median
-		counts.append(np.mean(data,axis=(0)))
-		counts_std.append(np.std(data,axis=(0)))
-	counts = np.array(counts)
-	counts_std = np.array(counts_std)
-
-	plt.figure()
-	plt.errorbar(distance[:3],[np.mean(counts[i,counts[i]>10000]) for i in range(3)],yerr=[np.mean(counts_std[i,counts[i]>10000]) for i in range(3)],label='T=34C')
-	plt.errorbar(distance[3:],[np.mean(counts[i,counts[i]>8500]) for i in range(3,6)],yerr=[np.mean(counts_std[i,counts[i]>8500]) for i in range(3,6)],label='Tambient~16C')
-	plt.errorbar(distance[:3],[counts[i,110,180] for i in range(3)],yerr=[counts_std[i,110,180] for i in range(3)],label='T=34C centre',linestyle='--')
-	plt.errorbar(distance[3:],[counts[i,110,180] for i in range(3,6)],yerr=[counts_std[i,110,180] for i in range(3,6)],label='Tambient~16C centre',linestyle='--')
-	plt.legend()
-	plt.grid()
-	plt.pause(0.01)
-
-	plt.figure()
-	plt.plot(np.array(counts_NUC)[:,110,180],temperature_NUC,label='NUC')
-	plt.plot(np.array(counts_BB)[:,110,180],temperature_BB,label='BB')
-	plt.plot(np.array(counts_BB_close)[:,110,180],temperature_BB_close,label='BBclose')
-	plt.plot([counts[i,110,180] for i in range(3)],temperature[:3],'+')
-	plt.plot([counts[i,110,180] for i in range(3,6)],temperature[3:],'+')
-	plt.title('counts about at the center of the image')
-	plt.xlabel('counts')
-	plt.ylabel('temp [degC]')
-	plt.legend()
-	plt.grid()
-	plt.pause(0.01)
-
-	plt.figure()
-	plt.plot(np.array(counts_NUC)[:,30,175],temperature_NUC,label='NUC')
-	plt.plot(np.array(counts_BB)[:,30,175],temperature_BB,label='BB')
-	plt.plot(np.array(counts_BB_close)[:,30,175],temperature_BB_close,label='BBclose')
-	plt.plot([counts[i,30,175] for i in range(3)],temperature[:3],'+')
-	plt.plot([counts[i,30,175] for i in range(3,6)],temperature[3:],'+')
-	plt.title('counts far from the narcissus')
-	plt.xlabel('counts')
-	plt.ylabel('temp [degC]')
-	plt.legend()
-	plt.grid()
-	plt.pause(0.01)
-
-
-if False:	# I want to check what it is the effect of the camera / source distance changing
-	files_no_window_1 = collection_of_records['files50']['path_files_laser']
-	files_no_window_2 = collection_of_records['files53']['path_files_laser']
-	distance1 = collection_of_records['files50']['distance']
-	distance2 = collection_of_records['files53']['distance']
-	counts1 = []
-	counts1_std = []
-	for i_file,file in enumerate(files_no_window_1):
-		full_saved_file_dict=coleval.read_IR_file(file)
-		data = full_saved_file_dict['data']
-		data_median = full_saved_file_dict['data_median']
-		data += data_median
-		counts1.append(np.mean(data,axis=(0)))
-		counts1_std.append(np.std(data,axis=(0)))
-	counts1 = np.array(counts1)
-	counts1_std = np.array(counts1_std)
-
-	if False:
-		plt.figure()
-		plt.imshow(counts1[-1])
-		plt.colorbar().set_label('Counts [au]')
-		plt.pause(0.01)
-
-		plt.figure()
-		plt.imshow(counts1[0],vmin=counts1[0,100:200,100:180].min(),vmax=counts1[0,100:200,100:180].max())
-		plt.colorbar().set_label('Counts [au]')
-		plt.pause(0.01)
-
-	counts2 = []
-	counts2_std = []
-	for i_file,file in enumerate(files_no_window_2):
-		full_saved_file_dict=coleval.read_IR_file(file)
-		data = full_saved_file_dict['data']
-		data_median = full_saved_file_dict['data_median']
-		data += data_median
-		counts2.append(np.mean(data,axis=(0)))
-		counts2_std.append(np.std(data,axis=(0)))
-	counts2 = np.array(counts2)
-	counts2_std = np.array(counts2_std)
-
-	files_no_window_3 = collection_of_records['files52']['path_files_laser']
-	distance3 = collection_of_records['files52']['distance']
-	counts3 = []
-	counts3_std = []
-	for i_file,file in enumerate(files_no_window_3):
-		full_saved_file_dict=coleval.read_IR_file(file)
-		data = full_saved_file_dict['data']
-		data_median = full_saved_file_dict['data_median']
-		data += data_median
-		counts3.append(np.mean(data,axis=(0)))
-		counts3_std.append(np.std(data,axis=(0)))
-	counts3 = np.array(counts3)
-	counts3_std = np.array(counts3_std)
-
-	polynomial = lambda x,A,c0 : A/(x**2)+c0
-	polynomial2 = lambda x,A,B,c0 : A/((B+x)**2)+c0
-	exponential = lambda x,A,B,c0 : A*np.exp(-B*x)+c0
-
-	plt.figure()
-	temp = np.mean(counts1[:,100:200,100:180],axis=(1,2))
-	temp = temp-temp[0]
-	temp2 = (np.mean(counts1_std[:,100:200,100:180],axis=(1,2))**2+np.std(counts1[:,100:200,100:180],axis=(1,2))**2)**0.5
-	plt.errorbar(distance1,temp,yerr=temp2,label='T=35°C',color='r')
-	# check = curve_fit(polynomial,distance1,temp,sigma=temp2,absolute_sigma=True,p0=[temp.max(),0])
-	# plt.plot(distance1,polynomial(np.array(distance1),*check[0]),'--',label='%.3g/(d^2) + %.3g' %(check[0][0],check[0][1]),color='r')
-	# check = curve_fit(polynomial2,distance1,temp,sigma=temp2,absolute_sigma=True,p0=[1e6,60,0],bounds=[[0,-np.inf,-np.inf],[np.inf,np.inf,np.inf]])
-	# plt.plot(distance1,polynomial2(np.array(distance1),*check[0]),':',label='%.3g/((%.3g+d)^2) + %.3g' %(check[0][0],check[0][1],check[0][2]),color='r')
-	# check = curve_fit(exponential,distance1,temp,sigma=temp2,absolute_sigma=True,p0=[temp.max(),1,0],bounds=[[-np.inf,0,-np.inf],[np.inf,np.inf,np.inf]])
-	# plt.plot(distance1,exponential(np.array(distance1),*check[0]),'.-',label='%.3g*exp(-%.3g*d) + %.3g' %(check[0][0],check[0][1],check[0][2]),color='r')
-	temp = np.mean(counts2[:,100:200,100:180],axis=(1,2))
-	temp = temp-temp[0]
-	temp2 = (np.mean(counts2_std[:,100:200,100:180],axis=(1,2))**2+np.std(counts2[:,100:200,100:180],axis=(1,2))**2)**0.5
-	plt.errorbar(distance2,temp,yerr=temp2,label='T=26°C',color='b')
-	# check = curve_fit(polynomial,distance2,temp,sigma=temp2,absolute_sigma=True,p0=[temp.max(),0])
-	# plt.plot(distance2,polynomial(np.array(distance2),*check[0]),'--',label='%.3g/(d^2) + %.3g' %(check[0][0],check[0][1]),color='b')
-	# check = curve_fit(polynomial2,distance2,temp,sigma=temp2,absolute_sigma=True,p0=[1e6,60,0],bounds=[[0,-np.inf,-np.inf],[np.inf,np.inf,np.inf]])
-	# plt.plot(distance2,polynomial2(np.array(distance2),*check[0]),':',label='%.3g/((%.3g+d)^2) + %.3g' %(check[0][0],check[0][1],check[0][2]),color='b')
-	# check = curve_fit(exponential,distance2,temp,sigma=temp2,absolute_sigma=True,p0=[temp.max(),1,0],bounds=[[-np.inf,0,-np.inf],[np.inf,np.inf,np.inf]])
-	# plt.plot(distance2,exponential(np.array(distance2),*check[0]),'.-',label='%.3g*exp(-%.3g*d) + %.3g' %(check[0][0],check[0][1],check[0][2]),color='b')
-
-	# temp = np.mean(counts3[:,100:200,100:180],axis=(1,2))
-	# temp = temp-temp[0]
-	# temp2 = (np.mean(counts3_std[:,100:200,100:180],axis=(1,2))**2+np.std(counts3[:,100:200,100:180],axis=(1,2))**2)**0.5
-	# plt.errorbar(np.array(distance3),temp,yerr=temp2,label='T=26degC NUC',color='y')
-	# check = curve_fit(polynomial,distance3,temp,sigma=temp2,absolute_sigma=True,p0=[temp.max(),0])
-	# plt.plot(distance2,polynomial(np.array(distance2),*check[0]),'--',label='%.3g/(d^2) + %.3g' %(check[0][0],check[0][1]),color='y')
-	# check = curve_fit(polynomial2,distance3,temp,sigma=temp2,absolute_sigma=True,p0=[1e6,60,0],bounds=[[0,-np.inf,-np.inf],[np.inf,np.inf,np.inf]])
-	# plt.plot(distance2,polynomial2(np.array(distance2),*check[0]),':',label='%.3g/((%.3g+d)^2) + %.3g' %(check[0][0],check[0][1],check[0][2]),color='y')
-	# check = curve_fit(exponential,distance3,temp,sigma=temp2,absolute_sigma=True,p0=[temp.max(),1,0],bounds=[[-np.inf,0,-np.inf],[np.inf,np.inf,np.inf]])
-	# plt.plot(distance2,exponential(np.array(distance2),*check[0]),'.-',label='%.3g*exp(-%.3g*d) + %.3g' %(check[0][0],check[0][1],check[0][2]),color='y')
-
-	# plt.axvline(x=18,linestyle='--',color='k',label='distance during BB calibration')
-	plt.xlabel('camera/source distance [cm]')
-	plt.ylabel('counts-counts max dist [au]')
-	plt.legend(loc='best', fontsize='small')
-	plt.grid()
-	plt.pause(0.01)
-
-	plt.figure()
-	temp = 1/(np.linspace(2.5*1e-6,5*1e-6,50)**4)*1/(np.exp((6.62607015e-34*3e8)/(np.linspace(2.5,5,50)*1e-6*1.380649e-23*(273+26)))-1)
-	np.trapz(temp[np.logical_and(np.linspace(2.5,5,50)<4.5,np.linspace(2.5,5,50)>4.2)])/np.trapz(temp)
-	plt.plot(np.linspace(2.5,5,50),temp/np.sum(temp),label='26C')
-	temp = 1/(np.linspace(2.5*1e-6,5*1e-6,50)**4)*1/(np.exp((6.62607015e-34*3e8)/(np.linspace(2.5,5,50)*1e-6*1.380649e-23*(273+35)))-1)
-	plt.plot(np.linspace(2.5,5,50),temp/np.sum(temp),label='35C')
-	plt.xlabel('wavelength [micron]')
-	plt.ylabel('fraction of emitted photons')
-	plt.legend(loc='best', fontsize='small')
-	plt.grid()
-	plt.pause(0.01)
-
-	plt.figure()
-	temp = np.mean(counts1[:,100:200,100:180],axis=(1,2))
-	temp = temp/np.max(temp)
-	temp2 = (np.mean(counts1_std[:,100:200,100:180],axis=(1,2))**2+np.std(counts1[:,100:200,100:180],axis=(1,2))**2)**0.5
-	plt.plot(distance1,temp,label='T=35degC BB',color='r')
-	temp = np.mean(counts2[:,100:200,100:180],axis=(1,2))
-	temp = temp/np.max(temp)
-	temp2 = (np.mean(counts2_std[:,100:200,100:180],axis=(1,2))**2+np.std(counts2[:,100:200,100:180],axis=(1,2))**2)**0.5
-	plt.plot(distance2,temp,label='T=26degC BB',color='b')
-	temp = np.mean(counts3[:,100:200,100:180],axis=(1,2))
-	temp = temp/np.max(temp)
-	temp2 = (np.mean(counts3_std[:,100:200,100:180],axis=(1,2))**2+np.std(counts3[:,100:200,100:180],axis=(1,2))**2)**0.5
-	plt.plot(distance3,temp,label='T=26degC NUC',color='y')
-	plt.xlabel('camera/source distance')
-	plt.ylabel('transmittance')
-	plt.legend(loc='best', fontsize='small')
-	plt.grid()
-	plt.pause(0.01)
 
 
 #

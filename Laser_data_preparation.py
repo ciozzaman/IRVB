@@ -27,19 +27,21 @@ if False:	# manual collection of parameters
 	all_laser_to_analyse=coleval.flatten_full(all_laser_to_analyse)
 	all_laser_to_analyse_ROI=coleval.flatten(all_laser_to_analyse_ROI)
 else:	# automatic collection of parameters
-	cases_to_include = ['laser15','laser16','laser17','laser18','laser19','laser20','laser21','laser22','laser23','laser24','laser25','laser26','laser27','laser28','laser29','laser30','laser31','laser32','laser33','laser34','laser35','laser36','laser37','laser38','laser39','laser41','laser42','laser43','laser44','laser45','laser46','laser47']
-	# cases_to_include = ['laser22','laser23','laser24','laser25','laser26','laser27','laser28','laser29','laser30','laser31','laser32']
+	# cases_to_include = ['laser15','laser16','laser17','laser18','laser19','laser20','laser21','laser22','laser23','laser24','laser25','laser26','laser27','laser28','laser29','laser30','laser31','laser32','laser33','laser34','laser35','laser36','laser37','laser38','laser39','laser41','laser42','laser43','laser44','laser45','laser46','laser47']
+	# cases_to_include = ['laser17','laser18','laser19','laser20','laser21','laser22','laser23','laser24','laser25','laser26','laser27','laser28','laser29','laser30','laser31','laser32','laser33','laser34','laser35','laser36','laser37','laser38','laser39','laser41','laser42','laser43','laser44','laser45','laser46','laser47']
 	# cases_to_include = ['laser34','laser35','laser36','laser37','laser38','laser39']
-	# cases_to_include = ['laser15']
+	cases_to_include = ['laser19','laser22','laser30','laser33']
 	all_case_ID = []
 	all_path_reference_frames = []
 	all_laser_to_analyse = []
 	all_laser_to_analyse_ROI = []
+	all_laser_to_analyse_frequency = []
 	for name in cases_to_include:
 		all_case_ID.extend([name] * len(collection_of_records[name]['path_files_laser']))
 		all_path_reference_frames.extend(collection_of_records[name]['reference_clear'])
 		all_laser_to_analyse.extend(collection_of_records[name]['path_files_laser'])
 		all_laser_to_analyse_ROI.extend(collection_of_records[name]['laserROI'])
+		all_laser_to_analyse_frequency.extend(collection_of_records[name]['freqlaser'])
 
 # # laser_to_analyse = laser19[0]
 # # # framerate of the IR camera in Hz
@@ -93,6 +95,10 @@ for i_laser_to_analyse,laser_to_analyse in enumerate(all_laser_to_analyse):
 	# laser_dict = np.load(laser_to_analyse+'.npz')
 	# laser_counts, laser_digitizer_ID = coleval.separate_data_with_digitizer(laser_dict)
 	laser_counts = laser_dict['data']
+	try:
+		laser_counts += laser_dict['data_median']
+	except:
+		pass
 	time_of_experiment = laser_dict['time_of_measurement']
 	mean_time_of_experiment = np.mean(time_of_experiment)
 	laser_digitizer = laser_dict['digitizer_ID']
@@ -149,10 +155,30 @@ for i_laser_to_analyse,laser_to_analyse in enumerate(all_laser_to_analyse):
 	reference_background_std = ((background_counts_std[ref[0]]**2)*(background_timestamps[ref[1]]-mean_time_of_experiment) + (background_counts_std[ref[1]]**2)*(mean_time_of_experiment-background_timestamps[ref[0]]))/(background_timestamps[ref[1]]-background_timestamps[ref[0]])
 	reference_background_flat = np.mean(reference_background,axis=(1,2))
 
-
 	# before of the temperature conversion I'm better to remove the oscillation
 	# I try to use all the length of the record at first
-	laser_counts_filtered = [coleval.clear_oscillation_central2([counts.astype(np.float32)],laser_framerate/len(laser_digitizer_ID),oscillation_search_window_end=(len(counts)-1)/(laser_framerate/len(laser_digitizer_ID)),plot_conparison=False)[0] for counts in laser_counts]
+	# I only do this for frequencies lower than 30Hz, otherwise it trashes good signal
+	if False:
+		laser_counts_filtered = [coleval.clear_oscillation_central2([counts.astype(np.float32)],laser_framerate/len(laser_digitizer_ID),oscillation_search_window_end=(len(counts)-1)/(laser_framerate/len(laser_digitizer_ID)),plot_conparison=False)[0] for counts in laser_counts]
+	else:
+		laser_counts_filtered = [np.array(counts.astype(np.float32)) for counts in laser_counts]
+
+
+	if False:	# I want to check if this filters the oscillation
+		plt.figure()
+		dpixel = 5
+		# spectra_orig = np.fft.fft(laser_counts[0][:,226,93], axis=0)
+		spectra_orig = np.fft.fft(np.mean(laser_counts[0][:,93-dpixel:93+dpixel+1,226-dpixel:226+dpixel+1],axis=(1,2)), axis=0)
+		magnitude = 2 * np.abs(spectra_orig) / len(spectra_orig)
+		freq = np.fft.fftfreq(len(magnitude), d=1 / (laser_framerate/len(laser_digitizer_ID)))
+		plt.plot(freq,magnitude)
+		# spectra_orig = np.fft.fft(laser_counts_filtered[0][:,100,100], axis=0)
+		spectra_orig = np.fft.fft(np.mean(laser_counts_filtered[0][:,93-dpixel:93+dpixel+1,226-dpixel:226+dpixel+1],axis=(1,2)), axis=0)
+		magnitude = 2 * np.abs(spectra_orig) / len(spectra_orig)
+		freq = np.fft.fftfreq(len(magnitude), d=1 / (laser_framerate/len(laser_digitizer_ID)))
+		plt.plot(freq,magnitude,'--')
+		plt.semilogy()
+		plt.pause(0.01)
 
 	if False:	# done with functions now
 		from uncertainties import correlated_values,ufloat

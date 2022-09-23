@@ -81,7 +81,9 @@ from raysect.optical.material import NullMaterial
 from raysect.optical.material.absorber import AbsorbingSurface
 from raysect.optical.material.emitter import UniformVolumeEmitter,InhomogeneousVolumeEmitter
 from raysect.optical.observer import TargettedCCDArray, PowerPipeline2D
-from raysect.core.math.interpolators import Discrete2DMesh
+# from raysect.core.math.interpolators import Discrete2DMesh
+# this should be the same, just different because of change in CHERAB version
+from raysect.core.math.function.float.function2d.interpolate.discrete2dmesh import Discrete2DMesh
 
 
 os.chdir("/home/ffederic/work/cherab/cherab_mastu/")
@@ -244,16 +246,16 @@ plt.pause(0.01)
 # # x_point_upper = Point2D(center_radiator[0] + side_radiator/2, center_radiator[1] + side_radiator/2)
 #
 # power_density = total_power / volume_radiator / (4*np.pi)
-# power_density_core=50000 / (4*np.pi)
-#
-# from cherab.tools.primitives.annulus_mesh import generate_annulus_mesh_segments
-# # generate_annulus_mesh_segments(x_point_lower, x_point_upper, 360, world, material=UniformVolumeEmitter(ConstantSF(power_density)))
-# # radiator = import_stl('radiator_R0.55_Z-1.2_r0.08.stl', material=UniformVolumeEmitter(ConstantSF(power_density)), parent=world)
-# # radiator = import_stl('radiator_all_closed_surface.stl', material=UniformVolumeEmitter(ConstantSF(power_density_core)), parent=world)
-# # radiator = import_stl('radiator_all_super_x_divertor.stl', material=UniformVolumeEmitter(ConstantSF(power_density_core)), parent=world)
-# # radiator = import_stl('radiator_all_core.stl', material=UniformVolumeEmitter(ConstantSF(power_density_core)), parent=world)
-# radiator = import_stl('radiator_all_core_and_divertor.stl', material=UniformVolumeEmitter(ConstantSF(power_density_core)), parent=world)
-# # radiator = import_stl('test.stl', material=UniformVolumeEmitter(ConstantSF(power_density_core)), parent=world)
+power_density_core=50000 / (4*np.pi)
+
+from cherab.tools.primitives.annulus_mesh import generate_annulus_mesh_segments
+# generate_annulus_mesh_segments(x_point_lower, x_point_upper, 360, world, material=UniformVolumeEmitter(ConstantSF(power_density)))
+# radiator = import_stl('radiator_R0.55_Z-1.2_r0.08.stl', material=UniformVolumeEmitter(ConstantSF(power_density)), parent=world)
+# radiator = import_stl('radiator_all_closed_surface.stl', material=UniformVolumeEmitter(ConstantSF(power_density_core)), parent=world)
+# radiator = import_stl('radiator_all_super_x_divertor.stl', material=UniformVolumeEmitter(ConstantSF(power_density_core)), parent=world)
+# radiator = import_stl('radiator_all_core.stl', material=UniformVolumeEmitter(ConstantSF(power_density_core)), parent=world)
+radiator = import_stl('radiator_all_core_and_divertor.stl', material=UniformVolumeEmitter(ConstantSF(power_density_core)), parent=world)
+# radiator = import_stl('test.stl', material=UniformVolumeEmitter(ConstantSF(power_density_core)), parent=world)
 
 
 
@@ -298,13 +300,14 @@ pixel_area = 0.07*(0.07*pixel_v/pixel_h)/(pixel_h*pixel_v)
 measured_power = power.frame.mean / pixel_area
 measured_power = np.flip(np.transpose(measured_power),axis=-1)
 
-
-cmap = plt.cm.rainbow
+plt.figure()
+cmap = plt.cm.get_cmap('rainbow',20)
 cmap.set_under(color='white')
-vmin=1
+vmin=measured_power[measured_power>0].min()
 plt.imshow(measured_power,origin='lower', cmap=cmap, vmin=vmin)
+plt.gca().set_aspect(1)
 plt.title('Power density on the foil generated via CHERAB simulation')
-plt.colorbar().set_label('Power density on the foil [W/m^2], cut-off '+str(vmin)+'W/m^2')
+plt.colorbar().set_label('Power density on the foil [W/m^2]\ncut-off '+str(vmin)+'W/m^2')
 plt.xlabel('Horizontal axis [pixles]')
 plt.ylabel('Vertical axis [pixles]')
 plt.pause(0.01)

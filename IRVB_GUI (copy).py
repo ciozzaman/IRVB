@@ -47,7 +47,6 @@ exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_indexing.py").r
 import sys, traceback, logging
 logging.basicConfig(level=logging.ERROR)
 
-
 # to come back at the original directory
 os.chdir('/home/ffederic/work/Collaboratory/test/experimental_data')
 
@@ -311,7 +310,6 @@ params = [
 		{'name': 'Pause', 'type': 'action'},
 		{'name': 'Export video', 'type': 'action'},
 		{'name': 'Export image', 'type': 'action'},
-		{'name': 'Image format', 'type': 'list', 'values': {'eps': 'eps', 'png': 'png'}, 'value': 1},
 		{'name': 'Export left', 'type': 'float', 'value': 10, 'step': 1e-3, 'finite': False},
 		{'name': 'Export right', 'type': 'float', 'value': 10, 'step': 1e-3, 'finite': False},
 		{'name': 'Export up', 'type': 'float', 'value': 10, 'step': 1e-3, 'finite': False},
@@ -326,10 +324,8 @@ params = [
 		{'name': 'Separatrix', 'type': 'bool', 'value': False, 'tip': "This is a checkbox"},
 		{'name': 'Core Resistive bol', 'type': 'bool', 'value': False, 'tip': "This is a checkbox"},
 		{'name': 'Div Resistive bol', 'type': 'bool', 'value': False, 'tip': "This is a checkbox"},
-		{'name': 'Generic overlays', 'type': 'str', 'value': "[dict([('edges_horiz',[0]),('edges_vert',[0]),('linestyle','--k'),('alpha',0)])]", 'tip': 'try'},
 	]}
 ]
-
 # creating all the flags and accessories needed
 params1 = [
 		{'name': 'Shot number', 'type': 'int', 'value': 0},
@@ -544,24 +540,16 @@ def export_video():
 	if flag_radial_profile:
 		extent = [inversion_R.min()-dr/2, inversion_R.max()+dr/2, inversion_Z.min()-dz/2, inversion_Z.max()+dz/2]
 		image_extent = [full_range_hor[limit_left], full_range_hor[limit_right], full_range_ver[limit_bottom], full_range_ver[limit_top]]
-		ani = coleval.movie_from_data_radial_profile(np.array([np.transpose(np.flip(data,axis=1)[start_time:end_time],(0,2,1))]), framerate,timesteps=time_array[start_time:end_time],integration=2,time_offset=time_array[start_time],extvmin=histogram_level_low_for_plot,extvmax=histogram_level_high_for_plot, extent = extent, image_extent=image_extent,xlabel='R [m]', ylabel='Z [m]',barlabel=barlabel, prelude='shot '  + w2.shotID + '\n'+str(param_ext['Set display','Binning'])+'\n'+'grid resolution %.3gcm\n' %(int(param_ext['Set display','Voxel res'])) ,overlay_structure=param_ext['Overlays','Structure'],include_EFIT=True,efit_reconstruction=efit_reconstruction,pulse_ID=w2.shotID,overlay_x_point=param_ext['Overlays','X-point'],overlay_mag_axis=param_ext['Overlays','Mag axis'],overlay_strike_points=param_ext['Overlays','Separatrix'],overlay_separatrix=param_ext['Overlays','Separatrix'],overlay_res_bolo=param_ext['Overlays','Core Resistive bol'] or param_ext['Overlays','Div Resistive bol'])#,extvmin=0,extvmax=4e4)
+		ani = coleval.movie_from_data_radial_profile(np.array([np.transpose(np.flip(data,axis=1)[start_time:end_time],(0,2,1))]), framerate,timesteps=time_array[start_time:end_time],integration=2,time_offset=time_array[start_time],extvmin=histogram_level_low_for_plot,extvmax=histogram_level_high_for_plot, extent = extent, image_extent=image_extent,xlabel='R [m]', ylabel='Z [m]',barlabel=barlabel, prelude='shot '  + w2.shotID + '\n'+str(param_ext['Set display','Binning'])+'\n'+'grid resolution %.3gcm\n' %(int(param_ext['Set display','Voxel res'])) ,overlay_structure=param_ext['Overlays','Structure'],include_EFIT=True,efit_reconstruction=efit_reconstruction,pulse_ID=w2.shotID,overlay_x_point=param_ext['Overlays','X-point'],overlay_mag_axis=param_ext['Overlays','Mag axis'],overlay_strike_points=param_ext['Overlays','Separatrix'],overlay_separatrix=param_ext['Overlays','Separatrix'])#,extvmin=0,extvmax=4e4)
 	else:
 		image_extent = [full_range_hor[limit_left]-0.5, full_range_hor[limit_right]-1+0.5, full_range_ver[limit_bottom]-0.5, full_range_ver[limit_top]-1+0.5]
-		ani = coleval.movie_from_data(np.array([np.flip(np.transpose(np.flip(data,axis=1)[start_time:end_time],(0,2,1)),axis=2)]), framerate,image_extent=image_extent,timesteps=time_array[start_time:end_time],integration=2,time_offset=time_array[start_time],extvmin=histogram_level_low_for_plot,extvmax=histogram_level_high_for_plot,xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel=barlabel, prelude='shot ' + w2.shotID + '\n'+str(param_ext['Set display','Binning'])+'\n',overlay_structure=param_ext['Overlays','Structure'],include_EFIT=True,efit_reconstruction=efit_reconstruction,pulse_ID=w2.shotID,overlay_x_point=param_ext['Overlays','X-point'],overlay_mag_axis=param_ext['Overlays','Mag axis'],overlay_strike_points=param_ext['Overlays','Separatrix'],overlay_separatrix=param_ext['Overlays','Separatrix'],overlay_res_bolo=param_ext['Overlays','Core Resistive bol'] or param_ext['Overlays','Div Resistive bol'])
+		ani = coleval.movie_from_data(np.array([np.flip(np.transpose(np.flip(data,axis=1)[start_time:end_time],(0,2,1)),axis=2)]), framerate,image_extent=image_extent,timesteps=time_array[start_time:end_time],integration=2,time_offset=time_array[start_time],extvmin=histogram_level_low_for_plot,extvmax=histogram_level_high_for_plot,xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel=barlabel, prelude='shot ' + w2.shotID + '\n'+str(param_ext['Set display','Binning'])+'\n',overlay_structure=param_ext['Overlays','Structure'],include_EFIT=True,efit_reconstruction=efit_reconstruction,pulse_ID=w2.shotID,overlay_x_point=param_ext['Overlays','X-point'],overlay_mag_axis=param_ext['Overlays','Mag axis'],overlay_strike_points=param_ext['Overlays','Separatrix'],overlay_separatrix=param_ext['Overlays','Separatrix'])
 	ani.save(param_ext1['File Path'] + '_export_' + str(next_export) + '.mp4', fps=5*framerate/383, writer='ffmpeg',codec='mpeg4')
 	plt.close('all')
 	print('\n'+'\n'+param_ext1['File Path'] + '_export_' + str(next_export) + '.mp4 generated'+'\n'+'\n')
 
-extra_overlays = []
-def set_extra_overlays():
-	global extra_overlays,param_ext
-	d={}
-	exec('extra_overlays = ' + param_ext['Overlays','Generic overlays'],d)
-	extra_overlays = d['extra_overlays']
-	print('extra_overlays updated')
-
 def export_image():
-	global framerate,data,time_array,histogram_level_high,histogram_level_low,w2,flag_radial_profile,inversion_R,inversion_Z,dr,dz,efit_reconstruction,param_ext,data_shape,extra_overlays
+	global framerate,data,time_array,histogram_level_high,histogram_level_low,w2,flag_radial_profile,inversion_R,inversion_Z,dr,dz,efit_reconstruction,param_ext,data_shape
 	path_mother = os.path.split(param_ext1['File Path'])[0]
 	filenames = coleval.all_file_names(path_mother,os.path.split(param_ext1['File Path'])[1]+'_export_')
 	if len(filenames)==0:
@@ -614,17 +602,17 @@ def export_image():
 			prelude = ''
 		extent = [inversion_R.min()-dr/2, inversion_R.max()+dr/2, inversion_Z.min()-dz/2, inversion_Z.max()+dz/2]
 		image_extent = [full_range_hor[limit_left], full_range_hor[limit_right], full_range_ver[limit_bottom], full_range_ver[limit_top]]
-		fig,efit_reconstruction = coleval.image_from_data_radial_profile(np.array([np.transpose(np.flip([to_plot],axis=1),(0,2,1))]),form_factor_size=param_ext['Set display','Export size'],ref_time=param_ext['ROI', 'Time [ms]']*1e-3,extvmin=histogram_level_low_for_plot,extvmax=histogram_level_high_for_plot, extent = extent, image_extent=image_extent,xlabel='R [m]', ylabel='Z [m]',barlabel=barlabel, prelude=prelude ,overlay_structure=param_ext['Overlays','Structure'],include_EFIT=include_EFIT,efit_reconstruction=efit_reconstruction,pulse_ID=w2.shotID,overlay_x_point=param_ext['Overlays','X-point'],overlay_mag_axis=param_ext['Overlays','Mag axis'],overlay_strike_points=param_ext['Overlays','Separatrix'],overlay_separatrix=param_ext['Overlays','Separatrix'],overlay_res_bolo=param_ext['Overlays','Core Resistive bol'] or param_ext['Overlays','Div Resistive bol'],EFIT_output_requested=True)#,extvmin=0,extvmax=4e4)
+		fig,efit_reconstruction = coleval.image_from_data_radial_profile(np.array([np.transpose(np.flip([to_plot],axis=1),(0,2,1))]),form_factor_size=param_ext['Set display','Export size'],ref_time=param_ext['ROI', 'Time [ms]']*1e-3,extvmin=histogram_level_low_for_plot,extvmax=histogram_level_high_for_plot, extent = extent, image_extent=image_extent,xlabel='R [m]', ylabel='Z [m]',barlabel=barlabel, prelude=prelude ,overlay_structure=param_ext['Overlays','Structure'],include_EFIT=include_EFIT,efit_reconstruction=efit_reconstruction,pulse_ID=w2.shotID,overlay_x_point=param_ext['Overlays','X-point'],overlay_mag_axis=param_ext['Overlays','Mag axis'],overlay_strike_points=param_ext['Overlays','Separatrix'],overlay_separatrix=param_ext['Overlays','Separatrix'],EFIT_output_requested=True)#,extvmin=0,extvmax=4e4)
 	else:
 		if param_ext['Set display','Include prelude']:
 			prelude = 'shot ' + w2.shotID + '\n'+str(param_ext['Set display','Binning'])+'\n'+'Time %.3gms\n' %(param_ext['ROI', 'Time [ms]'])
 		else:
 			prelude = ''
 		image_extent = [full_range_hor[limit_left]-0.5, full_range_hor[limit_right]-1+0.5, full_range_ver[limit_bottom]-0.5, full_range_ver[limit_top]-1+0.5]
-		fig,efit_reconstruction = coleval.image_from_data(np.array([np.flip(np.transpose(np.flip([to_plot],axis=1),(0,2,1)),axis=2)]),form_factor_size=param_ext['Set display','Export size'],image_extent=image_extent,ref_time=param_ext['ROI', 'Time [ms]']*1e-3,extvmin=histogram_level_low_for_plot,extvmax=histogram_level_high_for_plot,xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel=barlabel, prelude=prelude,overlay_structure=param_ext['Overlays','Structure'],include_EFIT=include_EFIT,efit_reconstruction=efit_reconstruction,pulse_ID=w2.shotID,overlay_x_point=param_ext['Overlays','X-point'],overlay_mag_axis=param_ext['Overlays','Mag axis'],overlay_strike_points=param_ext['Overlays','Separatrix'],overlay_separatrix=param_ext['Overlays','Separatrix'],EFIT_output_requested=True,generic_overlays=extra_overlays,overlay_res_bolo=param_ext['Overlays','Core Resistive bol'] or param_ext['Overlays','Div Resistive bol'])
-	plt.savefig(param_ext1['File Path'] + '_export_' + str(next_export) + '.'+param_ext['Set display','Image format'], bbox_inches='tight')
+		fig,efit_reconstruction = coleval.image_from_data(np.array([np.flip(np.transpose(np.flip([to_plot],axis=1),(0,2,1)),axis=2)]),form_factor_size=param_ext['Set display','Export size'],image_extent=image_extent,ref_time=param_ext['ROI', 'Time [ms]']*1e-3,extvmin=histogram_level_low_for_plot,extvmax=histogram_level_high_for_plot,xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel=barlabel, prelude=prelude,overlay_structure=param_ext['Overlays','Structure'],include_EFIT=include_EFIT,efit_reconstruction=efit_reconstruction,pulse_ID=w2.shotID,overlay_x_point=param_ext['Overlays','X-point'],overlay_mag_axis=param_ext['Overlays','Mag axis'],overlay_strike_points=param_ext['Overlays','Separatrix'],overlay_separatrix=param_ext['Overlays','Separatrix'],EFIT_output_requested=True)
+	plt.savefig(param_ext1['File Path'] + '_export_' + str(next_export) + '.eps', bbox_inches='tight')
 	plt.close('all')
-	print('\n'+'\n'+param_ext1['File Path'] + '_export_' + str(next_export) + '.'+param_ext['Set display','Image format']+'\n'+'\n')
+	print('\n'+'\n'+param_ext1['File Path'] + '_export_' + str(next_export) + '.eps generated'+'\n'+'\n')
 
 
 param_ext.param('Set display','Play').sigActivated.connect(start_video)
@@ -1055,7 +1043,6 @@ param_ext.param('Set display','Load EFIT').sigActivated.connect(Load_EFIT)
 param_ext.param('Set display','Shot +').sigActivated.connect(Select_next_pulse)
 param_ext.param('Set display','Shot -').sigActivated.connect(Select_previous_pulse)
 param_ext1.param('Shot number').sigValueChanged.connect(Select_specific_pulse)
-param_ext.param('Overlays','Generic overlays').sigValueChanged.connect(set_extra_overlays)
 
 
 update_hist_inhibit = False
@@ -1167,317 +1154,3 @@ d7.addWidget(t1)
 
 win.show()
 app.exec_()
-
-if False:	# plots required for the paper/thesis, shot 45473
-	colors = ['C2','C4','C5','C6','C7','g','C9']
-	extra_overlays = [dict([('edges_horiz',[18,20,20,18,18]),('edges_vert',[18,18,22,22,18]),('linestyle','--C2'),('alpha',1),('linewidth',4)]),dict([('edges_horiz',[34,36,36,34,34]),('edges_vert',[34,34,38,38,34]),('linestyle','--C4'),('alpha',1),('linewidth',4)]),dict([('edges_horiz',[24,28,28,24,24]),('edges_vert',[37,37,43,43,37]),('linestyle','--C5'),('alpha',1),('linewidth',4)]),dict([('edges_horiz',[36,38,38,36,36]),('edges_vert',[72,72,76,76,72]),('linestyle','--C6'),('alpha',1),('linewidth',4)]),dict([('edges_horiz',[9,57,57,9,9]),('edges_vert',[2,2,9,9,2]),('linestyle','--C7'),('alpha',1),('linewidth',4)])]
-
-	a=np.transpose(data,(0,2,1))
-	outer_target=np.mean(a[:,np.min(extra_overlays[0]['edges_vert']):np.max(extra_overlays[0]['edges_vert'])+1,np.min(extra_overlays[0]['edges_horiz']):np.max(extra_overlays[0]['edges_horiz'])+1],axis=(1,2))
-	inner_target=np.mean(a[:,np.min(extra_overlays[1]['edges_vert']):np.max(extra_overlays[1]['edges_vert'])+1,np.min(extra_overlays[1]['edges_horiz']):np.max(extra_overlays[1]['edges_horiz'])+1],axis=(1,2))
-	x_point=np.mean(a[:,np.min(extra_overlays[2]['edges_vert']):np.max(extra_overlays[2]['edges_vert'])+1,np.min(extra_overlays[2]['edges_horiz']):np.max(extra_overlays[2]['edges_horiz'])+1],axis=(1,2))
-	midplane = np.mean(a[:,np.min(extra_overlays[3]['edges_vert']):np.max(extra_overlays[3]['edges_vert'])+1,np.min(extra_overlays[3]['edges_horiz']):np.max(extra_overlays[3]['edges_horiz'])+1],axis=(1,2))
-	control = np.mean(a[:,np.min(extra_overlays[4]['edges_vert']):np.max(extra_overlays[4]['edges_vert'])+1,np.min(extra_overlays[4]['edges_horiz']):np.max(extra_overlays[4]['edges_horiz'])+1],axis=(1,2))
-
-	plt.figure()
-	plt.plot(time_array,outer_target*1e-3,extra_overlays[0]['linestyle'][2:],label='outer target')
-	plt.plot(time_array,inner_target*1e-3,extra_overlays[1]['linestyle'][2:],label='inner target')
-	plt.plot(time_array,x_point*1e-3,extra_overlays[2]['linestyle'][2:],label='x-point')
-	plt.plot(time_array,midplane*1e-3,extra_overlays[3]['linestyle'][2:],label='midplane')
-	plt.plot(time_array,control*1e-3,extra_overlays[4]['linestyle'][2:],label='control')
-	plt.axvline(x=0.386,color='k',linestyle='--')
-	plt.axvline(x=0.511,color='k',linestyle='--')
-	plt.axvline(x=0.605,color='k',linestyle='--')
-	plt.axvline(x=0.699,color='k',linestyle='--')
-	plt.axvline(x=0.762,color='k',linestyle='--')
-	plt.xlim(left=0.35,right=0.780)
-	plt.ylim(top=230)
-
-	plt.xlabel('time [s]')
-	plt.ylabel('brightness [kW/m2]')
-	plt.grid()
-	# plt.semilogy()
-	plt.legend(loc='best',fontsize='small')
-	plt.pause(0.01)
-
-	full_saved_file_dict_FAST = np.load(param_ext1['File Path']+'_FAST.npz')
-	full_saved_file_dict_FAST.allow_pickle=True
-	full_saved_file_dict_FAST = dict(full_saved_file_dict_FAST)
-	full_saved_file_dict_FAST['first_pass'] = full_saved_file_dict_FAST['first_pass'].all()
-	inverted_dict = full_saved_file_dict_FAST['first_pass']['inverted_dict']
-	grid_resolution = 2	# cm
-	time_full_binned_crop = inverted_dict[str(grid_resolution)]['time_full_binned_crop']
-	full_saved_file_dict_FAST['multi_instrument'] = full_saved_file_dict_FAST['multi_instrument'].all()
-	jsat_lower_outer_mid_integrated = full_saved_file_dict_FAST['multi_instrument']['jsat_lower_outer_mid_integrated']
-	# jsat_upper_outer_mid_integrated = full_saved_file_dict_FAST['multi_instrument'].all()['jsat_upper_outer_mid_integrated']
-	# jsat_lower_inner_small_integrated = full_saved_file_dict_FAST['multi_instrument']['jsat_lower_inner_small_integrated']
-	prad_core = full_saved_file_dict_FAST['multi_instrument']['power_balance_prad_core']
-	ne_bar = full_saved_file_dict_FAST['multi_instrument']['ne_bar']
-	greenwald_density = full_saved_file_dict_FAST['multi_instrument']['greenwald_density']
-	greenwald_ratio = ne_bar/greenwald_density
-
-	import netCDF4
-	f = netCDF4.Dataset('/common/uda-scratch/jlovell/abm0'+str(45473)+'.nc')
-
-	good = f['abm']['core']['good'][:].data
-	channel = f['abm']['core']['channel'][:].data
-	good_channel = channel[good.astype(bool)]
-	brightness = f['abm']['core']['brightness'][:].data
-	brightness_7 = brightness[:,channel==7].flatten()
-	brightness_9 = brightness[:,channel==9].flatten()
-	time = f['abm']['core']['time'][:].data
-
-	fig, ax = plt.subplots( 5,1,figsize=(8, 16), squeeze=False,sharex=True)
-	ax[0,0].plot(time_array,outer_target*1e-3,extra_overlays[0]['linestyle'][2:],label='outer target')
-	ax[0,0].plot(time_array,inner_target*1e-3,extra_overlays[1]['linestyle'][2:],label='inner target')
-	ax[0,0].plot(time_array,x_point*1e-3,extra_overlays[2]['linestyle'][2:],label='x-point')
-	ax[0,0].plot(time_array,midplane*1e-3,extra_overlays[3]['linestyle'][2:],label='midplane')
-	ax[0,0].plot(time_array,control*1e-3,extra_overlays[4]['linestyle'][2:],label='control')
-	ax[0,0].axvline(x=0.386,color='k',linestyle='--')
-	ax[0,0].axvline(x=0.511,color='k',linestyle='--')
-	ax[0,0].axvline(x=0.605,color='k',linestyle='--')
-	ax[0,0].axvline(x=0.699,color='k',linestyle='--')
-	ax[0,0].axvline(x=0.762,color='k',linestyle='--')
-	ax[0,0].set_xlim(left=0.35,right=0.780)
-	ax[0,0].set_ylim(top=240,bottom=-5)
-	ax[0,0].set_ylabel('brightness [kW/m2]')
-	ax[0,0].legend(loc='best',fontsize='x-small')
-	ax[0,0].text((0.35+0.78)/2+0.005, 230,'(a)', ha='center', va='top')
-
-	ax[1,0].plot(time_full_binned_crop,ne_bar)
-	ax[1,0].set_ylabel('line averaged\n density [m-3]')
-	ax[1,0].text(0.35+0.005, np.nanmax(ne_bar),'(b)', ha='left', va='top')
-
-	ax[2,0].plot(time_full_binned_crop,greenwald_ratio)
-	ax[2,0].set_ylabel('greenwald ratio [au]')
-	ax[2,0].text(0.35+0.005, np.nanmax(greenwald_ratio),'(c)', ha='left', va='top')
-
-	ax[3,0].plot(time_full_binned_crop,jsat_lower_outer_mid_integrated,'b')
-	temp = jsat_lower_outer_mid_integrated[time_full_binned_crop<0.78]
-	ax[3,0].axvline(x=time_full_binned_crop[np.nanargmax(temp)],color='b',linestyle='--')
-	ax[3,0].set_ylabel('integrated lower inner\n target current [A]')
-	ax[3,0].text(0.35+0.005, np.nanmax(temp),'(d)', ha='left', va='top')
-
-	# ax3 = ax[3,0].twinx()  # instantiate a second axes that shares the same x-axis
-	# ax3.spines["right"].set_visible(True)
-	# a3a, = ax3.plot(time_full_binned_crop,jsat_lower_outer_mid_integrated,color='r')
-	# temp = jsat_lower_outer_mid_integrated[time_full_binned_crop<0.78]
-	# ax3.axvline(x=time_full_binned_crop[np.nanargmax(temp)],color='r',linestyle='--')
-	# ax3.set_ylabel('integrated lower outer\n target current [A]', color='r')  # we already handled the x-label with ax3
-	# # ax0.set_ylim(bottom=max(0.9,np.nanmin(psiN_peak_inner_all)),top=min(1.2,np.nanmax(psiN_peak_inner_all)))
-
-	# ax[4,0].plot(time,brightness_7,label='LOS7')
-	ax[4,0].plot(time,brightness_9*1e-3,label='LOS9')
-	# ax[4,0].set_ylim(bottom=0)
-	ax[4,0].set_ylabel('resistive bolometer\n brightness CH9 [kW/m2]')
-	ax[4,0].text(0.35+0.005, brightness_9.max()*1e-3,'(e)', ha='left', va='top')
-	ax[0,0].grid()
-	ax[1,0].grid()
-	ax[2,0].grid()
-	ax[3,0].grid()
-	ax[4,0].grid()
-	ax[4,0].set_xlabel('time [s]')
-	plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/45473_for_paper.png', bbox_inches='tight')
-	plt.close()
-
-elif False:	# plots required for the paper/thesis, shot 45401
-	colors = ['C2','C4','C5','C6','C7','g','C9']
-	extra_overlays = [dict([('edges_horiz',[20,22,22,20,20]),('edges_vert',[18,18,22,22,18]),('linestyle','--C2'),('alpha',1),('linewidth',4)]),dict([('edges_horiz',[34,36,36,34,34]),('edges_vert',[34,34,38,38,34]),('linestyle','--C4'),('alpha',1),('linewidth',4)]),dict([('edges_horiz',[26,31,31,26,26]),('edges_vert',[34,34,41,41,34]),('linestyle','--C5'),('alpha',1),('linewidth',4)]),dict([('edges_horiz',[36,38,38,36,36]),('edges_vert',[72,72,76,76,72]),('linestyle','--C6'),('alpha',1),('linewidth',4)]),dict([('edges_horiz',[9,57,57,9,9]),('edges_vert',[2,2,9,9,2]),('linestyle','--C7'),('alpha',1),('linewidth',4)]),dict([('edges_horiz',[30,34,34,30,30]),('edges_vert',[47,47,52,52,47]),('linestyle','--g'),('alpha',1),('linewidth',4)])]
-
-	a=np.transpose(data,(0,2,1))
-	outer_target=np.mean(a[:,np.min(extra_overlays[0]['edges_vert']):np.max(extra_overlays[0]['edges_vert'])+1,np.min(extra_overlays[0]['edges_horiz']):np.max(extra_overlays[0]['edges_horiz'])+1],axis=(1,2))
-	inner_target=np.mean(a[:,np.min(extra_overlays[1]['edges_vert']):np.max(extra_overlays[1]['edges_vert'])+1,np.min(extra_overlays[1]['edges_horiz']):np.max(extra_overlays[1]['edges_horiz'])+1],axis=(1,2))
-	x_point=np.mean(a[:,np.min(extra_overlays[2]['edges_vert']):np.max(extra_overlays[2]['edges_vert'])+1,np.min(extra_overlays[2]['edges_horiz']):np.max(extra_overlays[2]['edges_horiz'])+1],axis=(1,2))
-	midplane = np.mean(a[:,np.min(extra_overlays[3]['edges_vert']):np.max(extra_overlays[3]['edges_vert'])+1,np.min(extra_overlays[3]['edges_horiz']):np.max(extra_overlays[3]['edges_horiz'])+1],axis=(1,2))
-	control = np.mean(a[:,np.min(extra_overlays[4]['edges_vert']):np.max(extra_overlays[4]['edges_vert'])+1,np.min(extra_overlays[4]['edges_horiz']):np.max(extra_overlays[4]['edges_horiz'])+1],axis=(1,2))
-	intermediate = np.mean(a[:,np.min(extra_overlays[5]['edges_vert']):np.max(extra_overlays[5]['edges_vert'])+1,np.min(extra_overlays[5]['edges_horiz']):np.max(extra_overlays[5]['edges_horiz'])+1],axis=(1,2))
-
-
-	plt.figure()
-	plt.plot(time_array,outer_target*1e-3,extra_overlays[0]['linestyle'][2:],label='outer target')
-	plt.plot(time_array,inner_target*1e-3,extra_overlays[1]['linestyle'][2:],label='inner target')
-	plt.plot(time_array,x_point*1e-3,extra_overlays[2]['linestyle'][2:],label='x-point')
-	plt.plot(time_array,midplane*1e-3,extra_overlays[3]['linestyle'][2:],label='midplane')
-	plt.plot(time_array,control*1e-3,extra_overlays[4]['linestyle'][2:],label='control')
-	plt.plot(time_array,intermediate*1e-3,extra_overlays[5]['linestyle'][2:],label='intermediate')
-	plt.axvline(x=0.351,color='k',linestyle='--')
-	plt.axvline(x=0.717,color='k',linestyle='--')
-	plt.axvline(x=0.826,color='k',linestyle='--')
-	plt.axvline(x=1.009,color='k',linestyle='--')
-	# plt.axvline(x=0.762,color='k',linestyle='--')
-	# plt.xlim(left=0.35,right=0.780)
-	# plt.ylim(top=230)
-
-	plt.xlabel('time [s]')
-	plt.ylabel('brightness [kW/m2]')
-	plt.grid()
-	# plt.semilogy()
-	plt.legend(loc='best',fontsize='small')
-	plt.pause(0.01)
-
-	full_saved_file_dict_FAST = np.load(param_ext1['File Path']+'_FAST.npz')
-	full_saved_file_dict_FAST.allow_pickle=True
-	full_saved_file_dict_FAST = dict(full_saved_file_dict_FAST)
-	full_saved_file_dict_FAST['first_pass'] = full_saved_file_dict_FAST['first_pass'].all()
-	inverted_dict = full_saved_file_dict_FAST['first_pass']['inverted_dict']
-	grid_resolution = 2	# cm
-	time_full_binned_crop = inverted_dict[str(grid_resolution)]['time_full_binned_crop']
-	full_saved_file_dict_FAST['multi_instrument'] = full_saved_file_dict_FAST['multi_instrument'].all()
-	jsat_lower_outer_mid_integrated = full_saved_file_dict_FAST['multi_instrument']['jsat_lower_outer_mid_integrated']
-	# jsat_upper_outer_mid_integrated = full_saved_file_dict_FAST['multi_instrument'].all()['jsat_upper_outer_mid_integrated']
-	# jsat_lower_inner_small_integrated = full_saved_file_dict_FAST['multi_instrument']['jsat_lower_inner_small_integrated']
-	prad_core = full_saved_file_dict_FAST['multi_instrument']['power_balance_prad_core']
-	ne_bar = full_saved_file_dict_FAST['multi_instrument']['ne_bar']
-	greenwald_density = full_saved_file_dict_FAST['multi_instrument']['greenwald_density']
-	greenwald_ratio = ne_bar/greenwald_density
-
-	import netCDF4
-	f = netCDF4.Dataset('/common/uda-scratch/jlovell/abm0'+str(45401)+'.nc')
-
-	good = f['abm']['core']['good'][:].data
-	channel = f['abm']['core']['channel'][:].data
-	good_channel = channel[good.astype(bool)]
-	brightness = f['abm']['core']['brightness'][:].data
-	brightness_7 = brightness[:,channel==7].flatten()
-	brightness_13 = brightness[:,channel==13].flatten()
-	brightness_14 = brightness[:,channel==14].flatten()
-	brightness_9 = brightness[:,channel==9].flatten()
-	time = f['abm']['core']['time'][:].data
-
-
-	fig, ax = plt.subplots( 5,1,figsize=(8, 16), squeeze=False,sharex=True)
-	ax[0,0].plot(time_array,outer_target*1e-3,extra_overlays[0]['linestyle'][2:],label='outer target')
-	ax[0,0].plot(time_array,inner_target*1e-3,extra_overlays[1]['linestyle'][2:],label='inner target')
-	ax[0,0].plot(time_array,x_point*1e-3,extra_overlays[2]['linestyle'][2:],label='x-point')
-	ax[0,0].plot(time_array,midplane*1e-3,extra_overlays[3]['linestyle'][2:],label='midplane')
-	ax[0,0].plot(time_array,control*1e-3,extra_overlays[4]['linestyle'][2:],label='control')
-	ax[0,0].plot(time_array,intermediate*1e-3,extra_overlays[5]['linestyle'][2:],label='intermediate')
-	ax[0,0].axvline(x=0.351,color='k',linestyle='--')
-	ax[0,0].axvline(x=0.717,color='k',linestyle='--')
-	ax[0,0].axvline(x=0.826,color='k',linestyle='--')
-	ax[0,0].axvline(x=1.009,color='k',linestyle='--')
-	# ax[0,0].axvline(x=0.762,color='k',linestyle='--')
-	ax[0,0].set_xlim(left=0.30,right=1.08)
-	ax[0,0].text((0.3+1.08)/2+0.005, 1000,'(a)', ha='center', va='top')
-	# ax[0,0].set_ylim(top=240,bottom=-5)
-	ax[0,0].set_ylabel('brightness [kW/m2]')
-	ax[0,0].legend(loc='best',fontsize='x-small')
-
-	ax[1,0].plot(time_full_binned_crop,ne_bar)
-	ax[1,0].set_ylabel('line averaged\n density [m-3]')
-	ax[1,0].text(0.3+0.005, np.nanmax(ne_bar),'(b)', ha='left', va='top')
-
-	ax[2,0].plot(time_full_binned_crop,greenwald_ratio)
-	ax[2,0].set_ylabel('greenwald ratio [au]')
-	ax[2,0].text(0.3+0.005, np.nanmax(greenwald_ratio),'(c)', ha='left', va='top')
-
-	ax[3,0].plot(time_full_binned_crop,jsat_lower_outer_mid_integrated,'b')
-	temp = jsat_lower_outer_mid_integrated[time_full_binned_crop<1]
-	ax[3,0].axvline(x=time_full_binned_crop[np.nanargmax(temp)],color='b',linestyle='--')
-	ax[3,0].set_ylabel('integrated lower outer\n target current [A]')
-	ax[3,0].set_ylim(top=jsat_lower_outer_mid_integrated[np.nanargmax(temp)]*1.1)
-	ax[3,0].text(0.3+0.005, np.nanmax(temp),'(d)', ha='left', va='top')
-
-	# ax3 = ax[3,0].twinx()  # instantiate a second axes that shares the same x-axis
-	# ax3.spines["right"].set_visible(True)
-	# a3a, = ax3.plot(time_full_binned_crop,jsat_lower_outer_mid_integrated,color='r')
-	# temp = jsat_lower_outer_mid_integrated[time_full_binned_crop<1]
-	# ax3.axvline(x=time_full_binned_crop[np.nanargmax(temp)],color='r',linestyle='--')
-	# ax3.set_ylabel('integrated lower outer\n target current [A]', color='r')  # we already handled the x-label with ax3
-	# ax3.set_ylim(top=jsat_lower_outer_mid_integrated[np.nanargmax(temp)]*1.1)
-
-	# ax[4,0].plot(time,brightness_7,label='LOS7')
-	ax[4,0].plot(time,brightness_9*1e-3,label='CH9')
-	ax[4,0].plot(time,brightness_13*1e-3,label='CH13')
-	ax[4,0].plot(time,brightness_14*1e-3,label='CH14')
-	ax[4,0].legend(loc='upper center',fontsize='x-small')
-	ax[4,0].set_ylim(bottom=0,top=max(brightness_9[time<1.08].max(),brightness_13[time<1.08].max())*1e-3*1.1)
-	ax[4,0].set_ylabel('resistive bolometer\n brightness CH9 [kW/m2]')
-	ax[4,0].text(0.3+0.005, max(brightness_9[time<1.08].max(),brightness_13[time<1.08].max())*1e-3,'(e)', ha='left', va='top')
-	ax[0,0].grid()
-	ax[1,0].grid()
-	ax[2,0].grid()
-	ax[3,0].grid()
-	ax[4,0].grid()
-	ax[4,0].set_xlabel('time [s]')
-	plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/45401_for_paper.png', bbox_inches='tight')
-	plt.close()
-
-	data_dir = '/home/ffederic/work/Collaboratory/test/experimental_data/45401/C001H001S0001/'
-	T0=-0.1	# for 45295
-	filename = 'C001H001S0001'
-
-	hsv_data,times = coleval.high_speed_visible_mraw_to_numpy(data_dir,filename,T0)
-
-
-elif False:	# plots required for the paper/thesis, shot 45295
-	colors = ['C2','C4','C5','C6','C7','g','C9']
-	extra_overlays = [dict([('edges_horiz',[57,60,60,57,57]),('edges_vert',[70,70,77,77,70]),('linestyle','--r'),('alpha',1),('linewidth',4)])]
-
-	a=np.transpose(data,(0,2,1))
-	fueling_location=np.mean(a[:,np.min(extra_overlays[0]['edges_vert']):np.max(extra_overlays[0]['edges_vert'])+1,np.min(extra_overlays[0]['edges_horiz']):np.max(extra_overlays[0]['edges_horiz'])+1],axis=(1,2))
-
-
-	data_dir = '/home/ffederic/work/Collaboratory/test/experimental_data/45295/C001H001S0001/'
-	T0=-0.1	# for 45295
-	filename = 'C001H001S0001'
-
-	hsv_data,times = coleval.high_speed_visible_mraw_to_numpy(data_dir,filename,T0)
-	# np.savez_compressed(data_dir+filename,dict=([('data',data),('times',times)]))
-
-	time = np.abs(times-0.15).argmin()
-	plt.figure(figsize=(10, 10))
-	im = plt.imshow(hsv_data[time],'rainbow')
-	plt.xlim(left=340,right=744)
-	plt.ylim(top=280,bottom=690)
-	plt.plot([521,540,540,521,521],[510,510,527,527,510],'--k')
-	plt.plot([566,581,581,566,566],[505,505,525,525,505],'--g')
-	plt.xlabel('horizontal coord [pixels]')
-	plt.ylabel('vertical coord [pixels]')
-	plt.colorbar(im,fraction=0.0467, pad=0.04).set_label('counts [au]')
-	plt.title('shot 45295\n %.3g ms' %(times[time]*1e3))
-	# plt.pause(0.01)
-	plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/45295_for_paper.png', bbox_inches='tight')
-	plt.close()
-
-
-	plt.figure()
-	plt.plot(time_array,fueling_location/(fueling_location.max()),extra_overlays[0]['linestyle'][2:],label='IRVB')
-	temp = np.mean(hsv_data[:,510:528,521:541],axis=(1,2))
-	plt.plot(times,temp/(temp.max()),'k',label='HSVC sec9')
-	temp = np.mean(hsv_data[:,505:526,566:582],axis=(1,2))
-	plt.plot(times,temp/(temp.max()),'g',label='HSVC sec6')
-	plt.xlabel('time [s]')
-	plt.ylabel('relarive brightness [au]')
-	plt.grid()
-	# plt.semilogy()
-	plt.legend(loc='best',fontsize='small')
-	plt.pause(0.01)
-
-	full_saved_file_dict_FAST = np.load(param_ext1['File Path']+'_FAST.npz')
-	full_saved_file_dict_FAST.allow_pickle=True
-	full_saved_file_dict_FAST = dict(full_saved_file_dict_FAST)
-	full_saved_file_dict_FAST['first_pass'] = full_saved_file_dict_FAST['first_pass'].all()
-	inverted_dict = full_saved_file_dict_FAST['first_pass']['inverted_dict']
-	grid_resolution = 2	# cm
-	time_full_binned_crop = inverted_dict[str(grid_resolution)]['time_full_binned_crop']
-	full_saved_file_dict_FAST['multi_instrument'] = full_saved_file_dict_FAST['multi_instrument'].all()
-	gas_inner = full_saved_file_dict_FAST['multi_instrument']['gas_inner']
-	gas_time = full_saved_file_dict_FAST['multi_instrument']['gas_time']
-
-	plt.figure(figsize=(8, 5))
-	plt.plot(time_array,fueling_location/(fueling_location.max()),extra_overlays[0]['linestyle'][2:],label='IRVB')
-	temp = np.mean(hsv_data[:,510:528,521:541],axis=(1,2))
-	plt.plot(times,temp/(temp.max()),'k',label='HSVC sec9')
-	temp = np.mean(hsv_data[:,505:526,566:582],axis=(1,2))
-	plt.plot(times,temp/(temp.max()),'g',label='HSVC sec6')
-	plt.plot(gas_time,gas_inner/(gas_inner.max()),'--b',label='HFS_MID_L08')
-	plt.xlim(left=-0.05,right=0.3)
-	plt.xlabel('time [s]')
-	plt.ylabel('relarive quantity [au]')
-	plt.grid()
-	# plt.semilogy()
-	plt.legend(loc='best',fontsize='x-small')
-	# plt.pause(0.01)
-	plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/45295_for_paper2.png', bbox_inches='tight')
-	plt.close()

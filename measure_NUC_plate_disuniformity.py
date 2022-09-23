@@ -36,7 +36,7 @@ filenames = coleval.all_file_names(pathfiles, type)[0]
 # datashort=np.load(os.path.join(pathfiles,filenames))
 # data=np.multiply(3000,np.ones((1,np.shape(datashort)[1],256,320)))
 # data[:,:,64:128,128:]=datashort
-basecounts1 = np.array(np.load(os.path.join(pathfiles, filenames))[0])
+basecounts1 = np.array(np.load(os.path.join(pathfiles, filenames), allow_pickle=True)[0])
 
 
 plt.figure()
@@ -70,7 +70,7 @@ filenames = coleval.all_file_names(pathfiles, type)[0]
 # datashort=np.load(os.path.join(pathfiles,filenames))
 # data=np.multiply(3000,np.ones((1,np.shape(datashort)[1],256,320)))
 # data[:,:,64:128,128:]=datashort
-basecounts2 = np.array(np.load(os.path.join(pathfiles, filenames))[0])
+basecounts2 = np.array(np.load(os.path.join(pathfiles, filenames), allow_pickle=True)[0])
 
 plt.figure()
 plt.title('Counts averaged on 100 frames, ' + str(inttime) + 'ms, '+str(framerate)+'Hz, NUC temp='+str(temperature6[-1])+'°C, from\n' + pathfiles)
@@ -106,7 +106,7 @@ plt.ylabel('Vertical axis [pixles]')
 plt.pause(0.01)
 
 
-plt.figure()
+plt.figure(figsize=(10, 7))
 type = '_stat.npy'
 experiment_index = 2
 for experiment_to_check,temperature in [[files2,temperature2],[files3,temperature3],[files4,temperature4],[files5,temperature5],[files6,temperature6]]:
@@ -114,30 +114,42 @@ for experiment_to_check,temperature in [[files2,temperature2],[files3,temperatur
 	temp_difference = []
 	plate_temperature = []
 	filenames = coleval.all_file_names(experiment_to_check[-1], type)[0]
-	basecounts = np.array(np.load(os.path.join(experiment_to_check[-1], filenames))[0])
+	basecounts = np.array(np.load(os.path.join(experiment_to_check[-1], filenames), allow_pickle=True)[0])
 	for index,pathfiles in enumerate(experiment_to_check):
 		filenames = coleval.all_file_names(pathfiles, type)[0]
-		data = np.array(np.load(os.path.join(pathfiles, filenames))[0])
+		data = np.array(np.load(os.path.join(pathfiles, filenames), allow_pickle=True)[0])
 
 		datatemp_orig = coleval.count_to_temp_poly2([[data]], params, errparams,averaged_params=True)[0][0,0]
 		data_est = basecounts*np.mean(data,axis=(0,1))/np.mean(basecounts,axis=(0,1))
 		datatemp_est = coleval.count_to_temp_poly2([[data_est]], params, errparams,averaged_params=True)[0][0,0]
 		difference = datatemp_orig-datatemp_est
 		average_difference = coleval.average_frame(difference, 4)
-		temp_difference.append(np.max(average_difference)-np.min(average_difference))
+		temp_difference.append(np.max(average_difference[8:-8,8:-8])-np.min(average_difference[8:-8,8:-8]))
 		# plate_temperature.append(temperature[index])
 		plate_temperature.append(temperature[index] - temperature[-1])
-	plt.plot(plate_temperature, temp_difference, 'o',label = 'temperature ramp ' +str(experiment_index))
+	plt.plot(plate_temperature, temp_difference, '+',label = 'temperature ramp ' +str(experiment_index))
 	experiment_index+=1
 
-
-
-
-
 plt.xlabel('Temperature difference to room temperature [°C]')
-plt.ylabel('Temperature difference across NUC plate [°C]')
-plt.legend(loc='best')
-plt.pause(0.001)
+plt.ylabel('Max temperature difference across ROI [°C]')
+plt.legend(loc='best', fontsize='small')
+plt.grid()
+# plt.pause(0.001)
+plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/NUC_calib5.png', bbox_inches='tight')
+plt.close()
+
+plt.figure(figsize=(10, 10))
+im=plt.imshow(median_filter(difference,size=[3,3]),'rainbow',origin='bottom')
+plt.colorbar(im,fraction=0.0367, pad=0.04).set_label('temperature [°C]')
+plt.plot([157-240/2,157+240/2,157+240/2,157-240/2,157-240/2],[136-187/2,136-187/2,136+187/2,136+187/2,136-187/2],'--k')
+# plt.pause(0.001)
+plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/NUC_calib6.png', bbox_inches='tight')
+plt.close()
+
+
+
+
+
 
 
 
@@ -154,7 +166,7 @@ for experiment_to_check,temperature in [[files2,temperature2],[files3,temperatur
 	counts = []
 	for index,pathfiles in enumerate(experiment_to_check):
 		filenames = coleval.all_file_names(pathfiles, type)[0]
-		data = np.array(np.load(os.path.join(pathfiles, filenames))[0])
+		data = np.array(np.load(os.path.join(pathfiles, filenames),allow_pickle=True)[0])
 		counts.append(data[128,160])
 		temp.append(temperature[index])
 	# plt.plot(counts, temp, 'o',label = 'temperature ramp ' +str(experiment_index))
@@ -179,6 +191,8 @@ plt.title("Comparison for pixel horiz=160 vert=128")
 plt.legend(loc='best')
 plt.pause(0.001)
 
+# FOR PAPER
+mean_distance_due_to_probe_position = np.mean(np.abs(coleval.polygen3(grade+1)(counts_all[temp_all>22],*temp1)-temp_all[temp_all>22]))
 
 
 
