@@ -64,10 +64,16 @@ def PrintException():
     print('EXCEPTION IN ({}, LINE {} "{}"): {}'.format(filename, lineno, line.strip(), exc_obj))
 
 def rsquared(x, y):
-    """ Return R^2 where x and y are array-like."""
+	""" Return R^2 where x and y are array-like."""
 
-    slope, intercept, r_value, p_value, std_err = scipy.stats.linregress(x, y)
-    return r_value**2
+	# import scipy.stats
+	# slope, intercept, r_value, p_value, std_err = scipy.stats.linregress(x, y)
+
+	x = np.array(x)
+	y = np.array(y)
+	SSres = np.nansum((x-y)**2)
+	SStot = np.nansum((y - np.nanmean(y))**2)
+	return 1- SSres/SStot#r_value**2
 
 
 def is_number(s):

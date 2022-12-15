@@ -51,7 +51,8 @@ else:	# automatic collection of parameters
 	cases_to_include = ['laser17','laser18','laser19','laser20','laser21','laser22','laser23','laser24','laser25','laser26','laser27','laser28','laser29','laser30','laser31','laser32','laser33','laser34','laser35','laser36','laser37','laser38','laser39','laser41','laser42','laser43','laser44','laser45','laser46','laser47']
 	# cases_to_include = ['laser30','laser31','laser32','laser33','laser34','laser35','laser36','laser37','laser38','laser39','laser41','laser42','laser43','laser44','laser45','laser46','laser47']
 	# cases_to_include = ['laser19','laser22','laser33']
-	cases_to_include = ['laser22']
+	cases_to_include = ['laser22','laser33']
+	# cases_to_include = ['laser33']
 	# cases_to_include = np.flip(cases_to_include,axis=0)
 	all_case_ID = []
 	all_path_reference_frames = []
@@ -177,12 +178,13 @@ def function_a(index):
 	laser_to_analyse_power = power_interpolator(experimental_laser_voltage)
 
 	try:
-		laser_dict = np.load(laser_to_analyse+'.npz')
+		laser_dict = coleval.read_IR_file(laser_to_analyse)
+		# laser_dict = np.load(laser_to_analyse+'.npz')
+		# laser_dict.allow_pickle=True
 	except:
 		print('the file '+laser_to_analyse+'.npz'+' for some reason is bad, read failed')
 		return 0
 
-	laser_dict.allow_pickle=True
 	full_saved_file_dict = dict(laser_dict)
 
 	for type_of_calibration in ['NUC_plate','BB_source_w_window','BB_source_w/o_window']:
@@ -228,11 +230,16 @@ def function_a(index):
 		# 	errparams = errparams[:,limited_ROI[0][0]:limited_ROI[0][1]+1,limited_ROI[1][0]:limited_ROI[1][1]+1]
 
 		# Selection of only the backgroud files with similar framerate and integration time
-		background_timestamps = [(np.nanmean(np.load(file+'.npz')['time_of_measurement'])) for file in path_reference_frames if np.logical_and(np.abs(np.load(file+'.npz')['FrameRate']-laser_framerate)<laser_framerate/100,np.abs(np.load(file+'.npz')['IntegrationTime']-laser_int_time)<laser_int_time/100)]
-		background_temperatures = [(np.nanmean(np.load(file+'.npz')['SensorTemp_0'])) for file in path_reference_frames if np.logical_and(np.abs(np.load(file+'.npz')['FrameRate']-laser_framerate)<laser_framerate/100,np.abs(np.load(file+'.npz')['IntegrationTime']-laser_int_time)<laser_int_time/100)]
-		background_counts = [(np.load(file+'.npz')['data_time_avg_counts']) for file in path_reference_frames if np.logical_and(np.abs(np.load(file+'.npz')['FrameRate']-laser_framerate)<laser_framerate/100,np.abs(np.load(file+'.npz')['IntegrationTime']-laser_int_time)<laser_int_time/100)]
-		background_counts_std = [(np.load(file+'.npz')['data_time_avg_counts_std']) for file in path_reference_frames if np.logical_and(np.abs(np.load(file+'.npz')['FrameRate']-laser_framerate)<laser_framerate/100,np.abs(np.load(file+'.npz')['IntegrationTime']-laser_int_time)<laser_int_time/100)]
-		relevant_background_files = [file for file in path_reference_frames if np.logical_and(np.abs(np.load(file+'.npz')['FrameRate']-laser_framerate)<laser_framerate/100,np.abs(np.load(file+'.npz')['IntegrationTime']-laser_int_time)<laser_int_time/100)]
+		# background_timestamps = [(np.nanmean(np.load(file+'.npz')['time_of_measurement'])) for file in path_reference_frames if np.logical_and(np.abs(np.load(file+'.npz')['FrameRate']-laser_framerate)<laser_framerate/100,np.abs(np.load(file+'.npz')['IntegrationTime']-laser_int_time)<laser_int_time/100)]
+		# background_temperatures = [(np.nanmean(np.load(file+'.npz')['SensorTemp_0'])) for file in path_reference_frames if np.logical_and(np.abs(np.load(file+'.npz')['FrameRate']-laser_framerate)<laser_framerate/100,np.abs(np.load(file+'.npz')['IntegrationTime']-laser_int_time)<laser_int_time/100)]
+		# background_counts = [(np.load(file+'.npz')['data_time_avg_counts']) for file in path_reference_frames if np.logical_and(np.abs(np.load(file+'.npz')['FrameRate']-laser_framerate)<laser_framerate/100,np.abs(np.load(file+'.npz')['IntegrationTime']-laser_int_time)<laser_int_time/100)]
+		# background_counts_std = [(np.load(file+'.npz')['data_time_avg_counts_std']) for file in path_reference_frames if np.logical_and(np.abs(np.load(file+'.npz')['FrameRate']-laser_framerate)<laser_framerate/100,np.abs(np.load(file+'.npz')['IntegrationTime']-laser_int_time)<laser_int_time/100)]
+		# relevant_background_files = [file for file in path_reference_frames if np.logical_and(np.abs(np.load(file+'.npz')['FrameRate']-laser_framerate)<laser_framerate/100,np.abs(np.load(file+'.npz')['IntegrationTime']-laser_int_time)<laser_int_time/100)]
+		background_timestamps = [(np.nanmean(coleval.read_IR_file(file)['time_of_measurement'])) for file in path_reference_frames if np.logical_and(np.abs(coleval.read_IR_file(file)['FrameRate']-laser_framerate)<laser_framerate/100,np.abs(coleval.read_IR_file(file)['IntegrationTime']-laser_int_time)<laser_int_time/100)]
+		background_temperatures = [(np.nanmean(coleval.read_IR_file(file)['SensorTemp_0'])) for file in path_reference_frames if np.logical_and(np.abs(coleval.read_IR_file(file)['FrameRate']-laser_framerate)<laser_framerate/100,np.abs(coleval.read_IR_file(file)['IntegrationTime']-laser_int_time)<laser_int_time/100)]
+		background_counts = [(coleval.read_IR_file(file)['data_time_avg_counts']) for file in path_reference_frames if np.logical_and(np.abs(coleval.read_IR_file(file)['FrameRate']-laser_framerate)<laser_framerate/100,np.abs(coleval.read_IR_file(file)['IntegrationTime']-laser_int_time)<laser_int_time/100)]
+		background_counts_std = [(coleval.read_IR_file(file)['data_time_avg_counts_std']) for file in path_reference_frames if np.logical_and(np.abs(coleval.read_IR_file(file)['FrameRate']-laser_framerate)<laser_framerate/100,np.abs(coleval.read_IR_file(file)['IntegrationTime']-laser_int_time)<laser_int_time/100)]
+		relevant_background_files = [file for file in path_reference_frames if np.logical_and(np.abs(coleval.read_IR_file(file)['FrameRate']-laser_framerate)<laser_framerate/100,np.abs(coleval.read_IR_file(file)['IntegrationTime']-laser_int_time)<laser_int_time/100)]
 
 
 		# Calculating the background image
@@ -446,6 +453,22 @@ def function_a(index):
 		# here I should use the room temperature acquired by other means, but givend I didn't measured it I'll use the IR camera as a thermometer
 		if type_of_calibration == 'BB_source_w_window' or type_of_calibration == 'BB_source_w/o_window':
 			reference_background_temperature,reference_background_temperature_std = coleval.count_to_temp_BB_multi_digitizer_no_reference(reference_background,reference_background_std,params_BB,errparams_BB,digitizer_ID,wavewlength_top=5,wavelength_bottom=2.5,inttime=int_time)
+			if False:	# important: I need to fid first the emissivity to calculate the power!!
+				emissivity_NUC = 1.65
+				emissivity_FOIL = 1
+				params_BB_with_emissivity = cp.deepcopy(params_BB)
+				params_BB_with_emissivity[:,:,:,0] *= emissivity_FOIL/emissivity_NUC
+				# reference_background_temperature,reference_background_temperature_std = coleval.count_to_temp_BB_multi_digitizer_no_reference(reference_background,reference_background_std,params_BB_with_emissivity,errparams_BB,digitizer_ID,wavewlength_top=5,wavelength_bottom=2.5,inttime=int_time)
+				# np.mean(reference_background_temperature)
+				spot_location = np.unravel_index(laser_counts_filtered[0,np.max(laser_counts_filtered[0],axis=(1,2)).argmax()].argmax(),laser_counts_filtered[0,0].shape)
+				laser_temperature,laser_temperature_std = coleval.count_to_temp_BB_multi_digitizer(laser_counts_filtered[:,np.max(laser_counts_filtered[0],axis=(1,2)).argmax()-2:np.max(laser_counts_filtered[0],axis=(1,2)).argmax()],params_BB_with_emissivity,errparams_BB,digitizer_ID,reference_background=reference_background,reference_background_std=reference_background_std,ref_temperature=25,ref_temperature_std=1,wavewlength_top=5,wavelength_bottom=2.5,inttime=int_time)
+				dx=foilhorizw/(foilhorizwpixel-1)
+				print(laser_temperature.max()-25)
+				power = dx**2 *2*emissivity_FOIL*sigmaSB*np.sum((laser_temperature[0,-1,spot_location[0]-40:spot_location[0]+40,spot_location[1]-40:spot_location[1]+40]+273.15)**4 - (25+273.15)**4)
+				print(power)
+				# nope, it doesn't help, still cause unknown. the increase in dT due to low emissivity is not enough to compensate for the multimplyer of the powerBB
+				# also accounting for the NUC emissivity doesn't help, as it actually reduces the temperature peak rather than increasing it
+
 		elif type_of_calibration == 'NUC_plate':
 			reference_background_temperature,reference_background_temperature_std = coleval.count_to_temp_poly_multi_digitizer(reference_background,params,errparams,laser_digitizer_ID,number_cpu_available,counts_std=reference_background_std,report=0,parallelised=False)
 
@@ -807,6 +830,7 @@ def function_a(index):
 		plt.savefig(path_to_save_figures+laser_to_analyse[-6:] + path_to_save_figures2 + 'FIG'+str(figure_index)+'.eps', bbox_inches='tight')
 		plt.close('all')
 		laser_temperature_minus_background_crop += rise_of_absolute_temperature_difference
+		laser_temperature_minus_background_crop = np.float32(laser_temperature_minus_background_crop)
 
 
 		# dTdt,dTdt_std,d2Tdxy,d2Tdxy_std,negd2Tdxy,negd2Tdxy_std,T4_T04,T4_T04_std = coleval.calc_temp_to_power_BB_1(photon_flux_over_temperature_interpolator,laser_temperature_minus_background_crop,ref_temperature,time_partial,dx,laser_counts_filtered_std_crop,BB_proportional_crop,BB_proportional_std_crop,reference_background_std_crop,laser_temperature_std_crop,nan_ROI_mask)
@@ -1340,8 +1364,8 @@ def function_a(index):
 # 	pool.join()
 # 	pool.terminate()
 # 	del pool
-# for index in np.flip(np.arange(len(all_laser_to_analyse)),axis=0):
-for index in range(len(all_laser_to_analyse)):
+for index in np.flip(np.arange(len(all_laser_to_analyse)),axis=0):
+# for index in range(len(all_laser_to_analyse)):
 	try:
 		function_a(index)
 	except Exception as e:

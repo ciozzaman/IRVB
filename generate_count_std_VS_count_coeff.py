@@ -64,6 +64,17 @@ for i_file,file in enumerate(files):
 	meancounttot.append([np.mean(x) for x in data_per_digitizer])
 	meancountstdtot.append([np.mean(np.std(x,axis=0)) for x in b])
 
+meancounttot = np.array(meancounttot)
+meancountstdtot = np.array(meancountstdtot)
+plt.figure()
+plt.plot(meancounttot[:,0],meancountstdtot[:,0]/meancounttot[:,0],'+')
+fit = np.polyfit(meancounttot[:,0],meancountstdtot[:,0]/meancounttot[:,0],7)
+plt.plot(np.sort(meancounttot[:,0]),np.polyval(fit,np.sort(meancounttot[:,0])),'-',label='fit = '+str(fit))
+plt.pause(0.001)
+fit = np.array([1.50373493e-27, -4.19101786e-23,  4.93707276e-19, -3.17906562e-15,  1.20397117e-11, -2.66143902e-08,  3.10847589e-05, -1.27980432e-02])
+
+
+
 
 fileshot=np.array([files16[2:],files14[5:]])
 temperaturehot=np.array([temperature16[2:],temperature14[5:]])
@@ -79,7 +90,8 @@ files = fileshot.tolist()+filescold.tolist()
 while np.shape(temperature[0])!=():
 	temperature=np.concatenate(temperature)
 	files=np.concatenate(files)
-
+meancounttot=[]
+meancountstdtot=[]
 for i_file,file in enumerate(files):
 	full_saved_file_dict=np.load(file+'.npz')
 	data_per_digitizer,uniques_digitizer_ID = coleval.separate_data_with_digitizer(full_saved_file_dict)
@@ -103,9 +115,19 @@ for i_file,file in enumerate(files):
 		# plt.plot(time_axis,sin_fun(time_axis,*fit[0]))
 		# plt.plot(time_axis,sin_fun(time_axis,*guess),'--')
 		# plt.pause(0.001)
-		b.append((data_per_digitizer[i].T-baseline-sin_fun(time_axis,*fit[0])).T)
+		b.append((data_per_digitizer[i].T-baseline).T)#-sin_fun(time_axis,*fit[0])).T)
 	meancounttot.append([np.mean(x) for x in data_per_digitizer])
 	meancountstdtot.append([np.mean(np.std(x,axis=0)) for x in b])
+
+meancounttot = np.array(meancounttot)
+meancountstdtot = np.array(meancountstdtot)
+plt.figure()
+plt.plot(meancounttot[:,0],meancountstdtot[:,0]/meancounttot[:,0],'+')
+fit = np.polyfit(meancounttot[:,0],meancountstdtot[:,0]/meancounttot[:,0],7)
+plt.plot(np.sort(meancounttot[:,0]),np.polyval(fit,np.sort(meancounttot[:,0])),'-',label='fit = '+str(fit))
+plt.pause(0.001)
+fit = np.array([8.93967567e-29, -4.40146876e-24,  9.21437103e-20, -1.06261647e-15, 7.28477508e-12, -2.96490865e-08,  6.61137425e-05, -6.11776345e-02])
+
 
 fileshot=np.array([files15,files17])
 temperaturehot=np.array([temperature15,temperature17])

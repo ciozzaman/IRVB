@@ -252,6 +252,16 @@ for grid_resolution in [2]:
 
 		sensitivities_binned_crop,grid_laplacian_masked_crop,grid_data_masked_crop,grid_Z_derivate_masked_crop,grid_R_derivate_masked_crop = coleval.reduce_voxels(sensitivities_binned_crop,grid_laplacian_masked,grid_data_masked,sum_treshold=temp2,std_treshold = temp)
 
+		# I add another step of filtering purely fo eliminate cells too isolated from the bulk and can let the laplacian grow
+		select = np.max(grid_laplacian_masked_crop,axis=0)<2.9
+		grid_laplacian_masked_crop_temp = coleval.build_laplacian(grid_data_masked_crop,cells_to_exclude=select)
+		select = np.max(grid_laplacian_masked_crop_temp,axis=0)<2.9
+		grid_laplacian_masked_crop_temp = coleval.build_laplacian(grid_data_masked_crop,cells_to_exclude=select)
+		select = np.max(grid_laplacian_masked_crop_temp,axis=0)<2.9
+		grid_laplacian_masked_crop_temp = coleval.build_laplacian(grid_data_masked_crop,cells_to_exclude=select)
+		select = np.max(grid_laplacian_masked_crop_temp,axis=0)<2.9
+		sensitivities_binned_crop,grid_laplacian_masked_crop,grid_data_masked_crop,grid_Z_derivate_masked_crop,grid_R_derivate_masked_crop = coleval.reduce_voxels(sensitivities_binned_crop,grid_laplacian_masked_crop,grid_data_masked_crop,sum_treshold=0,std_treshold = 0,restrict_polygon=[],chop_corner_close_to_baffle=False,cells_to_exclude=select)
+
 		if development_plots:
 			plt.figure()
 			plt.scatter(np.mean(grid_data_masked_crop,axis=1)[:,0],np.mean(grid_data_masked_crop,axis=1)[:,1],c=np.mean(sensitivities_binned_crop,axis=(0,1)),marker='s')

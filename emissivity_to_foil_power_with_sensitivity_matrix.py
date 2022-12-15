@@ -3,14 +3,14 @@
 
 
 #this is if working on a pc, use pc printer
-exec(open("/home/ffederic/work/analysis_scripts/preamble_import_pc.py").read())
+exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_import_pc.py").read())
 
 # #this is if working in batch, use predefined NOT visual printer
 # exec(open("/home/ffederic/work/analysis scripts/preamble_import_batch.py").read())
 
 
 #this is for importing all the variables names and which are the files
-exec(open("/home/ffederic/work/analysis_scripts/preamble_indexing.py").read())
+exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_indexing.py").read())
 
 
 
@@ -80,7 +80,9 @@ from raysect.optical.material import NullMaterial
 from raysect.optical.material.absorber import AbsorbingSurface
 from raysect.optical.material.emitter import UniformVolumeEmitter,InhomogeneousVolumeEmitter
 from raysect.optical.observer import TargettedCCDArray, PowerPipeline2D
-from raysect.core.math.interpolators import Discrete2DMesh
+# from raysect.core.math.interpolators import Discrete2DMesh
+# this should be the same, just different because of change in CHERAB version
+from raysect.core.math.function.float.function2d.interpolate.discrete2dmesh import Discrete2DMesh
 
 
 os.chdir("/home/ffederic/work/cherab/cherab_mastu/")

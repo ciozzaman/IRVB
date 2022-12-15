@@ -107,6 +107,7 @@ plt.pause(0.01)
 
 
 plt.figure(figsize=(10, 7))
+plt.rcParams.update({'font.size': 15})
 type = '_stat.npy'
 experiment_index = 2
 for experiment_to_check,temperature in [[files2,temperature2],[files3,temperature3],[files4,temperature4],[files5,temperature5],[files6,temperature6]]:
@@ -139,9 +140,22 @@ plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/NUC_calib5.png', bbox_inches
 plt.close()
 
 plt.figure(figsize=(10, 10))
+plt.rcParams.update({'font.size': 20})
+experiment_to_check,temperature = files2,temperature2
+filenames = coleval.all_file_names(experiment_to_check[-1], type)[0]
+basecounts = np.array(np.load(os.path.join(experiment_to_check[-1], filenames), allow_pickle=True)[0])
+index,pathfiles = 0,experiment_to_check[0]
+filenames = coleval.all_file_names(pathfiles, type)[0]
+data = np.array(np.load(os.path.join(pathfiles, filenames), allow_pickle=True)[0])
+datatemp_orig = coleval.count_to_temp_poly2([[data]], params, errparams,averaged_params=True)[0][0,0]
+data_est = basecounts*np.mean(data,axis=(0,1))/np.mean(basecounts,axis=(0,1))
+datatemp_est = coleval.count_to_temp_poly2([[data_est]], params, errparams,averaged_params=True)[0][0,0]
+difference = datatemp_orig-datatemp_est
 im=plt.imshow(median_filter(difference,size=[3,3]),'rainbow',origin='bottom')
 plt.colorbar(im,fraction=0.0367, pad=0.04).set_label('temperature [°C]')
 plt.plot([157-240/2,157+240/2,157+240/2,157-240/2,157-240/2],[136-187/2,136-187/2,136+187/2,136+187/2,136-187/2],'--k')
+plt.plot(50,128,'k+',markersize=30)
+plt.plot(160,128,'k+',markersize=30)
 # plt.pause(0.001)
 plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/NUC_calib6.png', bbox_inches='tight')
 plt.close()

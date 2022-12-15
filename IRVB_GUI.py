@@ -268,7 +268,7 @@ d6.addWidget(w6)
 
 
 
-quantity_options = {'counts [au]': 'counts', '1st pass FAST dT/dt [K/s]': 'first_pass-temperature_minus_background_crop_dt', '1st pass FAST counts [au]': 'first_pass-FAST_counts_minus_background_crop', '1st pass FAST power [W/m2]': 'first_pass-FAST_powernoback',  '1st pass FAST power std [W/m2]': 'first_pass-FAST/inverted/foil_power_std', '1st pass FAST brightness [W/m2]': 'first_pass-FAST_brightness', '1st pass FAST brightness fit [W/m2]': 'first_pass-FAST/inverted/fitted_brightness', '1st pass FAST foil fit [W/m2]': 'first_pass-FAST/inverted/fitted_foil_power', '1st pass FAST foil fit excluded [W/m2]': 'first_pass-FAST/inverted/fitted_foil_power_excluded', '1st pass FAST foil fit error [W/m2]': 'first_pass-FAST/inverted/foil_power_residuals', '1st pass FAST emissivity [W/m3]': 'first_pass-FAST/inverted/inverted_data', '1st pass FAST emissivity excluded [W/m3]': 'first_pass-FAST/inverted/inverted_data_excluded', '2nd pass FAST counts [au]': 'second_pass-FAST_counts_minus_background_crop', '2nd_pass FAST power [W/m2]': 'second_pass-FAST_powernoback',  '2nd_pass FAST power std [W/m2]': 'second_pass-FAST/inverted/foil_power_std', '2nd_pass FAST brightness [W/m2]': 'second_pass-FAST_brightness', '2nd_pass FAST brightness fit [W/m2]': 'second_pass-FAST/inverted/fitted_brightness', '2nd_pass FAST foil fit [W/m2]': 'second_pass-FAST/inverted/fitted_foil_power', '2nd_pass FAST foil fit error [W/m2]': 'second_pass-FAST/inverted/foil_power_residuals', '2nd_pass FAST emissivity [W/m3]': 'second_pass-FAST/inverted/inverted_data', "Temperature [°C]": 'laser_temperature_crop_binned_full', "Relative temp [K]": 'laser_temperature_minus_background_crop_binned_full', "tot power [W/m2]": 'powernoback_full', "tot power std [W/m2]": 'powernoback_std_full', "BB power [W/m2]": 'BBrad_full', "diff power [W/m2]": 'diffusion_full', "dt power [W/m2]": 'timevariation_full', "brightness [W/m2]": 'brightness_full', "emissivity [W/m3]": 'inverted/inverted_data', "fitted power [W/m2]": 'inverted/fitted_foil_power', "fitted power residuals [W/m2]": 'inverted/foil_power_residuals'}
+quantity_options = {'counts [au]': 'counts', '1st pass FAST dT/dt [K/s]': 'first_pass-temperature_minus_background_crop_dt', '1st pass FAST counts [au]': 'first_pass-FAST_counts_minus_background_crop', '1st pass FAST power [W/m2]': 'first_pass-FAST_powernoback',  '1st pass FAST power std [W/m2]': 'first_pass-FAST/inverted/foil_power_std', '1st pass FAST brightness [W/m2]': 'first_pass-FAST_brightness', '1st pass FAST brightness sigma [W/m2]': 'first_pass-FAST/inverted/brightness_sigma', '1st pass FAST brightness fit [W/m2]': 'first_pass-FAST/inverted/fitted_brightness', '1st pass FAST foil fit [W/m2]': 'first_pass-FAST/inverted/fitted_foil_power', '1st pass FAST foil fit excluded [W/m2]': 'first_pass-FAST/inverted/fitted_foil_power_excluded', '1st pass FAST foil fit error [W/m2]': 'first_pass-FAST/inverted/foil_power_residuals', '1st pass FAST emissivity [W/m3]': 'first_pass-FAST/inverted/inverted_data', '1st pass FAST emissivity excluded [W/m3]': 'first_pass-FAST/inverted/inverted_data_excluded', '2nd_pass FAST brightness fit [W/m2]': 'second_pass-FAST/inverted/fitted_brightness', '2nd_pass FAST foil fit [W/m2]': 'second_pass-FAST/inverted/fitted_foil_power', '2nd pass FAST foil fit excluded [W/m2]': 'second_pass-FAST/inverted/fitted_foil_power_excluded', '2nd_pass FAST foil fit error [W/m2]': 'second_pass-FAST/inverted/foil_power_residuals', '2nd_pass FAST emissivity [W/m3]': 'second_pass-FAST/inverted/inverted_data', '2dn pass FAST emissivity excluded [W/m3]': 'second_pass-FAST/inverted/inverted_data_excluded', "Temperature [°C]": 'laser_temperature_crop_binned_full', "Relative temp [K]": 'laser_temperature_minus_background_crop_binned_full', "tot power [W/m2]": 'powernoback_full', "tot power std [W/m2]": 'powernoback_std_full', "BB power [W/m2]": 'BBrad_full', "diff power [W/m2]": 'diffusion_full', "dt power [W/m2]": 'timevariation_full', "brightness [W/m2]": 'brightness_full', "emissivity [W/m3]": 'inverted/inverted_data', "fitted power [W/m2]": 'inverted/fitted_foil_power', "fitted power residuals [W/m2]": 'inverted/foil_power_residuals'}
 
 # creating all the flags and accessories needed
 params = [
@@ -577,7 +577,7 @@ def export_image():
 		histogram_level_high_for_plot = 'auto'
 		histogram_level_low_for_plot = 'auto'
 	else:
-		if barlabel[-6:] in ['[W/m3]','[W/m2]']:
+		if (barlabel[-6:] in ['[W/m3]','[W/m2]']) and not (('power' in barlabel) or ('foil' in barlabel)):
 			histogram_level_high_for_plot = cp.deepcopy(histogram_level_high)*1e-3
 			histogram_level_low_for_plot = cp.deepcopy(histogram_level_low)*1e-3
 		else:
@@ -587,7 +587,7 @@ def export_image():
 	if barlabel[-6:] == '[W/m3]':
 		barlabel = barlabel[:-6] + '[kW/m3]'
 		to_plot = data[round(a)]*1e-3
-	elif barlabel[-6:] == '[W/m2]':
+	elif barlabel[-6:] == '[W/m2]' and not (('power' in barlabel) or ('foil' in barlabel)):
 		barlabel = barlabel[:-6] + '[kW/m2]'
 		to_plot = data[round(a)]*1e-3
 	else:
@@ -1178,6 +1178,7 @@ if False:	# plots required for the paper/thesis, shot 45473
 	x_point=np.mean(a[:,np.min(extra_overlays[2]['edges_vert']):np.max(extra_overlays[2]['edges_vert'])+1,np.min(extra_overlays[2]['edges_horiz']):np.max(extra_overlays[2]['edges_horiz'])+1],axis=(1,2))
 	midplane = np.mean(a[:,np.min(extra_overlays[3]['edges_vert']):np.max(extra_overlays[3]['edges_vert'])+1,np.min(extra_overlays[3]['edges_horiz']):np.max(extra_overlays[3]['edges_horiz'])+1],axis=(1,2))
 	control = np.mean(a[:,np.min(extra_overlays[4]['edges_vert']):np.max(extra_overlays[4]['edges_vert'])+1,np.min(extra_overlays[4]['edges_horiz']):np.max(extra_overlays[4]['edges_horiz'])+1],axis=(1,2))
+	control_std = np.std(a[:,np.min(extra_overlays[4]['edges_vert']):np.max(extra_overlays[4]['edges_vert'])+1,np.min(extra_overlays[4]['edges_horiz']):np.max(extra_overlays[4]['edges_horiz'])+1],axis=(1,2))
 
 	plt.figure()
 	plt.plot(time_array,outer_target*1e-3,extra_overlays[0]['linestyle'][2:],label='outer target')
@@ -1408,6 +1409,9 @@ elif False:	# plots required for the paper/thesis, shot 45401
 	filename = 'C001H001S0001'
 
 	hsv_data,times = coleval.high_speed_visible_mraw_to_numpy(data_dir,filename,T0)
+	plt.figure()
+	temp = np.abs(times-1).argmin()
+	plt.imshow(hsv_data[temp])
 
 
 elif False:	# plots required for the paper/thesis, shot 45295
@@ -1481,3 +1485,11 @@ elif False:	# plots required for the paper/thesis, shot 45295
 	# plt.pause(0.01)
 	plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/45295_for_paper2.png', bbox_inches='tight')
 	plt.close()
+
+	# ROI used for inversions and with beams
+	# ROI1 = np.array([[0.03,0.82],[0.03,0.90]])	# horizontal, vertical
+	# ROI2 = np.array([[0.03,0.68],[0.03,0.91]])
+	# 61*78
+
+	# ROI_beams = np.array([[0.,0.32],[0.42,1]])
+	# extra_overlays = [dict([('edges_horiz',[0.03*61,0.03*61,0.68*61,0.68*61,0.82*61,0.82*61,0.03*61]),('edges_vert',[0.03*78,0.91*78,0.91*78,0.90*78,0.90*78,0.03*78,0.03*78,]),('linestyle','--C2'),('alpha',1),('linewidth',4)]),dict([('edges_horiz',[0*61,0*61,0.32*61,0.32*61,0*61]),('edges_vert',[0.42*78,0.99*78,0.99*78,0.42*78,0.42*78]),('linestyle','--C3'),('alpha',1),('linewidth',4)])]

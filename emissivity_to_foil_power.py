@@ -17,41 +17,43 @@ exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_indexing.py").r
 
 
 
+if False:	# related to the SOLPS phantom
+	mastu_path = "/home/ffederic/work/SOLPS/seeding/seed_10"
+	if not mastu_path in sys.path:
+		sys.path.append(mastu_path)
+	ds_puff8 = xr.open_dataset('/home/ffederic/work/SOLPS/seeding/seed_10/balance.nc', autoclose=True).load()
 
-mastu_path = "/home/ffederic/work/SOLPS/seeding/seed_10"
-if not mastu_path in sys.path:
-	sys.path.append(mastu_path)
-ds_puff8 = xr.open_dataset('/home/ffederic/work/SOLPS/seeding/seed_10/balance.nc', autoclose=True).load()
+	grid_x = ds_puff8.crx.mean(dim='4')
+	grid_y = ds_puff8.cry.mean(dim='4')
+	impurity_radiation = ds_puff8.b2stel_she_bal.sum('ns')
+	hydrogen_radiation = ds_puff8.eirene_mc_eael_she_bal.sum('nstra') - ds_puff8.eirene_mc_papl_sna_bal.isel(ns=1).sum('nstra') * 13.6 * 1.6e-19   # ds_puff8.eirene_mc_eael_she_bal.sum('nstra') is the total electron energy sink due to plasma / atoms interactions, including ionisation/excitation (dominant) and charge exchange (negligible). Here we assume all not used for ionisation goes to radiation, including the CX bit.
+	total_radiation = -hydrogen_radiation + impurity_radiation
+	total_radiation_density = -np.divide(hydrogen_radiation + impurity_radiation,ds_puff8.vol)
 
-grid_x = ds_puff8.crx.mean(dim='4')
-grid_y = ds_puff8.cry.mean(dim='4')
-impurity_radiation = ds_puff8.b2stel_she_bal.sum('ns')
-hydrogen_radiation = ds_puff8.eirene_mc_eael_she_bal.sum('nstra') - ds_puff8.eirene_mc_papl_sna_bal.isel(ns=1).sum('nstra') * 13.6 * 1.6e-19   # ds_puff8.eirene_mc_eael_she_bal.sum('nstra') is the total electron energy sink due to plasma / atoms interactions, including ionisation/excitation (dominant) and charge exchange (negligible). Here we assume all not used for ionisation goes to radiation, including the CX bit.
-total_radiation = -hydrogen_radiation + impurity_radiation
-total_radiation_density = -np.divide(hydrogen_radiation + impurity_radiation,ds_puff8.vol)
-
-fig, ax = plt.subplots()
-# grid_x.plot.line(ax=ax, x='nx_plus2')
-# grid_y.plot.line(ax=ax, x='ny_plus2')
-# plt.pcolormesh(grid_x.values, grid_y.values, impurity_radiation.values)
+	fig, ax = plt.subplots()
+	# grid_x.plot.line(ax=ax, x='nx_plus2')
+	# grid_y.plot.line(ax=ax, x='ny_plus2')
+	# plt.pcolormesh(grid_x.values, grid_y.values, impurity_radiation.values)
 
 
-plt.pcolor(grid_x.values, grid_y.values, np.abs(total_radiation_density.values), norm=LogNorm(vmin=1000, vmax=total_radiation_density.values.max()),cmap='rainbow')
-# plt.pcolor(grid_x.values, grid_y.values, np.abs(total_radiation_density.values),cmap='rainbow')
-ax.set_ylim(top=-0.5)
-ax.set_xlim(left=0.)
-plt.title('Emissivity profile as imported directly from SOLPS')
-plt.colorbar().set_label('Emissivity [W/m^3]')
-plt.xlabel('R [m]')
-plt.ylabel('Z [m]')
+	plt.pcolor(grid_x.values, grid_y.values, np.abs(total_radiation_density.values), norm=LogNorm(vmin=1000, vmax=total_radiation_density.values.max()),cmap='rainbow')
+	# plt.pcolor(grid_x.values, grid_y.values, np.abs(total_radiation_density.values),cmap='rainbow')
+	ax.set_ylim(top=-0.5)
+	ax.set_xlim(left=0.)
+	plt.title('Emissivity profile as imported directly from SOLPS')
+	plt.colorbar().set_label('Emissivity [W/m^3]')
+	plt.xlabel('R [m]')
+	plt.ylabel('Z [m]')
 
-x=np.linspace(0.55-0.075,0.55+0.075,10)
-y=-1.2+np.sqrt(0.08**2-(x-0.55)**2)
-y_=-1.2-np.sqrt(0.08**2-(x-0.55)**2)
-plt.plot(x,y,'k')
-plt.plot(x,y_,'k')
-# plt.show()
-
+	x=np.linspace(0.55-0.075,0.55+0.075,10)
+	y=-1.2+np.sqrt(0.08**2-(x-0.55)**2)
+	y_=-1.2-np.sqrt(0.08**2-(x-0.55)**2)
+	plt.plot(x,y,'k')
+	plt.plot(x,y_,'k')
+	plt.plot(FULL_MASTU_CORE_GRID_POLYGON[:, 0], FULL_MASTU_CORE_GRID_POLYGON[:, 1], 'k')
+	# plt.show()
+else:
+	pass
 
 # # 10/01/2019 for Matt, send him this data in ASCII format
 #
@@ -103,174 +105,193 @@ for cad_file in MASTU_FULL_MESH:
 	print("importing {} ...".format(filename))
 	Mesh.from_file(cad_file[0], parent=world, material=AbsorbingSurface(), name=name)
 
+
 os.chdir("/home/ffederic/work/analysis_scripts/irvb/")
-irvb_cad = import_stl("IRVB_camera_no_backplate_4mm.stl", parent=world, material=AbsorbingSurface(), name="IRVB")
+IRVB_CAD_file = "IRVB_camera_no_backplate_4mm.stl"
+irvb_cad = import_stl(IRVB_CAD_file, parent=world, material=AbsorbingSurface(), name="IRVB")
+
+
+if False:	# (SOLPS?) radiation phantom
+	# create radiator
+
+
+	cr_r = np.transpose(ds_puff8.crx.values)
+	cr_z = np.transpose(ds_puff8.cry.values)
+	radiated_power=np.transpose(total_radiation_density.values)
+
+	def make_solps_power_function(cr_r, cr_z, radiated_power):
+
+		import numpy as np
+		from cherab.core.math.mappers import AxisymmetricMapper
+		from raysect.core.math.interpolators import Discrete2DMesh
+
+		nx = cr_r.shape[0]
+		ny = cr_r.shape[1]
+
+		# Iterate through the arrays from MDS plus to pull out unique vertices
+		unique_vertices = {}
+		vertex_id = 0
+		for i in range(nx):
+			for j in range(ny):
+				for k in range(4):
+					vertex = (cr_r[i, j, k], cr_z[i, j, k])
+					try:
+						unique_vertices[vertex]
+					except KeyError:
+						unique_vertices[vertex] = vertex_id
+						vertex_id += 1
+
+		# Load these unique vertices into a numpy array for later use in Raysect's mesh interpolator object.
+		num_vertices = len(unique_vertices)
+		vertex_coords = np.zeros((num_vertices, 2), dtype=np.float64)
+		for vertex, vertex_id in unique_vertices.items():
+			vertex_coords[vertex_id, :] = vertex
+
+		# Number of triangles must be equal to number of rectangle centre points times 2.
+		num_tris = nx * ny * 2
+		triangles = np.zeros((num_tris, 3), dtype=np.int32)
+
+		_triangle_to_grid_map = np.zeros((nx * ny * 2, 2), dtype=np.int32)
+		tri_index = 0
+		for i in range(nx):
+			for j in range(ny):
+				# Pull out the index number for each unique vertex in this rectangular cell.
+				# Unusual vertex indexing is based on SOLPS output, see Matlab code extract from David Moulton.
+				# cell_r = [r(i,j,1),r(i,j,3),r(i,j,4),r(i,j,2)];
+				v1_id = unique_vertices[(cr_r[i, j, 0], cr_z[i, j, 0])]
+				v2_id = unique_vertices[(cr_r[i, j, 2], cr_z[i, j, 2])]
+				v3_id = unique_vertices[(cr_r[i, j, 3], cr_z[i, j, 3])]
+				v4_id = unique_vertices[(cr_r[i, j, 1], cr_z[i, j, 1])]
+
+				# Split the quad cell into two triangular cells.
+				# Each triangle cell is mapped to the tuple ID (ix, iy) of its parent mesh cell.
+				triangles[tri_index, :] = (v1_id, v2_id, v3_id)
+				_triangle_to_grid_map[tri_index, :] = (i, j)
+				tri_index += 1
+				triangles[tri_index, :] = (v3_id, v4_id, v1_id)
+				_triangle_to_grid_map[tri_index, :] = (i, j)
+				tri_index += 1
+
+		radiated_power=radiated_power.flatten()
+		rad_power = np.zeros(radiated_power.shape[0]*2)
+		for i in range(radiated_power.shape[0]):
+			rad_power[i*2] = radiated_power[i]
+			rad_power[i*2 + 1] = radiated_power[i]
+
+		return AxisymmetricMapper(Discrete2DMesh(vertex_coords, triangles, rad_power,limit=False))
 
 
 
-# create radiator
+
+	class RadiatedPower(InhomogeneousVolumeEmitter):
+
+		def __init__(self, radiation_function):
+			super().__init__()
+			self.radiation_function = radiation_function
+
+		def emission_function(self, point, direction, spectrum, world, ray, primitive, to_local, to_world):
+
+			p = point.transform(to_world)
+			spectrum.samples[0] += self.radiation_function(p.x, p.y, p.z)
+
+			return spectrum
 
 
-cr_r = np.transpose(ds_puff8.crx.values)
-cr_z = np.transpose(ds_puff8.cry.values)
-radiated_power=np.transpose(total_radiation_density.values)
-
-def make_solps_power_function(cr_r, cr_z, radiated_power):
-
-	import numpy as np
-	from cherab.core.math.mappers import AxisymmetricMapper
-	from raysect.core.math.interpolators import Discrete2DMesh
-
-	nx = cr_r.shape[0]
-	ny = cr_r.shape[1]
-
-	# Iterate through the arrays from MDS plus to pull out unique vertices
-	unique_vertices = {}
-	vertex_id = 0
-	for i in range(nx):
-		for j in range(ny):
-			for k in range(4):
-				vertex = (cr_r[i, j, k], cr_z[i, j, k])
-				try:
-					unique_vertices[vertex]
-				except KeyError:
-					unique_vertices[vertex] = vertex_id
-					vertex_id += 1
-
-	# Load these unique vertices into a numpy array for later use in Raysect's mesh interpolator object.
-	num_vertices = len(unique_vertices)
-	vertex_coords = np.zeros((num_vertices, 2), dtype=np.float64)
-	for vertex, vertex_id in unique_vertices.items():
-		vertex_coords[vertex_id, :] = vertex
-
-	# Number of triangles must be equal to number of rectangle centre points times 2.
-	num_tris = nx * ny * 2
-	triangles = np.zeros((num_tris, 3), dtype=np.int32)
-
-	_triangle_to_grid_map = np.zeros((nx * ny * 2, 2), dtype=np.int32)
-	tri_index = 0
-	for i in range(nx):
-		for j in range(ny):
-			# Pull out the index number for each unique vertex in this rectangular cell.
-			# Unusual vertex indexing is based on SOLPS output, see Matlab code extract from David Moulton.
-			# cell_r = [r(i,j,1),r(i,j,3),r(i,j,4),r(i,j,2)];
-			v1_id = unique_vertices[(cr_r[i, j, 0], cr_z[i, j, 0])]
-			v2_id = unique_vertices[(cr_r[i, j, 2], cr_z[i, j, 2])]
-			v3_id = unique_vertices[(cr_r[i, j, 3], cr_z[i, j, 3])]
-			v4_id = unique_vertices[(cr_r[i, j, 1], cr_z[i, j, 1])]
-
-			# Split the quad cell into two triangular cells.
-			# Each triangle cell is mapped to the tuple ID (ix, iy) of its parent mesh cell.
-			triangles[tri_index, :] = (v1_id, v2_id, v3_id)
-			_triangle_to_grid_map[tri_index, :] = (i, j)
-			tri_index += 1
-			triangles[tri_index, :] = (v3_id, v4_id, v1_id)
-			_triangle_to_grid_map[tri_index, :] = (i, j)
-			tri_index += 1
-
-	radiated_power=radiated_power.flatten()
-	rad_power = np.zeros(radiated_power.shape[0]*2)
-	for i in range(radiated_power.shape[0]):
-		rad_power[i*2] = radiated_power[i]
-		rad_power[i*2 + 1] = radiated_power[i]
-
-	return AxisymmetricMapper(Discrete2DMesh(vertex_coords, triangles, rad_power,limit=False))
+	radiation_function = make_solps_power_function(cr_r, cr_z, radiated_power)
 
 
+	plt.figure()
+	X = np.arange(0, grid_x.values.max(), 0.001)
+	Y = np.arange(grid_y.values.min(), grid_y.values.max(), 0.001)
+	rad_test = np.zeros((len(X), len(Y)))
+	grid_x2 = np.zeros((len(X), len(Y)))
+	grid_y2 = np.zeros((len(X), len(Y)))
+	tot_power = 0
+	for ix, x in enumerate(X):
+		for jy, y in enumerate(Y):
+			rad_test[ix, jy] = radiation_function(x, 0, y)
+			grid_x2[ix, jy] = x
+			grid_y2[ix, jy] = y
+			# if y<-1.42:
+			tot_power+=radiation_function(x, 0, y)*0.001*0.001*2*np.pi*x
 
 
-class RadiatedPower(InhomogeneousVolumeEmitter):
+	plt.pcolor(grid_x2, grid_y2, rad_test, norm=LogNorm(vmin=1000, vmax=total_radiation_density.values.max()),cmap='rainbow')
+	# plt.pcolor(grid_x.values, grid_y.values, np.abs(total_radiation_density.values),cmap='rainbow')
+	ax.set_ylim(top=-0.5)
+	ax.set_xlim(left=0.)
+	plt.title('Emissivity profile as imported from SOLPS using CHERAB utilities')
+	plt.colorbar().set_label('Emissivity [W/m^3]')
+	plt.xlabel('R [m]')
+	plt.ylabel('Z [m]')
 
-	def __init__(self, radiation_function):
-		super().__init__()
-		self.radiation_function = radiation_function
+	x=np.linspace(0.55-0.075,0.55+0.075,10)
+	y=-1.2+np.sqrt(0.08**2-(x-0.55)**2)
+	y_=-1.2-np.sqrt(0.08**2-(x-0.55)**2)
+	plt.plot(x,y,'k')
+	plt.plot(x,y_,'k')
 
-	def emission_function(self, point, direction, spectrum, world, ray, primitive, to_local, to_world):
-
-		p = point.transform(to_world)
-		spectrum.samples[0] += self.radiation_function(p.x, p.y, p.z)
-
-		return spectrum
-
-
-radiation_function = make_solps_power_function(cr_r, cr_z, radiated_power)
-
-
-plt.figure()
-X = np.arange(0, grid_x.values.max(), 0.001)
-Y = np.arange(grid_y.values.min(), grid_y.values.max(), 0.001)
-rad_test = np.zeros((len(X), len(Y)))
-grid_x2 = np.zeros((len(X), len(Y)))
-grid_y2 = np.zeros((len(X), len(Y)))
-tot_power = 0
-for ix, x in enumerate(X):
-	for jy, y in enumerate(Y):
-		rad_test[ix, jy] = radiation_function(x, 0, y)
-		grid_x2[ix, jy] = x
-		grid_y2[ix, jy] = y
-		# if y<-1.42:
-		tot_power+=radiation_function(x, 0, y)*0.001*0.001*2*np.pi*x
+	plt.pause(0.01)
 
 
-plt.pcolor(grid_x2, grid_y2, rad_test, norm=LogNorm(vmin=1000, vmax=total_radiation_density.values.max()),cmap='rainbow')
-# plt.pcolor(grid_x.values, grid_y.values, np.abs(total_radiation_density.values),cmap='rainbow')
-ax.set_ylim(top=-0.5)
-ax.set_xlim(left=0.)
-plt.title('Emissivity profile as imported from SOLPS using CHERAB utilities')
-plt.colorbar().set_label('Emissivity [W/m^3]')
-plt.xlabel('R [m]')
-plt.ylabel('Z [m]')
-
-x=np.linspace(0.55-0.075,0.55+0.075,10)
-y=-1.2+np.sqrt(0.08**2-(x-0.55)**2)
-y_=-1.2-np.sqrt(0.08**2-(x-0.55)**2)
-plt.plot(x,y,'k')
-plt.plot(x,y_,'k')
-
-plt.pause(0.01)
+	emitter_material = RadiatedPower(radiation_function)
+	outer_radius = cr_r.max() + 0.01
+	plasma_height = cr_z.max() - cr_z.min()
+	lower_z = cr_z.min()
+	radiator = Cylinder(outer_radius, plasma_height, material=emitter_material, parent=world,transform=translate(0, 0, lower_z))
+else:
+	pass
 
 
-
-# # THIS IS FOR UNIFORM EMITTED POWER DENSITY
-# total_power=500000
-# center_radiator=[0.55,-1.2]
+# THIS IS FOR UNIFORM EMITTED POWER DENSITY
+total_power=500000
+center_radiator=[0.55,-1.2]
 #
-# # TOROIDAL RADIATOR
+# TOROIDAL RADIATOR
+if False:
+	radiator_file = 'radiator_R0.55_Z-1.2_r0.08.stl'
+	minor_radius_radiator=0.08
+	volume_radiator=2*(np.pi**2)*center_radiator[0]*minor_radius_radiator**2
+	power_density = total_power / volume_radiator / (4*np.pi)
+elif False:
+	radiator_file = '2x_radiator_R0.55_Z-1.2-1.3_r0.04.stl'
+	minor_radius_radiator=0.04
+	volume_radiator=2*2*(np.pi**2)*center_radiator[0]*minor_radius_radiator**2
+	power_density =  total_power / volume_radiator / (4*np.pi)
+else:
+	radiator_file = 'radiator_all_core_and_divertor.stl'
+	power_density =  50000 / (4*np.pi)
+
 # minor_radius_radiator=0.08
 # volume_radiator=2*(np.pi**2)*center_radiator[0]*minor_radius_radiator**2
+# power_density = total_power / volume_radiator / (4*np.pi)
 #
 # # SQUARE ANULAR RADIATOR
 # # side_radiator=0.14
 # # volume_radiator=np.pi*((center_radiator[0]+side_radiator/2)**2-(center_radiator[0]-side_radiator/2)**2)*side_radiator
 # # x_point_lower = Point2D(center_radiator[0] - side_radiator/2, center_radiator[1] - side_radiator/2)
 # # x_point_upper = Point2D(center_radiator[0] + side_radiator/2, center_radiator[1] + side_radiator/2)
-#
 # power_density = total_power / volume_radiator / (4*np.pi)
-power_density_core=50000 / (4*np.pi)
+#
+# # FIXED EMISSIVITY IN CORE
+# power_density_core=50000 / (4*np.pi)
+
 
 from cherab.tools.primitives.annulus_mesh import generate_annulus_mesh_segments
 # generate_annulus_mesh_segments(x_point_lower, x_point_upper, 360, world, material=UniformVolumeEmitter(ConstantSF(power_density)))
-# radiator = import_stl('radiator_R0.55_Z-1.2_r0.08.stl', material=UniformVolumeEmitter(ConstantSF(power_density)), parent=world)
+radiator = import_stl(radiator_file, material=UniformVolumeEmitter(ConstantSF(power_density)), parent=world)
 # radiator = import_stl('radiator_all_closed_surface.stl', material=UniformVolumeEmitter(ConstantSF(power_density_core)), parent=world)
 # radiator = import_stl('radiator_all_super_x_divertor.stl', material=UniformVolumeEmitter(ConstantSF(power_density_core)), parent=world)
 # radiator = import_stl('radiator_all_core.stl', material=UniformVolumeEmitter(ConstantSF(power_density_core)), parent=world)
-radiator = import_stl('radiator_all_core_and_divertor.stl', material=UniformVolumeEmitter(ConstantSF(power_density_core)), parent=world)
+# radiator = import_stl('radiator_all_core_and_divertor.stl', material=UniformVolumeEmitter(ConstantSF(power_density_core)), parent=world)
 # radiator = import_stl('test.stl', material=UniformVolumeEmitter(ConstantSF(power_density_core)), parent=world)
-
-
-
-emitter_material = RadiatedPower(radiation_function)
-outer_radius = cr_r.max() + 0.01
-plasma_height = cr_z.max() - cr_z.min()
-lower_z = cr_z.min()
-radiator = Cylinder(outer_radius, plasma_height, material=emitter_material, parent=world,transform=translate(0, 0, lower_z))
 
 
 pinhole_centre = Point3D(1.491933, 0, -0.7198).transform(rotate_z(135-0.76004))
 pinhole_target = Sphere(0.005, transform=translate(*pinhole_centre), parent=world, material=NullMaterial())
 
 
-stand_off=0.045
+stand_off=0.060
 CCD_radius=1.50467+stand_off
 CCD_angle=135*(np.pi*2)/360
 
@@ -291,26 +312,67 @@ detector = TargettedCCDArray(targets=[pinhole_target], width=0.07, pixels=(pixel
 detector.max_wavelength = 601
 detector.min_wavelength = 600
 # detector.pixel_samples = 500//(1/(5*5))
-detector.pixel_samples = 500
+detector.pixel_samples = 5000
 
 detector.observe()
 
 
-pixel_area = 0.07*(0.07*pixel_v/pixel_h)/(pixel_h*pixel_v)
-measured_power = power.frame.mean / pixel_area
-measured_power = np.flip(np.transpose(measured_power),axis=-1)
+if True:
+	pixel_area = 0.07*(0.07*pixel_v/pixel_h)/(pixel_h*pixel_v)
+	measured_power = power.frame.mean / pixel_area
+	measured_power = np.flip(np.transpose(measured_power),axis=-1)
+	np.save('/home/ffederic/work/irvb/0__outputs/measured_power_'+IRVB_CAD_file[-7:-6]+'_'+str(int(stand_off*1e3))+radiator_file,measured_power)
+else:
+	# stand_off = 0.045	# m
+	measured_power = np.load('/home/ffederic/work/irvb/0__outputs/measured_power_'+IRVB_CAD_file[-7:-6]+'_'+str(int(stand_off*1e3))+radiator_file+'.npy')
 
-plt.figure()
-cmap = plt.cm.get_cmap('rainbow',20)
-cmap.set_under(color='white')
-vmin=measured_power[measured_power>0].min()
-plt.imshow(measured_power,origin='lower', cmap=cmap, vmin=vmin)
-plt.gca().set_aspect(1)
-plt.title('Power density on the foil generated via CHERAB simulation')
-plt.colorbar().set_label('Power density on the foil [W/m^2]\ncut-off '+str(vmin)+'W/m^2')
-plt.xlabel('Horizontal axis [pixles]')
-plt.ylabel('Vertical axis [pixles]')
-plt.pause(0.01)
+measured_power_filtered=median_filter(measured_power,size=[3,3])
 
+pinhole_offset = np.array([-0.0198,-0.0198])	# toroidal direction parallel to the place surface, z
+# pinhole_offset_extra = np.array([+0.012/(2**0.5),-0.012/(2**0.5)])
+pinhole_offset_extra = np.array([0,0])
+# stand_off = 0.045	# m
+# Rf=1.54967	# m	radius of the centre of the foil
+Rf=1.48967 + 0.01 + 0.003 + 0.002 + stand_off	# m	radius of the centre of the foil
+plane_equation = np.array([1,-1,0,2**0.5 * Rf])	# plane of the foil
+centre_of_foil = np.array([-Rf/(2**0.5), Rf/(2**0.5), -0.7])	# x,y,z
+pinhole_offset += pinhole_offset_extra
+pinhole_location = coleval.locate_pinhole(pinhole_offset=pinhole_offset)
 
-np.save('measured_power',measured_power)
+fueling_point_location_on_foil = coleval.return_fueling_point_location_on_foil(plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil)
+structure_point_location_on_foil = coleval.return_structure_point_location_on_foil(plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil)
+
+if True:	# plot for the paper
+	plt.figure(figsize=(12,7))
+	# plt.figure(figsize=(12,5))
+	cmap = plt.cm.get_cmap('rainbow',20)
+	cmap.set_under(color='white')
+	vmin=100
+	# vmin=measured_power[measured_power>0].min()
+	levels = np.unique((np.ceil(np.arange(measured_power_filtered.max(),0,-(measured_power_filtered.max()-vmin)/10)).astype(int)).tolist() + [0])
+	im = plt.contourf(measured_power_filtered,levels=levels,cmap=cmap, vmin=vmin,origin='lower')
+	# im = plt.imshow(measured_power,origin='lower', cmap=cmap, vmin=vmin)
+	cv0 = np.zeros(measured_power.shape)
+	foil_size = [0.07,0.09]
+	structure_alpha=0.5
+	# for i in range(len(fueling_point_location_on_foil)):
+	# 	plt.plot(np.array(fueling_point_location_on_foil[i][:,0])*(np.shape(cv0)[1]-1)/foil_size[0],np.array(fueling_point_location_on_foil[i][:,1])*(np.shape(cv0)[0]-1)/foil_size[1],'+k',markersize=40,alpha=structure_alpha)
+	# 	plt.plot(np.array(fueling_point_location_on_foil[i][:,0])*(np.shape(cv0)[1]-1)/foil_size[0],np.array(fueling_point_location_on_foil[i][:,1])*(np.shape(cv0)[0]-1)/foil_size[1],'ok',markersize=5,alpha=structure_alpha)
+	for i in range(len(structure_point_location_on_foil)):
+		plt.plot(np.array(structure_point_location_on_foil[i][:,0])*(np.shape(cv0)[1]-1)/foil_size[0],np.array(structure_point_location_on_foil[i][:,1])*(np.shape(cv0)[0]-1)/foil_size[1],'--k',alpha=structure_alpha)
+	plt.gca().set_aspect(1)
+	plt.ylim(bottom=0)
+	plt.xlim(left=0)
+	# plt.ylim(bottom=120,top=300)
+	# plt.xlim(left=100)
+	# plt.colorbar(im,fraction=0.0227, pad=0.02).set_label('Foil power density [W/m^2]\ncut-off %.3gW/m^2' %(vmin))
+	plt.colorbar(im,fraction=0.0227, pad=0.02).set_label('Foil power density [W/m^2] cut-off %.3gW/m^2' %(vmin))
+	plt.xlabel('Horizontal axis [pixles]')
+	plt.ylabel('Vertical axis [pixles]')
+	try:
+		plt.title('Power density on the foil generated via CHERAB simulation\nRadiator of r=%.3gm at R=%.3gm, Z=%.3gm, %.3gMW\nstandoff=%.3gm, pinhole=%.3gmm\n' %(minor_radius_radiator,center_radiator[0],center_radiator[1],total_power*1e-6,stand_off,int(IRVB_CAD_file[-7:-6])))
+	except:
+		pass
+	# plt.pause(0.01)
+	plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/measured_power_'+IRVB_CAD_file[-7:-6]+'_'+str(int(stand_off*1e3))+radiator_file+'.eps', bbox_inches='tight')
+	plt.close()

@@ -1340,6 +1340,10 @@ Ptthermalconductivity=71.6 #[W/(m·K)]
 Ptspecificheat=133 #[J/(kg K)]
 Ptdensity=21.45*1000 #[kg/m3]
 Ptthermaldiffusivity=Ptthermalconductivity/(Ptspecificheat*Ptdensity)    #m2/s
+Cthermalconductivity=7 #[W/(m·K)]	# assumed in the unfavorable direction of a graphite crystal
+Cspecificheat=709 #[J/(kg K)]
+Cdensity=0.684*1000 #[kg/m3]
+Cthermaldiffusivity=Cthermalconductivity/(Cspecificheat*Cdensity)    #m2/s
 sigmaSB=5.6704e-08 #[W/(m2 K4)]
 zeroC=273.15 #K / C
 
