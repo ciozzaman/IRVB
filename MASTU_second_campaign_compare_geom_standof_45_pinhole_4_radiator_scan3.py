@@ -91,20 +91,22 @@ all_time_separatrix_CD = coleval.return_all_time_separatrix(efit_reconstruction_
 
 
 
-
 def load_phantom_scan(phantom_variant,laser_to_analyse):
 	# manual bit
 	# phantom_variant = '1'
 	grid_resolution = 2
 	scan_type = 'stand_off_0.045_pinhole_4' + '_'+phantom_variant
-	temp_save = np.load(laser_to_analyse[:-4]+'_'+scan_type+'_inverted_baiesian_test_export_radiator_scan2.npz')
+	temp_save = np.load(laser_to_analyse[:-4]+'_'+scan_type+'_inverted_baiesian_test_export_radiator_scan.npz')
 	temp_save.allow_pickle = True
 	temp_save = dict(temp_save)
-	x_optimal_out = temp_save[scan_type].all()['x_optimal_out']
-	x_optimal_input_full_res_all = temp_save[scan_type].all()['x_optimal_input_full_res_all']
-	recompose_voxel_emissivity_out = temp_save[scan_type].all()['recompose_voxel_emissivity_out']
-	phantom = temp_save[scan_type].all()['phantom']
-	grid_data_masked_crop = temp_save[scan_type].all()['grid_data_masked_crop']
+	temp_save[scan_type] = temp_save[scan_type].all()
+	x_optimal_out = temp_save[scan_type]['x_optimal_out']
+	x_optimal_input_full_res_all = temp_save[scan_type]['x_optimal_input_full_res_all']
+	recompose_voxel_emissivity_out = temp_save[scan_type]['recompose_voxel_emissivity_out']
+	recompose_voxel_emissivity_sigma_out = temp_save[scan_type]['recompose_voxel_emissivity_sigma_out']
+	covariance_out = temp_save[scan_type]['covariance_out']
+	phantom = temp_save[scan_type]['phantom']
+	grid_data_masked_crop = temp_save[scan_type]['grid_data_masked_crop']
 	regolarisation_coeff = 1e-2
 	regolarisation_coeff_all = np.array([regolarisation_coeff]*len(phantom))
 
@@ -120,10 +122,13 @@ def load_phantom_scan(phantom_variant,laser_to_analyse):
 		recompose_voxel_emissivity_difference_all.append(coleval.translate_emissivity_profile_with_homo_temp(np.mean(grid_data_masked_crop,axis=1),x_optimal_difference,np.mean(grid_data_masked_crop,axis=1))[1])
 
 	difference_sum = np.nansum(np.abs(recompose_voxel_emissivity_difference_all),axis=(1,2))
-	radiator_position_r_out = np.nansum(np.array(x_optimal_out)[:,:-2]*(np.mean(grid_data_masked_crop,axis=1)[:,0]),axis=(1))/np.nansum(np.array(x_optimal_out)[:,:-2],axis=(1))
-	radiator_position_z_out = np.nansum(np.array(x_optimal_out)[:,:-2]*(np.mean(grid_data_masked_crop,axis=1)[:,1]),axis=(1))/np.nansum(np.array(x_optimal_out)[:,:-2],axis=(1))
-	peak_radiator_position_r_out = np.mean(grid_data_masked_crop,axis=1)[:,0][np.array(x_optimal_out).argmax(axis=1)]
-	peak_radiator_position_z_out = np.mean(grid_data_masked_crop,axis=1)[:,1][np.array(x_optimal_out).argmax(axis=1)]
+	difference_sum_sigma = np.nansum(np.array(recompose_voxel_emissivity_sigma_out)**2,axis=(1,2))**0.5
+	# baricenre
+	select = np.mean(grid_data_masked_crop,axis=1)[:,1]<-1.1
+	radiator_position_r_out = np.nansum((np.array(x_optimal_out)[:,:-2]*(np.mean(grid_data_masked_crop,axis=1)[:,0]))[:,select],axis=(1))/np.nansum(np.array(x_optimal_out)[:,:-2][:,select],axis=(1))
+	radiator_position_z_out = np.nansum((np.array(x_optimal_out)[:,:-2]*(np.mean(grid_data_masked_crop,axis=1)[:,1]))[:,select],axis=(1))/np.nansum(np.array(x_optimal_out)[:,:-2][:,select],axis=(1))
+	peak_radiator_position_r_out = np.mean(grid_data_masked_crop,axis=1)[:,0][select][np.array(x_optimal_out)[:,:-2][:,select].argmax(axis=1)]
+	peak_radiator_position_z_out = np.mean(grid_data_masked_crop,axis=1)[:,1][select][np.array(x_optimal_out)[:,:-2][:,select].argmax(axis=1)]
 	radiator_position_r_in = (np.nansum(phantom*(np.mean(grid_data_masked_crop,axis=1)[:,0]),axis=(1))/np.nansum(phantom,axis=(1)))[:len(phantom)-(len(phantom)-len(difference_sum))]
 	radiator_position_z_in = (np.nansum(phantom*(np.mean(grid_data_masked_crop,axis=1)[:,1]),axis=(1))/np.nansum(phantom,axis=(1)))[:len(phantom)-(len(phantom)-len(difference_sum))]
 
@@ -137,22 +142,59 @@ def load_phantom_scan(phantom_variant,laser_to_analyse):
 	power_out_all = np.nansum(np.array(x_optimal_out)[:,:-2]*(grid_resolution*1e-2)**2 * 2*np.pi*np.mean(grid_data_masked_crop,axis=1)[:,0],axis=-1)*4*np.pi*1e-3
 	power_in = np.nansum(phantom*(grid_resolution*1e-2)**2 * 2*np.pi*np.mean(grid_data_masked_crop,axis=1)[:,0],axis=-1)[:len(phantom)-(len(phantom)-len(difference_sum))]*4*np.pi*1e-3
 
-	return recompose_voxel_emissivity_input_all,recompose_voxel_emissivity_output_all,recompose_voxel_emissivity_difference_all,difference_sum,radiator_position_r_out,radiator_position_z_out,peak_radiator_position_r_out,peak_radiator_position_z_out,radiator_position_r_in,radiator_position_z_in,power_out_peak_dist,power_out_below_outside_x_point,power_out_all,power_in
 
-recompose_voxel_emissivity_input_all_1,recompose_voxel_emissivity_output_all_1,recompose_voxel_emissivity_difference_all_1,difference_sum_1,radiator_position_r_out_1,radiator_position_z_out_1,peak_radiator_position_r_out_1,peak_radiator_position_z_out_1,radiator_position_r_in_1,radiator_position_z_in_1,power_out_peak_dist_1,power_out_below_outside_x_point_1,power_out_all_1,power_in_1 = load_phantom_scan('1',laser_to_analyse_SXD)
-recompose_voxel_emissivity_input_all_2,recompose_voxel_emissivity_output_all_2,recompose_voxel_emissivity_difference_all_2,difference_sum_2,radiator_position_r_out_2,radiator_position_z_out_2,peak_radiator_position_r_out_2,peak_radiator_position_z_out_2,radiator_position_r_in_2,radiator_position_z_in_2,power_out_peak_dist_2,power_out_below_outside_x_point_2,power_out_all_2,power_in_2 = load_phantom_scan('1',laser_to_analyse_CD)
-recompose_voxel_emissivity_input_all_3,recompose_voxel_emissivity_output_all_3,recompose_voxel_emissivity_difference_all_3,difference_sum_3,radiator_position_r_out_3,radiator_position_z_out_3,peak_radiator_position_r_out_3,peak_radiator_position_z_out_3,radiator_position_r_in_3,radiator_position_z_in_3,power_out_peak_dist_3,power_out_below_outside_x_point_3,power_out_all_3,power_in_3 = load_phantom_scan('4',laser_to_analyse_CD)
 
-case=-10
-plt.figure( figsize=(12, 12))
-im = plt.imshow(np.flip(np.flip(np.flip(np.transpose(recompose_voxel_emissivity_input_all_2[case]*1e-3,(1,0)),axis=1),axis=1),axis=0),'rainbow',extent=[grid_data_masked_crop[:,:,0].min(),grid_data_masked_crop[:,:,0].max(),grid_data_masked_crop[:,:,1].min(),grid_data_masked_crop[:,:,1].max()],vmin=np.nanmin(recompose_voxel_emissivity_input_all_2[case])*1e-3,vmax=np.nanmax(recompose_voxel_emissivity_input_all_2[case])*1e-3)
-plt.plot(radiator_position_r_in_2[case],radiator_position_z_in_2[case],'+k',markersize=20)
+	if False:	# this calculation does not account for covariance and it returns a much higher uncertainty
+		r=np.arange(np.round(np.mean(grid_data_masked_crop,axis=1)[:,0].min(),4),np.round(np.mean(grid_data_masked_crop,axis=1)[:,0].max(),4)+grid_resolution*1e-2,grid_resolution*1e-2)
+		z=np.arange(np.round(np.mean(grid_data_masked_crop,axis=1)[:,1].min(),4),np.round(np.mean(grid_data_masked_crop,axis=1)[:,1].max(),4)+grid_resolution*1e-2,grid_resolution*1e-2)
+		r,z = np.meshgrid(r,z)
+		r,z = r.T,z.T
+		select_below_outside_x_point = np.logical_and(z<=arbitrary_x_point_z,r>=arbitrary_x_point_r)
+		select_peak_dist = ((np.array([r]*len(peak_radiator_position_r_out)).T-peak_radiator_position_r_out)**2 + (np.array([z]*len(peak_radiator_position_r_out)).T-peak_radiator_position_z_out)**2).T**0.5 < 0.1
+
+		power_out_peak_dist_sigma = np.nansum((np.array(recompose_voxel_emissivity_sigma_out)*select_peak_dist*(grid_resolution*1e-2)**2 * 2*np.pi*r)**2,axis=(-1,-2))**0.5*4*np.pi*1e-3
+		power_out_below_outside_x_point_sigma = np.nansum((np.array(recompose_voxel_emissivity_sigma_out)*select_below_outside_x_point*(grid_resolution*1e-2)**2 * 2*np.pi*r)**2,axis=(-1,-2))**0.5*4*np.pi*1e-3
+		power_out_all_sigma = np.nansum((np.array(recompose_voxel_emissivity_sigma_out)*(grid_resolution*1e-2)**2 * 2*np.pi*r)**2,axis=(-1,-2))**0.5*4*np.pi*1e-3
+		# I can calculate it, but I can't really use the uncertainty.
+		# the signal level during plasma is "high" because radiation comes from different places, so it can get to a low regularisation. here there is only one source, and it's really unfair to compare the uncertainty everiwhere from a source in a single point
+		# of course the uncertainty would be huge compared to the total signal
+	else:	# this does
+		temp = np.array([select_below_outside_x_point*(grid_resolution*1e-2)**2 * 2*np.pi*np.mean(grid_data_masked_crop,axis=1)[:,0]*4*np.pi*1e-3]*len(covariance_out))
+		power_out_below_outside_x_point_sigma = np.nansum((np.transpose(np.array(covariance_out).T[:-2,:-2]*temp.T,axes=(1,0,2))*temp.T),axis=(0,1))**0.5
+		temp = select_peak_dist*(grid_resolution*1e-2)**2 * 2*np.pi*np.mean(grid_data_masked_crop,axis=1)[:,0]*4*np.pi*1e-3
+		power_out_peak_dist_sigma = np.nansum((np.transpose(np.array(covariance_out).T[:-2,:-2]*temp.T,axes=(1,0,2))*temp.T),axis=(0,1))**0.5
+		temp = np.array([(grid_resolution*1e-2)**2 * 2*np.pi*np.mean(grid_data_masked_crop,axis=1)[:,0]*4*np.pi*1e-3]*len(covariance_out))
+		power_out_all_sigma = np.nansum((np.transpose(np.array(covariance_out).T[:-2,:-2]*temp.T,axes=(1,0,2))*temp.T),axis=(0,1))**0.5
+
+
+	return recompose_voxel_emissivity_input_all,recompose_voxel_emissivity_output_all,recompose_voxel_emissivity_difference_all,difference_sum,radiator_position_r_out,radiator_position_z_out,peak_radiator_position_r_out,peak_radiator_position_z_out,radiator_position_r_in,radiator_position_z_in,power_out_peak_dist,power_out_below_outside_x_point,power_out_all,power_in,grid_data_masked_crop,power_out_below_outside_x_point_sigma,power_out_peak_dist_sigma,power_out_all_sigma
+grid_resolution = 2e-2
+
+recompose_voxel_emissivity_input_all_1,recompose_voxel_emissivity_output_all_1,recompose_voxel_emissivity_difference_all_1,difference_sum_1,radiator_position_r_out_1,radiator_position_z_out_1,peak_radiator_position_r_out_1,peak_radiator_position_z_out_1,radiator_position_r_in_1,radiator_position_z_in_1,power_out_peak_dist_1,power_out_below_outside_x_point_1,power_out_all_1,power_in_1,grid_data_masked_crop_1,power_out_below_outside_x_point_sigma_1,power_out_peak_dist_sigma_1,power_out_all_sigma_1 = load_phantom_scan('1',laser_to_analyse_SXD)
+recompose_voxel_emissivity_input_all_2,recompose_voxel_emissivity_output_all_2,recompose_voxel_emissivity_difference_all_2,difference_sum_2,radiator_position_r_out_2,radiator_position_z_out_2,peak_radiator_position_r_out_2,peak_radiator_position_z_out_2,radiator_position_r_in_2,radiator_position_z_in_2,power_out_peak_dist_2,power_out_below_outside_x_point_2,power_out_all_2,power_in_2,grid_data_masked_crop_2,power_out_below_outside_x_point_sigma_2,power_out_peak_dist_sigma_2,power_out_all_sigma_2 = load_phantom_scan('1',laser_to_analyse_CD)
+recompose_voxel_emissivity_input_all_3,recompose_voxel_emissivity_output_all_3,recompose_voxel_emissivity_difference_all_3,difference_sum_3,radiator_position_r_out_3,radiator_position_z_out_3,peak_radiator_position_r_out_3,peak_radiator_position_z_out_3,radiator_position_r_in_3,radiator_position_z_in_3,power_out_peak_dist_3,power_out_below_outside_x_point_3,power_out_all_3,power_in_3,grid_data_masked_crop_3,power_out_below_outside_x_point_sigma_3,power_out_peak_dist_sigma_3,power_out_all_sigma_3 = load_phantom_scan('4',laser_to_analyse_CD)
+
+
+case=16
+plt.figure( figsize=(8, 8))
+# im = plt.imshow(np.flip(np.flip(np.flip(np.transpose(recompose_voxel_emissivity_input_all_1[case]*1e-3,(1,0)),axis=1),axis=1),axis=0),'rainbow',extent=[grid_data_masked_crop_1[:,:,0].min(),grid_data_masked_crop_1[:,:,0].max(),grid_data_masked_crop_1[:,:,1].min(),grid_data_masked_crop_1[:,:,1].max()],norm=LogNorm(),vmax=np.nanmax(recompose_voxel_emissivity_input_all_1[case])*1e-3,vmin=1e-2*np.nanmax(recompose_voxel_emissivity_input_all_1[case])*1e-3)
+im = plt.imshow(np.flip(np.flip(np.flip(np.transpose((recompose_voxel_emissivity_output_all_1)[case]*1e-3,(1,0)),axis=1),axis=1),axis=0),'rainbow',extent=[grid_data_masked_crop_1[:,:,0].min(),grid_data_masked_crop_1[:,:,0].max(),grid_data_masked_crop_1[:,:,1].min(),grid_data_masked_crop_1[:,:,1].max()],vmin=1e-3*np.nanmax(recompose_voxel_emissivity_output_all_1[case])*1e-3,vmax=np.nanmax(recompose_voxel_emissivity_output_all_1[case])*1e-3)
+# im = plt.imshow(np.flip(np.flip(np.flip(np.transpose(recompose_voxel_emissivity_difference_all_1[case]*1e-3,(1,0)),axis=1),axis=1),axis=0),'rainbow',extent=[grid_data_masked_crop_1[:,:,0].min(),grid_data_masked_crop_1[:,:,0].max(),grid_data_masked_crop_1[:,:,1].min(),grid_data_masked_crop_1[:,:,1].max()])#,norm=LogNorm(),vmax=np.nanmax(recompose_voxel_emissivity_input_all_1[case])*1e-3,vmin=1e-2*np.nanmax(recompose_voxel_emissivity_input_all_1[case])*1e-3)
+# plt.plot(radiator_position_r_in_1[case],radiator_position_z_in_1[case],'+k',markersize=20)
+plt.plot([radiator_position_r_in_1[case]-1.5*grid_resolution,radiator_position_r_in_1[case]-1.5*grid_resolution,radiator_position_r_in_1[case]+1.5*grid_resolution,radiator_position_r_in_1[case]+1.5*grid_resolution,radiator_position_r_in_1[case]-1.5*grid_resolution],[radiator_position_z_in_1[case]+1.5*grid_resolution,radiator_position_z_in_1[case]-1.5*grid_resolution,radiator_position_z_in_1[case]-1.5*grid_resolution,radiator_position_z_in_1[case]+1.5*grid_resolution,radiator_position_z_in_1[case]+1.5*grid_resolution],'k',markersize=20)
+# im = plt.imshow(np.flip(np.flip(np.flip(np.transpose(recompose_voxel_emissivity_input_all_2[case]*1e-3,(1,0)),axis=1),axis=1),axis=0),'rainbow',extent=[grid_data_masked_crop_2[:,:,0].min(),grid_data_masked_crop[:,:,0].max(),grid_data_masked_crop_2[:,:,1].min(),grid_data_masked_crop_2[:,:,1].max()],vmin=np.nanmin(recompose_voxel_emissivity_input_all_2[case])*1e-3,vmax=np.nanmax(recompose_voxel_emissivity_input_all_2[case])*1e-3)
+# plt.plot(radiator_position_r_in_2[case],radiator_position_z_in_2[case],'+k',markersize=20)
+# plt.plot(radiator_position_r_in_2, radiator_position_z_in_2, '--k')
 cb = plt.colorbar(im,fraction=0.035, pad=0.02).set_label('Emissivity kW/m^3')
 plt.plot(FULL_MASTU_CORE_GRID_POLYGON[:, 0], FULL_MASTU_CORE_GRID_POLYGON[:, 1], 'k')
-plt.plot(radiator_position_r_in_2, radiator_position_z_in_2, '--k')
+plt.plot(radiator_position_r_in_1, radiator_position_z_in_1, '--k',linewidth=4)
+plt.plot(radiator_position_r_in_2, radiator_position_z_in_2, '--g',linewidth=4)
+plt.plot(radiator_position_r_in_3, radiator_position_z_in_3, '--m',linewidth=4)
 plt.ylim(bottom=-2.1,top=-1.)
 plt.xlim(left=0.2,right=1.6)
-plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/phantom_example1.eps', bbox_inches='tight')
+plt.title('scan 1, case='+str(case)+'\n')
+# plt.pause(0.001)
+plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/phantom_example3.png', bbox_inches='tight')
 plt.close()
 
 plt.figure( figsize=(12, 12))
@@ -169,20 +211,20 @@ plt.close()
 
 
 plt.figure(figsize=(10,5))
-temp, = plt.plot(radiator_position_r_in_1,((radiator_position_r_in_1-peak_radiator_position_r_out_1)**2+(radiator_position_r_in_1-peak_radiator_position_r_out_1)**2)**0.5,label='SXD')
-plt.plot(radiator_position_r_in_1,((radiator_position_r_in_1-peak_radiator_position_r_out_1)**2+(radiator_position_r_in_1-peak_radiator_position_r_out_1)**2)**0.5,'+',color=temp.get_color())
-temp, = plt.plot(radiator_position_r_in_2,((radiator_position_r_in_2-peak_radiator_position_r_out_2)**2+(radiator_position_r_in_2-peak_radiator_position_r_out_2)**2)**0.5,label='CD')
-plt.plot(radiator_position_r_in_2,((radiator_position_r_in_2-peak_radiator_position_r_out_2)**2+(radiator_position_r_in_2-peak_radiator_position_r_out_2)**2)**0.5,'+',color=temp.get_color())
-temp, = plt.plot(radiator_position_r_in_3,((radiator_position_r_in_3-peak_radiator_position_r_out_3)**2+(radiator_position_r_in_3-peak_radiator_position_r_out_3)**2)**0.5,label='surf')
-plt.plot(radiator_position_r_in_3,((radiator_position_r_in_3-peak_radiator_position_r_out_3)**2+(radiator_position_r_in_3-peak_radiator_position_r_out_3)**2)**0.5,'+',color=temp.get_color())
-plt.axvline(x=0.795,color='k',linestyle='--',label='acceptable level')
+temp, = plt.plot(peak_radiator_position_r_out_1,((radiator_position_r_in_1-peak_radiator_position_r_out_1)**2+(radiator_position_r_in_1-peak_radiator_position_r_out_1)**2)**0.5,'k',label='SXD')
+plt.plot(peak_radiator_position_r_out_1,((radiator_position_r_in_1-peak_radiator_position_r_out_1)**2+(radiator_position_r_in_1-peak_radiator_position_r_out_1)**2)**0.5,'+',color=temp.get_color())
+temp, = plt.plot(peak_radiator_position_r_out_2,((radiator_position_r_in_2-peak_radiator_position_r_out_2)**2+(radiator_position_r_in_2-peak_radiator_position_r_out_2)**2)**0.5,'g',label='CD')
+plt.plot(peak_radiator_position_r_out_2,((radiator_position_r_in_2-peak_radiator_position_r_out_2)**2+(radiator_position_r_in_2-peak_radiator_position_r_out_2)**2)**0.5,'+',color=temp.get_color())
+temp, = plt.plot(peak_radiator_position_r_out_3,((radiator_position_r_in_3-peak_radiator_position_r_out_3)**2+(radiator_position_r_in_3-peak_radiator_position_r_out_3)**2)**0.5,'m',label='surf')
+plt.plot(peak_radiator_position_r_out_3,((radiator_position_r_in_3-peak_radiator_position_r_out_3)**2+(radiator_position_r_in_3-peak_radiator_position_r_out_3)**2)**0.5,'+',color=temp.get_color())
+# plt.axvline(x=0.79,color='b',linestyle='--',label='acceptable level')
 plt.axhline(y=0.02,color='r',linestyle='--',label='grid resolution')
 plt.legend(loc='best', fontsize='small')
-plt.xlabel('phanrom radii [m]')
+plt.xlabel('radius of peak of the inverted emissivity [m]')
 plt.ylabel('movement of the peak radiation [m]')
 plt.grid()
 # plt.pause(0.01)
-plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/position_error.eps', bbox_inches='tight')
+plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/position_error.png', bbox_inches='tight')
 plt.close()
 
 plt.figure(figsize=(10,10))
@@ -210,9 +252,9 @@ plt.close()
 plt.figure(figsize=(10,10))
 # plt.plot(radiator_position_r_out,radiator_position_z_out,'r')
 # plt.plot(radiator_position_r_out,radiator_position_z_out,'+r')
-temp, = plt.plot(radiator_position_r_in_1,radiator_position_z_in_1)
-temp, = plt.plot(radiator_position_r_in_2,radiator_position_z_in_2)
-temp, = plt.plot(radiator_position_r_in_3,radiator_position_z_in_3)
+temp, = plt.plot(radiator_position_r_in_1,radiator_position_z_in_1,'--k',alpha=0.5)
+temp, = plt.plot(radiator_position_r_in_2,radiator_position_z_in_2,'--g',alpha=0.5)
+temp, = plt.plot(radiator_position_r_in_3,radiator_position_z_in_3,'--m',alpha=0.5)
 # plt.plot(radiator_position_r_in_1,radiator_position_z_in_1,'+b')
 # plt.plot(peak_radiator_position_r_out,peak_radiator_position_z_out,'y')
 # plt.plot(peak_radiator_position_r_out,peak_radiator_position_z_out,'+y')
@@ -220,29 +262,40 @@ temp, = plt.plot(radiator_position_r_in_3,radiator_position_z_in_3)
 # 	plt.plot([peak_radiator_position_r_out[i],radiator_position_r_in[i]],[peak_radiator_position_z_out[i],radiator_position_z_in[i]],'--k')
 for i in np.arange(len(radiator_position_r_out_1)):
 	if ((peak_radiator_position_r_out_1[i]-radiator_position_r_in_1[i])**2+(peak_radiator_position_z_out_1[i]-radiator_position_z_in_1[i])**2)**0.5>0.02:
-		plt.plot(radiator_position_r_in_1[i],radiator_position_z_in_1[i],'ok',alpha=0.5,markersize=3)
-		plt.arrow(radiator_position_r_in_1[i],radiator_position_z_in_1[i],(peak_radiator_position_r_out_1[i]-radiator_position_r_in_1[i]),(peak_radiator_position_z_out_1[i]-radiator_position_z_in_1[i]), head_width=0.01, head_length=0.02, fc='k', ec='k',ls='--',length_includes_head=True,alpha=0.5)
+		plt.plot(radiator_position_r_in_1[i],radiator_position_z_in_1[i],'ok',alpha=1,markersize=7,fillstyle='none')
+		plt.plot(peak_radiator_position_r_out_1[i],peak_radiator_position_z_out_1[i],'xk',alpha=1,markersize=7,fillstyle='none')
+		temp = ((radiator_position_r_in_1[i]-peak_radiator_position_r_out_1[i])**2 + (radiator_position_z_in_1[i]-peak_radiator_position_z_out_1[i])**2)**0.5
+		plt.arrow(radiator_position_r_in_1[i],radiator_position_z_in_1[i],(peak_radiator_position_r_out_1[i]-radiator_position_r_in_1[i]),(peak_radiator_position_z_out_1[i]-radiator_position_z_in_1[i]), head_width=min(0.02,temp*0.9), head_length=min(0.03,temp*1), fc='k', ec='k',ls='-',length_includes_head=True,alpha=0.4,linewidth=1)
 for i in np.arange(len(radiator_position_r_out_2)):
 	if ((peak_radiator_position_r_out_2[i]-radiator_position_r_in_2[i])**2+(peak_radiator_position_z_out_2[i]-radiator_position_z_in_2[i])**2)**0.5>0.02:
-		plt.plot(radiator_position_r_in_2[i],radiator_position_z_in_2[i],'ok',alpha=0.5,markersize=3)
-		plt.arrow(radiator_position_r_in_2[i],radiator_position_z_in_2[i],(peak_radiator_position_r_out_2[i]-radiator_position_r_in_2[i]),(peak_radiator_position_z_out_2[i]-radiator_position_z_in_2[i]), head_width=0.01, head_length=0.02, fc='k', ec='k',ls='--',length_includes_head=True,alpha=0.5)
+		plt.plot(radiator_position_r_in_2[i],radiator_position_z_in_2[i],'og',alpha=1,markersize=7,fillstyle='none')
+		plt.plot(peak_radiator_position_r_out_2[i],peak_radiator_position_z_out_2[i],'xg',alpha=1,markersize=7,fillstyle='none')
+		temp = ((radiator_position_r_in_2[i]-peak_radiator_position_r_out_2[i])**2 + (radiator_position_z_in_2[i]-peak_radiator_position_z_out_2[i])**2)**0.5
+		plt.arrow(radiator_position_r_in_2[i],radiator_position_z_in_2[i],(peak_radiator_position_r_out_2[i]-radiator_position_r_in_2[i]),(peak_radiator_position_z_out_2[i]-radiator_position_z_in_2[i]), head_width=min(0.02,temp*0.9), head_length=min(0.03,temp*1), fc='k', ec='k',ls='-',length_includes_head=True,alpha=0.4,linewidth=1)
 for i in np.arange(len(radiator_position_r_out_3)):
 	if ((peak_radiator_position_r_out_3[i]-radiator_position_r_in_3[i])**2+(peak_radiator_position_z_out_3[i]-radiator_position_z_in_3[i])**2)**0.5>0.02:
-		plt.plot(radiator_position_r_in_3[i],radiator_position_z_in_3[i],'ok',alpha=0.5,markersize=3)
-		plt.arrow(radiator_position_r_in_3[i],radiator_position_z_in_3[i],(peak_radiator_position_r_out_3[i]-radiator_position_r_in_3[i]),(peak_radiator_position_z_out_3[i]-radiator_position_z_in_3[i]), head_width=0.01, head_length=0.02, fc='k', ec='k',ls='--',length_includes_head=True,alpha=0.5)
+		plt.plot(radiator_position_r_in_3[i],radiator_position_z_in_3[i],'om',alpha=1,markersize=7,fillstyle='none')
+		plt.plot(peak_radiator_position_r_out_3[i],peak_radiator_position_z_out_3[i],'xm',alpha=1,markersize=7,fillstyle='none')
+		temp = ((radiator_position_r_in_3[i]-peak_radiator_position_r_out_3[i])**2 + (radiator_position_z_in_3[i]-peak_radiator_position_z_out_3[i])**2)**0.5
+		plt.arrow(radiator_position_r_in_3[i],radiator_position_z_in_3[i],(peak_radiator_position_r_out_3[i]-radiator_position_r_in_3[i]),(peak_radiator_position_z_out_3[i]-radiator_position_z_in_3[i]), head_width=min(0.02,temp*0.9), head_length=min(0.03,temp*1), fc='k', ec='k',ls='-',length_includes_head=True,alpha=0.4,linewidth=1)
 	# plt.plot([radiator_position_r_out[i],radiator_position_r_in[i]],[radiator_position_z_out[i],radiator_position_z_in[i]],'--r')
 plt.plot(_MASTU_CORE_GRID_POLYGON[:, 0], _MASTU_CORE_GRID_POLYGON[:, 1], 'k',label='peak radiation movement')
 # temp = np.abs(radiator_position_r_in_1-0.70).argmin()
-plt.plot([0.695,0.695,0.695+0.5],[-1.42-0.5,-1.42,-1.42],'--r',label='limit for power')
+# plt.plot([0.695,0.695,0.695+0.5],[-1.42-0.5,-1.42,-1.42],'--r',label='limit for power')
 # temp = np.abs(radiator_position_r_in_1-0.79).argmin()
-plt.plot([0.795,0.795,0.795+0.5],[-1.625-0.5,-1.625,-1.625],'--k',label='limit for shape')
+# plt.plot([0.795,0.795,0.795+0.5],[-1.625-0.5,-1.625,-1.625],'--k',label='limit for shape')
+# plt.plot([0.8,0.8,0.8+0.5],[-1.625-0.5,-1.625,-1.625],'--k',label='limit for shape')
+plt.plot([0.76,0.95],[-1.83,-1.55],'--b',label='limit for shape')
+
+
+
 ax = plt.gca() #you first need to get the axis handle
 ax.set_aspect(1)
-plt.ylim(bottom=-1.85,top=-1.3)
-plt.xlim(left=0.6,right=0.9)
+plt.ylim(bottom=-2.1,top=-1.1)
+plt.xlim(left=0.55,right=1.45)
 plt.legend(loc='best', fontsize='small')
 # plt.pause(0.01)
-plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/radiation_modement.eps', bbox_inches='tight')
+plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/radiation_movement.png', bbox_inches='tight')
 plt.close()
 
 
@@ -269,27 +322,31 @@ plt.pause(0.01)
 plt.figure(figsize=(10,5))
 # plt.plot(radiator_position_r_in,power_out_all,label='total output')
 # plt.plot(radiator_position_r_in,power_out_peak_dist,label='output within 0.1m of peak')
-p1, = plt.plot(radiator_position_r_in_1,power_in_1,label='input')
-plt.plot(radiator_position_r_in_1,power_in_1,'+',color=p1.get_color())
-plt.plot(radiator_position_r_in_1,power_out_below_outside_x_point_1,'--',color=p1.get_color(),label='output below/outsode x-point')
-plt.plot(radiator_position_r_in_1,power_out_below_outside_x_point_1,'+',color=p1.get_color(),label='SXD')
+# p1, = plt.plot(radiator_position_r_in_1,(power_in_1-power_in_1)/power_in_1,label='input')
+# plt.plot(radiator_position_r_in_1,(power_in_1-power_in_1)/power_in_1,'+',color=p1.get_color())
+# p1, = plt.plot(radiator_position_r_in_1,100*(power_out_below_outside_x_point_1-power_in_1)/power_in_1,'-k',label='SXD')#,label='output below/outsode x-point')
+# plt.plot(radiator_position_r_in_1,100*(power_out_below_outside_x_point_1-power_in_1)/power_in_1,'+',color=p1.get_color())
+plt.errorbar(radiator_position_r_in_1,100*(power_out_below_outside_x_point_1-power_in_1)/power_in_1,yerr=100*power_out_below_outside_x_point_sigma_1/power_in_1,color='k',capsize=5,label='SXD')#,label='output below/outsode x-point')
 
-p1, = plt.plot(radiator_position_r_in_2,power_in_2)
-plt.plot(radiator_position_r_in_2,power_in_2,'+',color=p1.get_color())
-plt.plot(radiator_position_r_in_2,power_out_below_outside_x_point_2,'--',color=p1.get_color())
-plt.plot(radiator_position_r_in_2,power_out_below_outside_x_point_2,'+',color=p1.get_color(),label='CD')
+# p1, = plt.plot(radiator_position_r_in_2,(power_in_2-power_in_2)/power_in_2)
+# plt.plot(radiator_position_r_in_2,(power_in_2-power_in_2)/power_in_2,'+',color=p1.get_color())
+# p1, = plt.plot(radiator_position_r_in_2,100*(power_out_below_outside_x_point_2-power_in_2)/power_in_2,'-g',label='CD')
+# plt.plot(radiator_position_r_in_2,100*(power_out_below_outside_x_point_2-power_in_2)/power_in_2,'+',color=p1.get_color())
+plt.errorbar(radiator_position_r_in_2,100*(power_out_below_outside_x_point_2-power_in_2)/power_in_2,yerr=100*power_out_below_outside_x_point_sigma_2/power_in_2,color='g',capsize=5,label='CD')
 
-p1, = plt.plot(radiator_position_r_in_3,power_in_3)
-plt.plot(radiator_position_r_in_3,power_in_3,'+',color=p1.get_color())
-plt.plot(radiator_position_r_in_3,power_out_below_outside_x_point_3,'--',color=p1.get_color())
-plt.plot(radiator_position_r_in_3,power_out_below_outside_x_point_3,'+',color=p1.get_color(),label='surf')
+# p1, = plt.plot(radiator_position_r_in_3,(power_in_3-power_in_3)/power_in_3)
+# plt.plot(radiator_position_r_in_3,(power_in_3-power_in_3)/power_in_3,'+',color=p1.get_color())
+# p1, = plt.plot(radiator_position_r_in_3,100*(power_out_below_outside_x_point_3-power_in_3)/power_in_3,'-m',label='surf')
+# plt.plot(radiator_position_r_in_3,100*(power_out_below_outside_x_point_3-power_in_3)/power_in_3,'+',color=p1.get_color())
+plt.errorbar(radiator_position_r_in_3,100*(power_out_below_outside_x_point_3-power_in_3)/power_in_3,yerr=100*power_out_below_outside_x_point_sigma_3/power_in_3,color='m',capsize=5,label='surf')
 
-plt.axvline(x=0.695,color='k',linestyle='--',label='acceptable level')
+# plt.axvline(x=0.695,color='r',linestyle='--',label='acceptable level')
+plt.axhline(y=0,color='k',linestyle='--')
 plt.legend(loc='best', fontsize='small')
-plt.xlabel('phanrom radii [m]')
-plt.ylabel('power [kW]')
+plt.xlabel('phantom radii [m]')
+plt.ylabel('power error [%]')
 plt.grid()
-plt.ylim(bottom=0)
+# plt.ylim(bottom=0)
 # plt.pause(0.01)
 plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/power_error.png', bbox_inches='tight')
 plt.close()
@@ -314,7 +371,7 @@ plt.plot(radiator_position_r_in_3,np.abs((power_out_below_outside_x_point_3-powe
 
 plt.axvline(x=0.695,color='k',linestyle='--',label='acceptable level')
 plt.legend(loc='best', fontsize='small')
-plt.xlabel('phanrom radii [m]')
+plt.xlabel('phantom radii [m]')
 plt.ylabel('power error [%]')
 plt.grid()
 plt.ylim(bottom=0)

@@ -12,16 +12,21 @@ exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_import_pc.py").
 #this is for importing all the variables names and which are the files
 exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_indexing.py").read())
 
+# just to import _MASTU_CORE_GRID_POLYGON
+calculate_tangency_angle_for_poloidal_section=coleval.calculate_tangency_angle_for_poloidal_section
+exec(open("/home/ffederic/work/analysis_scripts/scripts/python_library/collect_and_eval/collect_and_eval/MASTU_structure.py").read())
 
 
 
 
 
 if False:	# related to the SOLPS phantom
-	mastu_path = "/home/ffederic/work/SOLPS/seeding/seed_10"
+	mastu_path = "/home/ffederic/work/SOLPS/seeding/seed_1"
+	# mastu_path = "/home/ffederic/work/SOLPS/dscan/ramp_10"
 	if not mastu_path in sys.path:
 		sys.path.append(mastu_path)
-	ds_puff8 = xr.open_dataset('/home/ffederic/work/SOLPS/seeding/seed_10/balance.nc', autoclose=True).load()
+	ds_puff8 = xr.open_dataset('/home/ffederic/work/SOLPS/seeding/seed_1/balance.nc', autoclose=True).load()
+	# ds_puff8 = xr.open_dataset('/home/ffederic/work/SOLPS/dscan/ramp_10/balance.nc', autoclose=True).load()
 
 	grid_x = ds_puff8.crx.mean(dim='4')
 	grid_y = ds_puff8.cry.mean(dim='4')
@@ -52,6 +57,189 @@ if False:	# related to the SOLPS phantom
 	plt.plot(x,y_,'k')
 	plt.plot(FULL_MASTU_CORE_GRID_POLYGON[:, 0], FULL_MASTU_CORE_GRID_POLYGON[:, 1], 'k')
 	# plt.show()
+
+
+
+
+
+
+
+
+	# Copyright 2014-2017 United Kingdom Atomic Energy Authority
+	#
+	# Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the
+	# European Commission - subsequent versions of the EUPL (the "Licence");
+	# You may not use this work except in compliance with the Licence.
+	# You may obtain a copy of the Licence at:
+	#
+	# https://joinup.ec.europa.eu/software/page/eupl5
+	#
+	# Unless required by applicable law or agreed to in writing, software distributed
+	# under the Licence is distributed on an "AS IS" basis, WITHOUT WARRANTIES OR
+	# CONDITIONS OF ANY KIND, either express or implied.
+	#
+	# See the Licence for the specific language governing permissions and limitations
+	# under the Licence.
+
+	import matplotlib.pyplot as plt
+	import numpy as np
+
+	from cherab.core.atomic.elements import carbon, deuterium, nitrogen
+	from cherab.solps import load_solps_from_balance
+
+	plt.ion()
+
+	xl, xu = (0.0, 2.0)
+	yl, yu = (-2.0, 2.0)
+
+	print('CHERAB solps_from_balance demo')
+	print('Note: code assumes presence of deuterium and carbon species in SOLPS run')
+	print('Enter name of balance.nc file:')
+	filename = input()
+
+	sim = load_solps_from_balance(filename)
+	plasma = sim.create_plasma()
+	mesh = sim.mesh
+
+	d0 = plasma.composition.get(deuterium, 0)
+	d1 = plasma.composition.get(deuterium, 1)
+	c0 = plasma.composition.get(carbon, 0)
+	c1 = plasma.composition.get(carbon, 1)
+	c2 = plasma.composition.get(carbon, 2)
+	c3 = plasma.composition.get(carbon, 3)
+	c4 = plasma.composition.get(carbon, 4)
+	c5 = plasma.composition.get(carbon, 5)
+	c6 = plasma.composition.get(carbon, 6)
+	n0 = plasma.composition.get(nitrogen, 0)
+	n1 = plasma.composition.get(nitrogen, 1)
+	n2 = plasma.composition.get(nitrogen, 2)
+	n3 = plasma.composition.get(nitrogen, 3)
+	n4 = plasma.composition.get(nitrogen, 4)
+	n5 = plasma.composition.get(nitrogen, 5)
+	n6 = plasma.composition.get(nitrogen, 6)
+	n7 = plasma.composition.get(nitrogen, 7)
+
+	te_samples = np.zeros((500, 500))
+	ne_samples = np.zeros((500, 500))
+	d0_samples = np.zeros((500, 500))
+	d1_samples = np.zeros((500, 500))
+	c0_samples = np.zeros((500, 500))
+	c1_samples = np.zeros((500, 500))
+	c2_samples = np.zeros((500, 500))
+	c3_samples = np.zeros((500, 500))
+	c4_samples = np.zeros((500, 500))
+	c5_samples = np.zeros((500, 500))
+	c6_samples = np.zeros((500, 500))
+	n0_samples = np.zeros((500, 500))
+	n1_samples = np.zeros((500, 500))
+	n2_samples = np.zeros((500, 500))
+	n3_samples = np.zeros((500, 500))
+	n4_samples = np.zeros((500, 500))
+	n5_samples = np.zeros((500, 500))
+	n6_samples = np.zeros((500, 500))
+	n7_samples = np.zeros((500, 500))
+	xrange = np.linspace(xl, xu, 500)
+	yrange = np.linspace(yl, yu, 500)
+
+
+
+	for i, x in enumerate(xrange):
+	    for j, y in enumerate(yrange):
+	        ne_samples[j, i] = plasma.electron_distribution.density(x, 0.0, y)
+	        te_samples[j, i] = plasma.electron_distribution.effective_temperature(x, 0.0, y)
+	        d0_samples[j, i] = d0.distribution.density(x, 0.0, y)
+	        d1_samples[j, i] = d1.distribution.density(x, 0.0, y)
+	        c0_samples[j, i] = c0.distribution.density(x, 0.0, y)
+	        c1_samples[j, i] = c1.distribution.density(x, 0.0, y)
+	        c2_samples[j, i] = c2.distribution.density(x, 0.0, y)
+	        c3_samples[j, i] = c3.distribution.density(x, 0.0, y)
+	        c4_samples[j, i] = c4.distribution.density(x, 0.0, y)
+	        c5_samples[j, i] = c5.distribution.density(x, 0.0, y)
+	        c6_samples[j, i] = c6.distribution.density(x, 0.0, y)
+	        n0_samples[j, i] = n0.distribution.density(x, 0.0, y)
+	        n1_samples[j, i] = n1.distribution.density(x, 0.0, y)
+	        n2_samples[j, i] = n2.distribution.density(x, 0.0, y)
+	        n3_samples[j, i] = n3.distribution.density(x, 0.0, y)
+	        n4_samples[j, i] = n4.distribution.density(x, 0.0, y)
+	        n5_samples[j, i] = n5.distribution.density(x, 0.0, y)
+	        n6_samples[j, i] = n6.distribution.density(x, 0.0, y)
+	        n7_samples[j, i] = n7.distribution.density(x, 0.0, y)
+
+
+	from raysect.optical import Ray,Spectrum,World
+	world = World()
+	plasma.parent=world
+	from cherab.mastu.machine import MASTU_FULL_MESH
+	import os
+	from raysect.primitive import import_stl, Sphere, Mesh, Cylinder
+	from raysect.optical.material.absorber import AbsorbingSurface
+
+
+	# for cad_file in MASTU_FULL_MESH:
+	# 	directory, filename = os.path.split(cad_file[0])
+	# 	name, ext = filename.split('.')
+	# 	print("importing {} ...".format(filename))
+	# 	Mesh.from_file(cad_file[0], parent=world, material=AbsorbingSurface(), name=name)
+	from cherab.mastu.machine import import_mastu_mesh
+	import_mastu_mesh(world)
+
+	from raysect.core.math import Point2D, Point3D, Vector3D, rotate_z, translate, rotate_basis
+	ray = Ray(origin=Point3D(-1.5,0,0),direction=Vector3D(1,0,0),min_wavelength=1,max_wavelength=600,bins=600)
+
+	from cherab.openadas import OpenADAS
+	plasma.atomic_data = OpenADAS(permit_extrapolation=True)
+
+	from cherab.core.model import ExcitationLine,RecombinationLine,Bremsstrahlung
+	from cherab.core.atomic import Line
+
+	# line = Line(carbon, 5,(2,1))	# loop on the destination state and start state for every ionisation level
+	# model = ExcitationLine(line)
+	# plasma.models.add(model)
+	#
+	#
+	# line = Line(carbon, 5,(2,1))	# loop on the destination state for every ionisation level
+	# model = RecombinationLine(line)
+	# plasma.models.add(model)
+
+	line = Line(deuterium, 0,(2,1))	# loop on the destination state and start state for every ionisation level
+	model = ExcitationLine(line)
+	plasma.models.add(model)
+
+
+	plasma.models.add(Bremsstrahlung())
+
+	spectrum = ray.trace(world)
+
+	plt.figure()
+	plt.plot(spectrum.wavelengths,spectrum.samples)
+
+
+
+	# I need to add the core
+
+
+	# ask omkar, what it is the G file you used for this simulations
+	create equilibrium object
+	from cherab.tools.equilibrium import import_eqdisk
+	eq = import_eqdisk(filename of g file)
+
+	from cherab.core import Plasma
+	plasma_core = Plasma()
+	plasma_core.parent=world
+
+
+	temperature_3D = eq.map3d(psy,temp)	# same 3d
+
+	from cherab.core import Maxwellian
+	bulk_velocity = Vector3D(0,0,0)
+	atomic_mass = deuterium.mass_number
+	d1_distribution = Maxwellian(density_3D, temperature_3D,bulk_velocity, atomic_mass)
+	d1_species = Species(deuterium, 1, d1_distribution)
+	plasma.composition.add(d1_species)
+
+	help(Plasma)
+
+
 else:
 	pass
 

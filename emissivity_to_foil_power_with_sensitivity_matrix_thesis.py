@@ -85,6 +85,7 @@ except:
 	full_saved_file_dict_FAST['multi_instrument'] = dict([])
 
 try:
+	temporary = gna___
 	try:
 		full_saved_file_dict_FAST['second_pass'] = full_saved_file_dict_FAST['second_pass'].all()
 		inverted_dict = full_saved_file_dict_FAST['second_pass']['inverted_dict']
@@ -124,7 +125,7 @@ foil_size = [0.07,0.09]
 structure_alpha=0.5
 
 i_t = 18
-start_from_pantom_from_emissivity = False
+start_from_pantom_from_emissivity = True
 use_phantom_from_SOLPS = False
 SART_inversion = False
 override_phantom = False
@@ -273,6 +274,15 @@ select = np.max(grid_laplacian_masked_crop_temp,axis=0)<2.9
 grid_laplacian_masked_crop_temp = coleval.build_laplacian(grid_data_masked_crop,cells_to_exclude=select)
 select = np.max(grid_laplacian_masked_crop_temp,axis=0)<2.9
 sensitivities_binned_crop,grid_laplacian_masked_crop,grid_data_masked_crop,grid_Z_derivate_masked_crop,grid_R_derivate_masked_crop = coleval.reduce_voxels(sensitivities_binned_crop,grid_laplacian_masked_crop,grid_data_masked_crop,sum_treshold=0,std_treshold = 0,restrict_polygon=[],chop_corner_close_to_baffle=False,cells_to_exclude=select)
+selected_edge_cells_for_laplacian = np.sum(sensitivities_binned_crop,axis=(0,1))>np.sum(sensitivities_binned_crop,axis=(0,1)).max()*0.2
+grid_laplacian_masked_crop_temp = coleval.build_laplacian(grid_data_masked_crop,cells_to_exclude=selected_edge_cells_for_laplacian)
+select = np.max(grid_laplacian_masked_crop_temp,axis=0)<2.9
+grid_laplacian_masked_crop_temp = coleval.build_laplacian(grid_data_masked_crop,cells_to_exclude=select)
+select = np.max(grid_laplacian_masked_crop_temp,axis=0)<2.9
+grid_laplacian_masked_crop_temp = coleval.build_laplacian(grid_data_masked_crop,cells_to_exclude=select)
+select = np.logical_and(np.max(grid_laplacian_masked_crop_temp,axis=0)<2.9,np.logical_not(selected_edge_cells_for_laplacian))
+sensitivities_binned_crop,grid_laplacian_masked_crop,grid_data_masked_crop,grid_Z_derivate_masked_crop,grid_R_derivate_masked_crop = coleval.reduce_voxels(sensitivities_binned_crop,grid_laplacian_masked_crop,grid_data_masked_crop,sum_treshold=0,std_treshold = 0,restrict_polygon=[],chop_corner_close_to_baffle=False,cells_to_exclude=select)
+selected_edge_cells_for_laplacian = selected_edge_cells_for_laplacian[np.logical_not(select)]
 
 selected_super_x_cells = np.logical_and(np.mean(grid_data_masked_crop,axis=1)[:,0]>0.85,np.mean(grid_data_masked_crop,axis=1)[:,1]<-1.65)
 # select_foil_region_with_plasma = (np.sum(sensitivities_binned_crop,axis=-1)>1e-3)	# this does not work if you change the ROI
@@ -319,7 +329,7 @@ if False:
 	selected_cells_to_exclude = np.zeros_like(selected_edge_cells_for_laplacian)
 
 else:	# strange thing. I want less regularisation where the sensitivity is much higher than the rest of the image
-	selected_edge_cells_for_laplacian = np.sum(sensitivities_binned_crop,axis=(0,1))>np.sum(sensitivities_binned_crop,axis=(0,1)).max()*0.2
+	# selected_edge_cells_for_laplacian = np.sum(sensitivities_binned_crop,axis=(0,1))>np.sum(sensitivities_binned_crop,axis=(0,1)).max()*0.2
 	grid_laplacian_masked_crop = coleval.build_laplacian(grid_data_masked_crop,cells_to_exclude=selected_edge_cells_for_laplacian)
 	grid_Z_derivate_masked_crop = coleval.build_Z_derivate(grid_data_masked_crop,cells_to_exclude=selected_edge_cells_for_laplacian)
 	grid_R_derivate_masked_crop = coleval.build_R_derivate(grid_data_masked_crop,cells_to_exclude=selected_edge_cells_for_laplacian)
@@ -551,7 +561,7 @@ if start_from_pantom_from_emissivity:
 
 
 	try:
-		full_saved_file_dict_FAST = np.load(laser_to_analyse[:-4]+'_FAST'+'.npz')
+		full_saved_file_dict_FAST = np.load(laser_to_analyse[:-4]+'_FAST'+'.npz',allow_pickle=True)
 		full_saved_file_dict_FAST.allow_pickle=True
 		full_saved_file_dict_FAST = dict(full_saved_file_dict_FAST)
 		full_saved_file_dict_FAST[type_of_test] = full_saved_file_dict_FAST[type_of_test].all()
@@ -579,14 +589,14 @@ if start_from_pantom_from_emissivity:
 
 		dt = 1/383*2	# the *2 from the 2 digitizers that were averaged
 		dx=foil_position_dict['foilhorizw']/foil_position_dict['foilhorizwpixel']
-		proportional = 1.203672266998437e-13
-		additive = 1689.849903379957
+		proportional = 3.4e-14
+		additive = 1600
 		params_BB = np.ones((*(sensitivities_reshaped.shape[:-1]),2))
 		params_BB[:,:,0] = proportional
 		params_BB[:,:,1] = additive
 		errparams_BB = np.zeros((*np.shape(params_BB),2))
 		errparams_BB[:,:,:,0] = 6.435877532718499e-35
-		photon_dict = coleval.calc_interpolators_BB(wavewlength_top=5,wavelength_bottom=2.5,inttime=2)
+		photon_dict = coleval.calc_interpolators_BB(wavewlength_top=5.1,wavelength_bottom=1.5,inttime=2)
 
 		temperature_evolution_with_noise,temperature_std_crop,peak_oscillation_freq,ref_temperature,counts_full_resolution_std,time_full_res_int = coleval.calculate_temperature_from_phantom2(phantom_int,grid_data_masked_crop,grid_data,sensitivities_reshaped,params_BB,errparams_BB,dt,dx,foil_position_dict,diffusivity,thickness,emissivity,Ptthermalconductivity,photon_dict,shrink_factor_t)
 
@@ -755,7 +765,7 @@ else:
 
 	print(np.shape(sensitivities_binned_crop))
 
-	x_optimal_all,recompose_voxel_emissivity_all,y_opt_all,opt_info_all,voxels_centre,recompose_voxel_emissivity_excluded_all = coleval.loop_fit_over_regularisation(prob_and_gradient,regolarisation_coeff_range,guess,grid_data_masked_crop,powernoback,sigma_powernoback,sigma_emissivity,x_optimal_all_guess=guess,factr=1e10,excluded_cells = selected_edge_cells_for_laplacian)
+	x_optimal_all,recompose_voxel_emissivity_all,y_opt_all,opt_info_all,voxels_centre,recompose_voxel_emissivity_excluded_all = coleval.loop_fit_over_regularisation(prob_and_gradient,regolarisation_coeff_range,guess,grid_data_masked_crop,powernoback,sigma_powernoback,sigma_emissivity,x_optimal_all_guess=guess,factr=1e9,excluded_cells = selected_edge_cells_for_laplacian)
 	# if first_guess == []:
 
 	print(np.shape(x_optimal_all))
@@ -789,7 +799,7 @@ exit()
 
 
 
-full_saved_file_dict_FAST = np.load(laser_to_analyse[:-4]+'_FAST'+'.npz')
+full_saved_file_dict_FAST = np.load(laser_to_analyse[:-4]+'_FAST'+'.npz',allow_pickle=True)
 full_saved_file_dict_FAST.allow_pickle=True
 full_saved_file_dict_FAST = dict(full_saved_file_dict_FAST)
 
@@ -1075,13 +1085,8 @@ else:
 		# plt.pause(0.01)
 		plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/inversion_comparison_foil_power_excluded_'+type_of_test+'-'+type_of_inversion+'.png', bbox_inches='tight')
 		plt.close()
-
-	args = [powernoback_full_orig.flatten(),sigma_powernoback_full.flatten(),sigma_emissivity,regolarisation_coeff,(sigma_powernoback_full.flatten())**2,sigma_emissivity**2]
-	hessian=calc_hessian(x_optimal_Bayes,*args)
-	covariance = np.linalg.inv(hessian)
-	correlation = ((covariance/(np.diag(covariance)**0.5)).T/(np.diag(covariance)**0.5)).T
-	x_optimal_Bayes_sigma = np.diag(covariance)**0.5
-	trash,recompose_voxel_Bayes_sigma = coleval.translate_emissivity_profile_with_homo_temp(np.mean(grid_data_masked_crop,axis=1),np.array((x_optimal_Bayes_sigma[:-2]*np.logical_not(selected_edge_cells_for_laplacian)).tolist()+[0]+[0]),np.mean(grid_data_masked_crop,axis=1))
+	else:
+		pass
 
 	plt.figure(figsize=(8,6))
 	plt.plot(score_x_orig,score_y_orig)
@@ -1117,13 +1122,19 @@ else:
 	plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/inversion_comparison_L_curve_curvature_'+type_of_test+'-'+type_of_inversion+'.png', bbox_inches='tight')
 	plt.close()
 
+	args = [powernoback_full_orig.flatten(),sigma_powernoback_full.flatten(),sigma_emissivity,regolarisation_coeff,(sigma_powernoback_full.flatten())**2,sigma_emissivity**2]
+	hessian=calc_hessian(x_optimal_Bayes,*args)
+	covariance = np.linalg.inv(hessian)
+	correlation = ((covariance/(np.diag(covariance)**0.5)).T/(np.diag(covariance)**0.5)).T
+	x_optimal_Bayes_sigma = np.diag(covariance)**0.5
+	trash,recompose_voxel_Bayes_sigma = coleval.translate_emissivity_profile_with_homo_temp(np.mean(grid_data_masked_crop,axis=1),np.array((x_optimal_Bayes_sigma[:-2]*np.logical_not(selected_edge_cells_for_laplacian)).tolist()+[0]+[0]),np.mean(grid_data_masked_crop,axis=1))
 
 if phantom_int == []:
 	recompose_voxel_emissivity_phantom = np.mean([recompose_voxel_emissivity_SART,recompose_voxel_emissivity_Bayes],axis=0)
 plt.figure(figsize=(6,8))
-plt.imshow(np.flip(np.flip(np.flip(np.transpose(recompose_voxel_emissivity_SART,(1,0)),axis=1),axis=1),axis=0)*1e-3,'rainbow',extent=[grid_data_masked_crop[:,:,0].min(),grid_data_masked_crop[:,:,0].max(),grid_data_masked_crop[:,:,1].min(),grid_data_masked_crop[:,:,1].max()],vmin=np.nanmin(recompose_voxel_emissivity_phantom)*1e-3,vmax=np.nanmax(recompose_voxel_emissivity_phantom)*1e-3)
+# plt.imshow(np.flip(np.flip(np.flip(np.transpose(recompose_voxel_emissivity_SART,(1,0)),axis=1),axis=1),axis=0)*1e-3,'rainbow',extent=[grid_data_masked_crop[:,:,0].min(),grid_data_masked_crop[:,:,0].max(),grid_data_masked_crop[:,:,1].min(),grid_data_masked_crop[:,:,1].max()],vmin=np.nanmin(recompose_voxel_emissivity_phantom)*1e-3,vmax=np.nanmax(recompose_voxel_emissivity_phantom)*1e-3)
 # plt.imshow(np.flip(np.flip(np.flip(np.transpose(recompose_voxel_emissivity_SART_excluded,(1,0)),axis=1),axis=1),axis=0)*1e-3,'rainbow',extent=[grid_data_masked_crop[:,:,0].min(),grid_data_masked_crop[:,:,0].max(),grid_data_masked_crop[:,:,1].min(),grid_data_masked_crop[:,:,1].max()])#,vmin=np.nanmin(recompose_voxel_emissivity_phantom)*1e-3,vmax=np.nanmax(recompose_voxel_emissivity_phantom)*1e-3)
-# plt.imshow(np.flip(np.flip(np.flip(np.transpose(recompose_voxel_emissivity_SART+recompose_voxel_emissivity_SART_excluded,(1,0)),axis=1),axis=1),axis=0)*1e-3,'rainbow',extent=[grid_data_masked_crop[:,:,0].min(),grid_data_masked_crop[:,:,0].max(),grid_data_masked_crop[:,:,1].min(),grid_data_masked_crop[:,:,1].max()],norm=LogNorm(),vmin=recompose_voxel_emissivity_phantom[recompose_voxel_emissivity_phantom>0].min(),vmax=np.nanmax(recompose_voxel_emissivity_phantom)*1e-3)
+plt.imshow(np.flip(np.flip(np.flip(np.transpose(recompose_voxel_emissivity_SART+recompose_voxel_emissivity_SART_excluded,(1,0)),axis=1),axis=1),axis=0)*1e-3,'rainbow',extent=[grid_data_masked_crop[:,:,0].min(),grid_data_masked_crop[:,:,0].max(),grid_data_masked_crop[:,:,1].min(),grid_data_masked_crop[:,:,1].max()],norm=LogNorm(),vmin=recompose_voxel_emissivity_phantom[recompose_voxel_emissivity_phantom>0].min(),vmax=np.nanmax(recompose_voxel_emissivity_phantom)*1e-3)
 plt.plot(FULL_MASTU_CORE_GRID_POLYGON[:, 0], FULL_MASTU_CORE_GRID_POLYGON[:, 1], 'k')
 structure_radial_profile = coleval.return_structure_radial_profile()
 for i in range(len(structure_radial_profile)):
@@ -1148,10 +1159,11 @@ plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/inversion_comparison_emissiv
 plt.close()
 
 plt.figure(figsize=(6,8))
-# plt.imshow(np.flip(np.flip(np.flip(np.transpose(recompose_voxel_emissivity_Bayes,(1,0)),axis=1),axis=1),axis=0)*1e-3,'rainbow',extent=[grid_data_masked_crop[:,:,0].min(),grid_data_masked_crop[:,:,0].max(),grid_data_masked_crop[:,:,1].min(),grid_data_masked_crop[:,:,1].max()],vmin=np.nanmin(recompose_voxel_emissivity_phantom)*1e-3,vmax=np.nanmax(recompose_voxel_emissivity_phantom)*1e-3)
-plt.imshow(np.flip(np.flip(np.flip(np.transpose(recompose_voxel_emissivity_Bayes_excluded,(1,0)),axis=1),axis=1),axis=0)*1e-3,'rainbow',extent=[grid_data_masked_crop[:,:,0].min(),grid_data_masked_crop[:,:,0].max(),grid_data_masked_crop[:,:,1].min(),grid_data_masked_crop[:,:,1].max()])#,vmin=np.nanmin(recompose_voxel_emissivity_phantom)*1e-3,vmax=np.nanmax(recompose_voxel_emissivity_phantom)*1e-3)
+plt.imshow(np.flip(np.flip(np.flip(np.transpose(recompose_voxel_emissivity_Bayes,(1,0)),axis=1),axis=1),axis=0)*1e-3,'rainbow',extent=[grid_data_masked_crop[:,:,0].min(),grid_data_masked_crop[:,:,0].max(),grid_data_masked_crop[:,:,1].min(),grid_data_masked_crop[:,:,1].max()],vmin=np.nanmin(recompose_voxel_emissivity_phantom)*1e-3,vmax=np.nanmax(recompose_voxel_emissivity_phantom)*1e-3)
+# plt.imshow(np.flip(np.flip(np.flip(np.transpose(recompose_voxel_emissivity_Bayes_excluded,(1,0)),axis=1),axis=1),axis=0)*1e-3,'rainbow',extent=[grid_data_masked_crop[:,:,0].min(),grid_data_masked_crop[:,:,0].max(),grid_data_masked_crop[:,:,1].min(),grid_data_masked_crop[:,:,1].max()])#,vmin=np.nanmin(recompose_voxel_emissivity_phantom)*1e-3,vmax=np.nanmax(recompose_voxel_emissivity_phantom)*1e-3)
 # plt.imshow(np.flip(np.flip(np.flip(np.transpose(recompose_voxel_emissivity_Bayes,(1,0)),axis=1),axis=1),axis=0)*1e-3,'rainbow',extent=[grid_data_masked_crop[:,:,0].min(),grid_data_masked_crop[:,:,0].max(),grid_data_masked_crop[:,:,1].min(),grid_data_masked_crop[:,:,1].max()],norm=LogNorm(),vmin=recompose_voxel_emissivity_phantom[recompose_voxel_emissivity_phantom>0].min(),vmax=np.nanmax(recompose_voxel_emissivity_phantom)*1e-3)
 # plt.imshow(np.flip(np.flip(np.flip(np.transpose(recompose_voxel_Bayes_sigma,(1,0)),axis=1),axis=1),axis=0)*1e-3,'rainbow',extent=[grid_data_masked_crop[:,:,0].min(),grid_data_masked_crop[:,:,0].max(),grid_data_masked_crop[:,:,1].min(),grid_data_masked_crop[:,:,1].max()],norm=LogNorm(),vmin=recompose_voxel_emissivity_phantom[recompose_voxel_emissivity_phantom>0].min(),vmax=np.nanmax(recompose_voxel_emissivity_phantom)*1e-3)
+# plt.imshow(np.flip(np.flip(np.flip(np.transpose(recompose_voxel_emissivity_Bayes/recompose_voxel_Bayes_sigma,(1,0)),axis=1),axis=1),axis=0)*1e-3,'rainbow',extent=[grid_data_masked_crop[:,:,0].min(),grid_data_masked_crop[:,:,0].max(),grid_data_masked_crop[:,:,1].min(),grid_data_masked_crop[:,:,1].max()],norm=LogNorm(),vmin=1e-5)#,vmin=recompose_voxel_emissivity_phantom[recompose_voxel_emissivity_phantom>0].min(),vmax=np.nanmax(recompose_voxel_emissivity_phantom)*1e-3)
 plt.plot(FULL_MASTU_CORE_GRID_POLYGON[:, 0], FULL_MASTU_CORE_GRID_POLYGON[:, 1], 'k')
 structure_radial_profile = coleval.return_structure_radial_profile()
 for i in range(len(structure_radial_profile)):

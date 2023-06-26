@@ -23,6 +23,8 @@ def temp_function(full_saved_file_dict_FAST):
 		core_tot_rad_power_sigma_all = inverted_dict[str(grid_resolution)]['core_tot_rad_power_sigma_all']
 		sxd_tot_rad_power_sigma_all = inverted_dict[str(grid_resolution)]['sxd_tot_rad_power_sigma_all']
 		x_point_tot_rad_power_sigma_all = inverted_dict[str(grid_resolution)]['x_point_tot_rad_power_sigma_all']
+		covariance_out = inverted_dict[str(grid_resolution)]['inverted_data_covariance']
+		grid_data_masked_crop = inverted_dict[str(grid_resolution)]['grid_data_masked_crop']
 		try:
 			x_point_region_radious = inverted_dict[str(grid_resolution)]['x_point_region_radious']
 		except:
@@ -53,7 +55,7 @@ def temp_function(full_saved_file_dict_FAST):
 			density_data_missing = True
 
 
-		outer_local_mean_emis_all,outer_local_power_all,outer_local_L_poloidal_all,outer_leg_length_interval_all,outer_leg_length_all,outer_data_length,outer_leg_resolution,outer_emissivity_baricentre_all,outer_emissivity_peak_all,outer_L_poloidal_baricentre_all,outer_L_poloidal_peak_all,outer_L_poloidal_peak_only_leg_all,trash,dr_sep_in,dr_sep_out,outer_L_poloidal_x_point_all,outer_L_poloidal_midplane_all,outer_leg_reliable_power_all,outer_leg_reliable_power_sigma_all,x_point_tot_rad_power_all,x_point_tot_rad_power_sigma_all = coleval.baricentre_outer_separatrix_radiation(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,x_point_region_radious=x_point_region_radious)
+		outer_local_mean_emis_all,outer_local_power_all,outer_local_L_poloidal_all,outer_leg_length_interval_all,outer_leg_length_all,outer_data_length,outer_leg_resolution,outer_emissivity_baricentre_all,outer_emissivity_peak_all,outer_L_poloidal_baricentre_all,outer_L_poloidal_peak_all,outer_L_poloidal_peak_only_leg_all,trash,dr_sep_in,dr_sep_out,outer_L_poloidal_x_point_all,outer_L_poloidal_midplane_all,outer_leg_reliable_power_all,outer_leg_reliable_power_sigma_all,x_point_tot_rad_power_all,x_point_tot_rad_power_sigma_all,sxd_tot_rad_power_all,sxd_tot_rad_power_sigma_all = coleval.baricentre_outer_separatrix_radiation(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,covariance_out,grid_data_masked_crop,x_point_region_radious=x_point_region_radious)
 		inverted_dict[str(grid_resolution)]['outer_local_mean_emis_all'] = outer_local_mean_emis_all
 		inverted_dict[str(grid_resolution)]['outer_local_power_all'] = outer_local_power_all
 		inverted_dict[str(grid_resolution)]['outer_local_L_poloidal_all'] = outer_local_L_poloidal_all
@@ -75,7 +77,7 @@ def temp_function(full_saved_file_dict_FAST):
 		inverted_dict[str(grid_resolution)]['outer_L_poloidal_midplane_all'] = outer_L_poloidal_midplane_all
 		inverted_dict[str(grid_resolution)]['outer_leg_reliable_power_all'] = outer_leg_reliable_power_all
 		inverted_dict[str(grid_resolution)]['outer_leg_reliable_power_sigma_all'] = outer_leg_reliable_power_sigma_all
-		inner_local_mean_emis_all,inner_local_power_all,inner_local_L_poloidal_all,inner_leg_length_interval_all,inner_leg_length_all,inner_data_length,inner_leg_resolution,inner_emissivity_baricentre_all,inner_emissivity_peak_all,inner_L_poloidal_baricentre_all,inner_L_poloidal_peak_all,inner_L_poloidal_peak_only_leg_all,inner_L_poloidal_midplane_all,inner_leg_reliable_power_all,inner_leg_reliable_power_sigma_all,trash,dr_sep_in,dr_sep_out,inner_L_poloidal_x_point_all = coleval.baricentre_inner_separatrix_radiation(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,x_point_region_radious=x_point_region_radious)
+		inner_local_mean_emis_all,inner_local_power_all,inner_local_L_poloidal_all,inner_leg_length_interval_all,inner_leg_length_all,inner_data_length,inner_leg_resolution,inner_emissivity_baricentre_all,inner_emissivity_peak_all,inner_L_poloidal_baricentre_all,inner_L_poloidal_peak_all,inner_L_poloidal_peak_only_leg_all,inner_L_poloidal_midplane_all,inner_leg_reliable_power_all,inner_leg_reliable_power_sigma_all,trash,dr_sep_in,dr_sep_out,inner_L_poloidal_x_point_all = coleval.baricentre_inner_separatrix_radiation(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,covariance_out,grid_data_masked_crop,x_point_region_radious=x_point_region_radious)
 		inverted_dict[str(grid_resolution)]['inner_local_mean_emis_all'] = inner_local_mean_emis_all
 		inverted_dict[str(grid_resolution)]['inner_local_power_all'] = inner_local_power_all
 		inverted_dict[str(grid_resolution)]['inner_local_L_poloidal_all'] = inner_local_L_poloidal_all
@@ -97,11 +99,40 @@ def temp_function(full_saved_file_dict_FAST):
 		full_saved_file_dict_FAST['multi_instrument']['dr_sep_out'] = dr_sep_out
 		inverted_dict[str(grid_resolution)]['inner_L_poloidal_x_point_all'] = inner_L_poloidal_x_point_all
 
-		real_core_radiation_all,real_core_radiation_sigma_all,real_non_core_radiation_all,real_non_core_radiation_sigma_all = coleval.inside_vs_outside_separatrix_radiation(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction)
+		real_core_radiation_all,real_core_radiation_sigma_all,real_non_core_radiation_all,real_non_core_radiation_sigma_all,out_VV_radiation_all,out_VV_radiation_sigma_all = coleval.inside_vs_outside_separatrix_radiation(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,covariance_out,grid_data_masked_crop,x_point_region_radious=x_point_region_radious)
 		inverted_dict[str(grid_resolution)]['real_core_radiation_all'] = real_core_radiation_all
 		inverted_dict[str(grid_resolution)]['real_core_radiation_sigma_all'] = real_core_radiation_sigma_all
 		inverted_dict[str(grid_resolution)]['real_non_core_radiation_all'] = real_non_core_radiation_all
 		inverted_dict[str(grid_resolution)]['real_non_core_radiation_sigma_all'] = real_non_core_radiation_sigma_all
+		inverted_dict[str(grid_resolution)]['out_VV_radiation_all'] = out_VV_radiation_all
+		inverted_dict[str(grid_resolution)]['out_VV_radiation_sigma_all'] = out_VV_radiation_sigma_all
+		inverted_dict[str(grid_resolution)]['out_VV_radiation_sigma_all'] = out_VV_radiation_sigma_all
+		all_lower_volume_radiation_all = inverted_data[:,:,inversion_Z<0]
+		all_lower_volume_radiation_all = np.nansum(np.nansum(all_lower_volume_radiation_all,axis=-1)*inversion_R*(np.mean(np.diff(inversion_R))**2)*2*np.pi,axis=1)
+		all_lower_volume_radiation_sigma_all = (np.mean(grid_data_masked_crop,axis=1)[:,1]<=0)*2*np.pi*np.mean(grid_data_masked_crop,axis=1)[:,0]*(np.mean(np.diff(inversion_R))**2)
+		all_lower_volume_radiation_sigma_all = np.nansum((np.transpose(covariance_out[:,:-2,:-2]*all_lower_volume_radiation_sigma_all,(0,2,1))*all_lower_volume_radiation_sigma_all),axis=(1,2))**0.5
+		# all_lower_volume_radiation_all = real_core_radiation_all + real_non_core_radiation_all
+		# all_lower_volume_radiation_sigma_all = (real_core_radiation_sigma_all**2 + real_non_core_radiation_sigma_all**2)**0.5
+		inverted_dict[str(grid_resolution)]['all_lower_volume_radiation_all'] = all_lower_volume_radiation_all
+		inverted_dict[str(grid_resolution)]['all_lower_volume_radiation_sigma_all'] = all_lower_volume_radiation_sigma_all
+		all_separatrix_radiation_all = outer_leg_reliable_power_all+sxd_tot_rad_power_all+inner_leg_reliable_power_all+real_core_radiation_all+x_point_tot_rad_power_all
+		all_separatrix_radiation_sigma_all = (outer_leg_reliable_power_sigma_all**2 + sxd_tot_rad_power_sigma_all**2 + inner_leg_reliable_power_sigma_all**2 + real_core_radiation_sigma_all**2 + x_point_tot_rad_power_sigma_all**2)**0.5
+		inverted_dict[str(grid_resolution)]['all_separatrix_radiation_all'] = all_separatrix_radiation_all
+		inverted_dict[str(grid_resolution)]['all_separatrix_radiation_sigma_all'] = all_separatrix_radiation_sigma_all
+		divertor_tot_rad_power_all = outer_leg_reliable_power_all+inner_leg_reliable_power_all+sxd_tot_rad_power_all+x_point_tot_rad_power_all
+		divertor_tot_rad_power_sigma_all = (outer_leg_reliable_power_sigma_all**2+inner_leg_reliable_power_sigma_all**2+sxd_tot_rad_power_sigma_all**2 + x_point_tot_rad_power_sigma_all**2)**0.5
+		inverted_dict[str(grid_resolution)]['divertor_tot_rad_power_all'] = divertor_tot_rad_power_all
+		inverted_dict[str(grid_resolution)]['divertor_tot_rad_power_sigma_all'] = divertor_tot_rad_power_sigma_all
+
+		inner_SOL_leg_all,inner_SOL_leg_sigma_all,outer_SOL_leg_all,outer_SOL_leg_sigma_all,outer_SOL_all,outer_SOL_sigma_all,inner_SOL_all,inner_SOL_sigma_all = coleval.symplified_out_core_regions(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,covariance_out,grid_data_masked_crop,x_point_region_radious=x_point_region_radious)
+		inverted_dict[str(grid_resolution)]['inner_SOL_leg_all'] = inner_SOL_leg_all
+		inverted_dict[str(grid_resolution)]['inner_SOL_leg_sigma_all'] = inner_SOL_leg_sigma_all
+		inverted_dict[str(grid_resolution)]['inner_SOL_all'] = inner_SOL_all
+		inverted_dict[str(grid_resolution)]['inner_SOL_sigma_all'] = inner_SOL_sigma_all
+		inverted_dict[str(grid_resolution)]['outer_SOL_leg_all'] = outer_SOL_leg_all
+		inverted_dict[str(grid_resolution)]['outer_SOL_leg_sigma_all'] = outer_SOL_leg_sigma_all
+		inverted_dict[str(grid_resolution)]['outer_SOL_all'] = outer_SOL_all
+		inverted_dict[str(grid_resolution)]['outer_SOL_sigma_all'] = outer_SOL_sigma_all
 
 		shot_list = get_data(path+'shot_list2.ods')
 		temp1 = (np.array(shot_list['Sheet1'][0])=='shot number').argmax()
@@ -140,16 +171,21 @@ def temp_function(full_saved_file_dict_FAST):
 		plt.errorbar(time_full_binned_crop,inner_leg_reliable_power_all/1e3,yerr=inner_leg_reliable_power_sigma_all/1e3,label='inner_leg\nno x-point\naccurate',capsize=5)
 		plt.errorbar(time_full_binned_crop,real_core_radiation_all/1e3,yerr=real_core_radiation_sigma_all/1e3,label='core\naccurate',capsize=5)
 		plt.errorbar(time_full_binned_crop,x_point_tot_rad_power_all/1e3,yerr=x_point_tot_rad_power_sigma_all/1e3,label='x_point (dist<%.3gm)' %(x_point_region_radious),capsize=5)
-		plt.errorbar(time_full_binned_crop,(outer_leg_tot_rad_power_all+inner_leg_tot_rad_power_all+core_tot_rad_power_all)/1e3,yerr=((outer_leg_tot_rad_power_sigma_all**2+inner_leg_tot_rad_power_sigma_all**2+core_tot_rad_power_sigma_all**2)**0.5)/1e3,label='tot',capsize=5)
+		plt.errorbar(time_full_binned_crop,all_separatrix_radiation_all/1e3,yerr=all_separatrix_radiation_sigma_all/1e3,label='tot\nwithin separatrix',capsize=5)
+		plt.errorbar(time_full_binned_crop,all_lower_volume_radiation_all/1e3,yerr=all_lower_volume_radiation_sigma_all/1e3,label='tot',capsize=5)
+		plt.errorbar(time_full_binned_crop,inner_SOL_leg_all/1e3,yerr=inner_SOL_leg_sigma_all/1e3,label='inner SOL\n+leg',capsize=5)
+		plt.errorbar(time_full_binned_crop,inner_SOL_all/1e3,yerr=inner_SOL_sigma_all/1e3,label='inner SOL',capsize=5,linestyle='--')
+		plt.errorbar(time_full_binned_crop,outer_SOL_leg_all/1e3,yerr=outer_SOL_leg_sigma_all/1e3,label='outer SOL\n+leg\n+sxd',capsize=5,linestyle='--')
+		plt.errorbar(time_full_binned_crop,outer_SOL_all/1e3,yerr=outer_SOL_sigma_all/1e3,label='outer SOL',capsize=5,linestyle='--')
+		plt.errorbar(time_full_binned_crop,out_VV_radiation_all/1e3,yerr=out_VV_radiation_sigma_all/1e3,label='tot\nout VV',capsize=5,linestyle='--')
 		plt.title('shot ' + laser_to_analyse[-9:-4]+' '+scenario+'\nradiated power in the lower half of the machine')
-		plt.legend(loc='best', fontsize='small')
+		plt.legend(loc='best', fontsize='x-small')
 		plt.xlabel('time [s]')
 		plt.ylabel('power [kW]')
 		plt.grid()
 		plt.savefig('/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_pass'+str(pass_number)+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_FAST_tot_rad_power.eps')
 		plt.close()
 
-		print('marker pre gas')
 		gas = get_gas_info(efit_reconstruction.shotnumber)
 		gas_core = 0.
 		gas_core_valves = []
@@ -172,10 +208,10 @@ def temp_function(full_saved_file_dict_FAST):
 				gas_core_valves.append(valve['valve'])
 				gas_inner += valve['flux'][select]
 				gas_inner_valves.append(valve['valve'])
-			elif valve['valve'][:3] == 'pfr':
+			elif valve['valve'][:4] in ['pfr_','lfsd','lfss']:
 				gas_div += valve['flux'][select]
 				gas_div_valves.append(valve['valve'])
-			elif valve['valve'][:3] == 'lfs':
+			elif valve['valve'][:4] == 'lfs_':
 				gas_core += valve['flux'][select]
 				gas_core_valves.append(valve['valve'])
 				gas_outer += valve['flux'][select]
@@ -1028,6 +1064,72 @@ def temp_function(full_saved_file_dict_FAST):
 		psiN_peak_inner_all = np.array(psiN_peak_inner_all)
 		full_saved_file_dict_FAST['multi_instrument']['psiN_peak_inner_all'] = psiN_peak_inner_all
 
+		# here I calculate the upstream density
+		from mastu_exhaust_analysis import divertor_geometry
+		from mastu_exhaust_analysis import Thomson
+		TS_data = Thomson(shot=laser_to_analyse[-9:-4])
+		tu_cowley = []
+		tu_labombard = []
+		tu_stangeby = []
+		nu_cowley = []
+		nu_labombard = []
+		nu_stangeby = []
+		nu_mean = []
+		for time in time_full_binned_crop:
+			try:
+				temp = divertor_geometry(shot=laser_to_analyse[-9:-4],time=time)
+				tu_cowley.append(temp.tu_cowley)
+				tu_labombard.append(temp.tu_labombard)
+				tu_stangeby.append(temp.tu_stangeby)
+				temp = np.abs(TS_data.time.data-time).argmin()
+				ne = TS_data.ne.data[temp]
+				R_TS = TS_data.R.data[temp]
+				Te = TS_data.Te.data[temp]
+				ne = ne[np.isfinite(Te)]
+				R_TS = R_TS[np.isfinite(Te)]
+				Te = Te[np.isfinite(Te)]
+				temp = Te[:-10].argmax()
+				ne = ne[temp:]
+				R_TS = R_TS[temp:]
+				Te = Te[temp:]
+				Te = scipy.signal.savgol_filter(Te, 7, 3)
+				ne = scipy.signal.savgol_filter(ne, 7, 3)
+				# ineffective. filtered twice for only decreasing signal
+				ne = ne[1:][np.diff(Te)<=0]
+				R_TS = R_TS[1:][np.diff(Te)<=0]
+				Te = Te[1:][np.diff(Te)<=0]
+				ne = ne[1:][np.diff(Te)<=0]
+				R_TS = R_TS[1:][np.diff(Te)<=0]
+				Te = Te[1:][np.diff(Te)<=0]
+				interp_ne_Te = interp1d(Te[Te.argmax():],ne[Te.argmax():])
+				nu_cowley.append(interp_ne_Te(tu_cowley[-1]))
+				nu_labombard.append(interp_ne_Te(tu_cowley[-1]))
+				nu_stangeby.append(interp_ne_Te(tu_stangeby[-1]))
+				nu_mean.append(np.nanmean([nu_cowley[-1],nu_labombard[-1],nu_stangeby[-1]]))
+			except:
+				tu_cowley.append(np.nan)
+				tu_labombard.append(np.nan)
+				tu_stangeby.append(np.nan)
+				nu_cowley.append(np.nan)
+				nu_labombard.append(np.nan)
+				nu_stangeby.append(np.nan)
+				nu_mean.append(np.nan)
+		full_saved_file_dict_FAST['multi_instrument']['tu_cowley'] = tu_cowley
+		full_saved_file_dict_FAST['multi_instrument']['tu_labombard'] = tu_labombard
+		full_saved_file_dict_FAST['multi_instrument']['tu_stangeby'] = tu_stangeby
+		full_saved_file_dict_FAST['multi_instrument']['nu_cowley'] = nu_cowley
+		full_saved_file_dict_FAST['multi_instrument']['nu_labombard'] = nu_labombard
+		full_saved_file_dict_FAST['multi_instrument']['nu_stangeby'] = nu_stangeby
+		full_saved_file_dict_FAST['multi_instrument']['nu_mean'] = nu_mean
+		# plt.figure()
+		# plt.plot(time_full_binned_crop,nu_labombard,label='nu_labombard')
+		# plt.plot(time_full_binned_crop,nu_stangeby,label='nu_stangeby')
+		# plt.plot(time_full_binned_crop,nu_cowley,label='nu_cowley')
+		# plt.plot(time_full_binned_crop,nu_mean,label='nu_mean')
+		# plt.plot(time_nesep,nesep,'--',label='nesep')
+		# plt.legend()
+
+
 		try:
 			from scipy.signal import find_peaks, peak_prominences as get_proms
 
@@ -1092,7 +1194,10 @@ def temp_function(full_saved_file_dict_FAST):
 				CH27_start_of_raise = time_res_bolo[CH27_start]
 				CH27_end_of_raise = time_res_bolo[CH27_end]
 			else:
+				CH27_angle = 0
 				CH27_start_of_raise = np.inf
+				CH27_end_of_raise = np.inf
+
 
 			select = (np.logical_or(channel_res_bolo == 8,channel_res_bolo == 9) * good_res_bolo).astype(bool)
 			CH8_9 = median_filter(brightness_res_bolo[select][0],size=int(0.005/(np.median(np.diff(time_res_bolo)))))
@@ -1120,10 +1225,15 @@ def temp_function(full_saved_file_dict_FAST):
 				CH8_9_start_of_raise = time_res_bolo[CH8_9_start]
 				CH8_9_end_of_raise = time_res_bolo[CH8_9_end]
 			else:
+				CH8_9_angle = 0
 				CH8_9_start_of_raise = np.inf
+				CH8_9_end_of_raise = np.inf
 			# time_start_MARFE = max(CH27_start_of_raise,CH8_9_start_of_raise)
 
+			CH25 = median_filter(brightness_res_bolo[channel_res_bolo==25][0],size=int(0.005/(np.median(np.diff(time_res_bolo)))))
+			CH25 = CH25*20/18.4	# scaling to compensatefor the different integration length in the core plasma
 			CH26 = median_filter(brightness_res_bolo[channel_res_bolo==26][0],size=int(0.005/(np.median(np.diff(time_res_bolo)))))
+			CH26 = CH26*13.7/13.3	# scaling to compensatefor the different integration length in the core plasma
 			CH27 = median_filter(brightness_res_bolo[channel_res_bolo==27][0],size=int(0.005/(np.median(np.diff(time_res_bolo)))))
 			temp = CH27-CH26
 			temp[temp<0] = 0
@@ -1154,6 +1264,8 @@ def temp_function(full_saved_file_dict_FAST):
 				time_start_MARFE = np.inf
 
 			full_saved_file_dict_FAST['multi_instrument']['time_res_bolo'] = time_res_bolo
+			full_saved_file_dict_FAST['multi_instrument']['CH26'] = CH26
+			full_saved_file_dict_FAST['multi_instrument']['CH25'] = CH25
 			full_saved_file_dict_FAST['multi_instrument']['CH27'] = CH27
 			full_saved_file_dict_FAST['multi_instrument']['CH27_angle'] = CH27_angle
 			full_saved_file_dict_FAST['multi_instrument']['CH27_start_of_raise'] = CH27_start_of_raise
@@ -1336,6 +1448,8 @@ def temp_function(full_saved_file_dict_FAST):
 			ax[1,0].plot(time_full_binned_crop,core_density,label='core_density',color=color[0])
 			ax[1,0].plot(time_full_binned_crop,ne_bar,label='ne_bar',color=color[-1])
 			ax[1,0].plot(time_full_binned_crop,greenwald_density,'--',label='greenwald_density',color=color[-2])
+			ax[1,0].plot(time_full_binned_crop,nu_mean,'--',label='ne upstream LFS',color=color[-2])
+			ax[1,0].plot(time_full_binned_crop,nu_cowley,':',label='ne Cowley LFS',color=color[-3])
 
 			ax1 = ax[1,0].twinx()  # instantiate a second axes that shares the same x-axis
 			# ax1.spines["right"].set_position(("axes", 1.1125))

@@ -292,7 +292,7 @@ for index in i:
 	if pipeline=='radiance':
 		results = np.flip(np.transpose(radiance.frame.mean), axis=-2)/pixel_area
 	else:
-		results = np.flip(np.transpose(power.frame.mean), axis=-2)/pixel_area
+		results = np.flip(np.transpose(power.frame.mean), axis=-2)/pixel_area	# W/m^2/str /(W/m^3) of emitter
 
 	plt.figure()
 	cmap = plt.cm.rainbow

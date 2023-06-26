@@ -37,8 +37,8 @@ if True:
 		shot = int(np.array(shot_list['Sheet1'][i])[np.array(shot_list['Sheet1'][0]) == 'shot number'])
 		for i_signal_name,signal_name in enumerate(fuelling_location_list):
 			try:
-				data = client.get(signal_name,shot)
-				if np.nanmax(data.data[data.time.data>0])>0:
+				data = client.get(signal_name,shot,timefirst=0.2,time_last=False)
+				if np.nanmax(data.data)>0:#[data.time.data>0.2])>0:
 					print(signal_name+' set')
 					shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == fuelling_location_list_orig[i_signal_name]).argmax()] = 'X'
 				else:
@@ -54,7 +54,7 @@ if True:
 		shot = int(np.array(shot_list['Sheet1'][i])[np.array(shot_list['Sheet1'][0]) == 'shot number'])
 		signal_name = beams_prefix + 'SW' + beams_affix
 		try:
-			data = client.get(signal_name,shot)
+			data = client.get(signal_name,shot,timefirst=0.2,time_last=False)
 			if np.nanmax(np.abs(data.data))>0:
 				shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'SW beam').argmax()] = 'X'
 		except:
@@ -72,6 +72,31 @@ if True:
 	save_data(path+'shot_list2.ods',shot_list)
 	print('done')
 	exit()
+
+
+	# I want to at least get the date automatically so I can run my analysis
+	# ATTENTION
+	# this DOES NOT work. afterwards you need to to the file and convert from text to date
+	f = []
+	for dirnames in os.listdir('/home/ffederic/work/irvb/MAST-U'):
+		if os.path.isdir('/home/ffederic/work/irvb/MAST-U/'+dirnames) and len(dirnames)==10:
+			f.append(dirnames)
+
+	for dirname in f:
+		for filename in os.listdir('/home/ffederic/work/irvb/MAST-U/'+dirname):
+			if filename[:16] == 'IRVB-MASTU_shot-' and filename[-4:] == '.ptw':
+				shot = filename[16:16+5]
+				select = (np.array(shot_list['Sheet1'])[:,np.array(shot_list['Sheet1'][0]) == 'shot number'].astype(str) == shot).flatten().argmax()
+				if shot_list['Sheet1'][select][(np.array(shot_list['Sheet1'][0]) == 'date').argmax()] == '':
+					shot_list['Sheet1'][select][(np.array(shot_list['Sheet1'][0]) == 'date').argmax()] = dirname+' 00:00:00' # datetime(int(dirname[:4]),int(dirname[5:7]),int(dirname[8:]),00,00)
+					print(shot)
+
+	save_data(path+'shot_list2.ods',shot_list)
+	print('done')
+	exit()
+
+
+
 else:
 	pass
 

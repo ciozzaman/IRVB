@@ -39,7 +39,8 @@ for path in parameters_available:
 parameters_available_int_time = np.array(parameters_available_int_time)
 parameters_available_framerate = np.array(parameters_available_framerate)
 # folder of the parameters path for BB correlation
-pathparams_BB='/home/ffederic/work/irvb/2021-09-25_multiple_search_for_parameters'
+# pathparams_BB='/home/ffederic/work/irvb/2021-09-25_multiple_search_for_parameters'
+pathparams_BB='/home/ffederic/work/irvb/2022-12-07_multiple_search_for_parameters'	# NUC plate original scans with window inttime=1.0	# ms
 f = []
 for (dirpath, dirnames, filenames) in os.walk(pathparams_BB):
 	f.append(dirnames)
@@ -55,10 +56,10 @@ parameters_available_framerate_BB = np.array(parameters_available_framerate_BB)
 color = ['b', 'r', 'm', 'y', 'g', 'c', 'k', 'slategrey', 'darkorange', 'lime', 'pink', 'gainsboro', 'paleturquoise', 'teal', 'olive','blueviolet','tan','skyblue','brown','dimgray','hotpink']
 
 path = '/home/ffederic/work/irvb/MAST-U/'
-# do all of them
-to_do = ['2021-05-18','2021-05-19','2021-05-20','2021-05-21','2021-05-25','2021-05-26','2021-05-27','2021-05-28','2021-06-02','2021-06-03','2021-06-04','2021-06-15','2021-06-16','2021-06-17','2021-06-18','2021-06-22','2021-06-23','2021-06-24','2021-06-25','2021-06-29','2021-06-30','2021-07-01','2021-07-06','2021-07-08','2021-07-09','2021-07-15','2021-07-27','2021-07-28','2021-07-29','2021-08-04','2021-08-05','2021-08-06','2021-08-11','2021-08-12','2021-08-13','2021-08-17','2021-08-18','2021-08-19','2021-08-20','2021-08-24','2021-08-25','2021-08-26','2021-08-27','2021-09-01','2021-09-08','2021-09-09','2021-09-10','2021-09-16','2021-09-17','2021-09-21','2021-09-22','2021-09-23','2021-09-24','2021-09-28','2021-09-29','2021-09-30','2021-10-01','2021-10-04','2021-10-05','2021-10-06','2021-10-07','2021-10-08','2021-10-11','2021-10-12','2021-10-13','2021-10-14','2021-10-15','2021-10-19','2021-10-20','2021-10-21','2021-10-22','2021-10-25','2021-10-26','2021-10-27','2021-10-28']
-# MU02
-# to_do = ['2022-10-26','2022-10-27','2022-10-28','2022-10-31','2022-11-01','2022-11-02','2022-11-03','2022-11-04','2022-11-07','2022-11-08','2022-11-09','2022-11-10','2022-11-11','2022-11-17','2022-11-18','2022-11-22','2022-11-23']
+# do all of them from MU01
+# to_do = ['2021-05-18','2021-05-19','2021-05-20','2021-05-21','2021-05-25','2021-05-26','2021-05-27','2021-05-28','2021-06-02','2021-06-03','2021-06-04','2021-06-15','2021-06-16','2021-06-17','2021-06-18','2021-06-22','2021-06-23','2021-06-24','2021-06-25','2021-06-29','2021-06-30','2021-07-01','2021-07-06','2021-07-08','2021-07-09','2021-07-15','2021-07-27','2021-07-28','2021-07-29','2021-08-04','2021-08-05','2021-08-06','2021-08-11','2021-08-12','2021-08-13','2021-08-17','2021-08-18','2021-08-19','2021-08-20','2021-08-24','2021-08-25','2021-08-26','2021-08-27','2021-09-01','2021-09-08','2021-09-09','2021-09-10','2021-09-16','2021-09-17','2021-09-21','2021-09-22','2021-09-23','2021-09-24','2021-09-28','2021-09-29','2021-09-30','2021-10-01','2021-10-04','2021-10-05','2021-10-06','2021-10-07','2021-10-08','2021-10-11','2021-10-12','2021-10-13','2021-10-14','2021-10-15','2021-10-19','2021-10-20','2021-10-21','2021-10-22','2021-10-25','2021-10-26','2021-10-27','2021-10-28']
+# do all of them from MU02
+to_do = ['2022-10-26', '2022-10-27', '2022-10-28', '2022-10-31', '2022-11-01', '2022-11-02', '2022-11-03', '2022-11-04', '2022-11-07', '2022-11-08', '2022-11-09', '2022-11-10', '2022-11-11', '2022-11-17', '2022-11-18', '2022-11-22', '2022-11-23', '2022-11-24', '2022-11-25', '2022-11-28', '2022-11-29', '2022-11-30', '2022-12-01', '2022-12-02', '2022-12-05', '2022-12-06', '2022-12-07', '2022-12-08', '2022-12-09', '2022-12-12', '2022-12-13', '2022-12-14', '2022-12-15', '2022-12-16', '2022-12-20', '2022-12-21', '2023-01-06', '2023-01-09', '2023-01-10', '2023-01-11', '2023-01-12', '2023-01-13', '2023-01-17', '2023-01-18', '2023-01-19', '2023-01-20', '2023-01-21', '2023-01-23', '2023-01-24', '2023-01-25', '2023-01-26', '2023-01-27', '2023-01-28', '2023-01-30', '2023-01-31']
 # to_do = ['2021-05-18','2021-05-19','2021-05-20','2021-05-21','2021-05-25','2021-f05-26','2021-05-27','2021-05-28','2021-06-02','2021-06-03','2021-06-04','2021-06-15','2021-06-16','2021-06-17','2021-06-18','2021-06-22']
 # to_do = ['2021-09-08','2021-06-17','2021-08-05']
 # to_do = ['2021-10-15','2021-10-12','2021-10-01','2021-09-30']
@@ -109,9 +110,12 @@ for i_day,day in enumerate(to_do):
 # shot_available = [['IRVB-MASTU_shot-45439.ptw','IRVB-MASTU_shot-45443.ptw','IRVB-MASTU_shot-45444.ptw','IRVB-MASTU_shot-45446.ptw','IRVB-MASTU_shot-45448.ptw','IRVB-MASTU_shot-45450.ptw','IRVB-MASTU_shot-45456.ptw','IRVB-MASTU_shot-45458.ptw','IRVB-MASTU_shot-45459.ptw','IRVB-MASTU_shot-45460.ptw','IRVB-MASTU_shot-45461.ptw','IRVB-MASTU_shot-45462.ptw','IRVB-MASTU_shot-45463.ptw','IRVB-MASTU_shot-45464.ptw','IRVB-MASTU_shot-45465.ptw'],['IRVB-MASTU_shot-45239.ptw'],['IRVB-MASTU_shot-45391.ptw'],['IRVB-MASTU_shot-45272.ptw'],['IRVB-MASTU_shot-45398.ptw','IRVB-MASTU_shot-45399.ptw','IRVB-MASTU_shot-45400.ptw'],['IRVB-MASTU_shot-45468.ptw','IRVB-MASTU_shot-45469.ptw','IRVB-MASTU_shot-45470.ptw','IRVB-MASTU_shot-45473.ptw'],['IRVB-MASTU_shot-44607.ptw'],['IRVB-MASTU_shot-44697.ptw','IRVB-MASTU_shot-44699.ptw','IRVB-MASTU_shot-44700.ptw','IRVB-MASTU_shot-44701.ptw'],['IRVB-MASTU_shot-44797.ptw'],['IRVB-MASTU_shot-44822.ptw']]
 
 # simpler way of starting works
-# to_do = ['IRVB-MASTU_shot-45382.ptw','IRVB-MASTU_shot-45466.ptw','IRVB-MASTU_shot-45468.ptw','IRVB-MASTU_shot-45469.ptw','IRVB-MASTU_shot-45470.ptw','IRVB-MASTU_shot-45473.ptw']
+# to_do = ['IRVB-MASTU_shot-45468.ptw','IRVB-MASTU_shot-45469.ptw','IRVB-MASTU_shot-45470.ptw','IRVB-MASTU_shot-45401.ptw','IRVB-MASTU_shot-45399.ptw','IRVB-MASTU_shot-45371.ptw']#,'IRVB-MASTU_shot-45473.ptw']
 # to_do = ['IRVB-MASTU_shot-45371.ptw','IRVB-MASTU_shot-45372.ptw','IRVB-MASTU_shot-45380.ptw','IRVB-MASTU_shot-45390.ptw','IRVB-MASTU_shot-45391.ptw','IRVB-MASTU_shot-45398.ptw','IRVB-MASTU_shot-45400.ptw','IRVB-MASTU_shot-45439.ptw','IRVB-MASTU_shot-45443.ptw','IRVB-MASTU_shot-45444.ptw','IRVB-MASTU_shot-45450.ptw','IRVB-MASTU_shot-45456.ptw','IRVB-MASTU_shot-45459.ptw','IRVB-MASTU_shot-45461.ptw','IRVB-MASTU_shot-45462.ptw','IRVB-MASTU_shot-45463.ptw','IRVB-MASTU_shot-45464.ptw','IRVB-MASTU_shot-45465.ptw']
 # to_do = ['IRVB-MASTU_shot-45046.ptw','IRVB-MASTU_shot-45047.ptw','IRVB-MASTU_shot-45048.ptw','IRVB-MASTU_shot-45056.ptw','IRVB-MASTU_shot-45057.ptw','IRVB-MASTU_shot-45058.ptw','IRVB-MASTU_shot-45059.ptw','IRVB-MASTU_shot-45060.ptw','IRVB-MASTU_shot-45062.ptw','IRVB-MASTU_shot-45063.ptw','IRVB-MASTU_shot-45066.ptw','IRVB-MASTU_shot-45071.ptw','IRVB-MASTU_shot-45081.ptw','IRVB-MASTU_shot-45143.ptw','IRVB-MASTU_shot-45239.ptw','IRVB-MASTU_shot-45241.ptw','IRVB-MASTU_shot-45243.ptw','IRVB-MASTU_shot-45244.ptw','IRVB-MASTU_shot-45245.ptw','IRVB-MASTU_shot-45246.ptw','IRVB-MASTU_shot-45353.ptw']	# SXD fuelled from high field side
+# to_do = ['IRVB-MASTU_shot-47036.ptw','IRVB-MASTU_shot-47143.ptw','IRVB-MASTU_shot-46823.ptw']
+to_do = ['IRVB-MASTU_shot-47036.ptw','IRVB-MASTU_shot-47036.ptw','IRVB-MASTU_shot-46884.ptw','IRVB-MASTU_shot-47020.ptw','IRVB-MASTU_shot-46776.ptw','IRVB-MASTU_shot-46792.ptw']
+
 # # MU01-EXH-20
 # to_do = ['IRVB-MASTU_shot-44816.ptw','IRVB-MASTU_shot-44817.ptw','IRVB-MASTU_shot-44818.ptw','IRVB-MASTU_shot-44819.ptw','IRVB-MASTU_shot-44820.ptw','IRVB-MASTU_shot-44821.ptw','IRVB-MASTU_shot-44822.ptw','IRVB-MASTU_shot-45391.ptw','IRVB-MASTU_shot-45397.ptw','IRVB-MASTU_shot-45398.ptw','IRVB-MASTU_shot-45399.ptw','IRVB-MASTU_shot-45400.ptw','IRVB-MASTU_shot-45401.ptw']
 # for the paper
@@ -125,7 +129,9 @@ for i_day,day in enumerate(to_do):
 # shots for the CD radiator location comparison shots
 # to_do = ['IRVB-MASTU_shot-45473.ptw','IRVB-MASTU_shot-45470.ptw','IRVB-MASTU_shot-45469.ptw','IRVB-MASTU_shot-45468.ptw','IRVB-MASTU_shot-45327.ptw','IRVB-MASTU_shot-45326.ptw','IRVB-MASTU_shot-45325.ptw','IRVB-MASTU_shot-45324.ptw','IRVB-MASTU_shot-45323.ptw','IRVB-MASTU_shot-45322.ptw','IRVB-MASTU_shot-45320.ptw','IRVB-MASTU_shot-45303.ptw','IRVB-MASTU_shot-45302.ptw','IRVB-MASTU_shot-45296.ptw','IRVB-MASTU_shot-45295.ptw','IRVB-MASTU_shot-45293.ptw','IRVB-MASTU_shot-45142.ptw','IRVB-MASTU_shot-45126.ptw','IRVB-MASTU_shot-45088.ptw','IRVB-MASTU_shot-45371.ptw']
 # shots for the CD BEAMS shots for the cross comparison
-to_do = ['IRVB-MASTU_shot-45401.ptw','IRVB-MASTU_shot-45399.ptw','IRVB-MASTU_shot-45311.ptw','IRVB-MASTU_shot-45310.ptw','IRVB-MASTU_shot-45309.ptw','IRVB-MASTU_shot-45306.ptw','IRVB-MASTU_shot-45304.ptw','IRVB-MASTU_shot-45299.ptw','IRVB-MASTU_shot-45286.ptw','IRVB-MASTU_shot-45272.ptw','IRVB-MASTU_shot-45271.ptw','IRVB-MASTU_shot-45270.ptw','IRVB-MASTU_shot-45268.ptw','IRVB-MASTU_shot-45267.ptw','IRVB-MASTU_shot-45266.ptw','IRVB-MASTU_shot-45264.ptw','IRVB-MASTU_shot-45262.ptw','IRVB-MASTU_shot-45261.ptw','IRVB-MASTU_shot-45252.ptw','IRVB-MASTU_shot-45251.ptw','IRVB-MASTU_shot-45237.ptw','IRVB-MASTU_shot-45236.ptw','IRVB-MASTU_shot-45212.ptw','IRVB-MASTU_shot-45193.ptw','IRVB-MASTU_shot-45194.ptw','IRVB-MASTU_shot-45175.ptw','IRVB-MASTU_shot-45170.ptw','IRVB-MASTU_shot-45167.ptw','IRVB-MASTU_shot-45132.ptw','IRVB-MASTU_shot-45125.ptw','IRVB-MASTU_shot-45097.ptw','IRVB-MASTU_shot-45091.ptw','IRVB-MASTU_shot-45006.ptw','IRVB-MASTU_shot-44969.ptw','IRVB-MASTU_shot-44968.ptw','IRVB-MASTU_shot-44967.ptw','IRVB-MASTU_shot-44960.ptw']
+# to_do = ['IRVB-MASTU_shot-45401.ptw','IRVB-MASTU_shot-45399.ptw','IRVB-MASTU_shot-45311.ptw','IRVB-MASTU_shot-45310.ptw','IRVB-MASTU_shot-45309.ptw','IRVB-MASTU_shot-45306.ptw','IRVB-MASTU_shot-45304.ptw','IRVB-MASTU_shot-45299.ptw','IRVB-MASTU_shot-45286.ptw','IRVB-MASTU_shot-45272.ptw','IRVB-MASTU_shot-45271.ptw','IRVB-MASTU_shot-45270.ptw','IRVB-MASTU_shot-45268.ptw','IRVB-MASTU_shot-45267.ptw','IRVB-MASTU_shot-45266.ptw','IRVB-MASTU_shot-45264.ptw','IRVB-MASTU_shot-45262.ptw','IRVB-MASTU_shot-45261.ptw','IRVB-MASTU_shot-45252.ptw','IRVB-MASTU_shot-45251.ptw','IRVB-MASTU_shot-45237.ptw','IRVB-MASTU_shot-45236.ptw','IRVB-MASTU_shot-45212.ptw','IRVB-MASTU_shot-45193.ptw','IRVB-MASTU_shot-45194.ptw','IRVB-MASTU_shot-45175.ptw','IRVB-MASTU_shot-45170.ptw','IRVB-MASTU_shot-45167.ptw','IRVB-MASTU_shot-45132.ptw','IRVB-MASTU_shot-45125.ptw','IRVB-MASTU_shot-45097.ptw','IRVB-MASTU_shot-45091.ptw','IRVB-MASTU_shot-45006.ptw','IRVB-MASTU_shot-44969.ptw','IRVB-MASTU_shot-44968.ptw','IRVB-MASTU_shot-44967.ptw','IRVB-MASTU_shot-44960.ptw']
+# to_do = ['2023-01-26']
+# shot_available = [['IRVB-MASTU_shot-47079.ptw']]
 # to_do = np.flip(to_do,axis=0)
 
 continue_after_FAST = False
@@ -135,7 +141,8 @@ do_inversions = False
 every_pixel_independent = False
 overwrite_oscillation_filter = True
 overwrite_binning = True
-skip_second_pass = False
+skip_second_pass = True
+override_second_pass = False
 
 if overwrite_oscillation_filter:
 	overwrite_binning = True
@@ -146,7 +153,7 @@ if False:
 		for name in np.flip(shot_available,axis=0)[i_day]:
 			laser_to_analyse=path+day+'/'+name
 
-			if False:
+			if True:
 				exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_pulse_process2_BB.py").read())
 			else:
 				pass_number = 0
@@ -154,7 +161,7 @@ if False:
 				pass_number = 1
 				exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_manual_plots.py").read())
 
-elif False:
+elif True:
 	for name in to_do:
 		shot_list = get_data(path+'shot_list2.ods')
 		temp1 = (np.array(shot_list['Sheet1'][0])=='shot number').argmax()
@@ -162,7 +169,10 @@ elif False:
 			if shot_list['Sheet1'][i][temp1] == int(name[-9:-4]):
 				date = shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0])=='date').argmax()]
 				break
-		i_day,day = 0,str(date.date())
+		try:
+			i_day,day = 0,str(date.date())
+		except:
+			i_day,day = 0,str(date)
 		laser_to_analyse=path+day+'/'+name
 
 		if True:
@@ -189,7 +199,7 @@ else:
 	# i_day,day = 0,'2021-10-12'
 	# name='IRVB-MASTU_shot-45239.ptw'
 	# i_day,day = 0,'2021-10-22'
-	name='IRVB-MASTU_shot-45473.ptw'
+	name='IRVB-MASTU_shot-45371.ptw'
 	# i_day,day = 0,'2021-10-21'
 	# name='IRVB-MASTU_shot-45371.ptw'
 

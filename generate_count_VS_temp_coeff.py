@@ -253,7 +253,7 @@ elif False:
 	full_saved_file_dict=coleval.read_IR_file(file)
 	data_per_digitizer1,uniques_digitizer_ID = coleval.separate_data_with_digitizer(full_saved_file_dict)
 
-elif False:
+elif True:
 	# his is created to fit simultaneously the curve with and without window
 
 	if False:	# BB source in focus and no window inttime=1.0	# ms
@@ -309,7 +309,7 @@ elif False:
 			params_dict.allow_pickle=True
 			params3 = params_dict['coeff3']	# BB fit without window coefficiens
 
-	if True:	# BB source as far as possible while encompussing the whole FOV with window inttime=1.0	# ms
+	if False:	# BB source as far as possible while encompussing the whole FOV with window inttime=1.0	# ms
 		description = 'BB source as far as possible with window inttime=1.0 # ms'
 		files = files58
 		temperature = temperature58
@@ -327,7 +327,7 @@ elif False:
 			os.makedirs(pathparam)
 		coleval.build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5,wavelength_bottom=2.5)
 
-	if True:	# BB source as far as possible while encompussing the whole FOV with window inttime=2.0	# ms
+	if False:	# BB source as far as possible while encompussing the whole FOV with window inttime=2.0	# ms
 		description = 'BB source as far as possible with window inttime=2.0 # ms'
 		files = files56
 		temperature = temperature56
@@ -362,7 +362,7 @@ elif False:
 			params_dict.allow_pickle=True
 			params2 = params_dict['coeff3']	# BB fit without window coefficiens
 
-	if True:	# BB source as close as possible with window inttime=1.0	# ms
+	if False:	# BB source as close as possible with window inttime=1.0	# ms
 		description = 'BB source as close as possible with window inttime=1.0 # ms'
 		files = files42
 		temperature = temperature42
@@ -393,7 +393,7 @@ elif False:
 			np.savez_compressed(fullpathparams[:-4],**params_dict)
 
 
-	if True:	# BB source as close as possible with window inttime=2.0	# ms
+	if False:	# BB source as close as possible with window inttime=2.0	# ms
 		description = 'BB source as close as possible with window inttime=2.0 # ms'
 		files = files41
 		temperature = temperature41
@@ -785,7 +785,7 @@ elif False:
 			flux_array.append(BB_rad_counts_to_delta_temp(1,T))
 		flux_array = np.array(flux_array)
 
-elif True:
+elif False:
 	# this is created to fit simultaneously the curve with and without window
 	# done because I found out that all measurements are done without the filter entirely
 
@@ -806,6 +806,8 @@ elif True:
 		if not os.path.exists(pathparam):
 			os.makedirs(pathparam)
 		coleval.build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5.1,wavelength_bottom=1.5)
+	else:
+		pass
 
 	if False:	# BB source in focus and no window inttime=2.0	# ms
 		description = 'BB source in focus and no window inttime=2.0 # ms'
@@ -824,6 +826,8 @@ elif True:
 		if not os.path.exists(pathparam):
 			os.makedirs(pathparam)
 		coleval.build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5.1,wavelength_bottom=1.5)
+	else:
+		pass
 
 	if True:	# BB source as far as possible while encompussing the whole FOV with window inttime=1.0	# ms
 		description = 'BB source as far as possible with window inttime=1.0 # ms'
@@ -842,6 +846,8 @@ elif True:
 		if not os.path.exists(pathparam):
 			os.makedirs(pathparam)
 		coleval.build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5.1,wavelength_bottom=1.5)
+	else:
+		pass
 
 	if True:	# BB source as far as possible while encompussing the whole FOV with window inttime=2.0	# ms
 		description = 'BB source as far as possible with window inttime=2.0 # ms'
@@ -860,6 +866,8 @@ elif True:
 		if not os.path.exists(pathparam):
 			os.makedirs(pathparam)
 		coleval.build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5.1,wavelength_bottom=1.5)
+	else:
+		pass
 
 	if True:	# BB source as close as possible with window inttime=1.0	# ms
 		description = 'BB source as close as possible with window inttime=1.0 # ms'
@@ -878,6 +886,8 @@ elif True:
 		if not os.path.exists(pathparam):
 			os.makedirs(pathparam)
 		coleval.build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5.1,wavelength_bottom=1.5)
+	else:
+		pass
 
 	if True:	# BB source as close as possible with window inttime=2.0	# ms
 		description = 'BB source as close as possible with window inttime=2.0 # ms'
@@ -896,6 +906,8 @@ elif True:
 		if not os.path.exists(pathparam):
 			os.makedirs(pathparam)
 		coleval.build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5.1,wavelength_bottom=1.5)
+	else:
+		pass
 
 	if True:	# NUC plate original scans with window inttime=1.0	# ms
 		description = 'NUC plate original scans with window inttime=1.0 # ms'

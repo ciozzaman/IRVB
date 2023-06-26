@@ -144,8 +144,8 @@ all_cases_to_include = [['laser19','laser22','laser30','laser33']]	# all cases i
 all_cases_to_include = [['laser22','laser33']]	# all cases in the same location
 include_large_area_data = False
 # type_of_calibration = 'NUC_plate'
-type_of_calibration = 'BB_source_w/o_window'
-# type_of_calibration = 'BB_source_w_window'
+# type_of_calibration = 'BB_source_w/o_window'
+type_of_calibration = 'BB_source_w_window'
 # all_cases_to_include = [['laser34','laser35']]	# all cases in the same location
 for cases_to_include in all_cases_to_include:
 	figure_index = 0

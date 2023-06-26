@@ -41,7 +41,8 @@ for path in parameters_available:
 parameters_available_int_time = np.array(parameters_available_int_time)
 parameters_available_framerate = np.array(parameters_available_framerate)
 # folder of the parameters path for BB correlation
-pathparams_BB='/home/ffederic/work/irvb/2021-09-25_multiple_search_for_parameters'
+# pathparams_BB='/home/ffederic/work/irvb/2021-09-25_multiple_search_for_parameters'
+pathparams_BB='/home/ffederic/work/irvb/2022-12-07_multiple_search_for_parameters'
 f = []
 for (dirpath, dirnames, filenames) in os.walk(pathparams_BB):
 	f.append(dirnames)

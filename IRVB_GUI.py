@@ -1281,6 +1281,29 @@ if False:	# plots required for the paper/thesis, shot 45473
 	plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/45473_for_paper.png', bbox_inches='tight')
 	plt.close()
 
+	data_dir = '/home/ffederic/work/Collaboratory/test/experimental_data/45473/C001H001S0001/'
+	T0=-0.1	# for 45295
+	filename = 'C001H001S0001'
+
+	hsv_data,times = coleval.high_speed_visible_mraw_to_numpy(data_dir,filename,T0)
+	# np.savez_compressed(data_dir+filename,dict=([('data',data),('times',times)]))
+
+	time = np.abs(times-0.7).argmin()
+	plt.figure(figsize=(10, 10))
+	im = plt.imshow(hsv_data[time],'rainbow')
+	plt.xlim(left=340,right=744)
+	plt.ylim(top=280,bottom=690)
+	plt.plot([521,540,540,521,521],[510,510,527,527,510],'--k')
+	plt.plot([566,581,581,566,566],[505,505,525,525,505],'--g')
+	plt.xlabel('horizontal coord [pixels]')
+	plt.ylabel('vertical coord [pixels]')
+	plt.colorbar(im,fraction=0.0467, pad=0.04).set_label('counts [au]')
+	plt.title('shot 45295\n %.3g ms' %(times[time]*1e3))
+	# plt.pause(0.01)
+	plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/45473_for_paper.png', bbox_inches='tight')
+	plt.close()
+
+
 elif False:	# plots required for the paper/thesis, shot 45401
 	colors = ['C2','C4','C5','C6','C7','g','C9']
 	extra_overlays = [dict([('edges_horiz',[20,22,22,20,20]),('edges_vert',[18,18,22,22,18]),('linestyle','--C2'),('alpha',1),('linewidth',4)]),dict([('edges_horiz',[34,36,36,34,34]),('edges_vert',[34,34,38,38,34]),('linestyle','--C4'),('alpha',1),('linewidth',4)]),dict([('edges_horiz',[26,31,31,26,26]),('edges_vert',[34,34,41,41,34]),('linestyle','--C5'),('alpha',1),('linewidth',4)]),dict([('edges_horiz',[36,38,38,36,36]),('edges_vert',[72,72,76,76,72]),('linestyle','--C6'),('alpha',1),('linewidth',4)]),dict([('edges_horiz',[9,57,57,9,9]),('edges_vert',[2,2,9,9,2]),('linestyle','--C7'),('alpha',1),('linewidth',4)]),dict([('edges_horiz',[30,34,34,30,30]),('edges_vert',[47,47,52,52,47]),('linestyle','--g'),('alpha',1),('linewidth',4)])]
@@ -1404,14 +1427,23 @@ elif False:	# plots required for the paper/thesis, shot 45401
 	plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/45401_for_paper.png', bbox_inches='tight')
 	plt.close()
 
-	data_dir = '/home/ffederic/work/Collaboratory/test/experimental_data/45401/C001H001S0001/'
+	data_dir = '/home/ffederic/work/Collaboratory/test/experimental_data/45473/C001H001S0001/'
 	T0=-0.1	# for 45295
 	filename = 'C001H001S0001'
 
 	hsv_data,times = coleval.high_speed_visible_mraw_to_numpy(data_dir,filename,T0)
-	plt.figure()
-	temp = np.abs(times-1).argmin()
-	plt.imshow(hsv_data[temp])
+	time = np.abs(times-0.75).argmin()
+	plt.figure(figsize=(10, 10))
+	im = plt.imshow(hsv_data[time],'rainbow')
+	plt.xlim(left=340,right=744)
+	plt.ylim(top=280,bottom=690)
+	plt.xlabel('horizontal coord [pixels]')
+	plt.ylabel('vertical coord [pixels]')
+	plt.colorbar(im,fraction=0.0467, pad=0.04).set_label('counts [au]')
+	plt.title('shot 45401\n %.3g ms' %(times[time]*1e3))
+	# plt.pause(0.01)
+	plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/45473_for_paper_%.3gms.png' %(int(times[time]*1e3)), bbox_inches='tight')
+	plt.close()
 
 
 elif False:	# plots required for the paper/thesis, shot 45295
