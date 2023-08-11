@@ -1,6 +1,19 @@
 # Created 03/12/2018
 # Fabio Federici
 
+import matplotlib
+if matplotlib.get_backend() in ['agg','Agg']:
+	print('detected non-interactive backend, Agg used')
+	matplotlib.use('Agg')	# this line allows to save output from matplotlib
+	pass
+else:
+	print('detected interactive backend, TkAgg used')
+	matplotlib.use('TkAgg')	# this line allows to save output from matplotlib
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
+from matplotlib.colors import LogNorm	# added 2018-11-17 to allow logarithmic scale plots
+matplotlib.rcParams.update({'font.size': 15})	# added 2020-05-15 to have a larger font by default
+
 import numpy as np
 from scipy import misc
 import scipy.signal
@@ -8,12 +21,9 @@ from scipy.ndimage import rotate
 from skimage.transform import resize
 from scipy.optimize import curve_fit
 from scipy.optimize import newton_krylov	# added 2018-11-13 to replace Fenics for heat transfer simulations
-import matplotlib
-matplotlib.use('TkAgg')	# this line allows to save output from matplotlib
-import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
-from matplotlib.colors import LogNorm	# added 2018-11-17 to allow logarithmic scale plots
-matplotlib.rcParams.update({'font.size': 15})	# added 2020-05-15 to have a larger font by default
+
+
+
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 from matplotlib.patches import Rectangle

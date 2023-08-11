@@ -13,6 +13,7 @@ fueling_t.append([65.3])
 fueling_r.append([0.552])	# fuelling PFR_BOT_B01
 fueling_z.append([-1.526])
 fueling_t.append([74.8])
+
 # tile directly below the the string of bolts on the centre column T1
 # neighbouring points
 stucture_r=[[0.333]*80]
@@ -114,10 +115,20 @@ for value in np.linspace(0-15,150,100):
 	stucture_r.append([1.736,1.562,1.554,1.554])
 	stucture_z.append([-0.262,-0.262,-0.270,-0.444])
 	stucture_t.append([value]*4)
+
+# line that show where the midplane is
+
+stucture_r.append([0.2608]*100)
+stucture_z.append([0.]*100)
+stucture_t.append(np.linspace(0,360,100))
+
+
 # silouette of the centre column
 # neighbouring points
-MASTU_silouette_z = [-1.881,-1.8,-1.719,-1.505,-1.304,-1.103,-0.853,-0.573,-0.505,-0.271,-0.147]
-MASTU_silouette_r = [0.906,0.828,0.747,0.539,0.333,0.333,0.305,0.270,0.2608,0.2608,0.2608]
+MASTU_silouette_z = [-1.881,-1.8,-1.719,-1.505,-1.304,-1.103,-0.853,-0.573,-0.505,-0.271,-0.147,0]
+MASTU_silouette_z = MASTU_silouette_z + (-np.flip(MASTU_silouette_z,axis=0)).tolist()
+MASTU_silouette_r = [0.906,0.828,0.747,0.539,0.333,0.333,0.305,0.270,0.2608,0.2608,0.2608,0.2608]
+MASTU_silouette_r = MASTU_silouette_r + (np.flip(MASTU_silouette_r,axis=0)).tolist()
 from scipy.interpolate.interpolate import interp1d
 R_centre_column_interpolator = interp1d(MASTU_silouette_z+(-np.flip(MASTU_silouette_z,axis=0)).tolist(),MASTU_silouette_r+np.flip(MASTU_silouette_r,axis=0).tolist(),fill_value=np.nan,bounds_error=False)
 if False:

@@ -1,7 +1,12 @@
 # Created 2021-07-08
 # in order to facilitate a proper binning and remotion of the oscillation only after that, here I will only:
 # do the initial adjustment of the ramp up, convert to temperature
-print('starting ' + laser_to_analyse + '\n of \n' + str(np.flip(shot_available,axis=0)[i_day]))
+print('starting ' + laser_to_analyse + '\n of \n' + str(shot_available[i_day]))
+
+try:
+	trash = cp.deepcopy(only_plot_brightness)
+except:
+	only_plot_brightness = False
 
 try:
 	laser_dict = np.load(laser_to_analyse[:-4]+'.npz')
@@ -392,8 +397,8 @@ try:
 	ref_temperature = coleval.retrive_vessel_average_temp_archve(int(laser_to_analyse[-9:-4]))
 	ref_temperature_std = 0.25	# coming from the fact that there is no noise during transition, so the std must be quite below 1K
 	if np.isnan(ref_temperature):
-		ref_temperature = np.mean(reference_background_temperature)
-		ref_temperature_std = (np.sum(np.array(reference_background_temperature_std)**2)**0.5 / len(np.array(reference_background_temperature).flatten()))
+		ref_temperature = 25	# np.mean(reference_background_temperature)	# 2023/06/27 modified because I verified that it is not trustworthy to use the camera as thermometer, it's good only for differences
+		ref_temperature_std = 1	# (np.sum(np.array(reference_background_temperature_std)**2)**0.5 / len(np.array(reference_background_temperature).flatten()))
 
 	# Load BB parameters
 	temp = np.abs(parameters_available_int_time_BB-laser_int_time/1000)<0.1
@@ -412,17 +417,20 @@ try:
 	BB_proportional,BB_proportional_std,constant_offset,constant_offset_std,photon_dict = coleval.calc_BB_coefficients_multi_digitizer(params_BB,errparams_BB,laser_digitizer_ID,temp_ref_counts,temp_ref_counts_std,ref_temperature=ref_temperature,ref_temperature_std=ref_temperature_std,wavewlength_top=5.1,wavelength_bottom=1.5,inttime=laser_int_time/1000)
 	photon_flux_over_temperature_interpolator = photon_dict['photon_flux_over_temperature_interpolator']
 
-	if int(laser_to_analyse[-9:-4]) > 45517:	# MU02
-		foil_position_dict = dict([('angle',1.0),('foilcenter',[158,136]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',246)])	# identified 2022-11-08 for MU02
+	if int(laser_to_analyse[-9:-4]) > 47174:	# MU03
+		foil_position_dict = dict([('angle',1),('foilcenter',[156,137]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',246)])	# identified 2022-11-08 for MU02
+	elif int(laser_to_analyse[-9:-4]) > 45517:	# MU02
+		foil_position_dict = dict([('angle',1),('foilcenter',[159,137]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',246)])	# identified 2022-11-08 for MU02
 	else:
-		foil_position_dict = dict([('angle',0.7),('foilcenter',[157,136]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',240)])	# modified 2021/09/21 to match sensitivity matrix
+		# foil_position_dict = dict([('angle',0.7),('foilcenter',[157,136]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',240)])	# modified 2021/09/21 to match sensitivity matrix
+		foil_position_dict = dict([('angle',0.6),('foilcenter',[158,136]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',242)])	# modified 2021/09/21 to match sensitivity matrix
 
 	try:
 		full_saved_file_dict_FAST = np.load(laser_to_analyse[:-4]+'_FAST.npz')
 		full_saved_file_dict_FAST.allow_pickle=True
 		full_saved_file_dict_FAST = dict(full_saved_file_dict_FAST)
 		if override_FAST_analysis:
-			bla=asgas #	I want an error to happen
+			bla=asgas #	I want an error to happen to override the FAST analysis
 		inverted_dict = full_saved_file_dict_FAST['first_pass'].all()['inverted_dict']
 		test = inverted_dict[str(2)]['regolarisation_coeff_all']
 		foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx = coleval.get_rotation_crop_parameters(temp_ref_counts[-1],foil_position_dict,laser_to_analyse,laser_counts_corrected[-1],time_of_experiment_digitizer_ID_seconds)
@@ -437,24 +445,27 @@ try:
 				full_saved_file_dict_FAST = dict([])
 			pass_number = 0
 			# foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,FAST_counts_minus_background_crop_time = coleval.MASTU_pulse_process_FAST(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,laser_dict['height'],laser_dict['width'],flag_use_of_first_frames_as_reference)
-			foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,time_binned,powernoback,brightness,binning_type,inverted_dict,temperature_minus_background_crop_dt,temperature_minus_background_crop_dt_time = coleval.MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,laser_dict['height'],laser_dict['width'],flag_use_of_first_frames_as_reference,params,errparams,params_BB,errparams_BB,photon_flux_over_temperature_interpolator,BB_proportional,BB_proportional_std,foil_position_dict,pass_number = pass_number,disruption_check=True,x_point_region_radious=0.2,wavewlength_top=5.1,wavelength_bottom=1.5)
+			foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,time_binned,powernoback,brightness,binning_type,inverted_dict,temperature_minus_background_crop_dt,temperature_minus_background_crop_dt_time = coleval.MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,laser_dict['height'],laser_dict['width'],flag_use_of_first_frames_as_reference,params,errparams,params_BB,errparams_BB,photon_flux_over_temperature_interpolator,BB_proportional,BB_proportional_std,foil_position_dict,pass_number = pass_number,disruption_check=True,x_point_region_radious=0.2,wavewlength_top=5.1,wavelength_bottom=1.5,only_plot_brightness = only_plot_brightness)
 			full_saved_file_dict_FAST['first_pass'] = dict([])
 			full_saved_file_dict_FAST['first_pass']['FAST_counts_minus_background_crop'] = np.float16(FAST_counts_minus_background_crop)
 			full_saved_file_dict_FAST['first_pass']['FAST_powernoback'] = np.float16(powernoback)
-			full_saved_file_dict_FAST['first_pass']['FAST_brightness'] = np.float32(brightness)
+			full_saved_file_dict_FAST['first_pass']['FAST_brightness'] = np.float16(brightness)
 			full_saved_file_dict_FAST['first_pass']['FAST_time_binned'] = time_binned
 			full_saved_file_dict_FAST['first_pass']['FAST_binning_type'] = binning_type
 			full_saved_file_dict_FAST['first_pass']['inverted_dict'] = inverted_dict
 			full_saved_file_dict_FAST['first_pass']['time_full_full'] = time_full_int
 			full_saved_file_dict_FAST['time_counts'] = time_full_int
-			full_saved_file_dict_FAST['first_pass']['temperature_minus_background_crop_dt'] = temperature_minus_background_crop_dt
-			full_saved_file_dict_FAST['first_pass']['temperature_minus_background_crop_dt_time'] = temperature_minus_background_crop_dt_time
+			full_saved_file_dict_FAST['first_pass']['temperature_minus_background_crop_dt'] = np.float16(temperature_minus_background_crop_dt)
+			full_saved_file_dict_FAST['first_pass']['temperature_minus_background_crop_dt_time'] = np.float16(temperature_minus_background_crop_dt_time)
 			full_saved_file_dict_FAST['first_pass']['processing_start_time'] = str(datetime.fromtimestamp(start))
 			full_saved_file_dict_FAST['first_pass']['processing_end_time'] = str(datetime.fromtimestamp(tm.time()))
-			np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
-			exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_multi_instrument.py").read())
-			np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
+			# np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
+			coleval.savez_protocol4(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
 			print('generated FAST first pass in %.3g min' %((tm.time()-start)/60))
+			exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_multi_instrument.py").read())
+			# np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
+			coleval.savez_protocol4(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
+			print('generated FAST first pass further analysis in %.3g min' %((tm.time()-start)/60))
 			if skip_second_pass:
 				print('temporary: second FAST pass skipped to do them quicker')
 				stra = second_fast_skipped	# just to cause an error
@@ -476,10 +487,41 @@ try:
 			full_saved_file_dict_FAST['second_pass']['time_full_full'] = time_full_int
 			full_saved_file_dict_FAST['second_pass']['processing_start_time'] = str(datetime.fromtimestamp(start))
 			full_saved_file_dict_FAST['second_pass']['processing_end_time'] = str(datetime.fromtimestamp(tm.time()))
-			np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
-			exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_multi_instrument.py").read())
-			np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
+			# np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
+			coleval.savez_protocol4(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
 			print('generated FAST second pass in %.3g min' %((tm.time()-start)/60))
+			exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_multi_instrument.py").read())
+			# np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
+			coleval.savez_protocol4(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
+			print('generated FAST second pass further analysis in %.3g min' %((tm.time()-start)/60))
+			if skip_third_pass:
+				print('temporary: third FAST pass skipped to do them quicker')
+				stra = third_fast_skipped	# just to cause an error
+			start = tm.time()
+			pass_number = 2
+			try:
+				test = full_saved_file_dict_FAST['third_pass']
+				override_third_pass_int = override_third_pass
+			except:
+				override_third_pass_int = True
+			foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,time_binned,powernoback,brightness,binning_type,inverted_dict = coleval.MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,laser_dict['height'],laser_dict['width'],flag_use_of_first_frames_as_reference,params,errparams,params_BB,errparams_BB,photon_flux_over_temperature_interpolator,BB_proportional,BB_proportional_std,foil_position_dict,pass_number = pass_number,x_point_region_radious=0.1,wavewlength_top=5.1,wavelength_bottom=1.5,override_second_pass=override_second_pass_int,override_third_pass=override_third_pass_int)
+			full_saved_file_dict_FAST['third_pass'] = dict([])
+			full_saved_file_dict_FAST['third_pass']['FAST_counts_minus_background_crop'] = np.float16(FAST_counts_minus_background_crop)
+			full_saved_file_dict_FAST['third_pass']['FAST_powernoback'] = np.float16(powernoback)
+			full_saved_file_dict_FAST['third_pass']['FAST_brightness'] = np.float32(brightness)
+			full_saved_file_dict_FAST['third_pass']['FAST_time_binned'] = time_binned
+			full_saved_file_dict_FAST['third_pass']['FAST_binning_type'] = binning_type
+			full_saved_file_dict_FAST['third_pass']['inverted_dict'] = inverted_dict
+			full_saved_file_dict_FAST['third_pass']['time_full_full'] = time_full_int
+			full_saved_file_dict_FAST['third_pass']['processing_start_time'] = str(datetime.fromtimestamp(start))
+			full_saved_file_dict_FAST['third_pass']['processing_end_time'] = str(datetime.fromtimestamp(tm.time()))
+			# np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
+			coleval.savez_protocol4(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
+			print('generated FAST third pass in %.3g min' %((tm.time()-start)/60))
+			exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_multi_instrument.py").read())
+			# np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
+			coleval.savez_protocol4(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
+			print('generated FAST third pass further analysis in %.3g min' %((tm.time()-start)/60))
 		except Exception as e:
 			print('FAST FAILED ' + laser_to_analyse)
 			logging.exception('with error: ' + str(e))

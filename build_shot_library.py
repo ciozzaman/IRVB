@@ -51,12 +51,13 @@ if True:
 	beams_prefix = '/XNB/'
 	beams_affix = '/BEAMPOWER'
 	for i in range(2,len(shot_list['Sheet1'])):
-		shot = int(np.array(shot_list['Sheet1'][i])[np.array(shot_list['Sheet1'][0]) == 'shot number'])
+		shot = int(np.array(shot_list['Sheet1'][i])[(np.array(shot_list['Sheet1'][0]) == 'shot number').argmax()])
 		signal_name = beams_prefix + 'SW' + beams_affix
 		try:
 			data = client.get(signal_name,shot,timefirst=0.2,time_last=False)
 			if np.nanmax(np.abs(data.data))>0:
 				shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'SW beam').argmax()] = 'X'
+				print(shot)
 		except:
 			shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'SW beam').argmax()] = ''
 			pass
@@ -65,6 +66,7 @@ if True:
 			data = client.get(signal_name,shot)
 			if np.nanmax(np.abs(data.data))>0:
 				shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'SS beam').argmax()] = 'X'
+				print(shot)
 		except:
 			shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'SS beam').argmax()] = ''
 			pass
@@ -75,25 +77,40 @@ if True:
 
 
 	# I want to at least get the date automatically so I can run my analysis
-	# ATTENTION
-	# this DOES NOT work. afterwards you need to to the file and convert from text to date
-	f = []
-	for dirnames in os.listdir('/home/ffederic/work/irvb/MAST-U'):
-		if os.path.isdir('/home/ffederic/work/irvb/MAST-U/'+dirnames) and len(dirnames)==10:
-			f.append(dirnames)
+	if False:	# ATTENTION, this DOES NOT work. afterwards you need to open the file and convert from text to date
+		f = []
+		for dirnames in os.listdir('/home/ffederic/work/irvb/MAST-U'):
+			if os.path.isdir('/home/ffederic/work/irvb/MAST-U/'+dirnames) and len(dirnames)==10:
+				f.append(dirnames)
 
-	for dirname in f:
-		for filename in os.listdir('/home/ffederic/work/irvb/MAST-U/'+dirname):
-			if filename[:16] == 'IRVB-MASTU_shot-' and filename[-4:] == '.ptw':
-				shot = filename[16:16+5]
-				select = (np.array(shot_list['Sheet1'])[:,np.array(shot_list['Sheet1'][0]) == 'shot number'].astype(str) == shot).flatten().argmax()
-				if shot_list['Sheet1'][select][(np.array(shot_list['Sheet1'][0]) == 'date').argmax()] == '':
-					shot_list['Sheet1'][select][(np.array(shot_list['Sheet1'][0]) == 'date').argmax()] = dirname+' 00:00:00' # datetime(int(dirname[:4]),int(dirname[5:7]),int(dirname[8:]),00,00)
-					print(shot)
+		for dirname in f:
+			for filename in os.listdir('/home/ffederic/work/irvb/MAST-U/'+dirname):
+				if filename[:16] == 'IRVB-MASTU_shot-' and filename[-4:] == '.ptw':
+					shot = filename[16:16+5]
+					select = (np.array(shot_list['Sheet1'])[:,np.array(shot_list['Sheet1'][0]) == 'shot number'].astype(str) == shot).flatten().argmax()
+					if shot_list['Sheet1'][select][(np.array(shot_list['Sheet1'][0]) == 'date').argmax()] == '':
+						shot_list['Sheet1'][select][(np.array(shot_list['Sheet1'][0]) == 'date').argmax()] = dirname+' 00:00:00' # datetime(int(dirname[:4]),int(dirname[5:7]),int(dirname[8:]),00,00)
+						print(shot)
 
+	else:	# this actually works, saving the data as a text
+		import pyuda
+		client=pyuda.Client()
+		from datetime import datetime
+		shot_list = get_data(path+'shot_list2.ods')
+		for i in range(2,len(shot_list['Sheet1'])):
+			shot = int(np.array(shot_list['Sheet1'][i])[(np.array(shot_list['Sheet1'][0]) == 'shot number').argmax()])
+			try:
+				date_time = client.get_shot_date_time(shot)[0]+' '+client.get_shot_date_time(shot)[1][:8]
+				# date_format = datetime.strptime(date_time,"%Y-%m-%d %H:%M:%S")
+				shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0])=='date').argmax()] = date_time
+				print(shot)
+			except:
+				pass
 	save_data(path+'shot_list2.ods',shot_list)
 	print('done')
 	exit()
+
+
 
 
 

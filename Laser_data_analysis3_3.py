@@ -8,6 +8,8 @@ exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_import_pc.py").
 # #this is if working in batch, use predefined NOT visual printer
 # exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_import_batch.py").read())
 
+from scipy.interpolate import interpn
+
 # to show the line where it fails
 import sys, traceback, logging
 logging.basicConfig(level=logging.ERROR)
@@ -48,7 +50,8 @@ for i_name,name in enumerate(cases_to_include):
 				try:
 					laser_location.append(laser_dict['laser_location'])
 				except:
-					laser_location.append(laser_dict['NUC_plate'].all()['laser_location'])
+					laser_location.append(laser_dict['BB_source_w_window'].all()['laser_location'])
+					break
 				freqlaser.append(collection_of_records[name]['freqlaser'][i_laser_to_analyse])
 				voltlaser.append(collection_of_records[name]['voltlaser'][i_laser_to_analyse])
 				FrameRate.append(laser_dict['FrameRate'])
@@ -142,7 +145,7 @@ all_cases_to_include = [['laser17','laser18','laser19','laser22','laser32','lase
 all_cases_to_include = [['laser19','laser22','laser30','laser33']]	# all cases in the same location
 all_cases_to_include = [['laser19','laser22','laser30','laser33']]	# all cases in the same location
 all_cases_to_include = [['laser22','laser33']]	# all cases in the same location
-include_large_area_data = False
+include_large_area_data = True
 # type_of_calibration = 'NUC_plate'
 # type_of_calibration = 'BB_source_w/o_window'
 type_of_calibration = 'BB_source_w_window'
@@ -179,6 +182,8 @@ for cases_to_include in all_cases_to_include:
 
 	minimum_ON_period = minimum_ON_period_list
 
+	all_time_axis = []
+	all_emissivity_range = []
 	all_partial_BBrad = []
 	all_partial_BBrad_std = []
 	all_partial_diffusion = []
@@ -240,25 +245,56 @@ for cases_to_include in all_cases_to_include:
 			temp = laser_dict[type_of_calibration].all()
 			# temp = laser_dict['BB_source_w/o_window'].all()
 			# temp = laser_dict['BB_source_w_window'].all()
-			partial_BBrad_small = temp['partial_BBrad_small']
-			partial_BBrad_std_small = temp['partial_BBrad_std_small']
-			partial_diffusion_small = temp['partial_diffusion_small']
-			partial_diffusion_std_small = temp['partial_diffusion_std_small']
-			partial_timevariation_small = temp['partial_timevariation_small']
-			partial_timevariation_std_small = temp['partial_timevariation_std_small']
-			partial_BBrad_large = temp['partial_BBrad']
-			partial_BBrad_std_large = temp['partial_BBrad_std']
-			partial_diffusion_large = temp['partial_diffusion']
-			partial_diffusion_std_large = temp['partial_diffusion_std']
-			partial_timevariation_large = temp['partial_timevariation']
-			partial_timevariation_std_large = temp['partial_timevariation_std']
+			time_axis = np.arange(len(temp['totalpower_nominal_properties']))
+			emissivity_range = np.flip(temp['emissivity_range'],axis=0)
+			temp1=[gna[11:] for gna in list(temp.keys()) if (gna[:5]=='emiss' and gna[-5:]!='range')]
+			partial_BBrad_small = []
+			partial_BBrad_std_small = []
+			partial_diffusion_small = []
+			partial_diffusion_std_small = []
+			partial_timevariation_small = []
+			partial_timevariation_std_small = []
+			partial_BBrad_large = []
+			partial_BBrad_std_large = []
+			partial_diffusion_large = []
+			partial_diffusion_std_large = []
+			partial_timevariation_large = []
+			partial_timevariation_std_large = []
+			for emissivity in emissivity_range:
+				temp2 = temp['emissivity='+temp1[np.abs(np.array(temp1).astype(float)-emissivity).argmin()]]
+				partial_BBrad_small.append(temp2['partial_BBrad_small'])
+				partial_BBrad_std_small.append(temp2['partial_BBrad_std_small'])
+				partial_diffusion_small.append(temp2['partial_diffusion_small'])
+				partial_diffusion_std_small.append(temp2['partial_diffusion_std_small'])
+				partial_timevariation_small.append(temp2['partial_timevariation_small'])
+				partial_timevariation_std_small.append(temp2['partial_timevariation_std_small'])
+				partial_BBrad_large.append(temp2['partial_BBrad'])
+				partial_BBrad_std_large.append(temp2['partial_BBrad_std'])
+				partial_diffusion_large.append(temp2['partial_diffusion'])
+				partial_diffusion_std_large.append(temp2['partial_diffusion_std'])
+				partial_timevariation_large.append(temp2['partial_timevariation'])
+				partial_timevariation_std_large.append(temp2['partial_timevariation_std'])
 			if type_of_calibration=='NUC_plate':
 				partial_timevariation_small /=2
 				partial_timevariation_std_small /=2
 				partial_timevariation_large /=2
 				partial_timevariation_std_large /=2
-			partial_timevariation_large *=1.15
-			partial_timevariation_std_large *=1.15
+
+			# partial_BBrad_small = interp2d(time_axis,emissivity_range,partial_BBrad_small)
+			# partial_BBrad_std_small = interp2d(time_axis,emissivity_range,partial_BBrad_std_small)
+			# partial_diffusion_small = interp2d(time_axis,emissivity_range,partial_diffusion_small)
+			# partial_diffusion_std_small = interp2d(time_axis,emissivity_range,partial_diffusion_std_small)
+			# partial_timevariation_small = interp2d(time_axis,emissivity_range,partial_timevariation_small)
+			# partial_timevariation_std_small = interp2d(time_axis,emissivity_range,partial_timevariation_std_small)
+			# partial_BBrad_large = interp2d(time_axis,emissivity_range,partial_BBrad_large)
+			# partial_BBrad_std_large = interp2d(time_axis,emissivity_range,partial_BBrad_std_large)
+			# partial_diffusion_large = interp2d(time_axis,emissivity_range,partial_diffusion_large)
+			# partial_diffusion_std_large = interp2d(time_axis,emissivity_range,partial_diffusion_std_large)
+			# partial_timevariation_large = interp2d(time_axis,emissivity_range,partial_timevariation_large)
+			# partial_timevariation_std_large = interp2d(time_axis,emissivity_range,partial_timevariation_std_large)
+
+			# partial_timevariation_large *=1.15	# 2023-06-26 no idea now why I did this correction, removed
+			# partial_timevariation_std_large *=1.15
 			time_of_experiment = temp['time_of_experiment']	# microseconds
 			if np.diff(time_of_experiment).max()>np.median(np.diff(time_of_experiment))*1.1:
 				hole_pos = np.diff(time_of_experiment).argmax()
@@ -292,6 +328,8 @@ for cases_to_include in all_cases_to_include:
 		# else:
 		# 	sharpness_degradation_high_frequency.append(1)
 
+		all_emissivity_range.append(emissivity_range)
+		all_time_axis.append(time_axis)
 		all_partial_BBrad.append(partial_BBrad_small)
 		all_partial_BBrad_std.append(partial_BBrad_std_small)
 		all_partial_diffusion.append(partial_diffusion_small)
@@ -299,6 +337,8 @@ for cases_to_include in all_cases_to_include:
 		all_partial_timevariation.append(partial_timevariation_small)
 		all_partial_timevariation_std.append(partial_timevariation_std_small)
 		if include_large_area_data:
+			all_emissivity_range.append(emissivity_range)
+			all_time_axis.append(time_axis)
 			all_partial_BBrad.append(partial_BBrad_large)
 			all_partial_BBrad_std.append(partial_BBrad_std_large)
 			all_partial_diffusion.append(partial_diffusion_large)
@@ -372,12 +412,18 @@ for cases_to_include in all_cases_to_include:
 		all_fitted_power = []
 		all_fitted_zero_power = []
 		for index in range(len(all_laser_to_analyse_power_end)):
+			# print(index)
 			time_of_experiment = all_time_of_experiment[index]
-			partial_BBrad = all_partial_BBrad[index]
+			emissivity_range = all_emissivity_range[index]
+			time_axis = all_time_axis[index]
+			partial_BBrad = interpn((emissivity_range,time_axis),all_partial_BBrad[index],np.array([[search_emissivity]*len(time_axis),time_axis]).T)
+			# partial_BBrad = all_partial_BBrad[index]
 			# partial_BBrad_std = all_partial_BBrad_std[index]
-			partial_diffusion = all_partial_diffusion[index]
+			partial_diffusion = interpn((emissivity_range,time_axis),all_partial_diffusion[index],np.array([[search_emissivity]*len(time_axis),time_axis]).T)
+			# partial_diffusion = all_partial_diffusion[index]
 			# partial_diffusion_std = all_partial_diffusion_std[index]
-			partial_timevariation = all_partial_timevariation[index]
+			partial_timevariation = interpn((emissivity_range,time_axis),all_partial_timevariation[index],np.array([[search_emissivity]*len(time_axis),time_axis]).T)
+			# partial_timevariation = all_partial_timevariation[index]
 			# partial_timevariation_std = all_partial_timevariation_std[index]
 			laser_framerate = all_laser_framerate[index]/2
 			experimental_laser_frequency = all_laser_to_analyse_frequency_end[index]
@@ -497,12 +543,12 @@ for cases_to_include in all_cases_to_include:
 	sigma = np.array(sigma)# * ((all_laser_to_analyse_frequency_end/(all_laser_to_analyse_frequency_end.min()))**0.1)
 	sigma = np.array([sigma,sigma*3,sigma*np.inf]).T.flatten()
 	# bds = [[0.7,0.2*2.5e-6,0.2*Ptthermaldiffusivity,0.4,0.8],[1,5*2.5e-6,5*Ptthermaldiffusivity,1.5,1.5]]
-	bds = [[0.0,0.2*2.5e-6,0.2*2.5e-6/Ptthermaldiffusivity,0.4,0.99999991],[1,5*2.5e-6,5*2.5e-6/Ptthermaldiffusivity,1.5,1.0000002]]
+	bds = [[0.6,0.2*2.5e-6,0.2*2.5e-6/Ptthermaldiffusivity,0.4,0.99999991],[1.2,5*2.5e-6,5*2.5e-6/Ptthermaldiffusivity,1.5,1.0000002]]
 	# guess=[0.98,2.5e-6,Ptthermaldiffusivity,1]
 	# guess=[0.98,2.0e-6,1e-5,0.753,1]
-	guess=[0.9,2.0e-6,2.0e-6/1e-5,0.78,1]
-	fit = curve_fit(calculate_laser_power_given_parameters_1, x, y, sigma=sigma, p0=guess,bounds=bds,maxfev=int(1e6),verbose=2,diff_step=np.array(guess)/100,xtol=1e-10)
-	guess = fit[0]
+	guess=[0.8,2.0e-6,2.0e-6/1e-5,0.78,1]
+	# fit = curve_fit(calculate_laser_power_given_parameters_1, x, y, sigma=sigma, p0=guess,bounds=bds,maxfev=int(1e6),verbose=2,diff_step=np.array(guess)/100,xtol=1e-10)
+	# guess = fit[0]
 	fit = curve_fit(calculate_laser_power_given_parameters_1, x, y, sigma=sigma, p0=guess,bounds=bds,maxfev=int(1e6),verbose=2,diff_step=np.array(guess)/10000,xtol=1e-10)
 	guess = fit[0]
 	fit = curve_fit(calculate_laser_power_given_parameters_1, x, y, sigma=sigma, p0=guess,bounds=bds,maxfev=int(1e6),verbose=2,diff_step=np.array(guess)/1000000,xtol=1e-10)
@@ -586,19 +632,37 @@ for cases_to_include in all_cases_to_include:
 		# index=len(all_case_ID_end)-1
 		case_ID = all_case_ID_end[index]
 		laser_to_analyse = all_laser_to_analyse_end[index]
-		partial_BBrad = all_partial_BBrad_small[index]
-		partial_BBrad_std = all_partial_BBrad_std_small[index]
-		partial_diffusion = all_partial_diffusion_small[index]
-		partial_diffusion_std = all_partial_diffusion_std_small[index]
-		partial_timevariation = all_partial_timevariation_small[index]
-		partial_timevariation_std = all_partial_timevariation_std_small[index]
+		# partial_BBrad = all_partial_BBrad_small[index]
+		# partial_BBrad_std = all_partial_BBrad_std_small[index]
+		# partial_diffusion = all_partial_diffusion_small[index]
+		# partial_diffusion_std = all_partial_diffusion_std_small[index]
+		# partial_timevariation = all_partial_timevariation_small[index]
+		# partial_timevariation_std = all_partial_timevariation_std_small[index]
 		if include_large_area_data:
-			partial_BBrad_large = all_partial_BBrad_large[index]
-			partial_BBrad_std_large = all_partial_BBrad_std_large[index]
-			partial_diffusion_large = all_partial_diffusion_large[index]
-			partial_diffusion_std_large = all_partial_diffusion_std_large[index]
-			partial_timevariation_large = all_partial_timevariation_large[index]
-			partial_timevariation_std_large = all_partial_timevariation_std_large[index]
+			emissivity_range = all_emissivity_range[index*2]
+			time_axis = all_time_axis[index*2]
+		else:
+			emissivity_range = all_emissivity_range[index]
+			time_axis = all_time_axis[index]
+		partial_BBrad = interpn((emissivity_range,time_axis),all_partial_BBrad_small[index],np.array([[emissivity_first_stage]*len(time_axis),time_axis]).T)
+		partial_BBrad_std = interpn((emissivity_range,time_axis),all_partial_BBrad_std_small[index],np.array([[emissivity_first_stage]*len(time_axis),time_axis]).T)
+		partial_diffusion = interpn((emissivity_range,time_axis),all_partial_diffusion_small[index],np.array([[emissivity_first_stage]*len(time_axis),time_axis]).T)
+		partial_diffusion_std = interpn((emissivity_range,time_axis),all_partial_diffusion_std_small[index],np.array([[emissivity_first_stage]*len(time_axis),time_axis]).T)
+		partial_timevariation = interpn((emissivity_range,time_axis),all_partial_timevariation_small[index],np.array([[emissivity_first_stage]*len(time_axis),time_axis]).T)
+		partial_timevariation_std = interpn((emissivity_range,time_axis),all_partial_timevariation_std_small[index],np.array([[emissivity_first_stage]*len(time_axis),time_axis]).T)
+		if include_large_area_data:
+			# partial_BBrad_large = all_partial_BBrad_large[index]
+			# partial_BBrad_std_large = all_partial_BBrad_std_large[index]
+			# partial_diffusion_large = all_partial_diffusion_large[index]
+			# partial_diffusion_std_large = all_partial_diffusion_std_large[index]
+			# partial_timevariation_large = all_partial_timevariation_large[index]
+			# partial_timevariation_std_large = all_partial_timevariation_std_large[index]
+			partial_BBrad_large = interpn((emissivity_range,time_axis),all_partial_BBrad_large[index],np.array([[emissivity_first_stage]*len(time_axis),time_axis]).T)
+			partial_BBrad_std_large = interpn((emissivity_range,time_axis),all_partial_BBrad_std_large[index],np.array([[emissivity_first_stage]*len(time_axis),time_axis]).T)
+			partial_diffusion_large = interpn((emissivity_range,time_axis),all_partial_diffusion_large[index],np.array([[emissivity_first_stage]*len(time_axis),time_axis]).T)
+			partial_diffusion_std_large = interpn((emissivity_range,time_axis),all_partial_diffusion_std_large[index],np.array([[emissivity_first_stage]*len(time_axis),time_axis]).T)
+			partial_timevariation_large = interpn((emissivity_range,time_axis),all_partial_timevariation_large[index],np.array([[emissivity_first_stage]*len(time_axis),time_axis]).T)
+			partial_timevariation_std_large = interpn((emissivity_range,time_axis),all_partial_timevariation_std_large[index],np.array([[emissivity_first_stage]*len(time_axis),time_axis]).T)
 			time_of_experiment = all_time_of_experiment[index*2]
 			laser_framerate = all_laser_framerate[index*2]/2
 			experimental_laser_frequency = all_laser_to_analyse_frequency_end[index*2]
@@ -1200,3 +1264,141 @@ for cases_to_include in all_cases_to_include:
 	figure_index+=1
 	plt.savefig(path_where_to_save_everything_int + 'example_for_paper_' + str(figure_index) +'.eps', bbox_inches='tight')
 	plt.close()
+
+
+
+
+
+
+
+
+# 2023-07-16 new thing.
+# I want to use as much info I can take from a single laser experiment for findint the foil properties
+
+index = 4
+laser_to_analyse = all_laser_to_analyse[index]
+experimental_laser_frequency = all_laser_to_analyse_frequency[index]
+experimental_laser_voltage = all_laser_to_analyse_voltage[index]
+experimental_laser_duty = all_laser_to_analyse_duty[index]
+power_interpolator = all_power_interpolator[index]
+focus_status = all_focus_status[index]
+case_ID = all_case_ID[index]
+laser_to_analyse = all_laser_to_analyse[index]
+laser_to_analyse_power = power_interpolator(experimental_laser_voltage)
+
+
+# laser_dict = coleval.read_IR_file(laser_to_analyse)
+laser_dict = np.load(laser_to_analyse+'.npz')
+laser_dict.allow_pickle=True
+# laser_counts_filtered = laser_dict['laser_counts_filtered']
+full_saved_file_dict = dict(laser_dict)
+type_of_calibration = 'BB_source_w_window'
+
+try:
+	full_saved_file_dict[type_of_calibration] = full_saved_file_dict[type_of_calibration].all()
+except:
+	pass
+
+emissivity_range = full_saved_file_dict[type_of_calibration]['emissivity_range']
+reference_temperature_range = full_saved_file_dict[type_of_calibration]['reference_temperature_range']
+time_partial = full_saved_file_dict[type_of_calibration]['time_of_experiment']
+
+plt.figure()
+linestyles = ['-', '--', ':', '-.', '-', '--', ':', '-.']
+for i_emissivity,emissivity in enumerate(emissivity_range):
+	# emissivity = emissivity_range[5]
+	try:
+		full_saved_file_dict[type_of_calibration]['emissivity='+str(emissivity)] = full_saved_file_dict[type_of_calibration]['emissivity='+str(emissivity)].all()
+	except:
+		pass
+
+	for i_reference_temperature,reference_temperature in enumerate(reference_temperature_range):
+	# reference_temperature = reference_temperature_range[0]
+		try:
+			full_saved_file_dict[type_of_calibration]['emissivity='+str(emissivity)]['T0='+str(reference_temperature)] = full_saved_file_dict[type_of_calibration]['emissivity='+str(emissivity)]['T0='+str(reference_temperature)].all()
+		except:
+			pass
+
+		try:
+			laser_temperature_minus_background_crop_max = full_saved_file_dict[type_of_calibration]['emissivity='+str(emissivity)]['T0='+str(reference_temperature)]['laser_temperature_minus_background_crop_max']
+		except:
+			continue
+		framerate = 1/np.median(np.diff(time_partial))
+		frames_for_one_pulse = framerate/experimental_laser_frequency
+		temp = generic_filter(laser_temperature_minus_background_crop_max,np.mean,size=[max(1,int(frames_for_one_pulse*experimental_laser_duty*0.01))])
+		temp = np.diff(temp)
+		from scipy.signal import find_peaks, peak_prominences as get_proms
+		start_loc = find_peaks(temp,distance=frames_for_one_pulse*0.95)[0]
+		end_loc = find_peaks(-temp,distance=frames_for_one_pulse*0.95)[0]
+
+		peaks_loc,throughs_loc,frames_for_one_pulse,start_loc,end_loc = coleval.find_reliable_peaks_and_throughs(laser_temperature_minus_background_crop_max,time_partial,experimental_laser_frequency,experimental_laser_duty)
+		start_loc = start_loc[start_loc<end_loc.max()]
+		end_loc = end_loc[end_loc>start_loc.min()]
+		frames_for_one_pulse_ON = [frames_for_one_pulse*experimental_laser_duty//2*2]
+		for i in range(len(start_loc)):
+			try:
+				frames_for_one_pulse_ON.append(end_loc[i]-start_loc[i])
+			except:
+				pass
+		frames_for_one_pulse_ON = np.min(frames_for_one_pulse_ON).astype(int)
+
+		heated_phase = np.zeros((frames_for_one_pulse_ON))
+		for loc in start_loc:
+			heated_phase += laser_temperature_minus_background_crop_max[loc:loc+frames_for_one_pulse_ON]
+		heated_phase /= len(start_loc)
+		heated_phase = heated_phase[1:-max(int(frames_for_one_pulse*experimental_laser_duty*0.02),int(frames_for_one_pulse*experimental_laser_duty*0.01))]
+		time = np.arange(len(heated_phase))/framerate
+		from scipy.special import expi
+		def func_(t,t0,t_mult,csi,max):
+			# print(t0,t_mult,csi,max)
+			return max*(expi(-csi*(1+4*t_mult*(t-t0))) - expi(-csi))
+		bds = [[-np.inf,0.,0.,0.],[0.,np.inf,np.inf,np.inf]]
+		guess = [0.,1,0.1,1.]
+		fit = curve_fit(func_, time,heated_phase, p0=guess, bounds = bds, maxfev=100000000)
+		# plt.figure()
+		# plt.plot(np.arange(len(temp))/(framerate/2),temp)
+		# # plt.plot(np.arange(len(temp))/(framerate/2),func_(np.arange(len(temp))/(framerate/2),*guess),':')
+		# plt.plot(np.arange(len(temp))/(framerate/2),func_(np.arange(len(temp))/(framerate/2),*fit[0]),'--')
+		# plt.pause(0.1)
+		# print(fit[0])
+		w0 = (2.5E-5/fit[0][1])**0.54*(273+reference_temperature)**3
+		hs_star = 2.5E-6/w0
+		eta = 2*emissivity*5.67E-8*4*((273+reference_temperature)**3)	# this is calculated wia a taylor expansion of the BB radiation term, using only the stronger dependency. for dT<10 the error is <6%
+		eta_star = eta*w0/71.6
+		csi = eta_star/(2*hs_star)
+		# print([emissivity,reference_temperature])
+		# print([csi,fit[0][2],csi/fit[0][2]])
+		hs = eta/(2*Ptspecificheat*Ptdensity) * 1/fit[0][1] * 1/fit[0][2]
+		print(hs)
+
+		eta_error = 1*emissivity*5.67E-8*(6*((273+reference_temperature)**2)*(heated_phase.max()) + 4*(273+reference_temperature)*((heated_phase.max())**2) + (heated_phase.max())**3)
+
+
+		from uncertainties import correlated_values,ufloat
+		from uncertainties.unumpy import nominal_values,std_devs,uarray
+		fit_ = correlated_values(fit[0],fit[1])
+		thickness_over_diffusivity = ufloat(eta,eta_error)/(2*Ptthermalconductivity) * 1/(fit_[1] *fit_[2])
+		print(thickness_over_diffusivity)
+
+		partial_timevariation = full_saved_file_dict[type_of_calibration]['emissivity='+str(emissivity)]['T0='+str(reference_temperature)]['partial_timevariation']
+		partial_timevariation_std = full_saved_file_dict[type_of_calibration]['emissivity='+str(emissivity)]['T0='+str(reference_temperature)]['partial_timevariation_std']
+		partial_timevariation_small = full_saved_file_dict[type_of_calibration]['emissivity='+str(emissivity)]['T0='+str(reference_temperature)]['partial_timevariation_small']
+		partial_timevariation_std_small = full_saved_file_dict[type_of_calibration]['emissivity='+str(emissivity)]['T0='+str(reference_temperature)]['partial_timevariation_std_small']
+		partial_BBrad = full_saved_file_dict[type_of_calibration]['emissivity='+str(emissivity)]['T0='+str(reference_temperature)]['partial_BBrad']	# this is already multiplied by 2
+		partial_BBrad_std = full_saved_file_dict[type_of_calibration]['emissivity='+str(emissivity)]['T0='+str(reference_temperature)]['partial_BBrad_std']
+		partial_BBrad_small = full_saved_file_dict[type_of_calibration]['emissivity='+str(emissivity)]['T0='+str(reference_temperature)]['partial_BBrad_small']
+		partial_BBrad_std_small = full_saved_file_dict[type_of_calibration]['emissivity='+str(emissivity)]['T0='+str(reference_temperature)]['partial_BBrad_std_small']
+		partial_diffusion = full_saved_file_dict[type_of_calibration]['emissivity='+str(emissivity)]['T0='+str(reference_temperature)]['partial_diffusion']
+		partial_diffusion_small = full_saved_file_dict[type_of_calibration]['emissivity='+str(emissivity)]['T0='+str(reference_temperature)]['partial_diffusion_small']
+
+		timevariation = partial_timevariation * nominal_values(thickness_over_diffusivity) #+ partial_BBrad*emissivity
+
+		plt.plot(generic_filter(timevariation,np.mean,size=[7]),color='C'+str(i_reference_temperature),linestyle=linestyles[i_emissivity],label='emis=%.3g, T0=%.3g' %(emissivity,reference_temperature))
+		# plt.plot(generic_filter(partial_diffusion*nominal_values(thickness_over_diffusivity)*Ptthermaldiffusivity,np.mean,size=[7]),color='C'+str(i_reference_temperature),linestyle=linestyles[i_emissivity],label='emis=%.3g, T0=%.3g' %(emissivity,reference_temperature))
+		# plt.plot(generic_filter(laser_temperature_minus_background_crop_max,np.mean,size=[7]),color='C'+str(i_reference_temperature),linestyle=linestyles[i_emissivity],label='emis=%.3g, T0=%.3g' %(emissivity,reference_temperature))
+
+		coleval.find_reliable_peaks_and_throughs(generic_filter(timevariation,np.mean,size=[7]),time_partial,experimental_laser_frequency,experimental_laser_duty)
+
+plt.legend(loc='best', fontsize='xx-small')
+plt.pause(0.01)
+#

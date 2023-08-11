@@ -94,7 +94,7 @@ def temp_function(full_saved_file_dict_FAST):
 		inverted_dict[str(grid_resolution)]['inner_leg_reliable_power_all'] = inner_leg_reliable_power_all
 		inverted_dict[str(grid_resolution)]['inner_leg_reliable_power_sigma_all'] = inner_leg_reliable_power_sigma_all
 		full_saved_file_dict_FAST['multi_instrument']['time_full_binned_crop'] = time_full_binned_crop
-		full_saved_file_dict_FAST['multi_instrument']['greenwald_density'] = greenwald_density
+		# full_saved_file_dict_FAST['multi_instrument']['greenwald_density'] = greenwald_density
 		full_saved_file_dict_FAST['multi_instrument']['dr_sep_in'] = dr_sep_in
 		full_saved_file_dict_FAST['multi_instrument']['dr_sep_out'] = dr_sep_out
 		inverted_dict[str(grid_resolution)]['inner_L_poloidal_x_point_all'] = inner_L_poloidal_x_point_all
@@ -109,7 +109,7 @@ def temp_function(full_saved_file_dict_FAST):
 		inverted_dict[str(grid_resolution)]['out_VV_radiation_sigma_all'] = out_VV_radiation_sigma_all
 		all_lower_volume_radiation_all = inverted_data[:,:,inversion_Z<0]
 		all_lower_volume_radiation_all = np.nansum(np.nansum(all_lower_volume_radiation_all,axis=-1)*inversion_R*(np.mean(np.diff(inversion_R))**2)*2*np.pi,axis=1)
-		all_lower_volume_radiation_sigma_all = (np.mean(grid_data_masked_crop,axis=1)[:,1]<=0)*2*np.pi*np.mean(grid_data_masked_crop,axis=1)[:,0]*(np.mean(np.diff(inversion_R))**2)
+		all_lower_volume_radiation_sigma_all = ((np.mean(grid_data_masked_crop,axis=1)[:,1]<=0)*2*np.pi*np.mean(grid_data_masked_crop,axis=1)[:,0]*(np.mean(np.diff(inversion_R))**2)).astype(np.float32)
 		all_lower_volume_radiation_sigma_all = np.nansum((np.transpose(covariance_out[:,:-2,:-2]*all_lower_volume_radiation_sigma_all,(0,2,1))*all_lower_volume_radiation_sigma_all),axis=(1,2))**0.5
 		# all_lower_volume_radiation_all = real_core_radiation_all + real_non_core_radiation_all
 		# all_lower_volume_radiation_sigma_all = (real_core_radiation_sigma_all**2 + real_non_core_radiation_sigma_all**2)**0.5
@@ -241,28 +241,28 @@ def temp_function(full_saved_file_dict_FAST):
 			except:
 				lp_data,output_contour1 = coleval.read_LP_data(efit_reconstruction.shotnumber)
 			if True:	# use ot Peter Ryan function to combine data within time slice and to filter when strike point is on a dead channel
-				temp = np.logical_and(time_full_binned_crop>output_contour1['time'][0].min(),time_full_binned_crop<output_contour1['time'][0].max())
+				temp = np.logical_and(time_full_binned_crop>output_contour1['time'][0][0].min(),time_full_binned_crop<output_contour1['time'][0][0].max())
 				trange = tuple(map(list, np.array([time_full_binned_crop[temp] - np.mean(np.diff(time_full_binned_crop))/2,time_full_binned_crop[temp] + np.mean(np.diff(time_full_binned_crop))/2]).T))
 				try:
 					output_contour1=lp_data.contour_plot(trange=[0,1.5],bad_probes=None,divertor='lower', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T1','T2','T3','T4','T5'],show=False)
-					temp = output_contour1['y'][0]
+					temp = output_contour1['y'][0][0]
 					temp[np.isnan(temp)] = 0
-					for i_,probe_name in enumerate(output_contour1['probe_name'][0]):
+					for i_,probe_name in enumerate(output_contour1['probe_name'][0][0]):
 						if probe_name in badLPs_V0:
 							temp[:,i_] = 0
 					s10_lower_good_probes = np.nanmax(median_filter((temp>0.005),size=[5,1]),axis=0)	# threshold for broken probes
-					s10_lower_s = output_contour1['s'][0]
-					s10_lower_r = output_contour1['R'][0]
-					output,Eich=compare_shots(version='new',filepath='/home/ffederic/work/irvb/from_pryan_LP'+'/',shot=[efit_reconstruction.shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False)
+					s10_lower_s = output_contour1['s'][0][0]
+					s10_lower_r = output_contour1['R'][0][0]
+					output,Eich=compare_shots(filepath='/home/ffederic/work/irvb/from_pryan_LP'+'/',shot=[efit_reconstruction.shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False)
 					s10_lower_jsat = []
 					s10_lower_jsat_sigma = []
 					s10_lower_jsat_r = []
 					s10_lower_jsat_s = []
 					for i in range(len(output)):
-						s10_lower_jsat.append(output[i]['y'][0])	# here there are only standard probes
-						s10_lower_jsat_sigma.append(output[i]['y_error'][0])
-						s10_lower_jsat_r.append(output[i]['R'][0])	# here there are only standard probes
-						s10_lower_jsat_s.append(output[i]['s'][0])
+						s10_lower_jsat.append(output[i]['y'][0][0])	# here there are only standard probes
+						s10_lower_jsat_sigma.append(output[i]['y_error'][0][0])
+						s10_lower_jsat_r.append(output[i]['R'][0][0])	# here there are only standard probes
+						s10_lower_jsat_s.append(output[i]['s'][0][0])
 				except:
 					s10_lower_good_probes = np.zeros((len(trange))).astype(bool)
 					s10_lower_s = np.zeros((len(trange)))
@@ -275,25 +275,25 @@ def temp_function(full_saved_file_dict_FAST):
 
 				try:
 					output_contour1=lp_data.contour_plot(trange=[0,1.5],bad_probes=None,divertor='lower', sectors=4, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],show=False)
-					temp = output_contour1['y'][0]
+					temp = output_contour1['y'][0][0]
 					temp[np.isnan(temp)] = 0
-					for i_,probe_name in enumerate(output_contour1['probe_name'][0]):
+					for i_,probe_name in enumerate(output_contour1['probe_name'][0][0]):
 						if probe_name in badLPs_V0:
 							temp[:,i_] = 0
 					s4_lower_good_probes = np.nanmax(median_filter((temp>0.005),size=[1,5]),axis=0)	# threshold for broken probes
-					s4_lower_s = output_contour1['s'][0]
-					s4_lower_r = output_contour1['R'][0]
-					s4_lower_z = output_contour1['Z'][0]
-					output,Eich=compare_shots(version='new',filepath='/home/ffederic/work/irvb/from_pryan_LP'+'/',shot=[efit_reconstruction.shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=4, quantity = 'jsat_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False)
+					s4_lower_s = output_contour1['s'][0][0]
+					s4_lower_r = output_contour1['R'][0][0]
+					s4_lower_z = output_contour1['Z'][0][0]
+					output,Eich=compare_shots(filepath='/home/ffederic/work/irvb/from_pryan_LP'+'/',shot=[efit_reconstruction.shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=4, quantity = 'jsat_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False)
 					s4_lower_jsat = []
 					s4_lower_jsat_sigma = []
 					s4_lower_jsat_r = []
 					s4_lower_jsat_s = []
 					for i in range(len(output)):
-						s4_lower_jsat.append(output[i]['y'][0])	# here there are only small probes
-						s4_lower_jsat_sigma.append(output[i]['y_error'][0])	# here there are only small probes
-						s4_lower_jsat_r.append(output[i]['R'][0])	# here there are only small probes
-						s4_lower_jsat_s.append(output[i]['s'][0])
+						s4_lower_jsat.append(output[i]['y'][0][0])	# here there are only small probes
+						s4_lower_jsat_sigma.append(output[i]['y_error'][0][0])	# here there are only small probes
+						s4_lower_jsat_r.append(output[i]['R'][0][0])	# here there are only small probes
+						s4_lower_jsat_s.append(output[i]['s'][0][0])
 				except:
 					s4_lower_good_probes = np.zeros((len(trange))).astype(bool)
 					s4_lower_s = np.zeros((len(trange)))
@@ -307,24 +307,24 @@ def temp_function(full_saved_file_dict_FAST):
 
 				try:
 					output_contour1=lp_data.contour_plot(trange=[0,1.5],bad_probes=None,divertor='upper', sectors=4, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],show=False)
-					temp = output_contour1['y'][0]
+					temp = output_contour1['y'][0][0]
 					temp[np.isnan(temp)] = 0
-					for i_,probe_name in enumerate(output_contour1['probe_name'][0]):
+					for i_,probe_name in enumerate(output_contour1['probe_name'][0][0]):
 						if probe_name in badLPs_V0:
 							temp[:,i_] = 0
 					s4_upper_good_probes = np.nanmax(median_filter((temp>0.005),size=[1,5]),axis=0)	# threshold for broken probes
-					s4_upper_s = output_contour1['s'][0]
-					s4_upper_r = output_contour1['R'][0]
-					output,Eich=compare_shots(version='new',filepath='/home/ffederic/work/irvb/from_pryan_LP'+'/',shot=[efit_reconstruction.shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=4, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False)
+					s4_upper_s = output_contour1['s'][0][0]
+					s4_upper_r = output_contour1['R'][0][0]
+					output,Eich=compare_shots(filepath='/home/ffederic/work/irvb/from_pryan_LP'+'/',shot=[efit_reconstruction.shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=4, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False)
 					s4_upper_jsat = []
 					s4_upper_jsat_sigma = []
 					s4_upper_jsat_r = []
 					s4_upper_jsat_s = []
 					for i in range(len(output)):
-						s4_upper_jsat.append(output[i]['y'][0])	# here there are only standard probes
-						s4_upper_jsat_sigma.append(output[i]['y_error'][0])	# here there are only standard probes
-						s4_upper_jsat_r.append(output[i]['R'][0])	# here there are only standard probes
-						s4_upper_jsat_s.append(output[i]['s'][0])
+						s4_upper_jsat.append(output[i]['y'][0][0])	# here there are only standard probes
+						s4_upper_jsat_sigma.append(output[i]['y_error'][0][0])	# here there are only standard probes
+						s4_upper_jsat_r.append(output[i]['R'][0][0])	# here there are only standard probes
+						s4_upper_jsat_s.append(output[i]['s'][0][0])
 				except:
 					s4_upper_good_probes = np.zeros((len(trange))).astype(bool)
 					s4_upper_s = np.zeros((len(trange)))
@@ -337,24 +337,24 @@ def temp_function(full_saved_file_dict_FAST):
 
 				try:
 					output_contour1=lp_data.contour_plot(trange=[0,1.5],bad_probes=None,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4'],show=False)
-					temp = output_contour1['y'][0]
+					temp = output_contour1['y'][0][0]
 					temp[np.isnan(temp)] = 0
-					for i_,probe_name in enumerate(output_contour1['probe_name'][0]):
+					for i_,probe_name in enumerate(output_contour1['probe_name'][0][0]):
 						if probe_name in badLPs_V0:
 							temp[:,i_] = 0
 					s10_upper_std_good_probes = np.nanmax(median_filter((temp>0.005),size=[1,5]),axis=0)	# threshold for broken probes
-					s10_upper_std_s = output_contour1['s'][0]
-					s10_upper_std_r = output_contour1['R'][0]
-					output,Eich=compare_shots(version='new',filepath='/home/ffederic/work/irvb/from_pryan_LP'+'/',shot=[efit_reconstruction.shotnumber]*len(trange),bin_x_step=1e-4,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4'],time_combine=True,show=False)
+					s10_upper_std_s = output_contour1['s'][0][0]
+					s10_upper_std_r = output_contour1['R'][0][0]
+					output,Eich=compare_shots(filepath='/home/ffederic/work/irvb/from_pryan_LP'+'/',shot=[efit_reconstruction.shotnumber]*len(trange),bin_x_step=1e-4,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4'],time_combine=True,show=False)
 					s10_upper_std_jsat = []
 					s10_upper_std_jsat_sigma = []
 					s10_upper_std_jsat_r = []
 					s10_upper_std_jsat_s = []
 					for i in range(len(output)):
-						s10_upper_std_jsat.append(output[i]['y'][0])	# here there are only standard probes
-						s10_upper_std_jsat_sigma.append(output[i]['y_error'][0])	# here there are only standard probes
-						s10_upper_std_jsat_r.append(output[i]['R'][0])	# here there are only standard probes
-						s10_upper_std_jsat_s.append(output[i]['s'][0])
+						s10_upper_std_jsat.append(output[i]['y'][0][0])	# here there are only standard probes
+						s10_upper_std_jsat_sigma.append(output[i]['y_error'][0][0])	# here there are only standard probes
+						s10_upper_std_jsat_r.append(output[i]['R'][0][0])	# here there are only standard probes
+						s10_upper_std_jsat_s.append(output[i]['s'][0][0])
 				except:
 					s10_upper_std_good_probes = np.zeros((len(trange))).astype(bool)
 					s10_upper_std_s = np.zeros((len(trange)))
@@ -367,24 +367,24 @@ def temp_function(full_saved_file_dict_FAST):
 
 				try:
 					output_contour1=lp_data.contour_plot(trange=[0,1.5],bad_probes=None,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['T5'],show=False)
-					temp = output_contour1['y'][0]
+					temp = output_contour1['y'][0][0]
 					temp[np.isnan(temp)] = 0
-					for i_,probe_name in enumerate(output_contour1['probe_name'][0]):
+					for i_,probe_name in enumerate(output_contour1['probe_name'][0][0]):
 						if probe_name in badLPs_V0:
 							temp[:,i_] = 0
 					s10_upper_large_good_probes = np.nanmax(median_filter((temp>0.005),size=[1,5]),axis=0)	# threshold for broken probes
-					s10_upper_large_s = output_contour1['s'][0]
-					s10_upper_large_r = output_contour1['R'][0]
-					output,Eich=compare_shots(version='new',filepath='/home/ffederic/work/irvb/from_pryan_LP'+'/',shot=[efit_reconstruction.shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['T5'],time_combine=True,show=False)
+					s10_upper_large_s = output_contour1['s'][0][0]
+					s10_upper_large_r = output_contour1['R'][0][0]
+					output,Eich=compare_shots(filepath='/home/ffederic/work/irvb/from_pryan_LP'+'/',shot=[efit_reconstruction.shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['T5'],time_combine=True,show=False)
 					s10_upper_large_jsat = []
 					s10_upper_large_jsat_sigma = []
 					s10_upper_large_jsat_r = []
 					s10_upper_large_jsat_s = []
 					for i in range(len(output)):
-						s10_upper_large_jsat.append(output[i]['y'][0])	# here there are only standard probes
-						s10_upper_large_jsat_sigma.append(output[i]['y_error'][0])	# here there are only standard probes
-						s10_upper_large_jsat_r.append(output[i]['R'][0])	# here there are only standard probes
-						s10_upper_large_jsat_s.append(output[i]['s'][0])
+						s10_upper_large_jsat.append(output[i]['y'][0][0])	# here there are only standard probes
+						s10_upper_large_jsat_sigma.append(output[i]['y_error'][0][0])	# here there are only standard probes
+						s10_upper_large_jsat_r.append(output[i]['R'][0][0])	# here there are only standard probes
+						s10_upper_large_jsat_s.append(output[i]['s'][0][0])
 				except:
 					s10_upper_large_good_probes = np.zeros((len(trange))).astype(bool)
 					s10_upper_large_s = np.zeros((len(trange)))
@@ -1065,62 +1065,68 @@ def temp_function(full_saved_file_dict_FAST):
 		full_saved_file_dict_FAST['multi_instrument']['psiN_peak_inner_all'] = psiN_peak_inner_all
 
 		# here I calculate the upstream density
-		from mastu_exhaust_analysis import divertor_geometry
-		from mastu_exhaust_analysis import Thomson
-		TS_data = Thomson(shot=laser_to_analyse[-9:-4])
-		tu_cowley = []
-		tu_labombard = []
-		tu_stangeby = []
-		nu_cowley = []
-		nu_labombard = []
-		nu_stangeby = []
-		nu_mean = []
-		for time in time_full_binned_crop:
-			try:
-				temp = divertor_geometry(shot=laser_to_analyse[-9:-4],time=time)
-				tu_cowley.append(temp.tu_cowley)
-				tu_labombard.append(temp.tu_labombard)
-				tu_stangeby.append(temp.tu_stangeby)
-				temp = np.abs(TS_data.time.data-time).argmin()
-				ne = TS_data.ne.data[temp]
-				R_TS = TS_data.R.data[temp]
-				Te = TS_data.Te.data[temp]
-				ne = ne[np.isfinite(Te)]
-				R_TS = R_TS[np.isfinite(Te)]
-				Te = Te[np.isfinite(Te)]
-				temp = Te[:-10].argmax()
-				ne = ne[temp:]
-				R_TS = R_TS[temp:]
-				Te = Te[temp:]
-				Te = scipy.signal.savgol_filter(Te, 7, 3)
-				ne = scipy.signal.savgol_filter(ne, 7, 3)
-				# ineffective. filtered twice for only decreasing signal
-				ne = ne[1:][np.diff(Te)<=0]
-				R_TS = R_TS[1:][np.diff(Te)<=0]
-				Te = Te[1:][np.diff(Te)<=0]
-				ne = ne[1:][np.diff(Te)<=0]
-				R_TS = R_TS[1:][np.diff(Te)<=0]
-				Te = Te[1:][np.diff(Te)<=0]
-				interp_ne_Te = interp1d(Te[Te.argmax():],ne[Te.argmax():])
-				nu_cowley.append(interp_ne_Te(tu_cowley[-1]))
-				nu_labombard.append(interp_ne_Te(tu_cowley[-1]))
-				nu_stangeby.append(interp_ne_Te(tu_stangeby[-1]))
-				nu_mean.append(np.nanmean([nu_cowley[-1],nu_labombard[-1],nu_stangeby[-1]]))
-			except:
-				tu_cowley.append(np.nan)
-				tu_labombard.append(np.nan)
-				tu_stangeby.append(np.nan)
-				nu_cowley.append(np.nan)
-				nu_labombard.append(np.nan)
-				nu_stangeby.append(np.nan)
-				nu_mean.append(np.nan)
-		full_saved_file_dict_FAST['multi_instrument']['tu_cowley'] = tu_cowley
-		full_saved_file_dict_FAST['multi_instrument']['tu_labombard'] = tu_labombard
-		full_saved_file_dict_FAST['multi_instrument']['tu_stangeby'] = tu_stangeby
-		full_saved_file_dict_FAST['multi_instrument']['nu_cowley'] = nu_cowley
-		full_saved_file_dict_FAST['multi_instrument']['nu_labombard'] = nu_labombard
-		full_saved_file_dict_FAST['multi_instrument']['nu_stangeby'] = nu_stangeby
-		full_saved_file_dict_FAST['multi_instrument']['nu_mean'] = nu_mean
+		try:
+			from mastu_exhaust_analysis import divertor_geometry
+			from mastu_exhaust_analysis import Thomson
+			TS_data = Thomson(shot=laser_to_analyse[-9:-4])
+			tu_cowley = []
+			tu_labombard = []
+			tu_stangeby = []
+			nu_cowley = []
+			nu_labombard = []
+			nu_stangeby = []
+			nu_mean = []
+			for time in time_full_binned_crop:
+				try:
+					temp = divertor_geometry(shot=laser_to_analyse[-9:-4],time=time)
+					tu_cowley.append(temp.tu_cowley)
+					tu_labombard.append(temp.tu_labombard)
+					tu_stangeby.append(temp.tu_stangeby)
+					temp = np.abs(TS_data.time.data-time).argmin()
+					ne = TS_data.ne.data[temp]
+					R_TS = TS_data.R.data[temp]
+					Te = TS_data.Te.data[temp]
+					ne = ne[np.isfinite(Te)]
+					R_TS = R_TS[np.isfinite(Te)]
+					Te = Te[np.isfinite(Te)]
+					temp = Te[:-10].argmax()
+					ne = ne[temp:]
+					R_TS = R_TS[temp:]
+					Te = Te[temp:]
+					Te = scipy.signal.savgol_filter(Te, 7, 3)
+					ne = scipy.signal.savgol_filter(ne, 7, 3)
+					# ineffective. filtered twice for only decreasing signal
+					ne = ne[1:][np.diff(Te)<=0]
+					R_TS = R_TS[1:][np.diff(Te)<=0]
+					Te = Te[1:][np.diff(Te)<=0]
+					ne = ne[1:][np.diff(Te)<=0]
+					R_TS = R_TS[1:][np.diff(Te)<=0]
+					Te = Te[1:][np.diff(Te)<=0]
+					interp_ne_Te = interp1d(Te[Te.argmax():],ne[Te.argmax():])
+					nu_cowley.append(interp_ne_Te(tu_cowley[-1]))
+					nu_labombard.append(interp_ne_Te(tu_cowley[-1]))
+					nu_stangeby.append(interp_ne_Te(tu_stangeby[-1]))
+					nu_mean.append(np.nanmean([nu_cowley[-1],nu_labombard[-1],nu_stangeby[-1]]))
+				except:
+					tu_cowley.append(np.nan)
+					tu_labombard.append(np.nan)
+					tu_stangeby.append(np.nan)
+					nu_cowley.append(np.nan)
+					nu_labombard.append(np.nan)
+					nu_stangeby.append(np.nan)
+					nu_mean.append(np.nan)
+			full_saved_file_dict_FAST['multi_instrument']['tu_cowley'] = tu_cowley
+			full_saved_file_dict_FAST['multi_instrument']['tu_labombard'] = tu_labombard
+			full_saved_file_dict_FAST['multi_instrument']['tu_stangeby'] = tu_stangeby
+			full_saved_file_dict_FAST['multi_instrument']['nu_cowley'] = nu_cowley
+			full_saved_file_dict_FAST['multi_instrument']['nu_labombard'] = nu_labombard
+			full_saved_file_dict_FAST['multi_instrument']['nu_stangeby'] = nu_stangeby
+			full_saved_file_dict_FAST['multi_instrument']['nu_mean'] = nu_mean
+			TS_reading_success = True
+		except Exception as e:
+			print('TS reading failed')
+			logging.exception('with error: ' + str(e))
+			TS_reading_success = False
 		# plt.figure()
 		# plt.plot(time_full_binned_crop,nu_labombard,label='nu_labombard')
 		# plt.plot(time_full_binned_crop,nu_stangeby,label='nu_stangeby')
@@ -1409,7 +1415,7 @@ def temp_function(full_saved_file_dict_FAST):
 		plt.close()
 
 		# plot of absolute quantities
-		fig, ax = plt.subplots( 10,1,figsize=(12, 40), squeeze=False,sharex=False)
+		fig, ax = plt.subplots( 11,1,figsize=(12, 40), squeeze=False,sharex=False)
 		if pass_number ==0:
 			fig.suptitle('shot '+str(efit_reconstruction.shotnumber)+', '+scenario+' , '+experiment+'\nfirst pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
 		elif pass_number ==1:
@@ -1444,12 +1450,13 @@ def temp_function(full_saved_file_dict_FAST):
 			ax[0,0].axvline(x=time_start_MARFE,linestyle='--',color='k',label='MARFE start from bolo')
 		if time_active_MARFE!=None:
 			ax[0,0].axvline(x=time_active_MARFE,linestyle='-',color='k',label='MARFE active from bolo')
+		if TS_reading_success:
+			ax[1,0].plot(time_full_binned_crop,nu_mean,'--',label='ne upstream LFS',color=color[-2])
+			ax[1,0].plot(time_full_binned_crop,nu_cowley,':',label='ne Cowley LFS',color=color[-3])
 		if  not density_data_missing:
 			ax[1,0].plot(time_full_binned_crop,core_density,label='core_density',color=color[0])
 			ax[1,0].plot(time_full_binned_crop,ne_bar,label='ne_bar',color=color[-1])
 			ax[1,0].plot(time_full_binned_crop,greenwald_density,'--',label='greenwald_density',color=color[-2])
-			ax[1,0].plot(time_full_binned_crop,nu_mean,'--',label='ne upstream LFS',color=color[-2])
-			ax[1,0].plot(time_full_binned_crop,nu_cowley,':',label='ne Cowley LFS',color=color[-3])
 
 			ax1 = ax[1,0].twinx()  # instantiate a second axes that shares the same x-axis
 			# ax1.spines["right"].set_position(("axes", 1.1125))
@@ -1703,6 +1710,14 @@ def temp_function(full_saved_file_dict_FAST):
 			ax[8,0].set_xlabel('time [s]')
 		ax[9,0].grid()
 
+		ax[10,0].set_ylabel('estimated Tu [eV]')
+		if TS_reading_success:
+			ax[10,0].plot(time_full_binned_crop,tu_cowley,label='cowley')
+			ax[10,0].plot(time_full_binned_crop,tu_labombard,label='labombard')
+			ax[10,0].plot(time_full_binned_crop,tu_stangeby,label='stangeby')
+			ax[10,0].grid()
+			ax[10,0].legend(loc='best', fontsize='xx-small')
+
 		ax[0,0].set_xlim(left=time_full_binned_crop.min(),right=time_full_binned_crop.max())
 		ax[1,0].set_xlim(left=time_full_binned_crop.min(),right=time_full_binned_crop.max())
 		ax[2,0].set_xlim(left=time_full_binned_crop.min(),right=time_full_binned_crop.max())
@@ -1713,6 +1728,7 @@ def temp_function(full_saved_file_dict_FAST):
 		ax[7,0].set_xlim(left=time_full_binned_crop.min(),right=time_full_binned_crop.max())
 		ax[8,0].set_xlim(left=time_full_binned_crop.min(),right=time_full_binned_crop.max())
 		ax[9,0].set_xlim(left=time_full_binned_crop.min(),right=time_full_binned_crop.max())
+		ax[10,0].set_xlim(left=time_full_binned_crop.min(),right=time_full_binned_crop.max())
 
 		# plt.subplots_adjust(wspace=0, hspace=0)
 		# plt.pause(0.01)
@@ -1723,6 +1739,8 @@ def temp_function(full_saved_file_dict_FAST):
 			full_saved_file_dict_FAST['first_pass']['inverted_dict'] = inverted_dict
 		elif pass_number ==1:
 			full_saved_file_dict_FAST['second_pass']['inverted_dict'] = inverted_dict
+		elif pass_number ==2:
+			full_saved_file_dict_FAST['third_pass']['inverted_dict'] = inverted_dict
 		np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
 		print('DONE '+laser_to_analyse)
 

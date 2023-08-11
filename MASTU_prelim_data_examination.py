@@ -57,13 +57,16 @@ color = ['b', 'r', 'm', 'y', 'g', 'c', 'k', 'slategrey', 'darkorange', 'lime', '
 
 path = '/home/ffederic/work/irvb/MAST-U/'
 # do all of them from MU01
-# to_do = ['2021-05-18','2021-05-19','2021-05-20','2021-05-21','2021-05-25','2021-05-26','2021-05-27','2021-05-28','2021-06-02','2021-06-03','2021-06-04','2021-06-15','2021-06-16','2021-06-17','2021-06-18','2021-06-22','2021-06-23','2021-06-24','2021-06-25','2021-06-29','2021-06-30','2021-07-01','2021-07-06','2021-07-08','2021-07-09','2021-07-15','2021-07-27','2021-07-28','2021-07-29','2021-08-04','2021-08-05','2021-08-06','2021-08-11','2021-08-12','2021-08-13','2021-08-17','2021-08-18','2021-08-19','2021-08-20','2021-08-24','2021-08-25','2021-08-26','2021-08-27','2021-09-01','2021-09-08','2021-09-09','2021-09-10','2021-09-16','2021-09-17','2021-09-21','2021-09-22','2021-09-23','2021-09-24','2021-09-28','2021-09-29','2021-09-30','2021-10-01','2021-10-04','2021-10-05','2021-10-06','2021-10-07','2021-10-08','2021-10-11','2021-10-12','2021-10-13','2021-10-14','2021-10-15','2021-10-19','2021-10-20','2021-10-21','2021-10-22','2021-10-25','2021-10-26','2021-10-27','2021-10-28']
-# do all of them from MU02
-to_do = ['2022-10-26', '2022-10-27', '2022-10-28', '2022-10-31', '2022-11-01', '2022-11-02', '2022-11-03', '2022-11-04', '2022-11-07', '2022-11-08', '2022-11-09', '2022-11-10', '2022-11-11', '2022-11-17', '2022-11-18', '2022-11-22', '2022-11-23', '2022-11-24', '2022-11-25', '2022-11-28', '2022-11-29', '2022-11-30', '2022-12-01', '2022-12-02', '2022-12-05', '2022-12-06', '2022-12-07', '2022-12-08', '2022-12-09', '2022-12-12', '2022-12-13', '2022-12-14', '2022-12-15', '2022-12-16', '2022-12-20', '2022-12-21', '2023-01-06', '2023-01-09', '2023-01-10', '2023-01-11', '2023-01-12', '2023-01-13', '2023-01-17', '2023-01-18', '2023-01-19', '2023-01-20', '2023-01-21', '2023-01-23', '2023-01-24', '2023-01-25', '2023-01-26', '2023-01-27', '2023-01-28', '2023-01-30', '2023-01-31']
+to_do = ['2021-05-18','2021-05-19','2021-05-20','2021-05-21','2021-05-25','2021-05-26','2021-05-27','2021-05-28','2021-06-02','2021-06-03','2021-06-04','2021-06-15','2021-06-16','2021-06-17','2021-06-18','2021-06-22','2021-06-23','2021-06-24','2021-06-25','2021-06-29','2021-06-30','2021-07-01','2021-07-06','2021-07-08','2021-07-09','2021-07-15','2021-07-27','2021-07-28','2021-07-29','2021-08-04','2021-08-05','2021-08-06','2021-08-11','2021-08-12','2021-08-13','2021-08-17','2021-08-18','2021-08-19','2021-08-20','2021-08-24','2021-08-25','2021-08-26','2021-08-27','2021-09-01','2021-09-08','2021-09-09','2021-09-10','2021-09-16','2021-09-17','2021-09-21','2021-09-22','2021-09-23','2021-09-24','2021-09-28','2021-09-29','2021-09-30','2021-10-01','2021-10-04','2021-10-05','2021-10-06','2021-10-07','2021-10-08','2021-10-11','2021-10-12','2021-10-13','2021-10-14','2021-10-15','2021-10-19','2021-10-20','2021-10-21','2021-10-22','2021-10-25','2021-10-26','2021-10-27','2021-10-28']
+# # # do all of them from MU02
+# to_do = ['2022-10-26', '2022-10-27', '2022-10-28', '2022-10-31', '2022-11-01', '2022-11-02', '2022-11-03', '2022-11-04', '2022-11-07', '2022-11-08', '2022-11-09', '2022-11-10', '2022-11-11', '2022-11-17', '2022-11-18', '2022-11-22', '2022-11-23', '2022-11-24', '2022-11-25', '2022-11-28', '2022-11-29', '2022-11-30', '2022-12-01', '2022-12-02', '2022-12-05', '2022-12-06', '2022-12-07', '2022-12-08', '2022-12-09', '2022-12-12', '2022-12-13', '2022-12-14', '2022-12-15', '2022-12-16', '2022-12-20', '2022-12-21', '2023-01-06', '2023-01-09', '2023-01-10', '2023-01-11', '2023-01-12', '2023-01-13', '2023-01-17', '2023-01-18', '2023-01-19', '2023-01-20', '2023-01-21', '2023-01-23', '2023-01-24', '2023-01-25', '2023-01-26', '2023-01-27', '2023-01-28', '2023-01-31', '2023-01-30']
+# # do all of them from MU03
+# to_do = ['2023-07-12', '2023-07-13', '2023-07-18', '2023-07-19', '2023-07-20', '2023-07-21', '2023-08-03']
 # to_do = ['2021-05-18','2021-05-19','2021-05-20','2021-05-21','2021-05-25','2021-f05-26','2021-05-27','2021-05-28','2021-06-02','2021-06-03','2021-06-04','2021-06-15','2021-06-16','2021-06-17','2021-06-18','2021-06-22']
 # to_do = ['2021-09-08','2021-06-17','2021-08-05']
 # to_do = ['2021-10-15','2021-10-12','2021-10-01','2021-09-30']
-# to_do = ['2021-08-26']
+to_do = ['2023-08-08']
+# to_do = ['2023-07-18','2023-07-19']
 # to_do = ['2021-09-01','2021-09-08','2021-09-09','2021-09-10','2021-09-16','2021-09-17','2021-09-21','2021-09-22','2021-09-23','2021-09-24','2021-09-28','2021-09-29','2021-09-30','2021-10-01','2021-10-04']
 # to_do = np.flip(to_do,axis=0)
 # # for Lingyan
@@ -114,7 +117,7 @@ for i_day,day in enumerate(to_do):
 # to_do = ['IRVB-MASTU_shot-45371.ptw','IRVB-MASTU_shot-45372.ptw','IRVB-MASTU_shot-45380.ptw','IRVB-MASTU_shot-45390.ptw','IRVB-MASTU_shot-45391.ptw','IRVB-MASTU_shot-45398.ptw','IRVB-MASTU_shot-45400.ptw','IRVB-MASTU_shot-45439.ptw','IRVB-MASTU_shot-45443.ptw','IRVB-MASTU_shot-45444.ptw','IRVB-MASTU_shot-45450.ptw','IRVB-MASTU_shot-45456.ptw','IRVB-MASTU_shot-45459.ptw','IRVB-MASTU_shot-45461.ptw','IRVB-MASTU_shot-45462.ptw','IRVB-MASTU_shot-45463.ptw','IRVB-MASTU_shot-45464.ptw','IRVB-MASTU_shot-45465.ptw']
 # to_do = ['IRVB-MASTU_shot-45046.ptw','IRVB-MASTU_shot-45047.ptw','IRVB-MASTU_shot-45048.ptw','IRVB-MASTU_shot-45056.ptw','IRVB-MASTU_shot-45057.ptw','IRVB-MASTU_shot-45058.ptw','IRVB-MASTU_shot-45059.ptw','IRVB-MASTU_shot-45060.ptw','IRVB-MASTU_shot-45062.ptw','IRVB-MASTU_shot-45063.ptw','IRVB-MASTU_shot-45066.ptw','IRVB-MASTU_shot-45071.ptw','IRVB-MASTU_shot-45081.ptw','IRVB-MASTU_shot-45143.ptw','IRVB-MASTU_shot-45239.ptw','IRVB-MASTU_shot-45241.ptw','IRVB-MASTU_shot-45243.ptw','IRVB-MASTU_shot-45244.ptw','IRVB-MASTU_shot-45245.ptw','IRVB-MASTU_shot-45246.ptw','IRVB-MASTU_shot-45353.ptw']	# SXD fuelled from high field side
 # to_do = ['IRVB-MASTU_shot-47036.ptw','IRVB-MASTU_shot-47143.ptw','IRVB-MASTU_shot-46823.ptw']
-to_do = ['IRVB-MASTU_shot-47036.ptw','IRVB-MASTU_shot-47036.ptw','IRVB-MASTU_shot-46884.ptw','IRVB-MASTU_shot-47020.ptw','IRVB-MASTU_shot-46776.ptw','IRVB-MASTU_shot-46792.ptw']
+# to_do = ['IRVB-MASTU_shot-47036.ptw','IRVB-MASTU_shot-47036.ptw','IRVB-MASTU_shot-46884.ptw','IRVB-MASTU_shot-47020.ptw','IRVB-MASTU_shot-46776.ptw','IRVB-MASTU_shot-46792.ptw']
 
 # # MU01-EXH-20
 # to_do = ['IRVB-MASTU_shot-44816.ptw','IRVB-MASTU_shot-44817.ptw','IRVB-MASTU_shot-44818.ptw','IRVB-MASTU_shot-44819.ptw','IRVB-MASTU_shot-44820.ptw','IRVB-MASTU_shot-44821.ptw','IRVB-MASTU_shot-44822.ptw','IRVB-MASTU_shot-45391.ptw','IRVB-MASTU_shot-45397.ptw','IRVB-MASTU_shot-45398.ptw','IRVB-MASTU_shot-45399.ptw','IRVB-MASTU_shot-45400.ptw','IRVB-MASTU_shot-45401.ptw']
@@ -122,8 +125,8 @@ to_do = ['IRVB-MASTU_shot-47036.ptw','IRVB-MASTU_shot-47036.ptw','IRVB-MASTU_sho
 # to_do = ['IRVB-MASTU_shot-44647.ptw','IRVB-MASTU_shot-45409.ptw','IRVB-MASTU_shot-45225.ptw','IRVB-MASTU_shot-45351.ptw']
 # to_do = ['IRVB-MASTU_shot-45401.ptw','IRVB-MASTU_shot-44892.ptw']
 # to_do = ['IRVB-MASTU_shot-45401.ptw']
-# shots for the RSI papre
-# to_do = ['IRVB-MASTU_shot-44647.ptw','IRVB-MASTU_shot-45409.ptw','IRVB-MASTU_shot-45225.ptw','IRVB-MASTU_shot-45351.ptw','IRVB-MASTU_shot-45401.ptw','IRVB-MASTU_shot-44892.ptw','IRVB-MASTU_shot-45295.ptw','IRVB-MASTU_shot-45328.ptw']
+# shots for the RSI paper
+# to_do = ['IRVB-MASTU_shot-44647.ptw','IRVB-MASTU_shot-45409.ptw','IRVB-MASTU_shot-45225.ptw','IRVB-MASTU_shot-45351.ptw','IRVB-MASTU_shot-45401.ptw','IRVB-MASTU_shot-44892.ptw','IRVB-MASTU_shot-45295.ptw','IRVB-MASTU_shot-45328.ptw','IRVB-MASTU_shot-45371.ptw']
 # shots for the science paper
 # to_do = ['IRVB-MASTU_shot-45371.ptw']
 # shots for the CD radiator location comparison shots
@@ -141,16 +144,22 @@ do_inversions = False
 every_pixel_independent = False
 overwrite_oscillation_filter = True
 overwrite_binning = True
-skip_second_pass = True
-override_second_pass = False
+skip_second_pass = False
+override_second_pass = True
+skip_third_pass = True
+override_third_pass = False
 
 if overwrite_oscillation_filter:
 	overwrite_binning = True
-if False:
-	# for i_day,day in enumerate(to_do):
-	for i_day,day in enumerate(np.flip(to_do,axis=0)):
-		# for name in shot_available[i_day]:
-		for name in np.flip(shot_available,axis=0)[i_day]:
+
+only_plot_brightness = False
+
+if True:	# section to use when specifying the days
+	for i_day,day in enumerate(to_do):
+	# shot_available = np.flip(shot_available,axis=0)
+	# for i_day,day in enumerate(np.flip(to_do,axis=0)):
+		shot_available[i_day] = np.flip(shot_available[i_day],axis=0)
+		for name in shot_available[i_day]:
 			laser_to_analyse=path+day+'/'+name
 
 			if True:
@@ -161,18 +170,20 @@ if False:
 				pass_number = 1
 				exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_manual_plots.py").read())
 
-elif True:
+elif False:	# section to use when specifying the shots
 	for name in to_do:
-		shot_list = get_data(path+'shot_list2.ods')
-		temp1 = (np.array(shot_list['Sheet1'][0])=='shot number').argmax()
-		for i in range(1,len(shot_list['Sheet1'])):
-			if shot_list['Sheet1'][i][temp1] == int(name[-9:-4]):
-				date = shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0])=='date').argmax()]
-				break
-		try:
-			i_day,day = 0,str(date.date())
-		except:
-			i_day,day = 0,str(date)
+		# shot_list = get_data(path+'shot_list2.ods')
+		# temp1 = (np.array(shot_list['Sheet1'][0])=='shot number').argmax()
+		# for i in range(1,len(shot_list['Sheet1'])):
+		# 	if shot_list['Sheet1'][i][temp1] == int(name[-9:-4]):
+		# 		date = shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0])=='date').argmax()]
+		# 		break
+		# try:
+		# 	i_day,day = 0,str(date.date())
+		# except:
+		# 	i_day,day = 0,str(date)
+
+		i_day,day = 0,coleval.retrive_shot_date_and_time(name[-9:-4])[0]
 		laser_to_analyse=path+day+'/'+name
 
 		if True:
@@ -183,7 +194,7 @@ elif True:
 			pass_number = 1
 			exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_manual_plots.py").read())
 
-else:
+else:	# section to use when analysing only one shot
 	# i_day,day = 0,'2021-07-29'
 	# name='IRVB-MASTU_shot-44578.ptw'
 	# i_day,day = 0,'2021-08-25'
@@ -199,19 +210,24 @@ else:
 	# i_day,day = 0,'2021-10-12'
 	# name='IRVB-MASTU_shot-45239.ptw'
 	# i_day,day = 0,'2021-10-22'
-	name='IRVB-MASTU_shot-45371.ptw'
+	name='IRVB-MASTU_shot-45401.ptw'
 	# i_day,day = 0,'2021-10-21'
 	# name='IRVB-MASTU_shot-45371.ptw'
 
-	path = '/home/ffederic/work/irvb/MAST-U/'
-	shot_list = get_data(path+'shot_list2.ods')
-	temp1 = (np.array(shot_list['Sheet1'][0])=='shot number').argmax()
-	for i in range(1,len(shot_list['Sheet1'])):
-		if shot_list['Sheet1'][i][temp1] == int(name[-9:-4]):
-			date = shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0])=='date').argmax()]
-			break
-	i_day,day = 0,str(date.date())
-	# i_day,day = 0,'2022-12-08'
+	# path = '/home/ffederic/work/irvb/MAST-U/'
+	# shot_list = get_data(path+'shot_list2.ods')
+	# temp1 = (np.array(shot_list['Sheet1'][0])=='shot number').argmax()
+	# for i in range(1,len(shot_list['Sheet1'])):
+	# 	if shot_list['Sheet1'][i][temp1] == int(name[-9:-4]):
+	# 		date = shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0])=='date').argmax()]
+	# 		break
+	# # i_day,day = 0,str(date.date())
+	# # i_day,day = 0,'2022-12-08'
+	# try:
+	# 	i_day,day = 0,str(date.date())
+	# except:
+	# 	i_day,day = 0,str(date)
+	i_day,day = 0,coleval.retrive_shot_date_and_time(name[-9:-4])[0]
 
 	laser_to_analyse=path+day+'/'+name
 

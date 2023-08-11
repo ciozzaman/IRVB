@@ -2,14 +2,14 @@ import numpy as np
 exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_import_pc.py").read())
 # import matplotlib.pyplot as plt
 #import .functions
-os.chdir('/home/ffederic/work/Collaboratory/test/experimental_data')
-from functions.spectools import rotate,do_tilt, binData, get_angle, get_tilt,get_angle_2
-from functions.Calibrate import do_waveL_Calib, do_Intensity_Calib
-from functions.fabio_add import find_nearest_index,multi_gaussian,all_file_names,load_dark,find_index_of_file,get_metadata,movie_from_data,get_angle_no_lines,do_tilt_no_lines,four_point_transform,fix_minimum_signal,fix_minimum_signal2,get_bin_and_interv_no_lines,examine_current_trace
-from functions.GetSpectrumGeometry import getGeom
-from functions.SpectralFit import doSpecFit_single_frame
-from functions.GaussFitData import doLateralfit_time_tependent
-import collections
+# os.chdir('/home/ffederic/work/Collaboratory/test/experimental_data')
+# from functions.spectools import rotate,do_tilt, binData, get_angle, get_tilt,get_angle_2
+# from functions.Calibrate import do_waveL_Calib, do_Intensity_Calib
+# from functions.fabio_add import find_nearest_index,multi_gaussian,all_file_names,load_dark,find_index_of_file,get_metadata,movie_from_data,get_angle_no_lines,do_tilt_no_lines,four_point_transform,fix_minimum_signal,fix_minimum_signal2,get_bin_and_interv_no_lines,examine_current_trace
+# from functions.GetSpectrumGeometry import getGeom
+# from functions.SpectralFit import doSpecFit_single_frame
+# from functions.GaussFitData import doLateralfit_time_tependent
+# import collections
 
 import os,sys
 from PIL import Image
@@ -23,10 +23,10 @@ from multiprocessing import Pool,cpu_count
 number_cpu_available = cpu_count()
 print('Number of cores available: '+str(number_cpu_available))
 
-from pycine.color import color_pipeline, resize
-from pycine.raw import read_frames
-from pycine.file import read_header
-from functions.fabio_add import all_file_names,find_index_of_file
+# from pycine.color import color_pipeline, resize
+# from pycine.raw import read_frames
+# from pycine.file import read_header
+# from functions.fabio_add import all_file_names,find_index_of_file
 
 
 
@@ -91,7 +91,8 @@ if False:	# main purpose, show image contrast with wavelength
 	ax[2].set_ylim(bottom=10)
 
 	ax[0].legend(loc='best', fontsize='xx-small')
-
+else:
+	pass
 
 
 
@@ -99,33 +100,168 @@ if False:	# main purpose, show image contrast with wavelength
 ##	Here I put the code for examining simple samples and check the performance of different camera models.
 # FLIR
 
-# path = '/home/ffederic/work/irvb/IRVB2 camera investigation/IRVB1 2023-05-31 test'
-# filenames = ['IRVB-test-000003.ats','IRVB-test-000005.ats','IRVB-test-000007.ats','test_2.ptw','IRVB-test-000004.ats','IRVB-test-000006.ats','test_1.ptw']
-#
 # path = '/home/ffederic/work/irvb/IRVB2 camera investigation/FLIR-2023-06-07'
-# filenames = ['0-SSD .ats','2-SSD .ats','7-SSD .ats','SSD -13.ats','SSD -19.ats','SSD -24.ats','SSD -5.ats','10-SSD .ats','3a-SSD .ats','8-SSD .ats','SSD -14.ats','SSD -1.ats','SSD -25.ats','SSD -6.ats','11-SSD .ats','3-SSD .ats','9-SSD .ats','SSD -15.ats','SSD -20.ats','SSD -26.ats','SSD -7.ats','12-SSD .ats','4-SSD .ats','SSD -10.ats','SSD -16.ats','SSD -21.ats','SSD -2.ats','SSD -8.ats','13-SSD .ats','5-SSD .ats','SSD -11.ats','SSD -17.ats','SSD -22.ats','SSD -3.ats','SSD -9.ats','1-SSD .ats','6-SSD .ats','SSD -12.ats','SSD -18.ats','SSD -23.ats','SSD -4.ats']
+# filenames = ['0-SSD ','2-SSD ','7-SSD ','SSD -13','SSD -19','SSD -24','SSD -5','10-SSD ','3a-SSD ','8-SSD ','SSD -14','SSD -1','SSD -25','SSD -6','11-SSD ','3-SSD ','9-SSD ','SSD -15','SSD -20','SSD -26','SSD -7','12-SSD ','4-SSD ','SSD -10','SSD -16','SSD -21','SSD -2','SSD -8','13-SSD ','5-SSD ','SSD -11','SSD -17','SSD -22','SSD -3','SSD -9','1-SSD ','6-SSD ','SSD -12','SSD -18','SSD -23','SSD -4']
 
 path = '/home/ffederic/work/irvb/IRVB2 camera investigation/FLIR-2023-05-31'
-# filename = 'Rec-0009.ats'
-filenames = ['1-SSD.ats','Rec-0011.ats','Rec-0019.ats','Rec-0027.ats','Rec-0035.ats','Untitled-1 copy.ats','2-SSD.ats','Rec-0012.ats','Rec-0020.ats','Rec-0028.ats','Rec-0036.ats','Untitled-2.ats','Rec-0006.ats','Rec-0013.ats','Rec-0021.ats','Rec-0029.ats','Rec-0037.ats','Untitled-3.ats','Rec-0007.ats','Rec-0014.ats','Rec-0022.ats','Rec-0030.ats','SSD-1.ats','Untitled-4.ats','Rec-0008.ats','Rec-0015.ats','Rec-0023.ats','Rec-0031.ats','SSD-2.ats','Rec-0009.ats','Rec-0016.ats','Rec-0024.ats','Rec-0032.ats','SSD-3.ats','Rec-0009.npz','Rec-0017.ats','Rec-0025.ats','Rec-0033.ats','SSD-4.ats','Rec-0010.ats','Rec-0018.ats','Rec-0026.ats','Rec-0034.ats','Untitled-1.ats']
+# filename = 'Rec-0009'
+filenames = ['1-SSD','Rec-0011','Rec-0007','Rec-0008','Rec-0009','Rec-0010','Rec-0014','Rec-0015','Rec-0016','Rec-0017','Rec-0018','Rec-0022','Rec-0023','Rec-0024','Rec-0025','Rec-0026','Rec-0019','Rec-0027','Rec-0035','Untitled-1 copy','2-SSD','SSD-1','SSD-2','SSD-3','SSD-4','Rec-0012','Rec-0020','Rec-0028','Rec-0036','Untitled-2','Untitled-3','Untitled-4','Rec-0006','Rec-0013','Rec-0021','Rec-0029','Rec-0037','Untitled-3','Rec-0007','Rec-0014','Rec-0022','Rec-0030','SSD-1','Untitled-4','Rec-0008','Rec-0015','Rec-0023','Rec-0031','SSD-2','Rec-0009','Rec-0016','Rec-0024','Rec-0032','SSD-3','Rec-0009.npz','Rec-0017','Rec-0025','Rec-0033','SSD-4','Rec-0010','Rec-0018','Rec-0026','Rec-0034','Untitled-1']
+
 # path = '/home/ffederic/work/irvb/vacuum_chamber_testing/Aug13_2018'
-# filename = 'irvb_sample-000002.ats'
+# filename = 'irvb_sample-000002'
 
 for filename in filenames:
 	laser_to_analyse = path +'/' + filename
 	try:
-		laser_dict = np.load(laser_to_analyse[:-4]+'.npz')
+		laser_dict = np.load(laser_to_analyse+'.npz')
 		laser_dict.allow_pickle=True
 		laser_digitizer_ID = laser_dict['uniques_digitizer_ID']
+		print(laser_to_analyse+' OK')
 		# if laser_to_analyse[-4:]=='.ptw':
 		# 	test = laser_dict['discarded_frames']
 	except:
-		print('missing '+laser_to_analyse[:-4]+'.npz'+' file. rigenerated')
-		if laser_to_analyse[-4:]=='.ats':
-			full_saved_file_dict = coleval.ats_to_dict(laser_to_analyse)
-		else:
-			full_saved_file_dict = coleval.ptw_to_dict(laser_to_analyse,max_time_s = 30)
-		np.savez_compressed(laser_to_analyse[:-4],**full_saved_file_dict)
+		print('missing '+laser_to_analyse+'.npz'+' file. rigenerated')
+		full_saved_file_dict = coleval.read_IR_file(laser_to_analyse)
+		# np.savez_compressed(laser_to_analyse[:-4],**full_saved_file_dict)
 		# laser_dict = np.load(laser_to_analyse[:-4]+'.npz')
 		# laser_dict.allow_pickle=True
 # full_saved_file_dict = dict(laser_dict)
+exit()
+
+
+
+
+# how big do I want the foil?
+
+
+stand_off_length = 0.06	# m	# >= MU02
+# stand_off_length = 0.045	# m	# = MU01
+
+pinhole_offset = np.array([-0.0198,-0.0198])	# toroidal direction parallel to the place surface, z
+
+# pinhole_location = np.array([-1.04087,1.068856,-0.7198])	# x,y,z
+pinhole_location = coleval.locate_pinhole(pinhole_offset=pinhole_offset)	# x,y,z
+
+Rf=1.48967 + 0.01 + 0.003 + 0.002 + stand_off_length	# m	radius of the centre of the foil
+plane_equation = np.array([1,-1,0,2**0.5 * Rf])	# plane of the foil
+centre_of_foil = np.array([-Rf/(2**0.5), Rf/(2**0.5), -0.7])	# x,y,z
+# foil_size = [0.07,0.09]
+foil_size = [0.13,0.13]
+R_centre_column = 0.2608	# m
+pinhole_relative_location = np.array(foil_size)/2 + 0.0198
+
+cv0 = np.zeros((np.array(foil_size)*100*100).astype(int)).T
+
+
+structure_point_location_on_foil = coleval.return_structure_point_location_on_foil(plane_equation=plane_equation,centre_of_foil=centre_of_foil,pinhole_relative_location=pinhole_relative_location,foil_size=foil_size)
+fueling_point_location_on_foil = coleval.return_fueling_point_location_on_foil(plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil,foil_size=foil_size)
+
+structure_alpha = 1
+
+plt.figure()
+for i in range(len(fueling_point_location_on_foil)):
+	# plt.plot(np.array(fueling_point_location_on_foil[i][:,0])*(np.shape(cv0)[1]-1)/foil_size[0],np.array(fueling_point_location_on_foil[i][:,1])*(np.shape(cv0)[0]-1)/foil_size[1],'+k',markersize=40,alpha=structure_alpha)
+	# plt.plot(np.array(fueling_point_location_on_foil[i][:,0])*(np.shape(cv0)[1]-1)/foil_size[0],np.array(fueling_point_location_on_foil[i][:,1])*(np.shape(cv0)[0]-1)/foil_size[1],'ok',markersize=5,alpha=structure_alpha)
+	plt.plot(np.array(fueling_point_location_on_foil[i][:,0]),np.array(fueling_point_location_on_foil[i][:,1]),'+k',markersize=40,alpha=structure_alpha)
+	plt.plot(np.array(fueling_point_location_on_foil[i][:,0]),np.array(fueling_point_location_on_foil[i][:,1]),'ok',markersize=5,alpha=structure_alpha)
+for i in range(len(structure_point_location_on_foil)):
+	# plt.plot(np.array(structure_point_location_on_foil[i][:,0])*(np.shape(cv0)[1]-1)/foil_size[0],np.array(structure_point_location_on_foil[i][:,1])*(np.shape(cv0)[0]-1)/foil_size[1],'--k',alpha=structure_alpha)
+	plt.plot(np.array(structure_point_location_on_foil[i][:,0]),np.array(structure_point_location_on_foil[i][:,1]),'--k',alpha=structure_alpha)
+# plt.plot([0,foil_size[0],foil_size[0],0,0],[0,0,foil_size[1],foil_size[1],0],'k')
+plt.plot(foil_size[0]/2+np.linspace(-0.115/2,0.115/2,100),foil_size[1]/2+((0.115/2)**2-(np.linspace(-0.115/2,0.115/2,100))**2)**0.5,'k')
+plt.plot(foil_size[0]/2+np.linspace(-0.115/2,0.115/2,100),foil_size[1]/2-((0.115/2)**2-(np.linspace(-0.115/2,0.115/2,100))**2)**0.5,'k')
+plt.plot([foil_size[0]/2-0.07/2,foil_size[0]/2+0.07/2,foil_size[0]/2+0.07/2,foil_size[0]/2-0.07/2,foil_size[0]/2-0.07/2],[foil_size[1]/2-0.09/2,foil_size[1]/2-0.09/2,foil_size[1]/2+0.09/2,foil_size[1]/2+0.09/2,foil_size[1]/2-0.09/2],'k')
+
+plt.gca().set_aspect('equal', adjustable='box')
+
+try:
+	gna = efit_reconstruction
+except:
+	name = 'IRVB-MASTU_shot-45401.ptw'
+	path = '/home/ffederic/work/irvb/MAST-U/'
+	i_day,day = 0,coleval.retrive_shot_date_and_time(name[-9:-4])
+
+	shot_list = get_data(path+'shot_list2.ods')
+	temp1 = (np.array(shot_list['Sheet1'][0])=='shot number').argmax()
+	for i in range(1,len(shot_list['Sheet1'])):
+		if shot_list['Sheet1'][i][temp1] == int(name[-9:-4]):
+			date = shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0])=='date').argmax()]
+			break
+	try:
+		i_day,day = 0,str(date.date())
+	except:
+		i_day,day = 0,str(date)
+
+	laser_to_analyse=path+day+'/'+name
+
+	pass_number = 0
+	full_saved_file_dict_FAST = np.load(laser_to_analyse[:-4]+'_FAST'+'.npz')
+	full_saved_file_dict_FAST.allow_pickle=True
+	full_saved_file_dict_FAST = dict(full_saved_file_dict_FAST)
+	try:
+		full_saved_file_dict_FAST['multi_instrument'] = full_saved_file_dict_FAST['multi_instrument'].all()
+	except:
+		full_saved_file_dict_FAST['multi_instrument'] = dict([])
+	if pass_number==0:
+		full_saved_file_dict_FAST['first_pass'] = full_saved_file_dict_FAST['first_pass'].all()
+		inverted_dict = full_saved_file_dict_FAST['first_pass']['inverted_dict']
+	else:
+		full_saved_file_dict_FAST['second_pass'] = full_saved_file_dict_FAST['second_pass'].all()
+		inverted_dict = full_saved_file_dict_FAST['second_pass']['inverted_dict']
+
+	grid_resolution = 2	# cm
+	time_full_binned_crop = inverted_dict[str(grid_resolution)]['time_full_binned_crop']
+	inverted_data = inverted_dict[str(grid_resolution)]['inverted_data']
+	inverted_data_sigma = inverted_dict[str(grid_resolution)]['inverted_data_sigma']
+	binning_type = inverted_dict[str(grid_resolution)]['binning_type']
+
+	EFIT_path_default = '/common/uda-scratch/lkogan/efitpp_eshed'
+	efit_reconstruction = coleval.mclass(EFIT_path_default+'/epm0'+laser_to_analyse[-9:-4]+'.nc',pulse_ID=laser_to_analyse[-9:-4])
+	inversion_R = inverted_dict[str(grid_resolution)]['geometry']['R']
+	inversion_Z = inverted_dict[str(grid_resolution)]['geometry']['Z']
+
+
+all_time_x_point_location = coleval.return_all_time_x_point_location(efit_reconstruction,plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil,foil_size=foil_size)
+plot1 = plt.plot(0,0,'-r', alpha=1)[0]
+
+all_time_mag_axis_location = coleval.return_all_time_mag_axis_location(efit_reconstruction,plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil,foil_size=foil_size)
+plot2 = plt.plot(0,0,'--r', alpha=1)[0]
+
+all_time_sep_r,all_time_sep_z,r_fine,z_fine = coleval.efit_reconstruction_to_separatrix_on_foil(efit_reconstruction)
+
+all_time_strike_points_location,all_time_strike_points_location_rot = coleval.return_all_time_strike_points_location(efit_reconstruction,all_time_sep_r,all_time_sep_z,r_fine,z_fine,plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil,foil_size=foil_size)
+plot3 = plt.plot(0,0,'xr',markersize=20, alpha=1)[0]
+plot4 = []
+for __i in range(len(all_time_strike_points_location_rot[0])):
+	plot4.append(plt.plot(0,0,'-r', alpha=1)[0])
+
+all_time_separatrix = coleval.return_all_time_separatrix(efit_reconstruction,all_time_sep_r,all_time_sep_z,r_fine,z_fine,plane_equation=plane_equation,pinhole_location=pinhole_location,centre_of_foil=centre_of_foil,foil_size=foil_size)
+plot5 = []
+for __i in range(len(all_time_separatrix[0])):
+	plot5.append(plt.plot(0,0,'--b', alpha=1)[0])
+
+
+i_time = np.abs(0.7-efit_reconstruction.time).argmin()
+if np.sum(np.isnan(all_time_x_point_location[i_time]))>=len(all_time_x_point_location[i_time]):	# means that all the points calculated are outside the foil
+	plot1.set_data(([],[]))
+else:
+	plot1.set_data((all_time_x_point_location[i_time][:,0],all_time_x_point_location[i_time][:,1]))
+# if np.sum(np.isnan(all_time_mag_axis_location[i_time]))>=len(all_time_mag_axis_location[i_time]):	# means that all the points calculated are outside the foil
+# 	plot2.set_data(([],[]))
+# else:
+plot2.set_data((all_time_mag_axis_location[i_time][:,0],all_time_mag_axis_location[i_time][:,1]))
+# if np.sum(np.isnan(all_time_mag_axis_location[i_time]))>=len(all_time_mag_axis_location[i_time]):	# means that all the points calculated are outside the foil
+# 	plot3.set_data(([],[]))
+# 	for __i in range(len(plot4)):
+# 		plot4[__i].set_data(([],[]))
+# else:
+plot3.set_data((all_time_strike_points_location[i_time][:,0],all_time_strike_points_location[i_time][:,1]))
+for __i in range(len(plot4)):
+	plot4[__i].set_data((all_time_strike_points_location_rot[i_time][__i][:,0],all_time_strike_points_location_rot[i_time][__i][:,1]))
+# if np.sum(np.isnan(all_time_mag_axis_location[i_time]))>=len(all_time_mag_axis_location[i_time]):	# means that all the points calculated are outside the foil
+for __i in range(len(plot5)):
+	plot5[__i].set_data((all_time_separatrix[i_time][__i][:,0],all_time_separatrix[i_time][__i][:,1]))
+
+
+
+####

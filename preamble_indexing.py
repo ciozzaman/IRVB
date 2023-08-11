@@ -1344,6 +1344,11 @@ Cthermalconductivity=7 #[W/(m·K)]	# assumed in the unfavorable direction of a g
 Cspecificheat=709 #[J/(kg K)]
 Cdensity=0.684*1000 #[kg/m3]
 Cthermaldiffusivity=Cthermalconductivity/(Cspecificheat*Cdensity)    #m2/s
+Tithermalconductivity=17 #[W/(m·K)]
+Tispecificheat=523 #[J/(kg K)]
+Tidensity=4500 #[kg/m3]
+Tithermaldiffusivity=Tithermalconductivity/(Tispecificheat*Tidensity)    #m2/s
+
 sigmaSB=5.6704e-08 #[W/(m2 K4)]
 zeroC=273.15 #K / C
 

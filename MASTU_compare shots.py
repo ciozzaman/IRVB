@@ -650,7 +650,8 @@ else:
 		min_psi = 0.6
 		max_psi = 1.2
 		# plt.figure()
-		fig, ax = plt.subplots( 3,1,figsize=(8, 9), squeeze=False,sharex=False, gridspec_kw={'height_ratios': [2,2, 1]})
+		fig, ax = plt.subplots( 3,1,figsize=(8, 9), squeeze=False,sharex=False, gridspec_kw={'height_ratios': [1,1, 0.5]})
+		# fig.subplots_adjust(hspace=0.3)
 		ax[2,0].plot(Dalpha_time*1e3,Dalpha,'k')
 		ax[2,0].set_xlim(left=220,right=235)
 		ax[2,0].set_ylim(bottom=(Dalpha[np.logical_and(Dalpha_time>0.220,Dalpha_time<0.235)]).min()*0.9,top=(Dalpha[np.logical_and(Dalpha_time>0.220,Dalpha_time<0.235)]).max()*1.1)
@@ -662,6 +663,9 @@ else:
 			ne = TS_ne[i__]/1e19
 			R = TS_R[i__]
 			a = ax[2,0].axvline(x=TS_time[i__]*1e3,linestyle='--',color='C'+str(i___))
+			R = R[np.isfinite(ne)]
+			ne = ne[np.isfinite(ne)]
+			Te = Te[np.isfinite(Te)]
 			# gna = efit_reconstruction.psidat[i_]
 			i_ = np.abs(efit_reconstruction.time-time_).argmin()
 			gna=(efit_reconstruction.psidat[i_]-efit_reconstruction.psi_axis[i_])/(efit_reconstruction.psi_bnd[i_]-efit_reconstruction.psi_axis[i_])
@@ -671,18 +675,21 @@ else:
 			ax[1,0].plot(psi[R>efit_reconstruction.mag_axis_r[i_]][np.logical_and(psi[R>efit_reconstruction.mag_axis_r[i_]]>min_psi,psi[R>efit_reconstruction.mag_axis_r[i_]]<max_psi)],ne[R>efit_reconstruction.mag_axis_r[i_]][np.logical_and(psi[R>efit_reconstruction.mag_axis_r[i_]]>min_psi,psi[R>efit_reconstruction.mag_axis_r[i_]]<max_psi)],'+',color=a.get_color())
 			ax[0,0].plot(psi[R>efit_reconstruction.mag_axis_r[i_]][np.logical_and(psi[R>efit_reconstruction.mag_axis_r[i_]]>min_psi,psi[R>efit_reconstruction.mag_axis_r[i_]]<max_psi)],Te[R>efit_reconstruction.mag_axis_r[i_]][np.logical_and(psi[R>efit_reconstruction.mag_axis_r[i_]]>min_psi,psi[R>efit_reconstruction.mag_axis_r[i_]]<max_psi)],color=a.get_color(),label='%.3gms' %(TS_time[i__]*1e3))
 			ax[0,0].plot(psi[R>efit_reconstruction.mag_axis_r[i_]][np.logical_and(psi[R>efit_reconstruction.mag_axis_r[i_]]>min_psi,psi[R>efit_reconstruction.mag_axis_r[i_]]<max_psi)],Te[R>efit_reconstruction.mag_axis_r[i_]][np.logical_and(psi[R>efit_reconstruction.mag_axis_r[i_]]>min_psi,psi[R>efit_reconstruction.mag_axis_r[i_]]<max_psi)],'+',color=a.get_color())
-		# ax[1,0].set_xlabel(r'$\rho$ [au]')
+		ax[1,0].set_xlabel(r'$\rho$ [au]')
 		ax[1,0].set_ylabel(r'$n_e$ [$10^{19}$]')
 		ax[1,0].axvline(x=1,linestyle='--',color='k')
 		ax[1,0].grid()
 
 		ax[0,0].legend(loc='best')
-		ax[0,0].set_xlabel(r'$\rho$ [au]')
+		# ax[0,0].set_xlabel(r'$\rho$ [au]')
 		ax[0,0].set_ylabel(r'$T_e$ [eV]')
 		ax[0,0].axvline(x=1,linestyle='--',color='k')
 		ax[0,0].grid()
 		ax[0,0].get_shared_x_axes().join(ax[0,0],ax[1,0])
 		ax[0,0].set_xticklabels([])
+
+		# line to custom move the socond plot
+		ax[1,0].set_position(ax[0,0].get_position().translated(0, -1 * ax[0,0].get_position().height
 		# ax[0,0].set_ymargin(2)
 		plt.savefig('/home/ffederic/work/irvb/0__outputs/'+os.path.split(laser_to_analyse[:-4])[1]+'_pass'+str(pass_number)+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_all_variables_absolute_small7.png')
 		plt.close()

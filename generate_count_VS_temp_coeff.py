@@ -997,7 +997,7 @@ elif False:
 			plt.title('proportional window component BB curve fit NUC\n'+description)
 		else:
 			plt.title('proportional window component BB curve fit BB source\n'+description)
-		to_plot = median_filter(params2[0,:,:,0]*params2[0,:,:,2],[3,3])
+		to_plot = median_filter(params2[1,:,:,0]*params2[0,:,:,2],[3,3])
 		plt.imshow(to_plot,vmin=to_plot[30:170,30:170].min(),vmax=to_plot[30:170,30:170].max())
 		plt.colorbar().set_label('a1*a3 [counts/photons]')
 		plt.pause(0.01)
@@ -1042,10 +1042,19 @@ elif False:
 
 		plt.figure(figsize=(10, 10))
 		if len(temperature_window)<6:
+			plt.title('offset full BB curve fit NUC\n'+description)
+		else:
+			plt.title('offset full BB curve fit BB source\n'+description)
+		plt.imshow(median_filter(params2[0,:,:,1]+params2[0,:,:,3],[3,3]))
+		plt.colorbar()
+		plt.pause(0.01)
+
+		plt.figure(figsize=(10, 10))
+		if len(temperature_window)<6:
 			plt.title('SNR additive factor window component BB curve fit NUC\n'+description)
 		else:
 			plt.title('SNR additive factor window component BB curve fit BB source\n'+description)
-		to_plot = median_filter((params2[0,:,:,1]+params2[0,:,:,3])/((errparams2[0,:,:,1,1]+errparams2[0,:,:,3,3]+2*errparams2[0,:,:,3,1])**0.5),[3,3])
+		to_plot = 1/median_filter((params2[0,:,:,1]+params2[0,:,:,3])/((errparams2[0,:,:,1,1]+errparams2[0,:,:,3,3]+2*errparams2[0,:,:,3,1])**0.5),[3,3])
 		plt.imshow(to_plot)
 		plt.colorbar().set_label('(a2+a4)/sigma(a2+a4) [au]')
 		plt.pause(0.01)

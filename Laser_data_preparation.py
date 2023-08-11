@@ -28,9 +28,10 @@ if False:	# manual collection of parameters
 	all_laser_to_analyse_ROI=coleval.flatten(all_laser_to_analyse_ROI)
 else:	# automatic collection of parameters
 	# cases_to_include = ['laser15','laser16','laser17','laser18','laser19','laser20','laser21','laser22','laser23','laser24','laser25','laser26','laser27','laser28','laser29','laser30','laser31','laser32','laser33','laser34','laser35','laser36','laser37','laser38','laser39','laser41','laser42','laser43','laser44','laser45','laser46','laser47']
-	cases_to_include = ['laser17','laser18','laser19','laser20','laser21','laser22','laser23','laser24','laser25','laser26','laser27','laser28','laser29','laser30','laser31','laser32','laser33','laser34','laser35','laser36','laser37','laser38','laser39','laser41','laser42','laser43','laser44','laser45','laser46','laser47']
+	# cases_to_include = ['laser17','laser18','laser19','laser20','laser21','laser22','laser23','laser24','laser25','laser26','laser27','laser28','laser29','laser30','laser31','laser32','laser33','laser34','laser35','laser36','laser37','laser38','laser39','laser41','laser42','laser43','laser44','laser45','laser46','laser47']
 	# cases_to_include = ['laser34','laser35','laser36','laser37','laser38','laser39']
 	# cases_to_include = ['laser19','laser22','laser30','laser33']
+	cases_to_include = ['laser22','laser33']
 	all_case_ID = []
 	all_path_reference_frames = []
 	all_laser_to_analyse = []
@@ -78,7 +79,7 @@ parameters_available_framerate = np.array(parameters_available_framerate)
 # background_counts_std = [(np.load(file+'.npz')['data_time_avg_counts_std']) for file in path_reference_frames if np.logical_and(np.abs(np.load(file+'.npz')['FrameRate']-framerate)<framerate/100,np.abs(np.load(file+'.npz')['IntegrationTime']/1000-int_time)<int_time/100)]
 
 
-for i_laser_to_analyse,laser_to_analyse in enumerate(all_laser_to_analyse):
+for i_laser_to_analyse,laser_to_analyse in enumerate([all_laser_to_analyse[0]]):
 	print('STARTING '+laser_to_analyse)
 
 	try:
@@ -86,9 +87,10 @@ for i_laser_to_analyse,laser_to_analyse in enumerate(all_laser_to_analyse):
 		# laser_dict = np.load(laser_to_analyse+'.npz')
 	except:
 		print('missing .npz file. rigenerated')
-		full_saved_file_dict = coleval.ats_to_dict(laser_to_analyse+'.ats')
-		np.savez_compressed(laser_to_analyse,**full_saved_file_dict)
-		laser_dict = np.load(laser_to_analyse+'.npz')
+		# full_saved_file_dict = coleval.ats_to_dict(laser_to_analyse+'.ats')
+		# np.savez_compressed(laser_to_analyse,**full_saved_file_dict)
+		# laser_dict = np.load(laser_to_analyse+'.npz')
+		laser_dict = coleval.read_IR_file(laser_to_analyse,force_regeneration=True)
 
 	path_reference_frames = all_path_reference_frames[i_laser_to_analyse]
 	limited_ROI = all_laser_to_analyse_ROI[i_laser_to_analyse]
