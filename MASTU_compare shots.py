@@ -492,21 +492,16 @@ else:
 
 	# name = 'IRVB-MASTU_shot-45473.ptw'
 	# name = 'IRVB-MASTU_shot-44879.ptw'
-	name = 'IRVB-MASTU_shot-45401.ptw'
-	# name = 'IRVB-MASTU_shot-45371.ptw'
-	temp1 = (np.array(shot_list['Sheet1'][0])=='shot number').argmax()
-	for i in range(1,len(shot_list['Sheet1'])):
-		if shot_list['Sheet1'][i][temp1] == int(name[-9:-4]):
-			date = shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0])=='date').argmax()]
-			break
-	i_day,day = 0,str(date.date())
+	# name = 'IRVB-MASTU_shot-45401.ptw'
+	name = 'IRVB-MASTU_shot-45371.ptw'
+	i_day,day = 0,coleval.retrive_shot_date_and_time(name[-9:-4])[0]
 	laser_to_analyse=path+day+'/'+name
 
 	full_saved_file_dict_FAST = np.load(laser_to_analyse[:-4]+'_FAST'+'.npz')
 	full_saved_file_dict_FAST.allow_pickle=True
 	full_saved_file_dict_FAST = dict(full_saved_file_dict_FAST)
 	full_saved_file_dict_FAST['multi_instrument'] = full_saved_file_dict_FAST['multi_instrument'].all()
-	pass_number = 1
+	pass_number = 0
 	if pass_number==0:
 		full_saved_file_dict_FAST['first_pass'] = full_saved_file_dict_FAST['first_pass'].all()
 		inverted_dict = full_saved_file_dict_FAST['first_pass']['inverted_dict']
@@ -551,6 +546,7 @@ else:
 	scenario = full_saved_file_dict_FAST['multi_instrument']['scenario']
 	experiment = full_saved_file_dict_FAST['multi_instrument']['experiment']
 
+	BEAMPOWER_time = full_saved_file_dict_FAST['multi_instrument']['BEAMPOWER_time']
 	SW_BEAMPOWER = full_saved_file_dict_FAST['multi_instrument']['SW_BEAMPOWER']
 	SS_BEAMPOWER = full_saved_file_dict_FAST['multi_instrument']['SS_BEAMPOWER']
 	stored_energy = full_saved_file_dict_FAST['multi_instrument']['stored_energy']
@@ -562,8 +558,8 @@ else:
 	power_balance = dict([])
 	power_balance['t'] = full_saved_file_dict_FAST['multi_instrument']['power_balance_t']
 	power_balance['prad_core'] = full_saved_file_dict_FAST['multi_instrument']['power_balance_prad_core']
-	SS_BEAMPOWER = np.interp(power_balance['t'],time_full_binned_crop,SS_BEAMPOWER,right=0.,left=0.)
-	SW_BEAMPOWER = np.interp(power_balance['t'],time_full_binned_crop,SW_BEAMPOWER,right=0.,left=0.)
+	SS_BEAMPOWER = np.interp(power_balance['t'],BEAMPOWER_time,SS_BEAMPOWER,right=0.,left=0.)
+	SW_BEAMPOWER = np.interp(power_balance['t'],BEAMPOWER_time,SW_BEAMPOWER,right=0.,left=0.)
 	ss_absorption = 0.8
 	sw_absorption = 0.4
 	real_core_radiation_all = inverted_dict[str(grid_resolution)]['real_core_radiation_all']
@@ -689,7 +685,7 @@ else:
 		ax[0,0].set_xticklabels([])
 
 		# line to custom move the socond plot
-		ax[1,0].set_position(ax[0,0].get_position().translated(0, -1 * ax[0,0].get_position().height
+		ax[1,0].set_position(ax[0,0].get_position().translated(0, -1 * ax[0,0].get_position().height))
 		# ax[0,0].set_ymargin(2)
 		plt.savefig('/home/ffederic/work/irvb/0__outputs/'+os.path.split(laser_to_analyse[:-4])[1]+'_pass'+str(pass_number)+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_all_variables_absolute_small7.png')
 		plt.close()
@@ -889,7 +885,7 @@ elif False:	# same but time is the axis
 	elif name == 'IRVB-MASTU_shot-45401.ptw':
 		select_time[time_full_binned_crop>1.1]=False
 		select_time[-3:] = False
-		fig, ax = plt.subplots( 5,1,figsize=(10, 18), squeeze=False,sharex=True)
+		fig, ax = plt.subplots( 6,1,figsize=(10, 21), squeeze=False,sharex=True)
 	elif name == 'IRVB-MASTU_shot-45371.ptw':
 		select_time = time_full_binned_crop>0.
 		select_time[time_full_binned_crop>0.89]=False
@@ -921,13 +917,13 @@ elif False:	# same but time is the axis
 	select_time2 = power_balance['t']>0.
 	select_time2[power_balance['t']>time_full_binned_crop[select_time].max()] = False
 	ax[1,0].plot(np.interp(power_balance['t'][select_time2],time_full_binned_crop,time_full_binned_crop),1e-6*(output_pohm + SW_BEAMPOWER + SS_BEAMPOWER-dWdt)[select_time2],label='input',color=color[5])
-	if np.nanmax(SW_BEAMPOWER)>0:
-		ax[1,0].plot(np.interp(power_balance['t'][select_time2],time_full_binned_crop,time_full_binned_crop),1e-6*(SW_BEAMPOWER)[select_time2],label='SW NBI',color=color[1])
-	if np.nanmax(SS_BEAMPOWER)>0:
-		ax[1,0].plot(np.interp(power_balance['t'][select_time2],time_full_binned_crop,time_full_binned_crop),1e-6*(SS_BEAMPOWER)[select_time2],label='SS NBI',color=color[6])
+	# if np.nanmax(SW_BEAMPOWER)>0:
+	# 	ax[1,0].plot(np.interp(power_balance['t'][select_time2],time_full_binned_crop,time_full_binned_crop),1e-6*(SW_BEAMPOWER)[select_time2],label='SW NBI',color=color[1])
+	# if np.nanmax(SS_BEAMPOWER)>0:
+	# 	ax[1,0].plot(np.interp(power_balance['t'][select_time2],time_full_binned_crop,time_full_binned_crop),1e-6*(SS_BEAMPOWER)[select_time2],label='SS NBI',color=color[6])
 
 	# ax[1,0].plot(np.interp(power_balance['t'][select_time2],time_full_binned_crop,ne_bar/greenwald_density),1e-6*(output_pohm-dWdt)[select_time2],'--',label='ohmic input power (ohm-dW/dt)',color=color[5])
-	ax[1,0].plot(np.interp(power_balance['t'][select_time2],time_full_binned_crop,time_full_binned_crop),1e-6*power_balance['prad_core'][select_time2],label='prad_core\nres bolo',color=color[7])
+	ax[1,0].plot(np.interp(power_balance['t'][select_time2],time_full_binned_crop,time_full_binned_crop),1e-6*power_balance['prad_core'][select_time2],label='Prad core\nres bolo',color=color[7])
 	# temp = inverted_data[:,:,inversion_Z<0]
 	# temp = np.nansum(np.nansum(temp,axis=-1)*inversion_R*(np.mean(np.diff(inversion_R))**2)*2*np.pi,axis=1)
 	# plt.plot(time_full_binned_crop,temp/np.nanmax(temp),label='relative total power')
@@ -940,10 +936,11 @@ elif False:	# same but time is the axis
 	# ax[1,0].plot((nu_cowley)[select_time],1e-6*real_core_radiation_all[select_time]*2,label='core_radiation',color=color[3])
 	# ax[1,0].plot((nu_cowley)[select_time],1e-6*real_non_core_radiation_all[select_time]*2,label='non_core_radiation',color=color[4])
 	ax[1,0].grid()
-	ax[1,0].set_ylabel('power [MW]')
+	ax[1,0].set_ylabel('Power [MW]')
 	if name != 'IRVB-MASTU_shot-45371.ptw':
 		ax[1,0].errorbar((time_full_binned_crop)[select_time],1e-6*all_lower_volume_radiation_all[select_time]*2,yerr=1e-6*all_lower_volume_radiation_sigma_all[select_time]*2,capsize=5,linestyle='-',label='total IRVB',color=color[2])
-		ax[1,0].errorbar((time_full_binned_crop)[select_time],1e-6*real_core_radiation_all[select_time]*2,yerr=1e-6*real_core_radiation_sigma_all[select_time]*2,capsize=5,linestyle='-',label='core+SOL IRVB',color=color[3])
+		# ax[1,0].errorbar((time_full_binned_crop)[select_time],1e-6*real_core_radiation_all[select_time]*2,yerr=1e-6*real_core_radiation_sigma_all[select_time]*2,capsize=5,linestyle='-',label='core+SOL IRVB',color=color[3])
+		ax[1,0].errorbar((time_full_binned_crop)[select_time],1e-6*equivalent_res_bolo_view[select_time]*2,yerr=1e-6*equivalent_res_bolo_view_sigma[select_time]*2,capsize=5,linestyle='-',label='core+SOL IRVB',color=color[3])
 		ax[1,0].errorbar((time_full_binned_crop)[select_time],1e-6*x_point_tot_rad_power_all[select_time]*2,yerr=1e-6*x_point_tot_rad_power_sigma_all[select_time]*2,capsize=5,linestyle='-',label='x-point IRVB',color=color[4])
 		ax[1,0].errorbar((time_full_binned_crop)[select_time],1e-6*approx_divertor[select_time]*2,yerr=1e-6*approx_divertor_sigma[select_time]*2,capsize=5,linestyle='-',label='divertor IRVB',color=color[8])
 		ax[1,0].legend(loc='best', fontsize='x-small',ncol=2)
@@ -953,7 +950,7 @@ elif False:	# same but time is the axis
 			ax[2,0].plot(np.interp(power_balance['t'][select_time2],time_full_binned_crop,time_full_binned_crop),1e-6*(SW_BEAMPOWER)[select_time2],label='SW NBI',color=color[1])
 		if np.nanmax(SS_BEAMPOWER)>0:
 			ax[2,0].plot(np.interp(power_balance['t'][select_time2],time_full_binned_crop,time_full_binned_crop),1e-6*(SS_BEAMPOWER)[select_time2],label='SS NBI',color=color[6])
-		ax[2,0].plot(np.interp(power_balance['t'][select_time2],time_full_binned_crop,time_full_binned_crop),1e-6*power_balance['prad_core'][select_time2],label='prad_core\nres bolo',color=color[7])
+		ax[2,0].plot(np.interp(power_balance['t'][select_time2],time_full_binned_crop,time_full_binned_crop),1e-6*power_balance['prad_core'][select_time2],label='Prad core\nres bolo',color=color[7])
 		temp = output_pohm + SW_BEAMPOWER + SS_BEAMPOWER-dWdt
 		ax[2,0].set_ylim(bottom=0,top=1e-6*1.2*np.nanmax(median_filter(temp[np.isfinite(temp)],size=21)[np.logical_and(power_balance['t'][np.isfinite(temp)]>0,power_balance['t'][np.isfinite(temp)]<time_full_binned_crop[-5])]))
 
@@ -1040,7 +1037,7 @@ elif False:	# same but time is the axis
 	# ax[2,0].plot((time_full_binned_crop)[select_time],jsat_upper_outer_mid_integrated[select_time]/1.6e-19,'+',color=color[3])
 	ax[2,0].errorbar((time_full_binned_crop)[select_time],jsat_upper_outer_mid_integrated[select_time]/1.6e-19*1e-22,yerr=jsat_upper_outer_mid_integrated_sigma[select_time]/1.6e-19*1e-22,capsize=5,linestyle='-',label='upper outer',color=color[3])
 	ax[2,0].grid()
-	ax[2,0].set_ylabel('target particle\nflux '+r'[$10^{22}\#/s$]')
+	ax[2,0].set_ylabel('Target particle\nflux '+r'[$10^{22}\#/s$]')
 	# ax[6,0].legend(loc='best', fontsize='xx-small',ncol=2)
 	ax[2,0].legend(loc='best', fontsize='x-small',ncol=2)
 
@@ -1097,22 +1094,26 @@ elif False:	# same but time is the axis
 
 	select_dalpha = Dalpha_time<time_full_binned_crop[select_time].max()
 	select_dalpha = np.logical_and(Dalpha_time>time_full_binned_crop[select_time].min(),select_dalpha)
-	fig, ax = plt.subplots( 1,1,figsize=(12, 6), squeeze=False,sharex=True)
+	fig, ax_ = plt.subplots( 1,1,figsize=(12, 6), squeeze=False,sharex=True)
 	fig.suptitle('shot '+str(name[-9:-4])+', '+scenario+' , '+experiment+'\nsecond pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
-	ax[0,0].plot(Dalpha_time[select_dalpha],Dalpha[select_dalpha])
-	ax[0,0].grid()
-	# ax[0,0].set_ylabel('Lpoloidal/Lpol\nx-pt [au]')
-	ax[0,0].set_ylabel(r'$D_{\alpha}$ [V]')
-	ax[0,0].set_xlabel('time [s]')
+	ax_[0,0].plot(Dalpha_time[select_dalpha],Dalpha[select_dalpha])
+	ax[5,0].plot(Dalpha_time[select_dalpha],Dalpha[select_dalpha])
+	ax[5,0].grid()
+	ax[5,0].set_ylabel(r'Density [$10^{19}\#/m^3$]')
+	ax[5,0].set_xlabel('time [s]')
+	ax_[0,0].grid()
+	# ax_[0,0].set_ylabel('Lpoloidal/Lpol\nx-pt [au]')
+	ax_[0,0].set_ylabel(r'$D_{\alpha}$ [V]')
+	ax_[0,0].set_xlabel('time [s]')
 	# ax[0,0].set_xlabel('greenwald fraction [ua]')
 	if name == 'IRVB-MASTU_shot-45401.ptw':
-		ax[0,0].set_xlim(left=0.1-0.005,right=time_full_binned_crop[select_time].max()+0.005)
+		ax_[0,0].set_xlim(left=0.1-0.005,right=time_full_binned_crop[select_time].max()+0.005)
 
 		ax2 = plt.axes([.18, .53, .13, .29], facecolor='w',yscale='linear')
 		# ax[0,0].plot(np.array([0.264,0.268,0.268,0.264,0.264]),[0.02,0.02,0.09,0.09,0.02],'r--',label='small ELMs')	# last ELM
 		# ax2.set_xlim(left=0.264,right=0.268)
 		# ax2.set_ylim(bottom=0.02,top=0.09)
-		ax[0,0].plot(np.array([0.2255,0.2285,0.2285,0.2255,0.2255]),[0.015,0.015,0.075,0.075,0.016],'r--',label='small ELMs')	# good ELM for TS
+		ax_[0,0].plot(np.array([0.2255,0.2285,0.2285,0.2255,0.2255]),[0.015,0.015,0.075,0.075,0.016],'r--',label='small ELMs')	# good ELM for TS
 		ax2.set_xlim(left=0.2255,right=0.2285)
 		ax2.set_ylim(bottom=0.015,top=0.075)
 		ax2.plot(Dalpha_time[select_dalpha],Dalpha[select_dalpha],'r')
@@ -1120,7 +1121,7 @@ elif False:	# same but time is the axis
 		ax2.grid()
 
 		ax3 = plt.axes([.38, .53, .27, .29], facecolor='w',yscale='linear')
-		ax[0,0].plot(np.array([0.951,0.96,0.96,0.951,0.951]),[0.1,0.1,0.25,0.25,0.1],'g--',label='dithering')
+		ax_[0,0].plot(np.array([0.951,0.96,0.96,0.951,0.951]),[0.1,0.1,0.25,0.25,0.1],'g--',label='dithering')
 		ax3.plot(Dalpha_time[select_dalpha],Dalpha[select_dalpha],'g')
 		ax3.set_xlim(left=0.951,right=0.96)
 		ax3.set_ylim(bottom=0.1,top=0.25)
@@ -1157,7 +1158,7 @@ elif False:	# same but time is the axis
 	cam10_F_time = cam10_F_time[np.logical_and(cam10_F_time>0.3,cam10_F_time<0.8)]
 	select_time = np.logical_and(time_full_binned_crop>0.3,time_full_binned_crop<0.8)
 
-	fig, ax = plt.subplots( 1,1,figsize=(12, 6), squeeze=True,sharex=True)
+	fig, ax = plt.subplots( 1,1,figsize=(9, 5), squeeze=True,sharex=True)
 	# plt.figure(figsize=(12, 6))
 	ax.plot(cam7_CIII_time,cam7_CIII/(cam7_CIII.max()),color=color[0],label=r'$\leftarrow$ CIII')
 	ax.plot(cam10_F_time,cam10_F/(cam10_F.max()),color=color[1],label=r'$\leftarrow$ Fulcher Band')

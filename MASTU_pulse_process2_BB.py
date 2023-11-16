@@ -202,7 +202,9 @@ try:
 
 			temp = np.mean(laser_counts_corrected[i][:,select_space_foil],axis=-1)
 			ax[plot_index,0].plot(time_of_experiment_digitizer_ID_seconds-start_time_of_pulse,temp-temp[4],'-.',color=color[i],label='correction NOT applied\nfoil area DIG'+str(laser_digitizer_ID[i]))
-			laser_counts_corrected[i] = (laser_counts_corrected[i].astype(np.float64).T -reference+reference[4]).T
+			# this increase could actually be due to the frame heating up! this is only by ~0.3C, that is low, and could make sense.
+			# the weird thing is that the increase starts almost at the sale time as the foil heating. (expected delay across 2 foil holder places ~0.3s)
+			laser_counts_corrected[i] = laser_counts_corrected[i].astype(np.float64)#.T -reference+reference[4]).T
 			temp = np.mean(laser_counts_corrected[i][:,select_space_foil],axis=-1)
 			ax[plot_index,0].plot(time_of_experiment_digitizer_ID_seconds-start_time_of_pulse,temp-temp[4],'-',color=color[i],label='correction applied\nfoil area DIG'+str(laser_digitizer_ID[i]))
 	ax[plot_index,0].set_ylabel('mean counts [au]')
@@ -418,12 +420,13 @@ try:
 	photon_flux_over_temperature_interpolator = photon_dict['photon_flux_over_temperature_interpolator']
 
 	if int(laser_to_analyse[-9:-4]) > 47174:	# MU03
-		foil_position_dict = dict([('angle',1),('foilcenter',[156,137]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',246)])	# identified 2022-11-08 for MU02
+		foil_position_dict = dict([('angle',1),('foilcenter',[156,137]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',246)])	# identified ~2023-08 after checking what is the actual result of the rotation
 	elif int(laser_to_analyse[-9:-4]) > 45517:	# MU02
-		foil_position_dict = dict([('angle',1),('foilcenter',[159,137]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',246)])	# identified 2022-11-08 for MU02
+		foil_position_dict = dict([('angle',1),('foilcenter',[159,137]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',246)])	# identified ~2023-08 after checking what is the actual result of the rotation
+		# foil_position_dict = dict([('angle',1),('foilcenter',[158,136]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',246)])	# identified 2022-11-08 for MU02
 	else:
 		# foil_position_dict = dict([('angle',0.7),('foilcenter',[157,136]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',240)])	# modified 2021/09/21 to match sensitivity matrix
-		foil_position_dict = dict([('angle',0.6),('foilcenter',[158,136]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',242)])	# modified 2021/09/21 to match sensitivity matrix
+		foil_position_dict = dict([('angle',0.6),('foilcenter',[158,136]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',242)])	# identified ~2023-08 after checking what is the actual result of the rotation
 
 	try:
 		full_saved_file_dict_FAST = np.load(laser_to_analyse[:-4]+'_FAST.npz')

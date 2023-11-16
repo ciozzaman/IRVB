@@ -28,7 +28,7 @@ try:
 		full_saved_file_dict_FAST['second_pass'] = full_saved_file_dict_FAST['second_pass'].all()
 		inverted_dict = full_saved_file_dict_FAST['second_pass']['inverted_dict']
 	else:
-		full_saved_file_dict_FAST['third_pass'] = full_saved_file_dict_FAST['second_pass'].all()
+		full_saved_file_dict_FAST['third_pass'] = full_saved_file_dict_FAST['third_pass'].all()
 		inverted_dict = full_saved_file_dict_FAST['third_pass']['inverted_dict']
 	grid_resolution = 2	# cm
 	time_full_binned_crop = inverted_dict[str(grid_resolution)]['time_full_binned_crop']
@@ -160,6 +160,12 @@ try:
 	inverted_dict[str(grid_resolution)]['outer_SOL_all'] = outer_SOL_all
 	inverted_dict[str(grid_resolution)]['outer_SOL_sigma_all'] = outer_SOL_sigma_all
 
+	equivalent_res_bolo_view_all,equivalent_res_bolo_view_sigma_all,all_out_of_sxd_all,all_out_of_sxd_sigma_all = coleval.equivalent_res_bolo_view(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,covariance_out,grid_data_masked_crop)
+	inverted_dict[str(grid_resolution)]['equivalent_res_bolo_view_all'] = equivalent_res_bolo_view_all
+	inverted_dict[str(grid_resolution)]['equivalent_res_bolo_view_sigma_all'] = equivalent_res_bolo_view_sigma_all
+	inverted_dict[str(grid_resolution)]['all_out_of_sxd_all'] = all_out_of_sxd_all
+	inverted_dict[str(grid_resolution)]['all_out_of_sxd_sigma_all'] = all_out_of_sxd_sigma_all
+
 	shot_list = get_data(path+'shot_list2.ods')
 	temp1 = (np.array(shot_list['Sheet1'][0])=='shot number').argmax()
 	scenario = ''
@@ -204,6 +210,8 @@ try:
 	plt.errorbar(time_full_binned_crop,outer_SOL_leg_all/1e3,yerr=outer_SOL_leg_sigma_all/1e3,label='outer SOL\n+leg\n+sxd',capsize=5,linestyle='--')
 	plt.errorbar(time_full_binned_crop,outer_SOL_all/1e3,yerr=outer_SOL_sigma_all/1e3,label='outer SOL',capsize=5,linestyle='--')
 	plt.errorbar(time_full_binned_crop,out_VV_radiation_all/1e3,yerr=out_VV_radiation_sigma_all/1e3,label='tot\nout VV',capsize=5,linestyle='--')
+	plt.errorbar(time_full_binned_crop,equivalent_res_bolo_view_all/1e3,yerr=equivalent_res_bolo_view_sigma_all/1e3,label='= res bolo',capsize=5,linestyle='--')
+	plt.errorbar(time_full_binned_crop,all_out_of_sxd_all/1e3,yerr=all_out_of_sxd_sigma_all/1e3,label='out sxd',capsize=5,linestyle='--')
 	plt.title('shot ' + laser_to_analyse[-9:-4]+' '+scenario+'\nradiated power in the lower half of the machine')
 	plt.legend(loc='best', fontsize='x-small')
 	plt.xlabel('time [s]')
@@ -1021,7 +1029,7 @@ try:
 	dWdt['data'][~np.isfinite(dWdt['data'])] = 0.0
 	pohm['pohm'][~np.isfinite(pohm['pohm'])] = 0.0
 	smooth_dt = 0.015
-	window_size = np.int(smooth_dt / np.median(np.gradient(efit_data['t'])))
+	window_size = int(smooth_dt / np.median(np.gradient(efit_data['t'])))
 	if window_size % 2 == 0:
 		window_size = window_size + 1
 	poly_order = np.min([3, window_size-1])
@@ -1034,15 +1042,21 @@ try:
 	ss_absorption = 0.8
 	sw_absorption = 0.4
 	try:
+		client=pyuda.Client()
 		data = client.get('/XNB/SS/BEAMPOWER',laser_to_analyse[-9:-4])
 		data_time = coleval.shift_beam_to_pulse_time(data.time.data, 'SS', laser_to_analyse[-9:-4])
 		SS_BEAMPOWER = np.interp(efit_data['t'],data_time,data.data,right=0.,left=0.)*1e6	# W
+		coleval.reset_connection(client)
+		del client
 	except:
 		SS_BEAMPOWER = np.zeros_like(efit_data['t'])
 	try:
+		client=pyuda.Client()
 		data = client.get('/XNB/SW/BEAMPOWER',laser_to_analyse[-9:-4])
 		data_time = coleval.shift_beam_to_pulse_time(data.time.data, 'SW', laser_to_analyse[-9:-4])
 		SW_BEAMPOWER = np.interp(efit_data['t'],data_time,data.data,right=0.,left=0.)*1e6	# W
+		coleval.reset_connection(client)
+		del client
 	except:
 		SW_BEAMPOWER = np.zeros_like(efit_data['t'])
 	SS_BEAMPOWER *= ss_absorption
@@ -1058,6 +1072,7 @@ try:
 	P_loss = P_heat-dWdt
 	energy_confinement_time = stored_energy/P_loss	# s
 	energy_confinement_time[energy_confinement_time<0] = np.nan
+	full_saved_file_dict_FAST['multi_instrument']['BEAMPOWER_time'] = time_full_binned_crop
 	full_saved_file_dict_FAST['multi_instrument']['SW_BEAMPOWER'] = SW_BEAMPOWER
 	full_saved_file_dict_FAST['multi_instrument']['SS_BEAMPOWER'] = SS_BEAMPOWER
 	full_saved_file_dict_FAST['multi_instrument']['ss_absorption'] = ss_absorption
@@ -1082,14 +1097,20 @@ try:
 	plasma_current = np.interp(time_full_binned_crop,efit_reconstruction.time,efit_reconstruction.cpasma)	# A
 	full_saved_file_dict_FAST['multi_instrument']['plasma_current'] = plasma_current
 	try:
+		client=pyuda.Client()
 		data = client.get('/EPM/OUTPUT/GLOBALPARAMETERS/BPHIRMAG',laser_to_analyse[-9:-4])	# Toroidal magnetic field at magnetic axis
 		toroidal_field_good = True
+		coleval.reset_connection(client)
+		del client
 	except:
+		client=pyuda.Client()
 		print('Toroidal magnetic field at magnetic axis'+' has been flagged as bad data')
 		client.set_property(pyuda.Properties.GET_BAD, True)	# this enables to collect data that was flagged as bad
 		data = client.get('/EPM/OUTPUT/GLOBALPARAMETERS/BPHIRMAG',laser_to_analyse[-9:-4])	# Toroidal magnetic field at magnetic axis
 		client.set_property(pyuda.Properties.GET_BAD, False)
 		toroidal_field_good = False
+		coleval.reset_connection(client)
+		del client
 	toroidal_field = -np.interp(efit_data['t'],data.time.data,data.data,right=0.,left=0.)	# T
 	toroidal_field = scipy.signal.savgol_filter(toroidal_field, window_size, poly_order)
 	toroidal_field = np.interp(time_full_binned_crop,efit_data['t'],toroidal_field,right=0.,left=0.)
@@ -1113,7 +1134,10 @@ try:
 	full_saved_file_dict_FAST['multi_instrument']['energy_confinement_time_LST'] = energy_confinement_time_LST
 
 
+	client=pyuda.Client()
 	data = client.get('/XIM/DA/HM10/T',laser_to_analyse[-9:-4])
+	coleval.reset_connection(client)
+	del client
 	Dalpha = data.data
 	Dalpha_time = data.time.data
 	full_saved_file_dict_FAST['multi_instrument']['Dalpha'] = Dalpha
@@ -1234,10 +1258,13 @@ try:
 				prominence.append(np.trapz(data[start:end]-data[start:end].min()) - (end-start)*(np.abs(data[start]-data[end]))/2)
 			return np.array(prominence)
 
+		client=pyuda.Client()
 		brightness_res_bolo = client.get('/abm/core/brightness', laser_to_analyse[-9:-4]).data.T
 		good_res_bolo = client.get('/abm/core/good', laser_to_analyse[-9:-4]).data
 		time_res_bolo = client.get('/abm/core/time', laser_to_analyse[-9:-4]).data
 		channel_res_bolo = client.get('/abm/core/channel', laser_to_analyse[-9:-4]).data
+		coleval.reset_connection(client)
+		del client
 		# select only usefull time
 		brightness_res_bolo = brightness_res_bolo[:,np.logical_and(time_res_bolo>-0.2,time_res_bolo<time_full_binned_crop.max()+0.1)]
 		time_res_bolo = time_res_bolo[np.logical_and(time_res_bolo>-0.2,time_res_bolo<time_full_binned_crop.max()+0.1)]
@@ -1359,6 +1386,8 @@ try:
 		fig.suptitle('shot '+str(efit_reconstruction.shotnumber)+', '+scenario+' , '+experiment+'\nfirst pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
 	elif pass_number ==1:
 		fig.suptitle('shot '+str(efit_reconstruction.shotnumber)+', '+scenario+' , '+experiment+'\nsecond pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
+	elif pass_number ==2:
+		fig.suptitle('shot '+str(efit_reconstruction.shotnumber)+', '+scenario+' , '+experiment+'\nthird pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
 	for i in [0,1]:
 		ax[i,0].plot(time_full_binned_crop,inner_L_poloidal_peak_all/inner_L_poloidal_x_point_all,'r-',label='inner_L_poloidal_peak/x-point')
 		ax[i,0].plot(time_full_binned_crop,inner_L_poloidal_baricentre_all/inner_L_poloidal_x_point_all,'r--',label='inner_L_poloidal_baricentre/x-point')
@@ -1456,6 +1485,8 @@ try:
 		fig.suptitle('shot '+str(efit_reconstruction.shotnumber)+', '+scenario+' , '+experiment+'\nfirst pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
 	elif pass_number ==1:
 		fig.suptitle('shot '+str(efit_reconstruction.shotnumber)+', '+scenario+' , '+experiment+'\nsecond pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
+	elif pass_number ==2:
+		fig.suptitle('shot '+str(efit_reconstruction.shotnumber)+', '+scenario+' , '+experiment+'\nthird pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
 	ax[0,0].axhline(y=1,color='k',linestyle='--')
 	ax[0,0].plot(time_full_binned_crop,inner_L_poloidal_midplane_all/inner_L_poloidal_x_point_all,'m--')
 	ax[0,0].plot(time_full_binned_crop,inner_L_poloidal_peak_all/inner_L_poloidal_x_point_all,'r-',label='inner_peak')
@@ -1574,6 +1605,7 @@ try:
 		ax[4,0].set_ylim(bottom=0)
 	ax[4,0].plot(time_full_binned_crop,1e-6*real_core_radiation_all*2,label='core_radiation',color=color[3])
 	ax[4,0].plot(time_full_binned_crop,1e-6*real_non_core_radiation_all*2,label='non_core_radiation',color=color[4])
+	ax[4,0].plot(time_full_binned_crop,1e-6*equivalent_res_bolo_view_all*2,label='= res bolo',color=color[1])
 	ax[4,0].grid()
 	ax[4,0].set_ylabel('power [MW]')
 	ax[4,0].legend(loc='best', fontsize='xx-small')
@@ -1772,8 +1804,10 @@ try:
 
 	if pass_number==0:
 		full_saved_file_dict_FAST['first_pass']['inverted_dict'] = inverted_dict
-	else:
+	elif pass_number==1:
 		full_saved_file_dict_FAST['second_pass']['inverted_dict'] = inverted_dict
+	else:
+		full_saved_file_dict_FAST['third_pass']['inverted_dict'] = inverted_dict
 	# np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
 	coleval.savez_protocol4(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
 	print('DONE '+laser_to_analyse+' pass '+str(pass_number))

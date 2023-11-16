@@ -52,6 +52,7 @@ else:	# automatic collection of parameters
 	# cases_to_include = ['laser30','laser31','laser32','laser33','laser34','laser35','laser36','laser37','laser38','laser39','laser41','laser42','laser43','laser44','laser45','laser46','laser47']
 	# cases_to_include = ['laser19','laser22','laser33']
 	cases_to_include = ['laser22','laser33']
+	# cases_to_include = ['laser33']
 	# cases_to_include = ['laser41']
 	# cases_to_include = np.flip(cases_to_include,axis=0)
 	all_case_ID = []
@@ -146,8 +147,8 @@ sample_properties['diffusivity'] = 1.03*1e-5
 # BBtreshold = 0.13
 # BBtreshold = 0.05 this is now defined dinamically
 
-emissivity_range = np.linspace(1.2,0.5,8)
-reference_temperature_range = np.linspace(15,30,6)
+emissivity_range = np.array(np.linspace(3.5,1.5,6).tolist() + np.linspace(1.2,0.3,10).tolist() + np.arange(0.25,0.05,-0.05).tolist())
+reference_temperature_range = np.linspace(16,34,10)
 override = True
 
 def function_a(index):
@@ -424,6 +425,7 @@ def function_a(index):
 			full_saved_file_dict[type_of_calibration] = dict([])
 
 		for emissivity in emissivity_range:
+		# for emissivity in emissivity_range[7:]:
 
 			# if not override:
 			# 	try:
@@ -452,8 +454,8 @@ def function_a(index):
 				params_dict=np.load(fullpathparams)
 				params_dict.allow_pickle=True
 				try:
-						params_BB = params_dict['coeff2']
-						errparams_BB = params_dict['errcoeff2']
+					params_BB = params_dict['coeff2']
+					errparams_BB = params_dict['errcoeff2']
 				except:	# if not present it means that it is at a frequency for which I don't have the data to do the proper BB coefficients search
 					print("not present it means that it is at a frequency for which I don't have the data to do the proper BB coefficients search. process aborted")
 					return 0
@@ -544,6 +546,8 @@ def function_a(index):
 					# 2023/06/26 I calculated everything wrong until now. Tref was calculated using the camera, but this way it can become wild for emissivity far from 1 (already 0.7).
 					# I need to fix reference temperature, otherwise it changes too much compared to temperatures that make sense (~20-25deg). for fixed emissivity, changing the background of 5 deg changes the power by ~10%
 					# I will keep reference_background_temperature fixed at 22deg, so the real errer is likely +/-2.5%
+				else:
+					pass
 
 			elif type_of_calibration == 'NUC_plate':
 				reference_background_temperature,reference_background_temperature_std = coleval.count_to_temp_poly_multi_digitizer(reference_background,params,errparams,laser_digitizer_ID,number_cpu_available,counts_std=reference_background_std,report=0,parallelised=False)
@@ -554,6 +558,7 @@ def function_a(index):
 				pass
 
 			for reference_temperature in reference_temperature_range:
+			# for reference_temperature in reference_temperature_range[:2]:
 				if not override:
 					try:
 						# test = np.load(laser_to_analyse+type_of_calibration + '_' + 'emissivity='+str(emissivity) +'_'+ 'T0='+str(reference_temperature)+'.npz')
@@ -955,8 +960,8 @@ def function_a(index):
 				test = []
 				for value in np.arange(5,limit-10):
 					select1 = (((horizontal_coord-horizontal_loc)**2 + (vertical_coord-vertical_loc)**2)>value**2)
-					select2 = np.logical_and( (((horizontal_coord-horizontal_loc)**2 + (vertical_coord-vertical_loc)**2)<=(value+4)**2) , select1 )
-					test.append(np.nanmean(ref_laser_temperature_minus_background_crop[select1]))
+					select2 = np.logical_and( (((horizontal_coord-horizontal_loc)**2 + (vertical_coord-vertical_loc)**2)<=(value+10)**2) , select1 )
+					test.append(np.nanmean(ref_laser_temperature_minus_background_crop[select2]))
 				if np.argmin(test)==len(test)-1:
 					print("offsett of the temperature skipped as the temperature is still dropping at the edge of the image, a clear minimum can't be found, so it is limited to above 0")
 					rise_of_absolute_temperature_difference = max(0,-np.nanmin(test))
@@ -996,7 +1001,15 @@ def function_a(index):
 				for i in range(len(laser_digitizer_ID)):
 					if type_of_calibration == 'BB_source_w_window' or type_of_calibration == 'BB_source_w/o_window':
 						if i==0:
-							output1.append(coleval.calc_temp_to_power_BB_1(photon_flux_over_temperature_interpolator,laser_temperature_minus_background_crop_filtered[i],ref_temperature,time_partial[i],dx,laser_counts_filtered_std_crop[i],BB_proportional_crop[i],BB_proportional_std_crop[i],reference_background_std_crop[i],laser_temperature_std_crop[i],nan_ROI_mask,return_grid_laplacian=True))
+							attempt = 0
+							success = False
+							while attempt<20 and success==False:	# this while is just to retry when I get the memory error
+								attempt += 1
+								try:
+									output1.append(coleval.calc_temp_to_power_BB_1(photon_flux_over_temperature_interpolator,laser_temperature_minus_background_crop_filtered[i],ref_temperature,time_partial[i],dx,laser_counts_filtered_std_crop[i],BB_proportional_crop[i],BB_proportional_std_crop[i],reference_background_std_crop[i],laser_temperature_std_crop[i],nan_ROI_mask,return_grid_laplacian=True))
+									success = True
+								except:
+									success = False
 							grid_laplacian = output1[0][-1]
 							output1[0] = output1[0][:-1]
 						else:
@@ -1083,9 +1096,10 @@ def function_a(index):
 					print('focus type '+focus_status+" unknown, used 'fully_defocused' settings")
 					# dr_total_power = 16
 					dr_total_power_minimum = 9
+				dr_total_power = 20	# fixed at 50 so it's the same for all
 
 
-				limit = 110
+				limit = 210
 				test=0
 				while True:
 					select1 = (((horizontal_coord-horizontal_loc)**2 + (vertical_coord-vertical_loc)**2)>(limit)**2)[1:-1,1:-1]
@@ -1102,8 +1116,8 @@ def function_a(index):
 				time_averaged_BBrad_over_duty = np.nanmean(sample_properties['emissivity']*temp_BBrad[select_ref_time],axis=0)
 				test = []
 				for value in np.arange(2,limit-10):
-					select2 = np.logical_and( (((horizontal_coord-horizontal_loc)**2 + (vertical_coord-vertical_loc)**2)<=(value+2)**2)[1:-1,1:-1] , (((horizontal_coord-horizontal_loc)**2 + (vertical_coord-vertical_loc)**2)>value**2)[1:-1,1:-1] )
-					test.append(np.nanmean(time_averaged_BBrad_over_duty[select2])-np.nanmean(time_averaged_BBrad_over_duty[select1]))
+					select2 = np.logical_and( (((horizontal_coord-horizontal_loc)**2 + (vertical_coord-vertical_loc)**2)<=(value+5)**2)[1:-1,1:-1] , (((horizontal_coord-horizontal_loc)**2 + (vertical_coord-vertical_loc)**2)>value**2)[1:-1,1:-1] )
+					test.append(np.nanmean(time_averaged_BBrad_over_duty[select2]))#-np.nanmean(time_averaged_BBrad_over_duty[select1]))
 				BBtreshold = min(0.05,2*np.max(np.abs(np.array(test)[-5:])))
 				# BBtreshold = min(0.05,3*np.max(np.abs(np.array(test)[-5:])))
 				# BBtreshold = min(0.02,3*np.max(np.abs(np.array(test)[-5:])))	# this is how it was before
@@ -1112,6 +1126,7 @@ def function_a(index):
 				ax[0,0].axhline(y=BBtreshold,linestyle='--',color='k',label='treshold')
 				ax[0,0].axvline(x=dr_total_power_BB*dx,linestyle='--',color='r',label='detected')
 				ax[0,0].axvline(x=dr_total_power_minimum*dx,linestyle='--',color='b',label='minimum')
+				ax[0,0].axvline(x=dr_total_power*dx,linestyle='--',color='y',label='maximum')
 				ax[0,0].set_ylim(top=min(np.nanmax(test),BBtreshold*5),bottom=np.nanmin(test))
 				ax[0,0].set_xlim(left=0)
 				ax[0,0].set_ylabel('black body')
@@ -1129,13 +1144,14 @@ def function_a(index):
 				ax[1,0].axhline(y=-2*np.nanmax(np.abs(test[40:])),linestyle='--',color='k')
 				ax[1,0].axvline(x=dr_total_power_diff*dx,linestyle='--',color='r')
 				ax[1,0].axvline(x=dr_total_power_minimum*dx,linestyle='--',color='b')
+				ax[1,0].axvline(x=dr_total_power*dx,linestyle='--',color='y',label='maximum')
 				ax[1,0].set_ylim(bottom=-4*np.nanmax(np.abs(test[40:])),top=np.nanmax(test))
 				ax[1,0].set_xlim(left=0)
 				ax[1,0].set_ylabel('diffusion')
 				ax[1,0].set_xlabel('radious of power sum [mm]')
 				ax[1,0].grid()
 				# dr_total_power = np.max([dr_total_power_diff,dr_total_power_minimum,dr_total_power_BB])
-				dr_total_power = 30	# fixed at 50 so it's the same for all
+				# dr_total_power = 30	# fixed at 50 so it's the same for all
 				# temp = np.logical_and(power_vs_space_sampling['all_dr']>dr*1.2,power_vs_space_sampling['all_dr']<np.max(power_vs_space_sampling['all_dr']))
 				# dr_total_power = (power_vs_space_sampling['all_dr'][temp])[nominal_values(power_vs_space_sampling['fitted_powers'][:,1][temp]).argmin()]
 				# dr_total_power = dr*2
@@ -1161,7 +1177,7 @@ def function_a(index):
 				power_vs_time_sampling = power_vs_time_sampling_explorer()
 				del temp_powernoback,power_vs_space_sampling_explorer,power_vs_time_sampling_explorer
 
-				partial_BBrad=np.multiply(np.nansum(temp_BBrad[:,select],axis=(-1)),dx**2)
+				partial_BBrad=np.multiply(np.nansum(temp_BBrad[:,select],axis=(-1)),dx**2)	# this is already multiplied by 2
 				partial_BBrad_std=np.nansum(temp_BBrad_std[:,select]**2,axis=(-1))**0.5*(dx**2)
 				partial_diffusion=np.multiply(np.nansum(temp_diffusion[:,select],axis=(-1)),dx**2)
 				partial_diffusion_std=np.nansum(temp_diffusion_std[:,select]**2,axis=(-1))**0.5*(dx**2)
@@ -1549,7 +1565,8 @@ def function_a(index):
 # 	pool.terminate()
 # 	del pool
 # for index in np.flip(np.arange(len(all_laser_to_analyse)),axis=0):
-for index in [4]:#np.arange(len(all_laser_to_analyse)):
+# for index in np.arange(len(all_laser_to_analyse)):
+for index in [8]:
 	# try:
 	function_a(index)
 	# except Exception as e:

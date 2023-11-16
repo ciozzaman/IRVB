@@ -40,7 +40,7 @@ parameters_available_int_time = np.array(parameters_available_int_time)
 parameters_available_framerate = np.array(parameters_available_framerate)
 # folder of the parameters path for BB correlation
 # pathparams_BB='/home/ffederic/work/irvb/2021-09-25_multiple_search_for_parameters'
-pathparams_BB='/home/ffederic/work/irvb/2022-12-07_multiple_search_for_parameters'	# NUC plate original scans with window inttime=1.0	# ms
+pathparams_BB='/home/ffederic/work/irvb/2022-12-07_multiple_search_for_parameters'	# original nuc measurements, calibration with wavewlength_top=5.1,wavelength_bottom=1.5
 f = []
 for (dirpath, dirnames, filenames) in os.walk(pathparams_BB):
 	f.append(dirnames)
@@ -57,15 +57,15 @@ color = ['b', 'r', 'm', 'y', 'g', 'c', 'k', 'slategrey', 'darkorange', 'lime', '
 
 path = '/home/ffederic/work/irvb/MAST-U/'
 # do all of them from MU01
-to_do = ['2021-05-18','2021-05-19','2021-05-20','2021-05-21','2021-05-25','2021-05-26','2021-05-27','2021-05-28','2021-06-02','2021-06-03','2021-06-04','2021-06-15','2021-06-16','2021-06-17','2021-06-18','2021-06-22','2021-06-23','2021-06-24','2021-06-25','2021-06-29','2021-06-30','2021-07-01','2021-07-06','2021-07-08','2021-07-09','2021-07-15','2021-07-27','2021-07-28','2021-07-29','2021-08-04','2021-08-05','2021-08-06','2021-08-11','2021-08-12','2021-08-13','2021-08-17','2021-08-18','2021-08-19','2021-08-20','2021-08-24','2021-08-25','2021-08-26','2021-08-27','2021-09-01','2021-09-08','2021-09-09','2021-09-10','2021-09-16','2021-09-17','2021-09-21','2021-09-22','2021-09-23','2021-09-24','2021-09-28','2021-09-29','2021-09-30','2021-10-01','2021-10-04','2021-10-05','2021-10-06','2021-10-07','2021-10-08','2021-10-11','2021-10-12','2021-10-13','2021-10-14','2021-10-15','2021-10-19','2021-10-20','2021-10-21','2021-10-22','2021-10-25','2021-10-26','2021-10-27','2021-10-28']
+# to_do = ['2021-05-18','2021-05-19','2021-05-20','2021-05-21','2021-05-25','2021-05-26','2021-05-27','2021-05-28','2021-06-02','2021-06-03','2021-06-04','2021-06-15','2021-06-16','2021-06-17','2021-06-18','2021-06-22','2021-06-23','2021-06-24','2021-06-25','2021-06-29','2021-06-30','2021-07-01','2021-07-06','2021-07-08','2021-07-09','2021-07-15','2021-07-27','2021-07-28','2021-07-29','2021-08-04','2021-08-05','2021-08-06','2021-08-11','2021-08-12','2021-08-13','2021-08-17','2021-08-18','2021-08-19','2021-08-20','2021-08-24','2021-08-25','2021-08-26','2021-08-27','2021-09-01','2021-09-08','2021-09-09','2021-09-10','2021-09-16','2021-09-17','2021-09-21','2021-09-22','2021-09-23','2021-09-24','2021-09-28','2021-09-29','2021-09-30','2021-10-01','2021-10-04','2021-10-05','2021-10-06','2021-10-07','2021-10-08','2021-10-11','2021-10-12','2021-10-13','2021-10-14','2021-10-15','2021-10-19','2021-10-20','2021-10-21','2021-10-22','2021-10-25','2021-10-26','2021-10-27','2021-10-28']
 # # # do all of them from MU02
 # to_do = ['2022-10-26', '2022-10-27', '2022-10-28', '2022-10-31', '2022-11-01', '2022-11-02', '2022-11-03', '2022-11-04', '2022-11-07', '2022-11-08', '2022-11-09', '2022-11-10', '2022-11-11', '2022-11-17', '2022-11-18', '2022-11-22', '2022-11-23', '2022-11-24', '2022-11-25', '2022-11-28', '2022-11-29', '2022-11-30', '2022-12-01', '2022-12-02', '2022-12-05', '2022-12-06', '2022-12-07', '2022-12-08', '2022-12-09', '2022-12-12', '2022-12-13', '2022-12-14', '2022-12-15', '2022-12-16', '2022-12-20', '2022-12-21', '2023-01-06', '2023-01-09', '2023-01-10', '2023-01-11', '2023-01-12', '2023-01-13', '2023-01-17', '2023-01-18', '2023-01-19', '2023-01-20', '2023-01-21', '2023-01-23', '2023-01-24', '2023-01-25', '2023-01-26', '2023-01-27', '2023-01-28', '2023-01-31', '2023-01-30']
 # # do all of them from MU03
-# to_do = ['2023-07-12', '2023-07-13', '2023-07-18', '2023-07-19', '2023-07-20', '2023-07-21', '2023-08-03']
+to_do = ['2023-07-12', '2023-07-13', '2023-07-18', '2023-07-19', '2023-07-20', '2023-07-21', '2023-08-03', '2023-08-08', '2023-08-09']
 # to_do = ['2021-05-18','2021-05-19','2021-05-20','2021-05-21','2021-05-25','2021-f05-26','2021-05-27','2021-05-28','2021-06-02','2021-06-03','2021-06-04','2021-06-15','2021-06-16','2021-06-17','2021-06-18','2021-06-22']
 # to_do = ['2021-09-08','2021-06-17','2021-08-05']
 # to_do = ['2021-10-15','2021-10-12','2021-10-01','2021-09-30']
-to_do = ['2023-08-08']
+# to_do = ['2023-08-08']
 # to_do = ['2023-07-18','2023-07-19']
 # to_do = ['2021-09-01','2021-09-08','2021-09-09','2021-09-10','2021-09-16','2021-09-17','2021-09-21','2021-09-22','2021-09-23','2021-09-24','2021-09-28','2021-09-29','2021-09-30','2021-10-01','2021-10-04']
 # to_do = np.flip(to_do,axis=0)
@@ -135,6 +135,8 @@ for i_day,day in enumerate(to_do):
 # to_do = ['IRVB-MASTU_shot-45401.ptw','IRVB-MASTU_shot-45399.ptw','IRVB-MASTU_shot-45311.ptw','IRVB-MASTU_shot-45310.ptw','IRVB-MASTU_shot-45309.ptw','IRVB-MASTU_shot-45306.ptw','IRVB-MASTU_shot-45304.ptw','IRVB-MASTU_shot-45299.ptw','IRVB-MASTU_shot-45286.ptw','IRVB-MASTU_shot-45272.ptw','IRVB-MASTU_shot-45271.ptw','IRVB-MASTU_shot-45270.ptw','IRVB-MASTU_shot-45268.ptw','IRVB-MASTU_shot-45267.ptw','IRVB-MASTU_shot-45266.ptw','IRVB-MASTU_shot-45264.ptw','IRVB-MASTU_shot-45262.ptw','IRVB-MASTU_shot-45261.ptw','IRVB-MASTU_shot-45252.ptw','IRVB-MASTU_shot-45251.ptw','IRVB-MASTU_shot-45237.ptw','IRVB-MASTU_shot-45236.ptw','IRVB-MASTU_shot-45212.ptw','IRVB-MASTU_shot-45193.ptw','IRVB-MASTU_shot-45194.ptw','IRVB-MASTU_shot-45175.ptw','IRVB-MASTU_shot-45170.ptw','IRVB-MASTU_shot-45167.ptw','IRVB-MASTU_shot-45132.ptw','IRVB-MASTU_shot-45125.ptw','IRVB-MASTU_shot-45097.ptw','IRVB-MASTU_shot-45091.ptw','IRVB-MASTU_shot-45006.ptw','IRVB-MASTU_shot-44969.ptw','IRVB-MASTU_shot-44968.ptw','IRVB-MASTU_shot-44967.ptw','IRVB-MASTU_shot-44960.ptw']
 # to_do = ['2023-01-26']
 # shot_available = [['IRVB-MASTU_shot-47079.ptw']]
+# to_do = ['IRVB-MASTU_shot-48596.ptw','IRVB-MASTU_shot-48592.ptw','IRVB-MASTU_shot-48590.ptw','IRVB-MASTU_shot-48651.ptw']
+to_do = ['IRVB-MASTU_shot-48690.ptw','IRVB-MASTU_shot-48692.ptw','IRVB-MASTU_shot-48696.ptw']
 # to_do = np.flip(to_do,axis=0)
 
 continue_after_FAST = False
@@ -144,8 +146,8 @@ do_inversions = False
 every_pixel_independent = False
 overwrite_oscillation_filter = True
 overwrite_binning = True
-skip_second_pass = False
-override_second_pass = True
+skip_second_pass = True
+override_second_pass = False
 skip_third_pass = True
 override_third_pass = False
 
@@ -154,7 +156,7 @@ if overwrite_oscillation_filter:
 
 only_plot_brightness = False
 
-if True:	# section to use when specifying the days
+if False:	# section to use when specifying the days
 	for i_day,day in enumerate(to_do):
 	# shot_available = np.flip(shot_available,axis=0)
 	# for i_day,day in enumerate(np.flip(to_do,axis=0)):
@@ -210,9 +212,12 @@ else:	# section to use when analysing only one shot
 	# i_day,day = 0,'2021-10-12'
 	# name='IRVB-MASTU_shot-45239.ptw'
 	# i_day,day = 0,'2021-10-22'
-	name='IRVB-MASTU_shot-45401.ptw'
+	# name='IRVB-MASTU_shot-45225.ptw'
 	# i_day,day = 0,'2021-10-21'
-	# name='IRVB-MASTU_shot-45371.ptw'
+	# name='IRVB-MASTU_shot-46860.ptw'
+	# name='IRVB-MASTU_shot-48324.ptw'
+	# name = 'IRVB-MASTU_shot-48636.ptw'
+	name = 'IRVB-MASTU_shot-48692.ptw'
 
 	# path = '/home/ffederic/work/irvb/MAST-U/'
 	# shot_list = get_data(path+'shot_list2.ods')
@@ -237,6 +242,8 @@ else:	# section to use when analysing only one shot
 		pass_number = 0
 		exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_manual_plots.py").read())
 		pass_number = 1
+		exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_manual_plots.py").read())
+		pass_number = 2
 		exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_manual_plots.py").read())
 	# exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_temp_to_power3.py").read())
 

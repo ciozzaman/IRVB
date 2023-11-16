@@ -253,7 +253,7 @@ elif False:
 	full_saved_file_dict=coleval.read_IR_file(file)
 	data_per_digitizer1,uniques_digitizer_ID = coleval.separate_data_with_digitizer(full_saved_file_dict)
 
-elif True:
+elif False:
 	# his is created to fit simultaneously the curve with and without window
 
 	if False:	# BB source in focus and no window inttime=1.0	# ms
@@ -360,7 +360,7 @@ elif True:
 			fullpathparams=os.path.join(pathparam,'coeff_polynomial_deg'+str(n-1)+'int_time'+str(inttime)+'ms.npz')
 			params_dict=np.load(fullpathparams)
 			params_dict.allow_pickle=True
-			params2 = params_dict['coeff3']	# BB fit without window coefficiens
+			params2 = params_dict['coeff2']	# BB fit without window coefficiens
 
 	if False:	# BB source as close as possible with window inttime=1.0	# ms
 		description = 'BB source as close as possible with window inttime=1.0 # ms'
@@ -450,16 +450,16 @@ elif True:
 
 	if False:	# NUC plate original scans with window inttime=1.0	# ms
 		description = 'NUC plate original scans with window inttime=1.0 # ms'
-		fileshot=np.array([files16[5:],files14[5:]])
-		temperaturehot=np.array([temperature16[5:],temperature14[5:]])
-		filescold=np.array([files18[4:],files20[2:]])
-		temperaturecold=np.array([temperature18[4:],temperature20[2:]])
+		fileshot=np.concatenate([files16[5:],files14[5:]])
+		temperaturehot=np.concatenate([temperature16[5:],temperature14[5:]])
+		filescold=np.concatenate([files18[4:],files20[2:]])
+		temperaturecold=np.concatenate([temperature18[4:],temperature20[2:]])
 		temperature_window = temperaturehot.tolist()+temperaturecold.tolist()
 		files_window = fileshot.tolist()+filescold.tolist()
 		inttime=1.0	# ms
 		framerate=383	# Hz
-		fileshot=np.array([files2,files3,files4,files5])
-		temperaturehot=np.array([temperature2,temperature3,temperature4,temperature5])
+		fileshot=np.concatenate([files2,files3,files4,files5])
+		temperaturehot=np.concatenate([temperature2,temperature3,temperature4,temperature5])
 		filescold=np.array([files6])
 		temperaturecold=np.array([temperature6])
 		temperature_no_window = temperaturehot.tolist()+temperaturecold.tolist()
@@ -472,10 +472,10 @@ elif True:
 
 	if True:	# NUC plate original scans with window inttime=2.0	# ms
 		description = 'NUC plate original scans with window inttime=2.0 # ms'
-		fileshot=np.array([files17[5:],files15[5:]])
-		temperaturehot=np.array([temperature17[5:],temperature15[5:]])
-		filescold=np.array([files19[4:],files21[2:]])
-		temperaturecold=np.array([temperature19[4:],temperature21[2:]])
+		fileshot=np.concatenate([files17[5:],files15[5:]])
+		temperaturehot=np.concatenate([temperature17[5:],temperature15[5:]])
+		filescold=np.concatenate([files19[4:],files21[2:]])
+		temperaturecold=np.concatenate([temperature19[4:],temperature21[2:]])
 		temperature_window = temperaturehot.tolist()+temperaturecold.tolist()
 		files_window = fileshot.tolist()+filescold.tolist()
 		inttime=2.0	# ms
@@ -785,7 +785,7 @@ elif True:
 			flux_array.append(BB_rad_counts_to_delta_temp(1,T))
 		flux_array = np.array(flux_array)
 
-elif False:
+elif True:
 	# this is created to fit simultaneously the curve with and without window
 	# done because I found out that all measurements are done without the filter entirely
 
@@ -829,7 +829,7 @@ elif False:
 	else:
 		pass
 
-	if True:	# BB source as far as possible while encompussing the whole FOV with window inttime=1.0	# ms
+	if False:	# BB source as far as possible while encompussing the whole FOV with window inttime=1.0	# ms
 		description = 'BB source as far as possible with window inttime=1.0 # ms'
 		files = files58
 		temperature = temperature58
@@ -849,7 +849,7 @@ elif False:
 	else:
 		pass
 
-	if True:	# BB source as far as possible while encompussing the whole FOV with window inttime=2.0	# ms
+	if False:	# BB source as far as possible while encompussing the whole FOV with window inttime=2.0	# ms
 		description = 'BB source as far as possible with window inttime=2.0 # ms'
 		files = files56
 		temperature = temperature56
@@ -869,7 +869,7 @@ elif False:
 	else:
 		pass
 
-	if True:	# BB source as close as possible with window inttime=1.0	# ms
+	if False:	# BB source as close as possible with window inttime=1.0	# ms
 		description = 'BB source as close as possible with window inttime=1.0 # ms'
 		files = files42
 		temperature = temperature42
@@ -889,7 +889,7 @@ elif False:
 	else:
 		pass
 
-	if True:	# BB source as close as possible with window inttime=2.0	# ms
+	if False:	# BB source as close as possible with window inttime=2.0	# ms
 		description = 'BB source as close as possible with window inttime=2.0 # ms'
 		files = files41
 		temperature = temperature41
@@ -909,46 +909,48 @@ elif False:
 	else:
 		pass
 
-	if True:	# NUC plate original scans with window inttime=1.0	# ms
+	if False:	# NUC plate original scans with window inttime=1.0	# ms
 		description = 'NUC plate original scans with window inttime=1.0 # ms'
-		fileshot=np.array([files16[5:],files14[5:]])
-		temperaturehot=np.array([temperature16[5:],temperature14[5:]])
-		filescold=np.array([files18[4:],files20[2:]])
-		temperaturecold=np.array([temperature18[4:],temperature20[2:]])
+		fileshot=np.concatenate([files16[5:],files14[5:]])
+		temperaturehot=np.concatenate([temperature16[5:],temperature14[5:]])
+		filescold=np.concatenate([files18[4:],files20[2:]])
+		temperaturecold=np.concatenate([temperature18[4:],temperature20[2:]])
 		temperature_window = temperaturehot.tolist()+temperaturecold.tolist()
 		files_window = fileshot.tolist()+filescold.tolist()
 		inttime=1.0	# ms
 		framerate=383	# Hz
-		fileshot=np.array([files2,files3,files4,files5])
-		temperaturehot=np.array([temperature2,temperature3,temperature4,temperature5])
-		filescold=np.array([files6])
-		temperaturecold=np.array([temperature6])
+		fileshot=np.concatenate([files2,files3,files4,files5])
+		temperaturehot=np.concatenate([temperature2,temperature3,temperature4,temperature5])
+		filescold=np.concatenate([files6])
+		temperaturecold=np.concatenate([temperature6])
 		temperature_no_window = temperaturehot.tolist()+temperaturecold.tolist()
 		files_no_window = fileshot.tolist()+filescold.tolist()
 		n=3
-		pathparam='/home/ffederic/work/irvb/2022-12-07_multiple_search_for_parameters/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
+		# pathparam='/home/ffederic/work/irvb/2022-12-07_multiple_search_for_parameters/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
+		pathparam='/home/ffederic/work/irvb/2023-09-22_multiple_search_for_parameters/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
 		if not os.path.exists(pathparam):
 			os.makedirs(pathparam)
 		coleval.build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5.1,wavelength_bottom=1.5)
 
 	if True:	# NUC plate original scans with window inttime=2.0	# ms
 		description = 'NUC plate original scans with window inttime=2.0 # ms'
-		fileshot=np.array([files17[5:],files15[5:]])
-		temperaturehot=np.array([temperature17[5:],temperature15[5:]])
-		filescold=np.array([files19[4:],files21[2:]])
-		temperaturecold=np.array([temperature19[4:],temperature21[2:]])
+		fileshot=np.concatenate([files17[5:],files15[5:]])
+		temperaturehot=np.concatenate([temperature17[5:],temperature15[5:]])
+		filescold=np.concatenate([files19[4:],files21[2:]])
+		temperaturecold=np.concatenate([temperature19[4:],temperature21[2:]])
 		temperature_window = temperaturehot.tolist()+temperaturecold.tolist()
 		files_window = fileshot.tolist()+filescold.tolist()
 		inttime=2.0	# ms
 		framerate=383	# Hz
-		fileshot=np.array([files8])
-		temperaturehot=np.array([temperature8])
-		filescold=np.array([files7])
-		temperaturecold=np.array([temperature7])
+		fileshot=np.concatenate([files8])
+		temperaturehot=np.concatenate([temperature8])
+		filescold=np.concatenate([files7])
+		temperaturecold=np.concatenate([temperature7])
 		temperature_no_window = temperaturehot.tolist()+temperaturecold.tolist()
 		files_no_window = fileshot.tolist()+filescold.tolist()
 		n=3
-		pathparam='/home/ffederic/work/irvb/2022-12-07_multiple_search_for_parameters/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
+		# pathparam='/home/ffederic/work/irvb/2022-12-07_multiple_search_for_parameters/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
+		pathparam='/home/ffederic/work/irvb/2023-09-22_multiple_search_for_parameters/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
 		if not os.path.exists(pathparam):
 			os.makedirs(pathparam)
 		coleval.build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5.1,wavelength_bottom=1.5)

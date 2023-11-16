@@ -21,7 +21,7 @@
 import pyqtgraph as pg
 from pyqtgraph.Qt import QtCore, QtGui
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication, QHBoxLayout, QLabel, QSizePolicy, QSlider, QSpacerItem, QVBoxLayout, QWidget
+from PyQt5.QtWidgets import QApplication, QHBoxLayout, QLabel, QSizePolicy, QSlider, QSpacerItem, QVBoxLayout, QWidget, QMainWindow
 from qtrangeslider import QRangeSlider
 from pyqtgraph.parametertree import Parameter, ParameterTree, ParameterItem, registerParameterType
 

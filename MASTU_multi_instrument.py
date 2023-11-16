@@ -134,6 +134,12 @@ def temp_function(full_saved_file_dict_FAST):
 		inverted_dict[str(grid_resolution)]['outer_SOL_all'] = outer_SOL_all
 		inverted_dict[str(grid_resolution)]['outer_SOL_sigma_all'] = outer_SOL_sigma_all
 
+		equivalent_res_bolo_view_all,equivalent_res_bolo_view_sigma_all,all_out_of_sxd_all,all_out_of_sxd_sigma_all = coleval.equivalent_res_bolo_view(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,covariance_out,grid_data_masked_crop)
+		inverted_dict[str(grid_resolution)]['equivalent_res_bolo_view_all'] = equivalent_res_bolo_view_all
+		inverted_dict[str(grid_resolution)]['equivalent_res_bolo_view_sigma_all'] = equivalent_res_bolo_view_sigma_all
+		inverted_dict[str(grid_resolution)]['all_out_of_sxd_all'] = all_out_of_sxd_all
+		inverted_dict[str(grid_resolution)]['all_out_of_sxd_sigma_all'] = all_out_of_sxd_sigma_all
+
 		shot_list = get_data(path+'shot_list2.ods')
 		temp1 = (np.array(shot_list['Sheet1'][0])=='shot number').argmax()
 		scenario = ''
@@ -178,6 +184,8 @@ def temp_function(full_saved_file_dict_FAST):
 		plt.errorbar(time_full_binned_crop,outer_SOL_leg_all/1e3,yerr=outer_SOL_leg_sigma_all/1e3,label='outer SOL\n+leg\n+sxd',capsize=5,linestyle='--')
 		plt.errorbar(time_full_binned_crop,outer_SOL_all/1e3,yerr=outer_SOL_sigma_all/1e3,label='outer SOL',capsize=5,linestyle='--')
 		plt.errorbar(time_full_binned_crop,out_VV_radiation_all/1e3,yerr=out_VV_radiation_sigma_all/1e3,label='tot\nout VV',capsize=5,linestyle='--')
+		plt.errorbar(time_full_binned_crop,equivalent_res_bolo_view_all/1e3,yerr=equivalent_res_bolo_view_sigma_all/1e3,label='= res bolo',capsize=5,linestyle='--')
+		plt.errorbar(time_full_binned_crop,all_out_of_sxd_all/1e3,yerr=all_out_of_sxd_sigma_all/1e3,label='out sxd',capsize=5,linestyle='--')
 		plt.title('shot ' + laser_to_analyse[-9:-4]+' '+scenario+'\nradiated power in the lower half of the machine')
 		plt.legend(loc='best', fontsize='x-small')
 		plt.xlabel('time [s]')
@@ -953,7 +961,7 @@ def temp_function(full_saved_file_dict_FAST):
 		dWdt['data'][~np.isfinite(dWdt['data'])] = 0.0
 		pohm['pohm'][~np.isfinite(pohm['pohm'])] = 0.0
 		smooth_dt = 0.015
-		window_size = np.int(smooth_dt / np.median(np.gradient(efit_data['t'])))
+		window_size = int(smooth_dt / np.median(np.gradient(efit_data['t'])))
 		if window_size % 2 == 0:
 			window_size = window_size + 1
 		poly_order = np.min([3, window_size-1])
@@ -990,6 +998,7 @@ def temp_function(full_saved_file_dict_FAST):
 		P_loss = P_heat-dWdt
 		energy_confinement_time = stored_energy/P_loss	# s
 		energy_confinement_time[energy_confinement_time<0] = np.nan
+		full_saved_file_dict_FAST['multi_instrument']['BEAMPOWER_time'] = time_full_binned_crop
 		full_saved_file_dict_FAST['multi_instrument']['SW_BEAMPOWER'] = SW_BEAMPOWER
 		full_saved_file_dict_FAST['multi_instrument']['SS_BEAMPOWER'] = SS_BEAMPOWER
 		full_saved_file_dict_FAST['multi_instrument']['sw_absorption'] = sw_absorption
@@ -1323,6 +1332,8 @@ def temp_function(full_saved_file_dict_FAST):
 			fig.suptitle('shot '+str(efit_reconstruction.shotnumber)+', '+scenario+' , '+experiment+'\nfirst pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
 		elif pass_number ==1:
 			fig.suptitle('shot '+str(efit_reconstruction.shotnumber)+', '+scenario+' , '+experiment+'\nsecond pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
+		elif pass_number ==2:
+			fig.suptitle('shot '+str(efit_reconstruction.shotnumber)+', '+scenario+' , '+experiment+'\nthird pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
 		for i in [0,1]:
 			ax[i,0].plot(time_full_binned_crop,inner_L_poloidal_peak_all/inner_L_poloidal_x_point_all,'r-',label='inner_L_poloidal_peak/x-point')
 			ax[i,0].plot(time_full_binned_crop,inner_L_poloidal_baricentre_all/inner_L_poloidal_x_point_all,'r--',label='inner_L_poloidal_baricentre/x-point')
@@ -1420,6 +1431,8 @@ def temp_function(full_saved_file_dict_FAST):
 			fig.suptitle('shot '+str(efit_reconstruction.shotnumber)+', '+scenario+' , '+experiment+'\nfirst pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
 		elif pass_number ==1:
 			fig.suptitle('shot '+str(efit_reconstruction.shotnumber)+', '+scenario+' , '+experiment+'\nsecond pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
+		elif pass_number ==2:
+			fig.suptitle('shot '+str(efit_reconstruction.shotnumber)+', '+scenario+' , '+experiment+'\nthird pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
 		ax[0,0].axhline(y=1,color='k',linestyle='--')
 		ax[0,0].plot(time_full_binned_crop,inner_L_poloidal_midplane_all/inner_L_poloidal_x_point_all,'m--')
 		ax[0,0].plot(time_full_binned_crop,inner_L_poloidal_peak_all/inner_L_poloidal_x_point_all,'r-',label='inner_peak')
@@ -1541,6 +1554,7 @@ def temp_function(full_saved_file_dict_FAST):
 			ax[4,0].set_ylim(bottom=0)
 		ax[4,0].plot(time_full_binned_crop,1e-6*real_core_radiation_all*2,label='core_radiation',color=color[3])
 		ax[4,0].plot(time_full_binned_crop,1e-6*real_non_core_radiation_all*2,label='non_core_radiation',color=color[4])
+		ax[4,0].plot(time_full_binned_crop,1e-6*equivalent_res_bolo_view_all*2,label='= res bolo',color=color[1])
 		ax[4,0].grid()
 		ax[4,0].set_ylabel('power [MW]')
 		ax[4,0].legend(loc='best', fontsize='xx-small')
@@ -1735,13 +1749,18 @@ def temp_function(full_saved_file_dict_FAST):
 		plt.savefig('/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_pass'+str(pass_number)+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_all_variables_absolute.png')
 		plt.close()
 
+		coleval.reset_connection(client)
+		del client
+
+
 		if pass_number ==0:
 			full_saved_file_dict_FAST['first_pass']['inverted_dict'] = inverted_dict
 		elif pass_number ==1:
 			full_saved_file_dict_FAST['second_pass']['inverted_dict'] = inverted_dict
 		elif pass_number ==2:
 			full_saved_file_dict_FAST['third_pass']['inverted_dict'] = inverted_dict
-		np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
+		# np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
+		coleval.savez_protocol4(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
 		print('DONE '+laser_to_analyse)
 
 	except Exception as e:

@@ -33,52 +33,70 @@ exec(open("/home/ffederic/work/analysis_scripts/scripts/python_library/collect_a
 
 
 if True:	# related to the SOLPS phantom
-	mastu_path = "/home/ffederic/work/SOLPS/seeding/seed_1"
-	# mastu_path = "/home/ffederic/work/SOLPS/dscan/ramp_10"
+	# seeding scan
+	# SOLPS_case = 'seed_1'
+	# SOLPS_case = 'seed_5'
+	# SOLPS_case = 'seed_10'
+	# mastu_path = "/home/ffederic/work/SOLPS/seeding/" + SOLPS_case
+	# fuelling scan
+	# SOLPS_case = 'ramp_1'
+	# SOLPS_case = 'ramp_3.3'
+	SOLPS_case = 'ramp_11'
+	mastu_path = "/home/ffederic/work/SOLPS/dscan/" + SOLPS_case
 	if not mastu_path in sys.path:
 		sys.path.append(mastu_path)
-	ds_puff8 = xr.open_dataset('/home/ffederic/work/SOLPS/seeding/seed_1/balance.nc', autoclose=True).load()
+	ds_puff8 = xr.open_dataset(mastu_path+'/balance.nc', autoclose=True).load()
 	# ds_puff8 = xr.open_dataset('/home/ffederic/work/SOLPS/dscan/ramp_10/balance.nc', autoclose=True).load()
 
-	grid_x = ds_puff8.crx.mean(dim='4')
-	grid_y = ds_puff8.cry.mean(dim='4')
-	impurity_radiation = ds_puff8.b2stel_she_bal.sum('ns')
-	hydrogen_radiation = ds_puff8.eirene_mc_eael_she_bal.sum('nstra') - ds_puff8.eirene_mc_papl_sna_bal.isel(ns=1).sum('nstra') * 13.6 * 1.6e-19   # ds_puff8.eirene_mc_eael_she_bal.sum('nstra') is the total electron energy sink due to plasma / atoms interactions, including ionisation/excitation (dominant) and charge exchange (negligible). Here we assume all not used for ionisation goes to radiation, including the CX bit.
-	total_radiation = -hydrogen_radiation + impurity_radiation
-	total_radiation_density = -np.divide(hydrogen_radiation + impurity_radiation,ds_puff8.vol)
 
-	fig, ax = plt.subplots()
-	# grid_x.plot.line(ax=ax, x='nx_plus2')
-	# grid_y.plot.line(ax=ax, x='ny_plus2')
-	# plt.pcolormesh(grid_x.values, grid_y.values, impurity_radiation.values)
+	if True:	# not really useful for calculating the spectra
+		grid_x = ds_puff8.crx.mean(dim='4')
+		grid_y = ds_puff8.cry.mean(dim='4')
+		try:
+			impurity_radiation = ds_puff8.b2stel_she_bal.sum('ns')
+		except:
+			impurity_radiation = 0
+		hydrogen_radiation = ds_puff8.eirene_mc_eael_she_bal.sum('nstra') - ds_puff8.eirene_mc_papl_sna_bal.isel(ns=1).sum('nstra') * 13.6 * 1.6e-19   # ds_puff8.eirene_mc_eael_she_bal.sum('nstra') is the total electron energy sink due to plasma / atoms interactions, including ionisation/excitation (dominant) and charge exchange (negligible). Here we assume all not used for ionisation goes to radiation, including the CX bit.
+		total_radiation = -hydrogen_radiation + impurity_radiation
+		total_radiation_density = -np.divide(hydrogen_radiation + impurity_radiation,ds_puff8.vol)
+
+		fig, ax = plt.subplots()
+		# grid_x.plot.line(ax=ax, x='nx_plus2')
+		# grid_y.plot.line(ax=ax, x='ny_plus2')
+		# plt.pcolormesh(grid_x.values, grid_y.values, impurity_radiation.values)
 
 
-	plt.pcolor(grid_x.values, grid_y.values, np.abs(total_radiation_density.values), norm=LogNorm(vmin=1000, vmax=total_radiation_density.values.max()),cmap='rainbow')
-	# plt.pcolor(grid_x.values, grid_y.values, np.abs(total_radiation_density.values),cmap='rainbow')
-	ax.set_ylim(top=-0.5)
-	ax.set_xlim(left=0.)
-	plt.title('Emissivity profile as imported directly from SOLPS')
-	plt.colorbar().set_label('Emissivity [W/m^3]')
-	plt.xlabel('R [m]')
-	plt.ylabel('Z [m]')
+		plt.pcolor(grid_x.values, grid_y.values, np.abs(total_radiation_density.values), norm=LogNorm(vmin=1000, vmax=total_radiation_density.values.max()),cmap='rainbow')
+		# plt.pcolor(grid_x.values, grid_y.values, np.abs(total_radiation_density.values),cmap='rainbow')
+		ax.set_ylim(top=0.1)
+		ax.set_xlim(left=0.)
+		plt.title('Emissivity profile as imported directly from SOLPS')
+		plt.colorbar().set_label('Emissivity [W/m^3]')
+		plt.xlabel('R [m]')
+		plt.ylabel('Z [m]')
 
-	x=np.linspace(0.55-0.075,0.55+0.075,10)
-	y=-1.2+np.sqrt(0.08**2-(x-0.55)**2)
-	y_=-1.2-np.sqrt(0.08**2-(x-0.55)**2)
-	plt.plot(x,y,'k')
-	plt.plot(x,y_,'k')
-	plt.plot(FULL_MASTU_CORE_GRID_POLYGON[:, 0], FULL_MASTU_CORE_GRID_POLYGON[:, 1], 'k')
-	# plt.show()
+		x=np.linspace(0.55-0.075,0.55+0.075,10)
+		y=-1.2+np.sqrt(0.08**2-(x-0.55)**2)
+		y_=-1.2-np.sqrt(0.08**2-(x-0.55)**2)
+		plt.plot(x,y,'k')
+		plt.plot(x,y_,'k')
+		plt.plot(FULL_MASTU_CORE_GRID_POLYGON[:, 0], FULL_MASTU_CORE_GRID_POLYGON[:, 1], 'k')
+		# plt.show()
 
-	plt.plot(1.4918014 ,  -0.7198,'k+')	# pinhole
-	plt.plot(1.56467,  -0.7,'k+')	# foil centre
-	plt.plot(1.56467,  -0.7-0.045,'k+')	# foil bottom
-	plt.plot(1.4918014 + (1.4918014-1.56467)*2,  -0.7198 + (-0.7198-(-0.7-0.045))*2,'k+')	# artificial start of the LOS
-	plt.plot(1.56467,  -0.7+0.045,'k+')	# foil top
-	plt.plot(1.4918014 + (1.4918014-1.56467)*5,  -0.7198 + (-0.7198-(-0.7+0.045))*5,'k+')	# artificial start of the LOS
-	plt.plot(1.56467,  -0.7+0.015,'k+')	# foil top
-	plt.plot(1.4918014 + (1.4918014-1.56467)*4,  -0.7198 + (-0.7198-(-0.7+0.015))*4,'k+')	# artificial start of the LOS
-
+		plt.plot(1.4918014 ,  -0.7198,'ro')	# pinhole
+		plt.plot(1.56467,  -0.7,'r+')	# foil centre
+		plt.plot(1.56467,  -0.7-0.045,'k+')	# foil bottom
+		plt.plot(1.4918014 + (1.4918014-1.56467)*2,  -0.7198 + (-0.7198-(-0.7-0.045))*2,'k+')	# artificial start of the LOS foil bottom
+		plt.plot(1.56467,  -0.7+0.045,'k+')	# foil top
+		plt.plot(1.4918014 + (1.4918014-1.56467)*5,  -0.7198 + (-0.7198-(-0.7+0.045))*5,'k+')	# artificial start of the LOS foil top
+		plt.plot(1.56467,  -0.7+0.015,'k+')	# x-point on foil
+		plt.plot(1.4918014 + (1.4918014-1.56467)*4,  -0.7198 + (-0.7198-(-0.7+0.015))*4,'k+')	# artificial start of the LOS x-point on foil
+		plt.plot(1.56467,  -0.7-0.045-0.012,'k+')	# foil bottom new geometry
+		plt.plot(1.4918014 + (1.4918014-1.56467)*2,  -0.7198 + (-0.7198-(-0.7-0.045-0.012))*2,'k+')	# artificial start of the LOS foil bottom new geometry
+		ax.set_aspect(1)
+		plt.close()
+	else:
+		pass
 
 	# now I need to read the equilibrium to create an artificial plasma at the core
 	with open('/home/ffederic/work/SOLPS/seeding/seed_1/f_mastu_mastu_osp_scan_5.x4.equ', 'r') as f:
@@ -129,6 +147,8 @@ if True:	# related to the SOLPS phantom
 	use_nitrogen_lines = True
 	use_core = True
 	use_bremmstrahlung = True
+	enables = [use_deuterium_lines,use_carbon_lines,use_nitrogen_lines,use_core,use_bremmstrahlung]
+	enables = np.int32(enables)
 
 
 	import matplotlib.pyplot as plt
@@ -142,6 +162,8 @@ if True:	# related to the SOLPS phantom
 
 	from raysect.optical.material import AbsorbingSurface
 	from cherab.mastu.machine import import_mastu_mesh
+	# import_mastu_mesh(world)
+	# to have consistent results I have to inhibit reflections, setting perfectly absorbing surfaces
 	import_mastu_mesh(world,override_material=AbsorbingSurface())
 
 	from cherab.openadas import install
@@ -186,29 +208,41 @@ if True:	# related to the SOLPS phantom
 	print('Note: code assumes presence of deuterium and carbon species in SOLPS run')
 	print('Enter name of balance.nc file:')
 	# filename = input()
-	filename = '/home/ffederic/work/SOLPS/seeding/seed_1/balance.nc'
+	filename = mastu_path+'/balance.nc'
 
 	sim = load_solps_from_balance(filename)
 	plasma = sim.create_plasma()
+	plasma.parent=world
 	mesh = sim.mesh
 
 	d0 = plasma.composition.get(deuterium, 0)
 	d1 = plasma.composition.get(deuterium, 1)
-	c0 = plasma.composition.get(carbon, 0)
-	c1 = plasma.composition.get(carbon, 1)
-	c2 = plasma.composition.get(carbon, 2)
-	c3 = plasma.composition.get(carbon, 3)
-	c4 = plasma.composition.get(carbon, 4)
-	c5 = plasma.composition.get(carbon, 5)
-	c6 = plasma.composition.get(carbon, 6)
-	n0 = plasma.composition.get(nitrogen, 0)
-	n1 = plasma.composition.get(nitrogen, 1)
-	n2 = plasma.composition.get(nitrogen, 2)
-	n3 = plasma.composition.get(nitrogen, 3)
-	n4 = plasma.composition.get(nitrogen, 4)
-	n5 = plasma.composition.get(nitrogen, 5)
-	n6 = plasma.composition.get(nitrogen, 6)
-	n7 = plasma.composition.get(nitrogen, 7)
+	try:
+		c0 = plasma.composition.get(carbon, 0)
+		c1 = plasma.composition.get(carbon, 1)
+		c2 = plasma.composition.get(carbon, 2)
+		c3 = plasma.composition.get(carbon, 3)
+		c4 = plasma.composition.get(carbon, 4)
+		c5 = plasma.composition.get(carbon, 5)
+		c6 = plasma.composition.get(carbon, 6)
+	except:
+		use_carbon_lines = False
+		enables = [use_deuterium_lines,use_carbon_lines,use_nitrogen_lines,use_core,use_bremmstrahlung]
+		enables = np.int32(enables)
+	try:
+		n0 = plasma.composition.get(nitrogen, 0)
+		n1 = plasma.composition.get(nitrogen, 1)
+		n2 = plasma.composition.get(nitrogen, 2)
+		n3 = plasma.composition.get(nitrogen, 3)
+		n4 = plasma.composition.get(nitrogen, 4)
+		n5 = plasma.composition.get(nitrogen, 5)
+		n6 = plasma.composition.get(nitrogen, 6)
+		n7 = plasma.composition.get(nitrogen, 7)
+	except:
+		use_nitrogen_lines = False
+		enables = [use_deuterium_lines,use_carbon_lines,use_nitrogen_lines,use_core,use_bremmstrahlung]
+		enables = np.int32(enables)
+
 
 	te_samples = np.zeros((500, 500))
 	ne_samples = np.zeros((500, 500))
@@ -243,21 +277,27 @@ if True:	# related to the SOLPS phantom
 			d0_samples[j, i] = d0.distribution.density(x, 0.0, y)
 			td0_samples[j, i] = d0.distribution.effective_temperature(x, 0.0, y)
 			d1_samples[j, i] = d1.distribution.density(x, 0.0, y)
-			c0_samples[j, i] = c0.distribution.density(x, 0.0, y)
-			c1_samples[j, i] = c1.distribution.density(x, 0.0, y)
-			c2_samples[j, i] = c2.distribution.density(x, 0.0, y)
-			c3_samples[j, i] = c3.distribution.density(x, 0.0, y)
-			c4_samples[j, i] = c4.distribution.density(x, 0.0, y)
-			c5_samples[j, i] = c5.distribution.density(x, 0.0, y)
-			c6_samples[j, i] = c6.distribution.density(x, 0.0, y)
-			n0_samples[j, i] = n0.distribution.density(x, 0.0, y)
-			n1_samples[j, i] = n1.distribution.density(x, 0.0, y)
-			n2_samples[j, i] = n2.distribution.density(x, 0.0, y)
-			n3_samples[j, i] = n3.distribution.density(x, 0.0, y)
-			n4_samples[j, i] = n4.distribution.density(x, 0.0, y)
-			n5_samples[j, i] = n5.distribution.density(x, 0.0, y)
-			n6_samples[j, i] = n6.distribution.density(x, 0.0, y)
-			n7_samples[j, i] = n7.distribution.density(x, 0.0, y)
+			try:
+				c0_samples[j, i] = c0.distribution.density(x, 0.0, y)
+				c1_samples[j, i] = c1.distribution.density(x, 0.0, y)
+				c2_samples[j, i] = c2.distribution.density(x, 0.0, y)
+				c3_samples[j, i] = c3.distribution.density(x, 0.0, y)
+				c4_samples[j, i] = c4.distribution.density(x, 0.0, y)
+				c5_samples[j, i] = c5.distribution.density(x, 0.0, y)
+				c6_samples[j, i] = c6.distribution.density(x, 0.0, y)
+			except:
+				pass
+			try:
+				n0_samples[j, i] = n0.distribution.density(x, 0.0, y)
+				n1_samples[j, i] = n1.distribution.density(x, 0.0, y)
+				n2_samples[j, i] = n2.distribution.density(x, 0.0, y)
+				n3_samples[j, i] = n3.distribution.density(x, 0.0, y)
+				n4_samples[j, i] = n4.distribution.density(x, 0.0, y)
+				n5_samples[j, i] = n5.distribution.density(x, 0.0, y)
+				n6_samples[j, i] = n6.distribution.density(x, 0.0, y)
+				n7_samples[j, i] = n7.distribution.density(x, 0.0, y)
+			except:
+				pass
 			psi_sample[j, i] = psi_interpolator((x,y))
 
 
@@ -297,6 +337,8 @@ if True:	# related to the SOLPS phantom
 
 		core_peak_te = 4e3	# eV
 		core_peak_ne = 1e20	# #/m3
+
+
 		case = cp.deepcopy(te_samples)
 		temp = np.array(((case)[240:260]*np.logical_and(yrange>-1.2,yrange<1.2)).tolist() + (((case)[:,240:260]).T*np.logical_and(yrange>-1.2,yrange<1.2)).tolist())
 		temp[np.isnan(temp)] = 0
@@ -319,15 +361,23 @@ if True:	# related to the SOLPS phantom
 		temp = np.array(((case)[240:260]*np.logical_and(yrange>-1.2,yrange<1.2)).tolist() + (((case)[:,240:260]).T*np.logical_and(yrange>-1.2,yrange<1.2)).tolist())
 		temp[np.isnan(temp)] = 0
 		core_edge_d1 = temp[temp>0][np.array(psi_sample[240:260].tolist()+psi_sample[:,240:260].T.tolist())[temp>0].argmax()]
-		case = cp.deepcopy((c0_samples+c1_samples+c2_samples+c3_samples+c4_samples+c5_samples+c6_samples))
-		temp = np.array(((case)[240:260]*np.logical_and(yrange>-1.2,yrange<1.2)).tolist() + (((case)[:,240:260]).T*np.logical_and(yrange>-1.2,yrange<1.2)).tolist())
-		temp[np.isnan(temp)] = 0
-		core_edge_cx = temp[temp>0][np.array(psi_sample[240:260].tolist()+psi_sample[:,240:260].T.tolist())[temp>0].argmax()]
-		case = cp.deepcopy((n0_samples+n1_samples+n2_samples+n3_samples+n4_samples+n5_samples+n6_samples+n7_samples))
-		temp = np.array(((case)[240:260]*np.logical_and(yrange>-1.2,yrange<1.2)).tolist() + (((case)[:,240:260]).T*np.logical_and(yrange>-1.2,yrange<1.2)).tolist())
-		temp[np.isnan(temp)] = 0
-		core_edge_nx = temp[temp>0][np.array(psi_sample[240:260].tolist()+psi_sample[:,240:260].T.tolist())[temp>0].argmax()]
 		edge_psi = np.array(psi_sample[240:260].tolist()+psi_sample[:,240:260].T.tolist())[temp>0].max()
+		try:
+			case = cp.deepcopy((c0_samples+c1_samples+c2_samples+c3_samples+c4_samples+c5_samples+c6_samples))
+			temp = np.array(((case)[240:260]*np.logical_and(yrange>-1.2,yrange<1.2)).tolist() + (((case)[:,240:260]).T*np.logical_and(yrange>-1.2,yrange<1.2)).tolist())
+			temp[np.isnan(temp)] = 0
+			core_edge_cx = temp[temp>0][np.array(psi_sample[240:260].tolist()+psi_sample[:,240:260].T.tolist())[temp>0].argmax()]
+			edge_psi = np.array(psi_sample[240:260].tolist()+psi_sample[:,240:260].T.tolist())[temp>0].max()
+		except:
+			pass
+		try:
+			case = cp.deepcopy((n0_samples+n1_samples+n2_samples+n3_samples+n4_samples+n5_samples+n6_samples+n7_samples))
+			temp = np.array(((case)[240:260]*np.logical_and(yrange>-1.2,yrange<1.2)).tolist() + (((case)[:,240:260]).T*np.logical_and(yrange>-1.2,yrange<1.2)).tolist())
+			temp[np.isnan(temp)] = 0
+			core_edge_nx = temp[temp>0][np.array(psi_sample[240:260].tolist()+psi_sample[:,240:260].T.tolist())[temp>0].argmax()]
+			edge_psi = np.array(psi_sample[240:260].tolist()+psi_sample[:,240:260].T.tolist())[temp>0].max()
+		except:
+			pass
 		mag_axis_psi = psi.max()
 		core_te_interpolator = interp1d([edge_psi,mag_axis_psi],[core_edge_te,core_peak_te],bounds_error=False,fill_value="extrapolate")
 		core_ne_interpolator = interp1d([edge_psi,mag_axis_psi],[core_edge_ne,core_peak_ne],bounds_error=False,fill_value="extrapolate")
@@ -543,101 +593,121 @@ if True:	# related to the SOLPS phantom
 		e_temperature = Linear_profile(core_peak_te, core_edge_te, 0)
 		e_distribution = Maxwellian(e_density, e_temperature, zero_velocity, electron_mass)
 
-		# define neutral species distribution
-		c0_density = Impurities_ionisation_equilibrium_profile(core_edge_cx, carbon, 0, 0)
-		# c0_density = Linear_profile(0.00553, 50E6, 0, scale='log')
-		c0_temperature = 0.5  # constant 0.5eV temperature for all neutrals
-		c0_distribution = Maxwellian(c0_density, c0_temperature, zero_velocity,
-		                             carbon.atomic_weight * atomic_mass)
-		c0_species = Species(carbon, 0, c0_distribution)
+		try:
+			# define neutral species distribution
+			c0_density = Impurities_ionisation_equilibrium_profile(core_edge_cx, carbon, 0, 0)
+			# c0_density = Linear_profile(0.00553, 50E6, 0, scale='log')
+			c0_temperature = 0.5  # constant 0.5eV temperature for all neutrals
+			c0_distribution = Maxwellian(c0_density, c0_temperature, zero_velocity,
+			                             carbon.atomic_weight * atomic_mass)
+			c0_species = Species(carbon, 0, c0_distribution)
 
-		c1_density = Impurities_ionisation_equilibrium_profile(core_edge_cx, carbon, 1, 0)
-		c1_temperature = Linear_profile(core_peak_te, core_edge_te, 0)
-		c1_distribution = Maxwellian(c1_density, c1_temperature, zero_velocity,
-		                             carbon.atomic_weight * atomic_mass)
-		c1_species = Species(carbon, 1, c1_distribution)
+			c1_density = Impurities_ionisation_equilibrium_profile(core_edge_cx, carbon, 1, 0)
+			c1_temperature = Linear_profile(core_peak_te, core_edge_te, 0)
+			c1_distribution = Maxwellian(c1_density, c1_temperature, zero_velocity,
+			                             carbon.atomic_weight * atomic_mass)
+			c1_species = Species(carbon, 1, c1_distribution)
 
-		c2_density = Impurities_ionisation_equilibrium_profile(core_edge_cx, carbon, 2, 0)
-		c2_temperature = Linear_profile(core_peak_te, core_edge_te, 0)
-		c2_distribution = Maxwellian(c2_density, c2_temperature, zero_velocity,
-		                             carbon.atomic_weight * atomic_mass)
-		c2_species = Species(carbon, 2, c2_distribution)
+			c2_density = Impurities_ionisation_equilibrium_profile(core_edge_cx, carbon, 2, 0)
+			c2_temperature = Linear_profile(core_peak_te, core_edge_te, 0)
+			c2_distribution = Maxwellian(c2_density, c2_temperature, zero_velocity,
+			                             carbon.atomic_weight * atomic_mass)
+			c2_species = Species(carbon, 2, c2_distribution)
 
-		c3_density = Impurities_ionisation_equilibrium_profile(core_edge_cx, carbon, 3, 0)
-		c3_temperature = Linear_profile(core_peak_te, core_edge_te, 0)
-		c3_distribution = Maxwellian(c3_density, c3_temperature, zero_velocity,
-		                             carbon.atomic_weight * atomic_mass)
-		c3_species = Species(carbon, 3, c3_distribution)
+			c3_density = Impurities_ionisation_equilibrium_profile(core_edge_cx, carbon, 3, 0)
+			c3_temperature = Linear_profile(core_peak_te, core_edge_te, 0)
+			c3_distribution = Maxwellian(c3_density, c3_temperature, zero_velocity,
+			                             carbon.atomic_weight * atomic_mass)
+			c3_species = Species(carbon, 3, c3_distribution)
 
-		c4_density = Impurities_ionisation_equilibrium_profile(core_edge_cx, carbon, 4, 0)
-		c4_temperature = Linear_profile(core_peak_te, core_edge_te, 0)
-		c4_distribution = Maxwellian(c4_density, c4_temperature, zero_velocity,
-		                             carbon.atomic_weight * atomic_mass)
-		c4_species = Species(carbon, 4, c4_distribution)
+			c4_density = Impurities_ionisation_equilibrium_profile(core_edge_cx, carbon, 4, 0)
+			c4_temperature = Linear_profile(core_peak_te, core_edge_te, 0)
+			c4_distribution = Maxwellian(c4_density, c4_temperature, zero_velocity,
+			                             carbon.atomic_weight * atomic_mass)
+			c4_species = Species(carbon, 4, c4_distribution)
 
-		c5_density = Impurities_ionisation_equilibrium_profile(core_edge_cx, carbon, 5, 0)
-		c5_temperature = Linear_profile(core_peak_te, core_edge_te, 0)
-		c5_distribution = Maxwellian(c5_density, c5_temperature, zero_velocity,
-		                             carbon.atomic_weight * atomic_mass)
-		c5_species = Species(carbon, 5, c5_distribution)
+			c5_density = Impurities_ionisation_equilibrium_profile(core_edge_cx, carbon, 5, 0)
+			c5_temperature = Linear_profile(core_peak_te, core_edge_te, 0)
+			c5_distribution = Maxwellian(c5_density, c5_temperature, zero_velocity,
+			                             carbon.atomic_weight * atomic_mass)
+			c5_species = Species(carbon, 5, c5_distribution)
 
-		c6_density = Impurities_ionisation_equilibrium_profile(core_edge_cx, carbon, 6, 0)
-		c6_temperature = Linear_profile(core_peak_te, core_edge_te, 0)
-		c6_distribution = Maxwellian(c6_density, c6_temperature, zero_velocity,
-		                             carbon.atomic_weight * atomic_mass)
-		c6_species = Species(carbon, 6, c6_distribution)
+			c6_density = Impurities_ionisation_equilibrium_profile(core_edge_cx, carbon, 6, 0)
+			c6_temperature = Linear_profile(core_peak_te, core_edge_te, 0)
+			c6_distribution = Maxwellian(c6_density, c6_temperature, zero_velocity,
+			                             carbon.atomic_weight * atomic_mass)
+			c6_species = Species(carbon, 6, c6_distribution)
+		except:
+			pass
 
-		# define neutral species distribution
-		n0_density = Impurities_ionisation_equilibrium_profile(core_edge_nx, nitrogen, 0, 0)
-		n0_temperature = 0.5  # constant 0.5eV temperature for all neutrals
-		n0_distribution = Maxwellian(n0_density, n0_temperature, zero_velocity,
-		                             nitrogen.atomic_weight * atomic_mass)
-		n0_species = Species(nitrogen, 0, n0_distribution)
+		try:
+			# define neutral species distribution
+			n0_density = Impurities_ionisation_equilibrium_profile(core_edge_nx, nitrogen, 0, 0)
+			n0_temperature = 0.5  # constant 0.5eV temperature for all neutrals
+			n0_distribution = Maxwellian(n0_density, n0_temperature, zero_velocity,
+			                             nitrogen.atomic_weight * atomic_mass)
+			n0_species = Species(nitrogen, 0, n0_distribution)
 
-		n1_density = Impurities_ionisation_equilibrium_profile(core_edge_nx, nitrogen, 1, 0)
-		n1_temperature = Linear_profile(core_peak_te, core_edge_te, 0)
-		n1_distribution = Maxwellian(n1_density, n1_temperature, zero_velocity,
-		                             nitrogen.atomic_weight * atomic_mass)
-		n1_species = Species(nitrogen, 1, n1_distribution)
+			n1_density = Impurities_ionisation_equilibrium_profile(core_edge_nx, nitrogen, 1, 0)
+			n1_temperature = Linear_profile(core_peak_te, core_edge_te, 0)
+			n1_distribution = Maxwellian(n1_density, n1_temperature, zero_velocity,
+			                             nitrogen.atomic_weight * atomic_mass)
+			n1_species = Species(nitrogen, 1, n1_distribution)
 
-		n2_density = Impurities_ionisation_equilibrium_profile(core_edge_nx, nitrogen, 2, 0)
-		n2_temperature = Linear_profile(core_peak_te, core_edge_te, 0)
-		n2_distribution = Maxwellian(n2_density, n2_temperature, zero_velocity,
-		                             nitrogen.atomic_weight * atomic_mass)
-		n2_species = Species(nitrogen, 2, n2_distribution)
+			n2_density = Impurities_ionisation_equilibrium_profile(core_edge_nx, nitrogen, 2, 0)
+			n2_temperature = Linear_profile(core_peak_te, core_edge_te, 0)
+			n2_distribution = Maxwellian(n2_density, n2_temperature, zero_velocity,
+			                             nitrogen.atomic_weight * atomic_mass)
+			n2_species = Species(nitrogen, 2, n2_distribution)
 
-		n3_density = Impurities_ionisation_equilibrium_profile(core_edge_nx, nitrogen, 3, 0)
-		n3_temperature = Linear_profile(core_peak_te, core_edge_te, 0)
-		n3_distribution = Maxwellian(n3_density, n3_temperature, zero_velocity,
-		                             nitrogen.atomic_weight * atomic_mass)
-		n3_species = Species(nitrogen, 3, n3_distribution)
+			n3_density = Impurities_ionisation_equilibrium_profile(core_edge_nx, nitrogen, 3, 0)
+			n3_temperature = Linear_profile(core_peak_te, core_edge_te, 0)
+			n3_distribution = Maxwellian(n3_density, n3_temperature, zero_velocity,
+			                             nitrogen.atomic_weight * atomic_mass)
+			n3_species = Species(nitrogen, 3, n3_distribution)
 
-		n4_density = Impurities_ionisation_equilibrium_profile(core_edge_nx, nitrogen, 4, 0)
-		n4_temperature = Linear_profile(core_peak_te, core_edge_te, 0)
-		n4_distribution = Maxwellian(n4_density, n4_temperature, zero_velocity,
-		                             nitrogen.atomic_weight * atomic_mass)
-		n4_species = Species(nitrogen, 4, n4_distribution)
+			n4_density = Impurities_ionisation_equilibrium_profile(core_edge_nx, nitrogen, 4, 0)
+			n4_temperature = Linear_profile(core_peak_te, core_edge_te, 0)
+			n4_distribution = Maxwellian(n4_density, n4_temperature, zero_velocity,
+			                             nitrogen.atomic_weight * atomic_mass)
+			n4_species = Species(nitrogen, 4, n4_distribution)
 
-		n5_density = Impurities_ionisation_equilibrium_profile(core_edge_nx, nitrogen, 5, 0)
-		n5_temperature = Linear_profile(core_peak_te, core_edge_te, 0)
-		n5_distribution = Maxwellian(n5_density, n5_temperature, zero_velocity,
-		                             nitrogen.atomic_weight * atomic_mass)
-		n5_species = Species(nitrogen, 5, n5_distribution)
+			n5_density = Impurities_ionisation_equilibrium_profile(core_edge_nx, nitrogen, 5, 0)
+			n5_temperature = Linear_profile(core_peak_te, core_edge_te, 0)
+			n5_distribution = Maxwellian(n5_density, n5_temperature, zero_velocity,
+			                             nitrogen.atomic_weight * atomic_mass)
+			n5_species = Species(nitrogen, 5, n5_distribution)
 
-		n6_density = Impurities_ionisation_equilibrium_profile(core_edge_nx, nitrogen, 6, 0)
-		n6_temperature = Linear_profile(core_peak_te, core_edge_te, 0)
-		n6_distribution = Maxwellian(n6_density, n6_temperature, zero_velocity,
-		                             nitrogen.atomic_weight * atomic_mass)
-		n6_species = Species(nitrogen, 6, n6_distribution)
+			n6_density = Impurities_ionisation_equilibrium_profile(core_edge_nx, nitrogen, 6, 0)
+			n6_temperature = Linear_profile(core_peak_te, core_edge_te, 0)
+			n6_distribution = Maxwellian(n6_density, n6_temperature, zero_velocity,
+			                             nitrogen.atomic_weight * atomic_mass)
+			n6_species = Species(nitrogen, 6, n6_distribution)
 
-		n7_density = Impurities_ionisation_equilibrium_profile(core_edge_nx, nitrogen, 7, 0)
-		n7_temperature = Linear_profile(core_peak_te, core_edge_te, 0)
-		n7_distribution = Maxwellian(n7_density, n7_temperature, zero_velocity,
-		                             nitrogen.atomic_weight * atomic_mass)
-		n7_species = Species(nitrogen, 7, n7_distribution)
+			n7_density = Impurities_ionisation_equilibrium_profile(core_edge_nx, nitrogen, 7, 0)
+			n7_temperature = Linear_profile(core_peak_te, core_edge_te, 0)
+			n7_distribution = Maxwellian(n7_density, n7_temperature, zero_velocity,
+			                             nitrogen.atomic_weight * atomic_mass)
+			n7_species = Species(nitrogen, 7, n7_distribution)
+		except:
+			pass
 
 		plasma_core.electron_distribution = e_distribution
-		plasma_core.composition = [d0_species, d1_species, c0_species, c1_species, c2_species, c3_species, c4_species, c5_species, c6_species, n0_species, n1_species, n2_species, n3_species, n4_species, n5_species, n6_species, n7_species]
+
+		try:
+			plasma_core.composition = [d0_species, d1_species, c0_species, c1_species, c2_species, c3_species, c4_species, c5_species, c6_species, n0_species, n1_species, n2_species, n3_species, n4_species, n5_species, n6_species, n7_species]
+			print('imported densities of species: H, C, N')
+		except:
+			try:
+				plasma_core.composition = [d0_species, d1_species, n0_species, n1_species, n2_species, n3_species, n4_species, n5_species, n6_species, n7_species]
+				print('imported densities of species: H, N')
+			except:
+				try:
+					plasma_core.composition = [d0_species, d1_species, c0_species, c1_species, c2_species, c3_species, c4_species, c5_species, c6_species]
+					print('imported densities of species: H, C')
+				except:
+					plasma_core.composition = [d0_species, d1_species]
+					print('imported densities of species: H')
 
 
 		# from cherab.core.math import sample3d
@@ -651,10 +721,10 @@ if True:	# related to the SOLPS phantom
 		# plt.xlabel('r axis')
 		# plt.ylabel('z axis')
 		# plt.title("Ion temperature profile in r-z plane")
+	else:
+		pass
 
 
-
-	# plasma.parent=world
 	from cherab.mastu.machine import MASTU_FULL_MESH
 	import os
 	from raysect.primitive import import_stl, Sphere, Mesh, Cylinder
@@ -677,6 +747,11 @@ if True:	# related to the SOLPS phantom
 	plasma.models.clear()
 	plasma.parent=world
 	plasma.atomic_data = OpenADAS(permit_extrapolation=True)
+	if use_core:
+		plasma_core.models.clear()
+		plasma_core.parent=world
+		plasma_core.atomic_data = OpenADAS(permit_extrapolation=True)
+
 
 	from cherab.core.model import ExcitationLine,RecombinationLine,Bremsstrahlung
 	from cherab.core.atomic import Line
@@ -718,6 +793,11 @@ if True:	# related to the SOLPS phantom
 								model = RecombinationLine(line)
 							plasma.models.add(model)
 							if use_core:
+								line = Line(element, charge,(transition[:transition.find('->')-1],transition[transition.find('->')+3:]))	# loop on the destination state for every ionisation level
+								if cls == 'excitation':
+									model = ExcitationLine(line)
+								elif cls == 'recombination':
+									model = RecombinationLine(line)
 								plasma_core.models.add(model)
 					except Exception as e:
 						print('Error '+str(e))
@@ -748,6 +828,11 @@ if True:	# related to the SOLPS phantom
 								model = RecombinationLine(line)
 							plasma.models.add(model)
 							if use_core:
+								line = Line(element, charge,(transition[:transition.find('->')-1],transition[transition.find('->')+3:]))	# loop on the destination state for every ionisation level
+								if cls == 'excitation':
+									model = ExcitationLine(line)
+								elif cls == 'recombination':
+									model = RecombinationLine(line)
 								plasma_core.models.add(model)
 					except Exception as e:
 						print('Error '+str(e))
@@ -778,6 +863,11 @@ if True:	# related to the SOLPS phantom
 								model = RecombinationLine(line)
 							plasma.models.add(model)
 							if use_core:
+								line = Line(element, charge,(transition[:transition.find('->')-1],transition[transition.find('->')+3:]))	# loop on the destination state for every ionisation level
+								if cls == 'excitation':
+									model = ExcitationLine(line)
+								elif cls == 'recombination':
+									model = RecombinationLine(line)
 								plasma_core.models.add(model)
 					except Exception as e:
 						print('Error '+str(e))
@@ -788,6 +878,66 @@ if True:	# related to the SOLPS phantom
 		if use_core:
 			plasma_core.models.add(Bremsstrahlung())
 	# print(list(plasma.models))
+
+
+	# Total radiation does not depend on wavelength, therefore Spectrum can be initialised with any values.
+	spectrum = Spectrum(min_wavelength=0.01, max_wavelength=1200, bins=1)
+	# Calculating total radiation power density on SOLPS mesh
+	direction = Vector3D(0, 0, 1)
+	tot_rad_power = np.zeros((500, 500))
+	for model in plasma.models:
+		for i, x in enumerate(xrange):
+			for j, y in enumerate(yrange):
+				if ne_samples[j, i] != 0:
+					point = Point3D(x, 0, y)
+					tot_rad_power[j, i] += 4. * np.pi * model.emission(point, direction, spectrum.new_spectrum()).total()
+	if use_core:
+		for model in plasma_core.models:
+			for i, x in enumerate(xrange):
+				for j, y in enumerate(yrange):
+					if ne_samples[j, i] == 0 and psi_sample[j, i]>=0 and y<=1.3 and y>=-1.3:
+						point = Point3D(x, 0, y)
+						tot_rad_power[j, i] += 4. * np.pi * model.emission(point, direction, spectrum.new_spectrum()).total()
+
+
+	fig, ax = plt.subplots(figsize=(12,7))
+	# grid_x.plot.line(ax=ax, x='nx_plus2')
+	# grid_y.plot.line(ax=ax, x='ny_plus2')
+	# plt.pcolormesh(grid_x.values, grid_y.values, impurity_radiation.values)
+
+
+	plt.imshow(tot_rad_power, norm=LogNorm(vmin=min(1000,tot_rad_power.max()/100), vmax=min(total_radiation_density.values.max(),tot_rad_power.max())),cmap='rainbow',extent=[xrange.min(),xrange.max(),yrange.min(),yrange.max()])
+	# plt.pcolor(grid_x.values, grid_y.values, np.abs(total_radiation_density.values),cmap='rainbow')
+	ax.set_ylim(top=0.1)
+	ax.set_xlim(left=0.)
+	plt.title('Emissivity profile from SOLPS+core')
+	plt.colorbar().set_label('Emissivity [W/m^3]')
+	plt.xlabel('R [m]')
+	plt.ylabel('Z [m]')
+
+	x=np.linspace(0.55-0.075,0.55+0.075,10)
+	y=-1.2+np.sqrt(0.08**2-(x-0.55)**2)
+	y_=-1.2-np.sqrt(0.08**2-(x-0.55)**2)
+	plt.plot(x,y,'k')
+	plt.plot(x,y_,'k')
+	plt.plot(FULL_MASTU_CORE_GRID_POLYGON[:, 0], FULL_MASTU_CORE_GRID_POLYGON[:, 1], 'k')
+	# plt.show()
+
+	# plt.plot(1.4918014 ,  -0.7198,'ro')	# pinhole
+	# plt.plot(1.56467,  -0.7,'ro')	# foil centre
+	# plt.plot(1.56467,  -0.7-0.045,'k+')	# foil bottom
+	# plt.plot(1.4918014 + (1.4918014-1.56467)*2,  -0.7198 + (-0.7198-(-0.7-0.045))*2,'k+')	# artificial start of the LOS
+	# plt.plot(1.56467,  -0.7+0.045,'k+')	# foil top
+	# plt.plot(1.4918014 + (1.4918014-1.56467)*5,  -0.7198 + (-0.7198-(-0.7+0.045))*5,'k+')	# artificial start of the LOS
+	# plt.plot(1.56467,  -0.7+0.015,'k+')	# foil top
+	# plt.plot(1.4918014 + (1.4918014-1.56467)*4,  -0.7198 + (-0.7198-(-0.7+0.015))*4,'k+')	# artificial start of the LOS
+	# plt.plot(1.56467,  -0.7-0.045-0.012,'k+')	# foil bottom new geometry
+	# plt.plot(1.4918014 + (1.4918014-1.56467)*2,  -0.7198 + (-0.7198-(-0.7-0.045-0.012))*2,'k+')	# artificial start of the LOS
+	ax.set_aspect(1)
+	plt.savefig(mastu_path + '/spectra_'+'enables_'+str(enables)+'_'+'tot_rad_power'+'.eps', bbox_inches='tight')
+	plt.close()
+	# exit()
+
 
 
 	#
@@ -810,62 +960,227 @@ if True:	# related to the SOLPS phantom
 	# ray = Ray(origin=Point3D(-0.95,0,-1.2),direction=Vector3D(1,0,0),min_wavelength=0.01,max_wavelength=1200,bins=1200*100)
 	# ray = Ray(origin=Point3D(-0.8,0,-1.4),direction=Vector3D(1,0,0),min_wavelength=0.01,max_wavelength=1200,bins=1200*100)
 	# plt.figure()
-	for i in range(10):
-		if False:
-			ray = Ray(origin=Point3D(-1.5,0,0),direction=Vector3D(1,0,0),min_wavelength=0.01,max_wavelength=1200,bins=1200*1000)
-			type = 'midplane'
-		elif True:
-			ray = Ray(origin=Point3D(1.4918014 + (1.4918014-1.56467)*2,0,-0.7198 + (-0.7198-(-0.7-0.045))*2),direction=Vector3D(1.4918014-1.56467,0,-0.7198-(-0.7-0.045)),min_wavelength=0.01,max_wavelength=1200,bins=1200*1000)	# LOS pointing as up as it can central
-			type = 'as_up_as_possible'
-		elif True:
-			ray = Ray(origin=Point3D(1.4918014 + (1.4918014-1.56467)*5,0,-0.7198 + (-0.7198-(-0.7+0.045))*5),direction=Vector3D(1.4918014-1.56467,0,-0.7198-(-0.7+0.045)),min_wavelength=0.01,max_wavelength=1200,bins=1200*10)	# LOS pointing as low as it can central
-			type = 'as_low_as_possible'
-		elif True:
-			ray = Ray(origin=Point3D(1.4918014 + (1.4918014-1.56467)*5,0,-0.7198 + (-0.7198-(-0.7+0.015))*4),direction=Vector3D(1.4918014-1.56467,0,-0.7198-(-0.7+0.015)),min_wavelength=0.01,max_wavelength=1200,bins=1200*1000)	# LOS pointing at x-point central
-			type = 'x_point'
-		spectrum = ray.trace(world)
-		# spectrum = ray.trace(world, keep_alive=True)
-		# plt.plot(spectrum.wavelengths,spectrum.samples)
 
+	# ray = Ray(origin=Point3D(-1.5,0,0),direction=Vector3D(1,0,0),min_wavelength=0.01,max_wavelength=1200,bins=1200*1000)
+	# type = 'midplane'
+	# spectrum = ray.trace(world)
+	# np.savez(mastu_path + '/spectra_'+'enables_'+str(enables)+'_'+type,spectrum)
 
-		np.savez('/home/ffederic/work/irvb/MAST-U/spectra_'+type+'_'+str(i),spectrum)
-		print('done')
+	# # ray = Ray(origin=Point3D(1.4918014 + (1.4918014-1.56467)*2,0,-0.7198 + (-0.7198-(-0.7-0.045-0.012))*2),direction=Vector3D(1.4918014-1.56467,0,-0.7198-(-0.7-0.045-0.012)),min_wavelength=0.01,max_wavelength=1200,bins=1200*1000)	# LOS pointing as up as it can central
+	# type = 'as_up_as_possible_MU04'
+	# ray = Ray(origin=Point3D(1.4918014 + (1.4918014-1.56467)*2,0 + (-0.0198-0.01)*2,-0.7198 + (-0.7198-(-0.7-0.045-0.012))*2),direction=Vector3D(1.4918014-1.56467,-0.0198-0.01,-0.7198-(-0.7-0.045-0.012)),min_wavelength=0.01,max_wavelength=1200,bins=1200*1000)	# LOS pointing as up as it can
+	# spectrum = ray.trace(world)
+	# np.savez(mastu_path + '/spectra_'+'enables_'+str(enables)+'_'+type,spectrum)
+
+	# # ray = Ray(origin=Point3D(1.4918014 + (1.4918014-1.56467)*2,0,-0.7198 + (-0.7198-(-0.7-0.045))*2),direction=Vector3D(1.4918014-1.56467,0,-0.7198-(-0.7-0.045)),min_wavelength=0.01,max_wavelength=1200,bins=1200*1000)	# LOS pointing as up as it can central from the new foin shame from mu04
+	# ray = Ray(origin=Point3D(1.4918014 + (1.4918014-1.56467)*2,0 + (-0.0198-0.02)*2,-0.7198 + (-0.7198-(-0.7-0.045))*2),direction=Vector3D(1.4918014-1.56467,-0.0198-0.02,-0.7198-(-0.7-0.045)),min_wavelength=0.01,max_wavelength=1200,bins=1200*1000)	# LOS pointing as up as it can from the new foin shame from mu04
+	# type = 'as_up_as_possible'
+	# spectrum = ray.trace(world)
+	# np.savez(mastu_path + '/spectra_'+'enables_'+str(enables)+'_'+type,spectrum)
+
+	# # ray = Ray(origin=Point3D(1.4918014 + (1.4918014-1.56467)*5,0,-0.7198 + (-0.7198-(-0.7+0.045))*5),direction=Vector3D(1.4918014-1.56467,0,-0.7198-(-0.7+0.045)),min_wavelength=0.01,max_wavelength=1200,bins=1200*1000)	# LOS pointing as low as it can central
+	# ray = Ray(origin=Point3D(1.4918014 + (1.4918014-1.56467)*5,0 + (-0.0198-0.017)*5,-0.7198 + (-0.7198-(-0.7+0.03))*5),direction=Vector3D(1.4918014-1.56467,-0.0198-0.017,-0.7198-(-0.7+0.03)),min_wavelength=0.01,max_wavelength=1200,bins=1200*1000)	# LOS pointing in the SXD
+	# type = 'as_low_as_possible'
+	# spectrum = ray.trace(world)
+	# np.savez(mastu_path + '/spectra_'+'enables_'+str(enables)+'_'+type,spectrum)
+
+	# ray = Ray(origin=Point3D(1.4918014 + (1.4918014-1.56467)*5,0,-0.7198 + (-0.7198-(-0.7+0.015))*4),direction=Vector3D(1.4918014-1.56467,0,-0.7198-(-0.7+0.015)),min_wavelength=0.01,max_wavelength=1200,bins=1200*1000)	# LOS pointing at x-point central
+	ray = Ray(origin=Point3D(1.4918014 + (1.4918014-1.56467)*4,0 + (-0.0198-0.009)*4,-0.7198 + (-0.7198-(-0.7+0.007))*4),direction=Vector3D(1.4918014-1.56467,-0.0198-0.009,-0.7198-(-0.7+0.007)),min_wavelength=0.01,max_wavelength=1200,bins=1200*1000)	# LOS pointing at x-point
+	type = 'x_point'
+	spectrum = ray.trace(world)
+	np.savez(mastu_path + '/spectra_'+'enables_'+str(enables)+'_'+type,spectrum)
+
+		# # spectrum = ray.trace(world, keep_alive=True)
+		# # plt.plot(spectrum.wavelengths,spectrum.samples)
+		#
+		#
+		# np.savez('/home/ffederic/work/irvb/MAST-U/spectra_'+type+'_'+str(i),spectrum)
+	print('done')
 	exit()
 
-	all_spectra = []
-	for i in range(10):
-		gna = np.load('/home/ffederic/work/irvb/MAST-U/spectra_'+type+'_'+str(i)+'.npz')
-		gna.allow_pickle=True
-		spectrum = gna['arr_0'].all()
-		all_spectra.append(spectrum)
+
+	SOLPS_case = 'seed_1'
+	mastu_path = "/home/ffederic/work/SOLPS/seeding/" + SOLPS_case
+
+	# SOLPS_case = 'ramp_11'
+	# mastu_path = "/home/ffederic/work/SOLPS/dscan/" + SOLPS_case
+
+	use_deuterium_lines = False
+	use_carbon_lines = False
+	use_nitrogen_lines = False
+	use_core = True
+	use_bremmstrahlung = True
+	enables = [use_deuterium_lines,use_carbon_lines,use_nitrogen_lines,use_core,use_bremmstrahlung]
+	enables = np.int32(enables)
+
+
+	for SOLPS_case in ['seed_1','seed_5','seed_10']:
+		mastu_path = "/home/ffederic/work/SOLPS/seeding/" + SOLPS_case
+
+	# for SOLPS_case in ['ramp_1','ramp_3.3','ramp_11']:
+	# 	mastu_path = "/home/ffederic/work/SOLPS/dscan/" + SOLPS_case
+
+		types = ['midplane','as_up_as_possible','as_up_as_possible_MU04','as_low_as_possible','x_point']
+		all_spectra = []
+		for i in range(len(types)):
+			try:
+				gna = np.load(mastu_path + '/spectra_'+'enables_'+str(enables)+'_'+types[i]+'.npz')
+				gna.allow_pickle=True
+				spectrum = gna['arr_0'].all()
+				all_spectra.append(spectrum)
+			except:
+				all_spectra.append([])
 
 
 
 
-	plt.figure()
-	plt.plot(spectrum.wavelengths,spectrum.samples)
-	for i in range(10):
-		plt.plot(all_spectra[i].wavelengths,all_spectra[i].samples,label=str(i))
-	plt.ylabel('W/m2/sr/nm')
-	plt.xlabel('nm')
-	plt.semilogy()
-	plt.xlim(left=0,right=5)
-	plt.ylim(bottom=1E-1,top=1e5)
-	plt.pause(0.01)
+		if False:
+			plt.figure()
+			plt.title('Spectra '+mastu_path[20:]+'\n enables '+str(enables))
+			# plt.plot(spectrum.wavelengths,spectrum.samples)
+			for i in range(len(all_spectra)):
+				try:
+					dwave = np.median(np.diff(all_spectra[i].wavelengths))
+					plt.plot(all_spectra[i].wavelengths,all_spectra[i].samples,'--',label=types[i])
+					# a=plt.plot(1239.8/all_spectra[i].wavelengths,all_spectra[i].samples*dwave,'--',label=types[i])
+					# plt.plot(1239.8/all_spectra[i].wavelengths,all_spectra[i].samples*dwave,'|',color=a[0].get_color())
+					# plt.plot(1239.8/((all_spectra[i].wavelengths[1:]+all_spectra[i].wavelengths[:-1])/2),(all_spectra[i].samples[1:]+all_spectra[i].samples[:-1])/2*dwave/np.abs(np.diff(1239.8/all_spectra[i].wavelengths)),'--',label=types[i])
+				except:
+					pass
+			plt.ylabel('W/m2/sr/nm')
+			plt.xlabel('nm')
+			plt.xlim(left=0,right=2)
+			# plt.semilogy()
+			# plt.legend(loc='best', fontsize='xx-small')
+			# plt.grid()
+			# plt.xlabel('eV')
+			# plt.xlim(left=1,right=100000)
+			# plt.ylabel('W/m2/sr')
+			# plt.ylim(bottom=1E-6,top=1e3)
+			# # plt.ylabel('W/m2/sr/eV')
+			# # plt.ylim(bottom=1E-3,top=1e6)
+			# plt.semilogx()
+			# plt.semilogy()
+			# plt.ylim(bottom=1E-6,top=1e5)
+			# plt.pause(0.01)
+		else:
+			pass
 
-	integral = [0]
-	for i in range(1,len(spectrum.wavelengths)):
-		integral.append(integral[-1]+np.sum(spectrum.samples[-i-1:len(spectrum.wavelengths)-i+1])*np.diff(spectrum.wavelengths[-i-1:len(spectrum.wavelengths)-i+1])[0]/2)
-	integral = np.array(integral)
+		all_integral = []
+		for i_ in range(len(types)):
+			try:
+				dwave = np.median(np.diff(all_spectra[i_].wavelengths))
+				integral = [0]
+				for i in range(1,len(all_spectra[i_].wavelengths)):
+					integral.append(integral[-1]+np.sum(all_spectra[i_].samples[-i-1:len(all_spectra[i_].wavelengths)-i+1])*dwave/2)
+				integral = np.array(integral)
+			except:
+				integral = [0]
+			all_integral.append(integral)
+			# for i in range(1,len(spectrum.wavelengths)):
+			# 	integral.append(integral[-1]+np.sum(spectrum.samples[-i-1:len(spectrum.wavelengths)-i+1])*np.diff(spectrum.wavelengths[-i-1:len(spectrum.wavelengths)-i+1])[0]/2)
+			# integral = np.array(integral)
 
-	plt.figure()
-	plt.plot(spectrum.wavelengths,np.flip(integral,axis=0)/np.max(integral))
-	# plt.semilogy()
-	plt.ylim(bottom=0.5,top=1.02)
-	plt.xlim(left=0,right=2)
-	plt.pause(0.01)
-	# plt.show()
-	# tm.sleep(60*60)
+		if False:
+			plt.figure()
+			plt.title('Integrated spectra '+mastu_path[20:]+'\n enables '+str(enables))
+			# plt.plot(spectrum.wavelengths,np.flip(integral,axis=0)/np.max(integral))
+			for i in range(len(all_spectra)):
+				try:
+					plt.plot(all_spectra[i].wavelengths,np.flip(all_integral[i],axis=0)/np.max(all_integral[i]),'--',label=types[i])
+				except:
+					pass
+			# plt.semilogy()
+			plt.legend(loc='best', fontsize='xx-small')
+			plt.xlabel('nm')
+			plt.grid()
+			plt.ylim(bottom=0.9,top=1.02)
+			plt.xlim(left=0,right=2)
+			plt.pause(0.01)
+			# plt.show()
+			# tm.sleep(60*60)
+		else:
+			pass
+
+
+		# now I have to look for what is the absorption level for every wavelength bin
+		# foil components thicknesses
+		C_thickness = 200*1e-9	# for 1 side
+		C_thickness *= 2	# total
+		Pt_thickness = 250*1e-9	# for 1 side
+		Pt_thickness *= 2	# total
+		Ti_thickness = 1000*1e-9
+
+		fraction_absorbed_photons = 1 - \
+		np.exp(-linear_coefficient_C_attenuation_interpolator(scipy.constants.c*scipy.constants.h*(scipy.constants.physical_constants['joule-electron volt relationship'][0])/(all_spectra[i_].wavelengths*1e-9))*C_thickness) * \
+		np.exp(-linear_coefficient_Pt_attenuation_interpolator(scipy.constants.c*scipy.constants.h*(scipy.constants.physical_constants['joule-electron volt relationship'][0])/(all_spectra[i_].wavelengths*1e-9))*Pt_thickness) * \
+		np.exp(-linear_coefficient_Ti_attenuation_interpolator(scipy.constants.c*scipy.constants.h*(scipy.constants.physical_constants['joule-electron volt relationship'][0])/(all_spectra[i_].wavelengths*1e-9))*Ti_thickness)
+
+		if False:
+			plt.figure()
+			# plt.plot(1239.8/all_spectra[i_].wavelengths,fraction_absorbed_photons)
+			# plt.xlabel('eV')
+			# plt.semilogx()
+			# plt.semilogy()
+			# plt.xlim(left=1,right=100000)
+			# plt.plot(scipy.constants.c*scipy.constants.h*(scipy.constants.physical_constants['joule-electron volt relationship'][0])/(all_spectra[i_].wavelengths*1e-9),fraction_absorbed_photons)
+			# plt.plot(scipy.constants.c*scipy.constants.h*(scipy.constants.physical_constants['joule-electron volt relationship'][0])/(all_spectra[i_].wavelengths*1e-9),1/linear_coefficient_Pt_attenuation_interpolator(scipy.constants.c*scipy.constants.h*(scipy.constants.physical_constants['joule-electron volt relationship'][0])/(all_spectra[i_].wavelengths*1e-9))*1e6)
+			plt.plot(all_spectra[i_].wavelengths,fraction_absorbed_photons)
+			plt.xlabel('nm')
+			plt.xlim(left=0,right=2)
+			plt.grid()
+			# plt.ylim(bottom=0.5,top=1.02)
+			# plt.xlim(left=10,right=30000)
+
+			plt.figure()
+			plt.title('Spectra '+mastu_path[20:]+'\n enables '+str(enables))
+			# plt.plot(spectrum.wavelengths,spectrum.samples)
+			for i in range(len(all_spectra)):
+				try:
+					dwave = np.median(np.diff(all_spectra[i].wavelengths))
+					a=plt.plot(all_spectra[i].wavelengths,all_spectra[i].samples*dwave,'--',label=types[i])
+					plt.plot(all_spectra[i].wavelengths,all_spectra[i].samples*fraction_absorbed_photons*dwave,'-',color=a[0].get_color())
+					# plt.plot(1239.8/all_spectra[i].wavelengths,all_spectra[i].samples*dwave,'|',color=a[0].get_color())
+					# plt.plot(1239.8/((all_spectra[i].wavelengths[1:]+all_spectra[i].wavelengths[:-1])/2),(all_spectra[i].samples[1:]+all_spectra[i].samples[:-1])/2*dwave/np.abs(np.diff(1239.8/all_spectra[i].wavelengths)),'--',label=types[i])
+				except:
+					pass
+			plt.ylabel('W/m2/sr')
+			plt.xlabel('nm')
+			plt.xlim(left=0,right=2)
+			# plt.semilogy()
+			# plt.legend(loc='best', fontsize='xx-small')
+			# plt.grid()
+			# plt.xlabel('eV')
+			# plt.xlim(left=1,right=100000)
+			# plt.ylabel('W/m2/sr')
+			# plt.ylim(bottom=1E-6,top=1e3)
+			# # plt.ylabel('W/m2/sr/eV')
+			# # plt.ylim(bottom=1E-3,top=1e6)
+			# plt.semilogx()
+			# plt.semilogy()
+			# plt.ylim(bottom=1E-6,top=1e5)
+			# plt.pause(0.01)
+
+
+		all_absorbed_power = []
+		for i_ in range(len(types)):
+			try:
+				dwave = np.median(np.diff(all_spectra[i_].wavelengths))
+				# absorbed_power = 0
+				# for i in range(1,len(all_spectra[i_].wavelengths)):
+				# 	absorbed_power += np.sum(all_spectra[i_].samples[i-1:i+1] * fraction_absorbed_photons[i-1:i+1])*dwave/2
+				absorbed_power = np.trapz(all_spectra[i_].samples*fraction_absorbed_photons,all_spectra[i_].wavelengths)
+			except:
+				absorbed_power=0
+			all_absorbed_power.append(absorbed_power)
+		all_absorbed_power = np.array(all_absorbed_power)
+
+
+		print('Spectra '+mastu_path[20:]+'\n enables '+str(enables))
+		print(['midplane','as_up_as_possible','as_up_as_possible_MU04','as_low_as_possible','x_point'])
+		print(all_absorbed_power/np.array([np.max(all_integral[i]) for i in range(len(types))]))
+
+
 
 	# I need to add the core
 
