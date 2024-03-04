@@ -8,14 +8,14 @@
 # adding
 # # ###############  2021/07/21 test  #######################
 # def setMinimum(self, min: float):
-#     if isinstance(min, (list, tuple)):
-#         return type(min)(self.setMinimum(v) for v in min)
-#     pos = super().setRange(min, max(super().maximum(), min))
+#	 if isinstance(min, (list, tuple)):
+#		 return type(min)(self.setMinimum(v) for v in min)
+#	 pos = super().setRange(min, max(super().maximum(), min))
 #
 # def setMaximum(self, max: float):
-#     if isinstance(max, (list, tuple)):
-#         return type(min)(self.setMaximum(v) for v in max)
-#     pos = super().setRange(min(super().minimum(), max), max)
+#	 if isinstance(max, (list, tuple)):
+#		 return type(min)(self.setMaximum(v) for v in max)
+#	 pos = super().setRange(min(super().minimum(), max), max)
 
 
 import pyqtgraph as pg
@@ -24,6 +24,8 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QHBoxLayout, QLabel, QSizePolicy, QSlider, QSpacerItem, QVBoxLayout, QWidget, QMainWindow
 from qtrangeslider import QRangeSlider
 from pyqtgraph.parametertree import Parameter, ParameterTree, ParameterItem, registerParameterType
+from PyQt5.QtGui import QPen, QColor
+from pyqtgraph.functions import mkPen
 
 # import pyqtgraph.console
 import numpy as np
@@ -63,7 +65,7 @@ data_shape = np.shape(data)
 efit_reconstruction=None
 # data = np.load('/home/ffederic/work/irvb/MAST-U/2021-07-01/IRVB-MASTU_shot-44391.npz')['data']
 framerate = 383 # Hz
-shot_ID = '043979'
+shot_ID = '45401'
 time_array = np.arange(len(data))*1/framerate
 
 class RangeSlider(QWidget):
@@ -106,6 +108,11 @@ class RangeSlider(QWidget):
 		self.right = self.minimum + (float(value[2]) / (self.slider.maximum() - self.slider.minimum())) * (
 		self.maximum - self.minimum)
 		self.label.setText('shot '+str(self.shotID)+' from%.4g to %.4g ms : %.4g ms' %(1e3*time_array[round(self.left)],1e3*time_array[round(self.right)],1e3*time_array[round(self.x)]))
+
+# these are used later to force a thin cross as a marker rather than a thick one
+red_thin_pen = mkPen(color='r', width=1)
+yellow_thin_pen = mkPen(color='y', width=1)
+thin_cross = pg.arrayToQPath(np.array([ 0,  1,  0, -1,  0, 1, 0, -1, 0]),np.array([ 0,  1,  0,  1,  0, -1, 0, -1, 0]))
 
 
 app = pg.mkQApp()
@@ -155,7 +162,10 @@ horizontalLayout = QVBoxLayout()
 w5 = pg.GraphicsLayoutWidget()
 horizontalLayout.addWidget(w5)
 image1 = pg.ImageItem()
-image1.setImage(data[0])
+temp = cp.deepcopy(data[0])
+temp[np.isnan(temp)]=0
+temp[np.isinf(temp)]=0
+image1.setImage(temp)
 p5 = w5.addPlot()
 # p6.setTitle(title="shot " + str(w2.shotID))
 p5.addItem(image1)
@@ -179,9 +189,9 @@ curve = p5.plot(pen='r')
 hist = pg.HistogramLUTItem()
 hist.setImageItem(image1)
 # hist.gradient.setColorMode('rgb')
-# hist.setLevels(np.min(data[0]), np.max(data[0]))
-histogram_level_high = np.max(data[0])
-histogram_level_low = np.min(data[0])
+histogram_level_high = np.nanmax(data[0])
+histogram_level_low = np.nanmin(data[0])
+hist.setLevels(histogram_level_low, histogram_level_high)
 p8 = w5.addItem(hist)
 
 
@@ -189,7 +199,7 @@ p8 = w5.addItem(hist)
 isoLine = pg.InfiniteLine(angle=0, movable=True, pen='g')
 hist.vb.addItem(isoLine)
 hist.vb.setMouseEnabled(y=False) # makes user interaction a little easier
-isoLine.setValue(np.mean(data[0]))
+isoLine.setValue(np.nanmean(data[0]))
 isoLine.setZValue(1000) # bring iso line above contrast controls
 
 # Custom ROI for selecting an image region
@@ -221,14 +231,6 @@ iso = pg.IsocurveItem(level=0.8, pen='g')
 iso.setParentItem(image1)
 iso.setZValue(5)
 
-fueling_point_location_on_foil = coleval.return_fueling_point_location_on_foil()
-structure_point_location_on_foil = coleval.return_structure_point_location_on_foil()
-core_tangential_location_on_foil = coleval.return_core_tangential_location_on_foil()
-core_poloidal_location_on_foil = coleval.return_core_poloidal_location_on_foil()
-divertor_poloidal_location_on_foil = coleval.return_divertor_poloidal_location_on_foil()
-structure_radial_profile = coleval.return_structure_radial_profile()
-core_poloidal = coleval.return_core_poloidal()
-divertor_poloidal = coleval.return_divertor_poloidal()
 foil_size = [0.07,0.09]
 flag_radial_profile = False
 inversion_R = 0
@@ -250,7 +252,7 @@ iso.setData(pg.gaussianFilter(image1.image, (2, 2)))
 
 # Another plot area for displaying ROI data
 w3 = pg.GraphicsLayoutWidget()
-p3 = w3.addPlot(title="horizontal average")
+p3 = w3.addPlot(title="horiz. average")
 p3.showGrid(x=1,y=1,alpha=0.5)
 d3.addWidget(w3)
 
@@ -264,14 +266,16 @@ d1.addWidget(w1)
 w6 = pg.GraphicsLayoutWidget()
 p6 = w6.addPlot(title="time average of selected area")
 p6.showGrid(x=1,y=1,alpha=0.5)
+# p6.showGrid(alpha=0.5)
 p6_1 = p6.plot([],[], pen='m')
 p6_2 = p6.plot([],[], pen='c')
-p6_time_mark = p6.plot([],[], pen='g')
+# p6_time_mark = p6.plot([],[], pen='g')
+p6_time_mark = p6.addLine(x=0, pen=mkPen('g',style=QtCore.Qt.DashLine))
 d6.addWidget(w6)
 
 
 
-quantity_options = {'counts [au]': 'counts', '1st pass FAST dT/dt [K/s]': 'first_pass-temperature_minus_background_crop_dt', '1st pass FAST counts [au]': 'first_pass-FAST_counts_minus_background_crop', '1st pass FAST foil temperature [°C]': 'first_pass-FAST/inverted/temperature_crop_binned', '1st pass FAST power [W/m2]': 'first_pass-FAST_powernoback',  '1st pass FAST power std [W/m2]': 'first_pass-FAST/inverted/foil_power_std', '1st pass FAST brightness [W/m2]': 'first_pass-FAST_brightness', '1st pass FAST brightness sigma [W/m2]': 'first_pass-FAST/inverted/brightness_sigma', '1st pass FAST brightness fit [W/m2]': 'first_pass-FAST/inverted/fitted_brightness', '1st pass FAST foil fit [W/m2]': 'first_pass-FAST/inverted/fitted_foil_power', '1st pass FAST foil fit excluded [W/m2]': 'first_pass-FAST/inverted/fitted_foil_power_excluded', '1st pass FAST foil fit error [W/m2]': 'first_pass-FAST/inverted/foil_power_residuals', '1st pass FAST emissivity [W/m3]': 'first_pass-FAST/inverted/inverted_data', '1st pass FAST emissivity excluded [W/m3]': 'first_pass-FAST/inverted/inverted_data_excluded', '2nd_pass FAST brightness fit [W/m2]': 'second_pass-FAST/inverted/fitted_brightness', '2nd_pass FAST foil fit [W/m2]': 'second_pass-FAST/inverted/fitted_foil_power', '2nd pass FAST foil fit excluded [W/m2]': 'second_pass-FAST/inverted/fitted_foil_power_excluded', '2nd_pass FAST foil fit error [W/m2]': 'second_pass-FAST/inverted/foil_power_residuals', '2nd_pass FAST emissivity [W/m3]': 'second_pass-FAST/inverted/inverted_data', '2dn pass FAST emissivity excluded [W/m3]': 'second_pass-FAST/inverted/inverted_data_excluded', "Temperature [°C]": 'laser_temperature_crop_binned_full', "Relative temp [K]": 'laser_temperature_minus_background_crop_binned_full', "tot power [W/m2]": 'powernoback_full', "tot power std [W/m2]": 'powernoback_std_full', "BB power [W/m2]": 'BBrad_full', "diff power [W/m2]": 'diffusion_full', "dt power [W/m2]": 'timevariation_full', "brightness [W/m2]": 'brightness_full', "emissivity [W/m3]": 'inverted/inverted_data', "fitted power [W/m2]": 'inverted/fitted_foil_power', "fitted power residuals [W/m2]": 'inverted/foil_power_residuals'}
+quantity_options = {'counts [au]': 'counts', '1st pass FAST dT/dt [K/s or kW/m2]': 'first_pass-temperature_minus_background_crop_dt', '1st pass FAST counts [au]': 'first_pass-FAST_counts_minus_background_crop', '1st pass FAST foil temperature [°C]': 'first_pass-FAST/inverted/temperature_crop_binned', '1st pass FAST power [W/m2]': 'first_pass-FAST_powernoback',  '1st pass FAST power std [W/m2]': 'first_pass-FAST/inverted/foil_power_std', '1st pass FAST brightness [W/m2]': 'first_pass-FAST_brightness', '1st pass FAST brightness sigma [W/m2]': 'first_pass-FAST/inverted/brightness_sigma', '1st pass FAST brightness fit [W/m2]': 'first_pass-FAST/inverted/fitted_brightness', '1st pass FAST foil fit [W/m2]': 'first_pass-FAST/inverted/fitted_foil_power', '1st pass FAST foil fit excluded [W/m2]': 'first_pass-FAST/inverted/fitted_foil_power_excluded', '1st pass FAST foil fit error [W/m2]': 'first_pass-FAST/inverted/foil_power_residuals', '1st pass FAST emissivity [W/m3]': 'first_pass-FAST/inverted/inverted_data', '1st pass FAST emissivity excluded [W/m3]': 'first_pass-FAST/inverted/inverted_data_excluded', '2nd_pass FAST brightness fit [W/m2]': 'second_pass-FAST/inverted/fitted_brightness', '2nd_pass FAST foil fit [W/m2]': 'second_pass-FAST/inverted/fitted_foil_power', '2nd pass FAST foil fit excluded [W/m2]': 'second_pass-FAST/inverted/fitted_foil_power_excluded', '2nd_pass FAST foil fit error [W/m2]': 'second_pass-FAST/inverted/foil_power_residuals', '2nd_pass FAST emissivity [W/m3]': 'second_pass-FAST/inverted/inverted_data', '2dn pass FAST emissivity excluded [W/m3]': 'second_pass-FAST/inverted/inverted_data_excluded', "Temperature [°C]": 'laser_temperature_crop_binned_full', "Relative temp [K]": 'laser_temperature_minus_background_crop_binned_full', "tot power [W/m2]": 'powernoback_full', "tot power std [W/m2]": 'powernoback_std_full', "BB power [W/m2]": 'BBrad_full', "diff power [W/m2]": 'diffusion_full', "dt power [W/m2]": 'timevariation_full', "brightness [W/m2]": 'brightness_full', "emissivity [W/m3]": 'inverted/inverted_data', "fitted power [W/m2]": 'inverted/fitted_foil_power', "fitted power residuals [W/m2]": 'inverted/foil_power_residuals'}
 
 # creating all the flags and accessories needed
 params = [
@@ -298,8 +302,10 @@ params = [
 		{'name': 'Time end [ms]', 'type': 'float', 'value': time_array[int(w2.right)]*1e3, 'step': 1, 'finite': False},
 		{'name': 'Time [ms]', 'type': 'float', 'value': time_array[int(w2.x)]*1e3, 'step': 1, 'finite': False},
 		{'name': 'Histogram auto', 'type': 'bool', 'value': True, 'tip': "This is a checkbox"},
-		{'name': 'Hist lev high', 'type': 'float', 'value': histogram_level_high, 'step': np.min(np.diff(np.sort(data.flatten()))), 'finite': False},
-		{'name': 'Hist lev low', 'type': 'float', 'value': histogram_level_low, 'step': np.min(np.diff(np.sort(data.flatten()))), 'finite': False},
+		# {'name': 'Hist lev high', 'type': 'float', 'value': histogram_level_high, 'step': np.nanmin(np.diff(np.sort(data.flatten()))), 'finite': False},
+		# {'name': 'Hist lev low', 'type': 'float', 'value': histogram_level_low, 'step': np.nanmin(np.diff(np.sort(data.flatten()))), 'finite': False},
+		{'name': 'Hist lev high', 'type': 'float', 'value': histogram_level_high, 'step': np.nanmedian(np.diff(np.unique(data[np.isfinite(data)]))), 'finite': False},	# this should work better with positive, negative and nan values
+		{'name': 'Hist lev low', 'type': 'float', 'value': histogram_level_low, 'step': np.nanmedian(np.diff(np.unique(data[np.isfinite(data)]))), 'finite': False},	# this should work better with positive, negative and nan values
 	]},
 	{'name': 'Set display', 'type': 'group', 'children': [
 		{'name': 'Shot +', 'type': 'action'},
@@ -344,6 +350,28 @@ params1 = [
 param_ext = Parameter.create(name='params', type='group', children=params)
 param_ext1 = Parameter.create(name='params', type='group', children=params1)
 
+def reload_geometry():
+	global fueling_point_location_on_foil,structure_point_location_on_foil,core_tangential_location_on_foil,core_poloidal_location_on_foil,divertor_poloidal_location_on_foil
+	if param_ext1['Shot number']!=None:
+		if int(param_ext1['Shot number']) > 45517:	# restricted to MU02
+			stand_off_length = 0.06	# m
+		else:
+			stand_off_length = 0.045	# m
+	else:
+		stand_off_length = 0.045	# m
+	Rf=1.48967 + 0.01 + 0.003 + 0.002 + stand_off_length	# m	radius of the centre of the foil
+	plane_equation = np.array([1,-1,0,2**0.5 * Rf])	# plane of the foil
+	centre_of_foil = np.array([-Rf/(2**0.5), Rf/(2**0.5), -0.7])	# x,y,z
+	fueling_point_location_on_foil = coleval.return_fueling_point_location_on_foil(plane_equation=plane_equation,centre_of_foil=centre_of_foil)
+	structure_point_location_on_foil = coleval.return_structure_point_location_on_foil(plane_equation=plane_equation,centre_of_foil=centre_of_foil)
+	core_tangential_location_on_foil = coleval.return_core_tangential_location_on_foil(plane_equation=plane_equation,centre_of_foil=centre_of_foil)
+	core_poloidal_location_on_foil = coleval.return_core_poloidal_location_on_foil(plane_equation=plane_equation,centre_of_foil=centre_of_foil)
+	divertor_poloidal_location_on_foil = coleval.return_divertor_poloidal_location_on_foil(plane_equation=plane_equation,centre_of_foil=centre_of_foil)
+structure_radial_profile = coleval.return_structure_radial_profile()
+core_poloidal = coleval.return_core_poloidal()
+divertor_poloidal = coleval.return_divertor_poloidal()
+reload_geometry()
+
 ## If anything changes in the tree, print a message
 def change(param, changes):
 	global histogram_level_low,histogram_level_high,overlay_structure,overlay_fueling_point,overlay_x_point,overlay_mag_axis,overlay_strike_points_1,overlay_strike_points_2,overlay_separatrix,overlay_Core_Resistive_bol,overlay_Div_Resistive_bol,efit_reconstruction,all_time_mag_axis_location,all_time_x_point_location,all_time_strike_points_location,all_time_strike_points_location_rot,all_time_separatrix,time_array,flag_radial_profile,all_time_sep_r,all_time_sep_z,r_fine,z_fine,data_shape
@@ -368,7 +396,7 @@ def change(param, changes):
 	# roi2.setAngle((param_ext['ROI', 'ROI cyan angle']))
 	w2.slider.setValue([np.abs(param_ext['ROI', 'Time start [ms]']*1e-3-time_array).argmin()/(w2.maximum-w2.minimum)*(w2.slider.maximum()-w2.slider.minimum()),np.abs(param_ext['ROI', 'Time [ms]']*1e-3-time_array).argmin()/(w2.maximum-w2.minimum)*(w2.slider.maximum()-w2.slider.minimum()),np.abs(param_ext['ROI', 'Time end [ms]']*1e-3-time_array).argmin()/(w2.maximum-w2.minimum)*(w2.slider.maximum()-w2.slider.minimum())])
 	histogram_level_high,histogram_level_low = param_ext['ROI', 'Hist lev high'],param_ext['ROI', 'Hist lev low']
-	hist.setLevels(histogram_level_high,histogram_level_low)
+	hist.setLevels(histogram_level_low,histogram_level_high)
 	# hist.sigLevelChangeFinished.emit(True)
 	if param_ext['Overlays','Structure']==False:
 		for i in range(len(overlay_structure)):
@@ -625,7 +653,7 @@ def export_image():
 			prelude = ''
 		image_extent = [full_range_hor[limit_left]-0.5, full_range_hor[limit_right]-1+0.5, full_range_ver[limit_bottom]-0.5, full_range_ver[limit_top]-1+0.5]
 		fig,efit_reconstruction = coleval.image_from_data(np.array([np.flip(np.transpose(np.flip([to_plot],axis=1),(0,2,1)),axis=2)]),form_factor_size=param_ext['Set display','Export size'],image_extent=image_extent,ref_time=param_ext['ROI', 'Time [ms]']*1e-3,extvmin=histogram_level_low_for_plot,extvmax=histogram_level_high_for_plot,xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel=barlabel, prelude=prelude,overlay_structure=param_ext['Overlays','Structure'],include_EFIT=include_EFIT,efit_reconstruction=efit_reconstruction,pulse_ID=w2.shotID,overlay_x_point=param_ext['Overlays','X-point'],overlay_mag_axis=param_ext['Overlays','Mag axis'],overlay_strike_points=param_ext['Overlays','Separatrix'],overlay_separatrix=param_ext['Overlays','Separatrix'],EFIT_output_requested=True,generic_overlays=extra_overlays,overlay_res_bolo=param_ext['Overlays','Core Resistive bol'] or param_ext['Overlays','Div Resistive bol'])
-	plt.savefig(param_ext1['File Path'] + '_export_' + str(next_export) + '.'+param_ext['Set display','Image format'], bbox_inches='tight')
+	plt.savefig(param_ext1['File Path'] + '_export_' + str(next_export) + '.'+param_ext['Set display','Image format'])#, bbox_inches='tight')
 	plt.close('all')
 	print('\n'+'\n'+param_ext1['File Path'] + '_export_' + str(next_export) + '.'+param_ext['Set display','Image format']+'\n'+'\n')
 
@@ -767,7 +795,7 @@ def Load_EFIT():
 
 update_plot_inhibit = False
 def Load():
-	global data,framerate,time_array,overlay_fueling_point,overlay_structure,overlay_x_point,overlay_mag_axis,overlay_strike_points_1,overlay_strike_points_2,overlay_separatrix,overlay_Core_Resistive_bol,overlay_Div_Resistive_bol,data_shape,etendue,update_plot_inhibit,flag_radial_profile,efit_reconstruction,inversion_R,inversion_Z,dr,dz
+	global data,framerate,time_array,overlay_fueling_point,overlay_structure,overlay_x_point,overlay_mag_axis,overlay_strike_points_1,overlay_strike_points_2,overlay_separatrix,overlay_Core_Resistive_bol,overlay_Div_Resistive_bol,data_shape,etendue,update_plot_inhibit,flag_radial_profile,efit_reconstruction,inversion_R,inversion_Z,dr,dz,fueling_point_location_on_foil,structure_point_location_on_foil,core_tangential_location_on_foil,core_poloidal_location_on_foil,divertor_poloidal_location_on_foil
 	flag_radial_profile = False
 	update_plot_inhibit = True
 	print(param_ext1['File Path'])
@@ -872,8 +900,9 @@ def Load():
 	data_shape = np.shape(data)
 	temp = cp.deepcopy(data[0])
 	temp[np.isnan(temp)]=0
+	temp[np.isinf(temp)]=0
 	image1.setImage(temp)
-	isoLine.setValue(np.mean(data[0]))
+	isoLine.setValue(np.nanmean(data[0]))
 	if flag_radial_profile:
 		image1.setRect(QtCore.QRectF(inversion_R.min()-dr/2,inversion_Z.min()-dz/2,len(inversion_R)*dr,len(inversion_Z)*dz))
 		image1.setBorder('b')
@@ -897,8 +926,10 @@ def Load():
 	w2.slider.setMinimum(w2.minimum)
 	w2.slider.setMaximum(w2.maximum)
 	param_ext['ROI', 'Histogram auto'] = True
-	param_ext.children()[0].children()[8].setProperty('step',np.min(np.diff(np.sort(data.flatten()))))
-	param_ext.children()[0].children()[9].setProperty('step',np.min(np.diff(np.sort(data.flatten()))))
+	# param_ext.children()[0].children()[8].setProperty('step',np.min(np.diff(np.sort(data.flatten()))))
+	# param_ext.children()[0].children()[9].setProperty('step',np.min(np.diff(np.sort(data.flatten()))))
+	param_ext.children()[0].children()[8].setProperty('step',np.nanmedian(np.diff(np.unique(data[np.isfinite(data)]))))	# this should work better with positive, negative and nan values
+	param_ext.children()[0].children()[9].setProperty('step',np.nanmedian(np.diff(np.unique(data[np.isfinite(data)]))))	# this should work better with positive, negative and nan values
 	try:
 		try:
 			for i in range(len(overlay_fueling_point)):
@@ -1006,9 +1037,12 @@ def initialise_plots_from_EFIT():
 	global overlay_x_point,overlay_mag_axis,overlay_strike_points_1,overlay_strike_points_2,overlay_strike_points_2,overlay_separatrix,all_time_strike_points_location_rot,all_time_separatrix,flag_radial_profile,all_time_sep_r,all_time_sep_z,r_fine,z_fine
 	try:
 		if flag_radial_profile:
-			overlay_x_point = p5.plot([0],[0],symbolBrush='r',symbolPen='r',symbol='x',symbolSize=20,pen=None)
-			overlay_mag_axis = p5.plot([0],[0],symbolBrush='r',symbolPen='r',symbol='x',symbolSize=20,pen=None)
-			overlay_strike_points_2 = p5.plot([],[],symbolBrush='y',symbolPen='y',symbol='x',symbolSize=20,pen=None)
+			# overlay_x_point = p5.plot([0],[0],symbolBrush='r',symbolPen='r',symbol='x',symbolSize=20,pen=None)
+			# overlay_mag_axis = p5.plot([0],[0],symbolBrush='r',symbolPen='r',symbol='x',symbolSize=20,pen=None)
+			# overlay_strike_points_2 = p5.plot([],[],symbolBrush='y',symbolPen='y',symbol='x',symbolSize=20,pen=None)
+			overlay_x_point = p5.plot([0],[0],symbolPen=red_thin_pen,symbol=thin_cross,symbolSize=10,pen=None)
+			overlay_mag_axis = p5.plot([0],[0],symbolPen=red_thin_pen,symbol=thin_cross,symbolSize=10,pen=None)
+			overlay_strike_points_2 = p5.plot([],[],symbolPen=yellow_thin_pen,symbol=thin_cross,symbolSize=10,pen=None)
 			overlay_separatrix = []
 			for __i in range(len(all_time_sep_r[0])):
 				overlay_separatrix.append(p5.plot([0],[0],pen='b'))
@@ -1021,7 +1055,8 @@ def initialise_plots_from_EFIT():
 			overlay_separatrix = []
 			for __i in range(len(all_time_separatrix[0])):
 				overlay_separatrix.append(p5.plot([0],[0],pen='b'))
-		overlay_strike_points_1 = p5.plot([0],[0],symbolBrush='y',symbolPen='y',symbol='x',symbolSize=20,pen=None)
+		# overlay_strike_points_1 = p5.plot([0],[0],symbolBrush='y',symbolPen='y',symbol='x',symbolSize=20,pen=None)
+		overlay_strike_points_1 = p5.plot([0],[0],symbolPen=yellow_thin_pen,symbol=thin_cross,symbolSize=10,pen=None)
 	except:
 		print('no EFIT loaded at initialise_plots_from_EFIT')
 
@@ -1055,6 +1090,7 @@ param_ext1.param('Navigate Path').sigActivated.connect(NavigatePath)
 param_ext1.param('File Path').sigValueChanged.connect(reset_EFIT)
 param_ext.param('Set display','Load data').sigActivated.connect(Load)
 param_ext.param('Set display','Load EFIT').sigActivated.connect(Load_EFIT)
+param_ext1.param('Shot number').sigValueChanged.connect(reload_geometry)
 param_ext.param('Set display','Shot +').sigActivated.connect(Select_next_pulse)
 param_ext.param('Set display','Shot -').sigActivated.connect(Select_previous_pulse)
 param_ext1.param('Shot number').sigValueChanged.connect(Select_specific_pulse)
@@ -1070,10 +1106,12 @@ def update_plot():
 			update_hist_inhibit = True
 			temp = cp.deepcopy(data[round(a)])
 			temp[np.isnan(temp)]=0
+			temp[np.isinf(temp)]=0
 			image1.setImage(temp)
 			# image1.setImage(data[round(a)])
+			temp1, temp2 = histogram_level_low,histogram_level_high
 			hist.setImageItem(image1)
-			hist.setLevels(histogram_level_high,histogram_level_low)
+			hist.setLevels(temp1, temp2)
 		# self.image2.setImage(data[round(a)])
 		iso.setLevel(isoLine.value())
 		iso.setData(pg.gaussianFilter(image1.image, (2, 2)))
@@ -1104,13 +1142,14 @@ def update_plot():
 			param_ext['ROI', 'ROI cyan d ver'] = size2[1]
 			param_ext['ROI', 'Time start [ms]'] = time_array[int(w2.left)]*1e3
 			param_ext['ROI', 'Time end [ms]'] = time_array[int(w2.right)]*1e3
-			p3.plot(np.arange(pos[0],pos[0]+size[0]),np.nanmean(selected,axis=1), clear=True)
-			p1.plot(np.nanmean(selected,axis=0),np.arange(pos[1],pos[1]+size[1]), clear=True)
+			p3.plot(np.linspace(pos[0],pos[0]+size[0],num=len(np.nanmean(selected,axis=1))),np.nanmean(selected,axis=1), clear=True)
+			p1.plot(np.nanmean(selected,axis=0),np.linspace(pos[1],pos[1]+size[1],num=len(np.nanmean(selected,axis=0))), clear=True)
 			temp = np.nanmean(data[int(w2.left):int(w2.right),max(0,pos[0]):pos[0]+size[0],max(0,pos[1]):pos[1]+size[1]].astype(float),axis=(1,2))
 			# temp = np.nanmean(data[int(w2.left):int(w2.right),np.array([indexes_horiz_axis,indexes_vert_axis]).tolist()],axis=(1,2))
 			# p6.plot(time_array[int(w2.left):int(w2.right)],temp, clear=True)
 			# p6.plot([time_array[round(a)]]*2,[np.nanmin(temp),np.nanmax(temp)], pen='g')
-			p6_time_mark.setData([time_array[round(a)]]*2,[np.nanmin(temp),np.nanmax(temp)])
+			# p6_time_mark.setData([time_array[round(a)]]*2,[np.nanmin(temp),np.nanmax(temp)])
+			p6_time_mark.setX(time_array[round(a)])
 			temp = np.nanmean(data[int(w2.left):int(w2.right),max(0,pos[0]):pos[0]+size[0],max(0,pos[1]):pos[1]+size[1]].astype(float),axis=(1,2))
 			p6_1.setData(time_array[int(w2.left):int(w2.right)],temp)
 			temp = np.nanmean(data[int(w2.left):int(w2.right),max(0,pos2[0]):pos2[0]+size2[0],max(0,pos2[1]):pos2[1]+size2[1]].astype(float),axis=(1,2))
@@ -1133,18 +1172,20 @@ def update_plot():
 	limit_top = np.abs(param_ext['Set display','Export up'] - full_range_ver).argmin()
 	image_frame_export.setData([full_range_hor[limit_left],full_range_hor[limit_right],full_range_hor[limit_right],full_range_hor[limit_left],full_range_hor[limit_left]],[full_range_ver[limit_bottom],full_range_ver[limit_bottom],full_range_ver[limit_top],full_range_ver[limit_top],full_range_ver[limit_bottom]])
 
-
 update_plot()
 
 def update_hist():
 	global histogram_level_low, histogram_level_high,update_hist_inhibit
 	if update_hist_inhibit==False:
-		histogram_level_low,histogram_level_high = hist.getLevels()
+		temp1, temp2 = hist.getLevels()
+		if temp1!=temp2:
+			histogram_level_low,histogram_level_high = temp1, temp2
 	update_hist_inhibit=False
 	if param_ext['ROI', 'Histogram auto'] == True:
-		histogram_level_high = np.max(image1.image)
-		histogram_level_low = np.min(image1.image)
-	hist.setLevels(histogram_level_high,histogram_level_low)
+		histogram_level_high = np.nanmax(image1.image)
+		histogram_level_low = np.nanmin(image1.image)
+	hist.setLevels(histogram_level_low,histogram_level_high)
+	hist.setHistogramRange(np.nanmin(image1.image),np.nanmax(image1.image))
 	param_ext['ROI', 'Hist lev high'] = histogram_level_high
 	param_ext['ROI', 'Hist lev low'] = histogram_level_low
 
@@ -1281,7 +1322,7 @@ if False:	# plots required for the paper/thesis, shot 45473
 	ax[3,0].grid()
 	ax[4,0].grid()
 	ax[4,0].set_xlabel('time [s]')
-	plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/45473_for_paper.png', bbox_inches='tight')
+	plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/45473_for_paper.png')#, bbox_inches='tight')
 	plt.close()
 
 	data_dir = '/home/ffederic/work/Collaboratory/test/experimental_data/45473/C001H001S0001/'
@@ -1303,7 +1344,7 @@ if False:	# plots required for the paper/thesis, shot 45473
 	plt.colorbar(im,fraction=0.0467, pad=0.04).set_label('counts [au]')
 	plt.title('shot 45295\n %.3g ms' %(times[time]*1e3))
 	# plt.pause(0.01)
-	plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/45473_for_paper.png', bbox_inches='tight')
+	plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/45473_for_paper.png')#, bbox_inches='tight')
 	plt.close()
 
 
@@ -1427,7 +1468,7 @@ elif False:	# plots required for the paper/thesis, shot 45401
 	ax[3,0].grid()
 	ax[4,0].grid()
 	ax[4,0].set_xlabel('time [s]')
-	plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/45401_for_paper.png', bbox_inches='tight')
+	plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/45401_for_paper.png')#, bbox_inches='tight')
 	plt.close()
 
 	data_dir = '/home/ffederic/work/Collaboratory/test/experimental_data/45473/C001H001S0001/'
@@ -1445,7 +1486,7 @@ elif False:	# plots required for the paper/thesis, shot 45401
 	plt.colorbar(im,fraction=0.0467, pad=0.04).set_label('counts [au]')
 	plt.title('shot 45401\n %.3g ms' %(times[time]*1e3))
 	# plt.pause(0.01)
-	plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/45473_for_paper_%.3gms.png' %(int(times[time]*1e3)), bbox_inches='tight')
+	plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/45473_for_paper_%.3gms.png' %(int(times[time]*1e3)))#, bbox_inches='tight')
 	plt.close()
 
 
@@ -1476,7 +1517,7 @@ elif False:	# plots required for the paper/thesis, shot 45295
 	plt.colorbar(im,fraction=0.0467, pad=0.04).set_label('counts [au]')
 	plt.title('shot 45295\n %.3g ms' %(times[time]*1e3))
 	# plt.pause(0.01)
-	plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/45295_for_paper.png', bbox_inches='tight')
+	plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/45295_for_paper.png')#, bbox_inches='tight')
 	plt.close()
 
 
@@ -1518,7 +1559,7 @@ elif False:	# plots required for the paper/thesis, shot 45295
 	# plt.semilogy()
 	plt.legend(loc='best',fontsize='x-small')
 	# plt.pause(0.01)
-	plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/45295_for_paper2.png', bbox_inches='tight')
+	plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/45295_for_paper2.png')#, bbox_inches='tight')
 	plt.close()
 
 	# ROI used for inversions and with beams
@@ -1528,3 +1569,176 @@ elif False:	# plots required for the paper/thesis, shot 45295
 
 	# ROI_beams = np.array([[0.,0.32],[0.42,1]])
 	# extra_overlays = [dict([('edges_horiz',[0.03*61,0.03*61,0.68*61,0.68*61,0.82*61,0.82*61,0.03*61]),('edges_vert',[0.03*78,0.91*78,0.91*78,0.90*78,0.90*78,0.03*78,0.03*78,]),('linestyle','--C2'),('alpha',1),('linewidth',4)]),dict([('edges_horiz',[0*61,0*61,0.32*61,0.32*61,0*61]),('edges_vert',[0.42*78,0.99*78,0.99*78,0.42*78,0.42*78]),('linestyle','--C3'),('alpha',1),('linewidth',4)])]
+
+
+elif False:	# section to find the orientation of IRVB in MU02/3/4
+
+	origin_HM04A = np.array([2.105,-0.372,-0.002])	# m
+	# direction_HM04A = np.array([-0.890,0.409,-0.204])	# m
+	target_HM04A = np.array([-1.524,1.295,-0.833])	# m
+	direction_HM04A = target_HM04A-origin_HM04A
+	fit_uncertainty_HM04A = 12.7	# pixels
+
+	origin_HM03D = np.array([2.166,0.370,-0.001])	# m
+	# direction_HM03D = np.array([-0.954,0.208,-0.214])	# m
+	target_HM03D = np.array([-1.605,1.193,-0.846])	# m
+	direction_HM03D = target_HM03D-origin_HM03D
+	fit_uncertainty_HM03D = 4.8	# pixels
+
+	origin_HM07C = np.array([-0.541,-2.118,0.200])	# m
+	# direction_HM07C = np.array([-0.149,0.950,-0.273])	# m
+	target_HM07C = np.array([-1.137,1.670,-0.889])	# m
+	direction_HM07C = target_HM07C-origin_HM07C
+	fit_uncertainty_HM07C = 4.7	# pixels
+
+	origin_HM08A = np.array([-1.274,-1.150,0.001])	# m
+	# direction_HM08A = np.array([0.099,0.947,-0.306])	# m
+	target_HM08A = np.array([-0.972,1.748,-0.935])	# m
+	direction_HM08A = target_HM08A-origin_HM08A
+	fit_uncertainty_HM08A = 6.5	# pixels
+
+	origin_HM08B = np.array([-1.080,-1.325,0.061])	# m
+	# direction_HM08B = np.array([0.015,0.951,-0.308])	# m
+	target_HM08B = np.array([-1.031,1.679,-0.913])	# m
+	direction_HM08B = target_HM08B-origin_HM08B
+	fit_uncertainty_HM08B = 5.4	# pixels
+
+	ax = plt.figure().add_subplot(projection='3d')
+	ax.plot([origin_HM04A[0],origin_HM04A[0]+direction_HM04A[0]],[origin_HM04A[1],origin_HM04A[1]+direction_HM04A[1]],[origin_HM04A[2],origin_HM04A[2]+direction_HM04A[2]])
+	ax.plot([origin_HM03D[0],origin_HM03D[0]+direction_HM03D[0]],[origin_HM03D[1],origin_HM03D[1]+direction_HM03D[1]],[origin_HM03D[2],origin_HM03D[2]+direction_HM03D[2]])
+	ax.plot([origin_HM07C[0],origin_HM07C[0]+direction_HM07C[0]],[origin_HM07C[1],origin_HM07C[1]+direction_HM07C[1]],[origin_HM07C[2],origin_HM07C[2]+direction_HM07C[2]])
+	ax.plot([origin_HM08A[0],origin_HM08A[0]+direction_HM08A[0]],[origin_HM08A[1],origin_HM08A[1]+direction_HM08A[1]],[origin_HM08A[2],origin_HM08A[2]+direction_HM08A[2]])
+	ax.plot([origin_HM08B[0],origin_HM08B[0]+direction_HM08B[0]],[origin_HM08B[1],origin_HM08B[1]+direction_HM08B[1]],[origin_HM08B[2],origin_HM08B[2]+direction_HM08B[2]])
+	ax.plot(coleval.locate_pinhole()[0],coleval.locate_pinhole()[1],coleval.locate_pinhole()[2],'o')
+
+	# Define the lines in terms of their origin, direction, and uncertainty
+	lines = [
+	{"origin": origin_HM04A, "direction": direction_HM04A, "uncertainty": fit_uncertainty_HM04A},
+	{"origin": origin_HM03D, "direction": direction_HM03D, "uncertainty": fit_uncertainty_HM03D},
+	{"origin": origin_HM07C, "direction": direction_HM07C, "uncertainty": fit_uncertainty_HM07C},
+	{"origin": origin_HM08A, "direction": direction_HM08A, "uncertainty": fit_uncertainty_HM08A},
+	{"origin": origin_HM08B, "direction": direction_HM08B, "uncertainty": fit_uncertainty_HM08B}
+	]
+
+
+	def calculate_error_lines(gna,point_0,point_1,point_2):
+		point = np.array([point_0,point_1,point_2])
+		vector_to_point_HM04A = point - origin_HM04A
+		orthogonal_component_HM04A = np.dot(vector_to_point_HM04A, direction_HM04A) / np.dot(direction_HM04A, direction_HM04A) * direction_HM04A
+		distance_HM04A = np.linalg.norm(vector_to_point_HM04A - orthogonal_component_HM04A)
+		vector_to_point_HM03D = point - origin_HM03D
+		orthogonal_component_HM03D = np.dot(vector_to_point_HM03D, direction_HM03D) / np.dot(direction_HM03D, direction_HM03D) * direction_HM03D
+		distance_HM03D = np.linalg.norm(vector_to_point_HM03D - orthogonal_component_HM03D)
+		vector_to_point_HM07C = point - origin_HM07C
+		orthogonal_component_HM07C = np.dot(vector_to_point_HM07C, direction_HM07C) / np.dot(direction_HM07C, direction_HM07C) * direction_HM07C
+		distance_HM07C = np.linalg.norm(vector_to_point_HM07C - orthogonal_component_HM07C)
+		vector_to_point_HM08A = point - origin_HM08A
+		orthogonal_component_HM08A = np.dot(vector_to_point_HM08A, direction_HM08A) / np.dot(direction_HM08A, direction_HM08A) * direction_HM08A
+		distance_HM08A = np.linalg.norm(vector_to_point_HM08A - orthogonal_component_HM08A)
+		vector_to_point_HM08B = point - origin_HM08B
+		orthogonal_component_HM08B = np.dot(vector_to_point_HM08B, direction_HM08B) / np.dot(direction_HM08B, direction_HM08B) * direction_HM08B
+		distance_HM08B = np.linalg.norm(vector_to_point_HM08B - orthogonal_component_HM08B)
+		distance = distance_HM04A/fit_uncertainty_HM04A + distance_HM03D/fit_uncertainty_HM03D + distance_HM07C/fit_uncertainty_HM07C + distance_HM08A/fit_uncertainty_HM08A + distance_HM08B/fit_uncertainty_HM08B
+		# print(distance)
+		return distance
+
+	bds = [[coleval.locate_pinhole()[0]-0.2,coleval.locate_pinhole()[1]-0.2,coleval.locate_pinhole()[2]-0.2],[coleval.locate_pinhole()[0]+0.2,coleval.locate_pinhole()[1]+0.2,coleval.locate_pinhole()[2]+0.2]]
+	found_point = curve_fit(calculate_error_lines,[0,0,0,0,0],[0,0,0,0,0],p0=coleval.locate_pinhole(),bounds=bds,ftol=1e-12)[0]
+	ax.plot(found_point[0],found_point[1],found_point[2],'+')
+	found_point-coleval.locate_pinhole()
+
+
+	flange_location = np.array([[-1451.46052984755,1544.4989953858,-795.127973818281],[-1445.66263688161,1550.31177880053,-789.148486275245],[-1430.18747663838,1565.87180245998,-630.295559614074],[-1434.78339642903,1561.26804243527,-622.483810832221],[-1527.59526499331,1468.2591265621,-587.351682983045],[-1534.30001951375,1461.53816453532,-591.061454533504],[-1568.1921106691,1427.51401088464,-768.590696880916],[-1563.91726826618,1431.79586049244,-776.760250709844],[-1451.46052984755,1544.4989953858,-795.127973818281],[-1451.46052984755,1544.4989953858,-795.1279738182813]])/1000
+	ax.plot(flange_location[:,0],flange_location[:,1],flange_location[:,2],'+')
+
+	def calculate_error_circle(x,point_0,point_1,point_2,dir_0,dir_1,dir_2,radius):
+		center = np.array([point_0,point_1,point_2])
+		normal_vector = np.array([dir_0,dir_1,dir_2])
+		normal_vector /= np.linalg.norm(normal_vector)
+		distance = 0
+		for point in flange_location:
+			# Step 2: Find the vector from the center of the circle to the external point
+			vector_to_external = point - center
+
+			# Step 3: Project the vector onto the plane of the circle
+			projected_vector = vector_to_external - np.dot(vector_to_external, normal_vector) * normal_vector
+
+			# Step 4: Compute the point on the circle's circumference closest to the external point
+			closest_point_on_circle = center + (projected_vector / np.linalg.norm(projected_vector)) * radius
+
+			# Step 5: Calculate the distance between the closest point and the external point
+			distance += np.linalg.norm(closest_point_on_circle - point)
+			# print(np.linalg.norm(closest_point_on_circle - point))
+		return distance
+
+	bds = [[-np.inf,-np.inf,-np.inf,-1,-1,-1,-np.inf],[np.inf,np.inf,np.inf,1,1,1,np.inf]]
+	gna = curve_fit(calculate_error_circle,[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],p0=(np.mean(flange_location,axis=0)[0],np.mean(flange_location,axis=0)[1],np.mean(flange_location,axis=0)[2],1,-1,0,0.1),maxfev=100000,bounds=bds,xtol=1e-15)[0]
+	gna = np.array([-1.50043085e+00,  1.49546247e+00, -6.99230699e-01,  9.99998644e-01,-9.99033623e-01, -1.96367575e-04,  1.18317306e-01])
+
+	# how to plot a circle
+	center = cp.deepcopy(gna[:3])
+	direction = cp.deepcopy(gna[3:6])
+	direction /= np.linalg.norm(direction)
+	radius = cp.deepcopy(gna[-1])
+
+
+	num_points=100
+	theta = np.linspace(0, 2*np.pi, num_points)
+	circle_2d = np.array([radius * np.cos(theta), radius * np.sin(theta)])
+
+	# Add a dimension to circle_2d to make it compatible with matrix multiplication
+	circle_2d = np.vstack((circle_2d, np.zeros(num_points)))
+
+	# Define rotation matrix to rotate points into 3D space
+	# First, find any vector orthogonal to the given direction vector
+	v = np.array([1, 0, 0]) if np.linalg.norm(direction - [1, 0, 0]) > 0.1 else np.array([0, 1, 0])
+	orthogonal_vec = np.cross(direction, v)
+	orthogonal_vec /= np.linalg.norm(orthogonal_vec)
+
+	# Then, find another vector orthogonal to both direction vector and orthogonal_vec
+	third_vec = np.cross(direction, orthogonal_vec)
+
+	# Create the rotation matrix
+	rotation_matrix = np.vstack((third_vec, orthogonal_vec, direction)).T
+
+	# Transform 2D circle points to 3D space
+	circle_3d = np.dot(rotation_matrix, circle_2d)
+
+	# Translate the circle to the specified center
+	circle_3d += np.array(center)[:, np.newaxis]
+
+	ax.plot(circle_3d[0],circle_3d[1],circle_3d[2])
+	ax.plot([center[0],center[0]+direction[0]*2],[center[1],center[1]+direction[1]*2],[center[2],center[2]+direction[2]*2])
+
+	centre_of_IRVB_plate = np.array([-1.05649,1.05731,-0.69705])
+
+	stand_off_length = 0.06	# m
+	# Rf=1.54967	# m	radius of the centre of the foil
+	pinhole_to_foil_vertical = 0.01 + 0.003 + 0.002 + stand_off_length
+	foil_centre = centre_of_IRVB_plate + pinhole_to_foil_vertical*(center-centre_of_IRVB_plate)/np.linalg.norm(center-centre_of_IRVB_plate)
+
+	foil_plane_equation = np.array((centre_of_IRVB_plate-center).tolist() + [-np.sum(foil_centre*(centre_of_IRVB_plate-center))])
+
+	structure_point_location_on_foil = coleval.return_structure_point_location_on_foil(plane_equation=foil_plane_equation,centre_of_foil=foil_centre,centre_of_front_plate=coleval.point_cartesian_to_toroidal(np.array([centre_of_IRVB_plate]))[0])
+	cv0 = np.ones((240,187))
+	foil_size = [0.07,0.09]	# m
+	structure_alpha=1
+	fig = plt.figure()
+	ax = fig.add_subplot(111)
+	for i in range(len(structure_point_location_on_foil)):
+		ax.plot(np.array(structure_point_location_on_foil[i][:,0])*(np.shape(cv0)[1]-1)/foil_size[0],np.array(structure_point_location_on_foil[i][:,1])*(np.shape(cv0)[0]-1)/foil_size[1],'--k',alpha=structure_alpha)
+
+
+	Rf=1.48967 + 0.01 + 0.003 + 0.002 + stand_off_length	# m	radius of the centre of the foil
+	plane_equation = np.array([1,-1,0,2**0.5 * Rf])	# plane of the foil
+	centre_of_foil = np.array([-Rf/(2**0.5), Rf/(2**0.5), -0.7])	# x,y,z
+	structure_point_location_on_foil = coleval.return_structure_point_location_on_foil(plane_equation=plane_equation,centre_of_foil=centre_of_foil)
+	for i in range(len(structure_point_location_on_foil)):
+		ax.plot(np.array(structure_point_location_on_foil[i][:,0])*(np.shape(cv0)[1]-1)/foil_size[0],np.array(structure_point_location_on_foil[i][:,1])*(np.shape(cv0)[0]-1)/foil_size[1],'--b',alpha=structure_alpha)
+
+
+
+
+	#
+	#
+	#

@@ -18,12 +18,14 @@ fueling_t.append([74.8])
 # neighbouring points
 stucture_r=[[0.333]*80]
 stucture_z=[[-1.304]*80]
-stucture_t=[np.linspace(60,195+15,80)]
-stucture_r.append([0.539]*80)
+# stucture_t=[np.linspace(60,195+15,80)]
+stucture_t=[np.linspace(0,360,80)]
+stucture_r.append([0.535]*80)
 stucture_z.append([-1.505]*80)
-stucture_t.append(np.linspace(60,195+15,80))
-for value in np.linspace(60,195+15,11):
-	stucture_r.append([0.333,0.539])
+# stucture_t.append(np.linspace(60,195+15,80))
+stucture_t.append(np.linspace(0,360,80))
+for value in np.linspace(60-30,195+15+30,15):
+	stucture_r.append([0.333,0.535])
 	stucture_z.append([-1.304,-1.505])
 	stucture_t.append([value]*2)
 # neighbouring points tiles in the tilted section on the centre column
@@ -125,9 +127,9 @@ stucture_t.append(np.linspace(0,360,100))
 
 # silouette of the centre column
 # neighbouring points
-MASTU_silouette_z = [-1.881,-1.8,-1.719,-1.505,-1.304,-1.103,-0.853,-0.573,-0.505,-0.271,-0.147,0]
+MASTU_silouette_z = np.linspace(-1.87,-1.33,num=10).tolist()+[-1.304,-1.103,-0.853,-0.573,-0.505,-0.271,-0.147,0]
 MASTU_silouette_z = MASTU_silouette_z + (-np.flip(MASTU_silouette_z,axis=0)).tolist()
-MASTU_silouette_r = [0.906,0.828,0.747,0.539,0.333,0.333,0.305,0.270,0.2608,0.2608,0.2608,0.2608]
+MASTU_silouette_r = np.linspace(0.9,0.36,num=10).tolist()+[0.333,0.333,0.305,0.270,0.2608,0.2608,0.2608,0.2608]
 MASTU_silouette_r = MASTU_silouette_r + (np.flip(MASTU_silouette_r,axis=0)).tolist()
 from scipy.interpolate.interpolate import interp1d
 R_centre_column_interpolator = interp1d(MASTU_silouette_z+(-np.flip(MASTU_silouette_z,axis=0)).tolist(),MASTU_silouette_r+np.flip(MASTU_silouette_r,axis=0).tolist(),fill_value=np.nan,bounds_error=False)
@@ -137,10 +139,12 @@ if False:
 		stucture_z.append(MASTU_silouette_z)
 		stucture_t.append([value]*9)
 else:	# this looks at the real tangential point
-	for value in ['left','right']:
-		stucture_r.append(MASTU_silouette_r)
-		stucture_z.append(MASTU_silouette_z)
-		stucture_t.append(calculate_tangency_angle_for_poloidal_section(MASTU_silouette_r,side=value))
+	stucture_r_t_to_recalculate = []
+	stucture_z_t_to_recalculate = []
+	# for value in ['left','right']:
+	stucture_r_t_to_recalculate.append(MASTU_silouette_r)
+	stucture_z_t_to_recalculate.append(MASTU_silouette_z)
+		# stucture_t.append(calculate_tangency_angle_for_poloidal_section(MASTU_silouette_r,side=value))
 # neighbouring points	# super-x divertor tiles
 stucture_r.append([1.391]*5)
 stucture_z.append([-2.048]*5)
@@ -378,6 +382,8 @@ FULL_MASTU_CORE_GRID_POLYGON = np.array([
     (1.35, -2.06),
     (1.09, -2.06),
     (0.9, -1.87),
+    (0.36-0.18, -1.33-0.18),
+    (0.36-0.18*2, -1.33-0.18*2),
     (0.36, -1.33),
     (0.333, -1.303),
     (0.333, -1.1),
@@ -387,6 +393,8 @@ FULL_MASTU_CORE_GRID_POLYGON = np.array([
     (0.333, 1.1),
     (0.333, 1.303),
     (0.36, 1.33),
+    (0.36+0.18, 1.33+0.18),
+    (0.36+0.18*2, 1.33+0.18*2),
     (0.9, 1.87),
     (1.09, 2.06),
     (1.35, 2.06),

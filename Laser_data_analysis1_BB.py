@@ -1565,8 +1565,8 @@ def function_a(index):
 # 	pool.terminate()
 # 	del pool
 # for index in np.flip(np.arange(len(all_laser_to_analyse)),axis=0):
-# for index in np.arange(len(all_laser_to_analyse)):
-for index in [8]:
+for index in np.arange(len(all_laser_to_analyse)):
+# for index in [8]:
 	# try:
 	function_a(index)
 	# except Exception as e:

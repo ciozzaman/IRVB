@@ -32,7 +32,7 @@ exec(open("/home/ffederic/work/analysis_scripts/scripts/python_library/collect_a
 
 
 
-if True:	# related to the SOLPS phantom
+if True:	# related to the SOLPS phantom and calculating the spectra produced by the plasma in one IRVB LOS
 	# seeding scan
 	# SOLPS_case = 'seed_1'
 	# SOLPS_case = 'seed_5'
@@ -47,6 +47,19 @@ if True:	# related to the SOLPS phantom
 		sys.path.append(mastu_path)
 	ds_puff8 = xr.open_dataset(mastu_path+'/balance.nc', autoclose=True).load()
 	# ds_puff8 = xr.open_dataset('/home/ffederic/work/SOLPS/dscan/ramp_10/balance.nc', autoclose=True).load()
+
+	print(mastu_path)
+
+	# switches!
+	use_deuterium_lines = True
+	use_carbon_lines = True
+	use_nitrogen_lines = True
+	use_core = True
+	use_bremmstrahlung = True
+	enables = [use_deuterium_lines,use_carbon_lines,use_nitrogen_lines,use_core,use_bremmstrahlung]
+	enables = np.int32(enables)
+
+	print(enables)
 
 
 	if True:	# not really useful for calculating the spectra
@@ -140,15 +153,6 @@ if True:	# related to the SOLPS phantom
 	# See the Licence for the specific language governing permissions and limitations
 	# under the Licence.
 
-
-	# switches!
-	use_deuterium_lines = True
-	use_carbon_lines = True
-	use_nitrogen_lines = True
-	use_core = True
-	use_bremmstrahlung = True
-	enables = [use_deuterium_lines,use_carbon_lines,use_nitrogen_lines,use_core,use_bremmstrahlung]
-	enables = np.int32(enables)
 
 
 	import matplotlib.pyplot as plt
@@ -955,40 +959,52 @@ if True:	# related to the SOLPS phantom
 
 
 
+
 	from raysect.core.math import Point2D, Point3D, Vector3D, rotate_z, translate, rotate_basis
 	# ray = Ray(origin=Point3D(-1.15,0,-0.9),direction=Vector3D(1,0,0),min_wavelength=0.01,max_wavelength=1200,bins=1200*100)
 	# ray = Ray(origin=Point3D(-0.95,0,-1.2),direction=Vector3D(1,0,0),min_wavelength=0.01,max_wavelength=1200,bins=1200*100)
 	# ray = Ray(origin=Point3D(-0.8,0,-1.4),direction=Vector3D(1,0,0),min_wavelength=0.01,max_wavelength=1200,bins=1200*100)
 	# plt.figure()
 
-	# ray = Ray(origin=Point3D(-1.5,0,0),direction=Vector3D(1,0,0),min_wavelength=0.01,max_wavelength=1200,bins=1200*1000)
-	# type = 'midplane'
-	# spectrum = ray.trace(world)
-	# np.savez(mastu_path + '/spectra_'+'enables_'+str(enables)+'_'+type,spectrum)
-
-	# # ray = Ray(origin=Point3D(1.4918014 + (1.4918014-1.56467)*2,0,-0.7198 + (-0.7198-(-0.7-0.045-0.012))*2),direction=Vector3D(1.4918014-1.56467,0,-0.7198-(-0.7-0.045-0.012)),min_wavelength=0.01,max_wavelength=1200,bins=1200*1000)	# LOS pointing as up as it can central
-	# type = 'as_up_as_possible_MU04'
-	# ray = Ray(origin=Point3D(1.4918014 + (1.4918014-1.56467)*2,0 + (-0.0198-0.01)*2,-0.7198 + (-0.7198-(-0.7-0.045-0.012))*2),direction=Vector3D(1.4918014-1.56467,-0.0198-0.01,-0.7198-(-0.7-0.045-0.012)),min_wavelength=0.01,max_wavelength=1200,bins=1200*1000)	# LOS pointing as up as it can
-	# spectrum = ray.trace(world)
-	# np.savez(mastu_path + '/spectra_'+'enables_'+str(enables)+'_'+type,spectrum)
-
-	# # ray = Ray(origin=Point3D(1.4918014 + (1.4918014-1.56467)*2,0,-0.7198 + (-0.7198-(-0.7-0.045))*2),direction=Vector3D(1.4918014-1.56467,0,-0.7198-(-0.7-0.045)),min_wavelength=0.01,max_wavelength=1200,bins=1200*1000)	# LOS pointing as up as it can central from the new foin shame from mu04
-	# ray = Ray(origin=Point3D(1.4918014 + (1.4918014-1.56467)*2,0 + (-0.0198-0.02)*2,-0.7198 + (-0.7198-(-0.7-0.045))*2),direction=Vector3D(1.4918014-1.56467,-0.0198-0.02,-0.7198-(-0.7-0.045)),min_wavelength=0.01,max_wavelength=1200,bins=1200*1000)	# LOS pointing as up as it can from the new foin shame from mu04
-	# type = 'as_up_as_possible'
-	# spectrum = ray.trace(world)
-	# np.savez(mastu_path + '/spectra_'+'enables_'+str(enables)+'_'+type,spectrum)
-
-	# # ray = Ray(origin=Point3D(1.4918014 + (1.4918014-1.56467)*5,0,-0.7198 + (-0.7198-(-0.7+0.045))*5),direction=Vector3D(1.4918014-1.56467,0,-0.7198-(-0.7+0.045)),min_wavelength=0.01,max_wavelength=1200,bins=1200*1000)	# LOS pointing as low as it can central
-	# ray = Ray(origin=Point3D(1.4918014 + (1.4918014-1.56467)*5,0 + (-0.0198-0.017)*5,-0.7198 + (-0.7198-(-0.7+0.03))*5),direction=Vector3D(1.4918014-1.56467,-0.0198-0.017,-0.7198-(-0.7+0.03)),min_wavelength=0.01,max_wavelength=1200,bins=1200*1000)	# LOS pointing in the SXD
-	# type = 'as_low_as_possible'
-	# spectrum = ray.trace(world)
-	# np.savez(mastu_path + '/spectra_'+'enables_'+str(enables)+'_'+type,spectrum)
-
-	# ray = Ray(origin=Point3D(1.4918014 + (1.4918014-1.56467)*5,0,-0.7198 + (-0.7198-(-0.7+0.015))*4),direction=Vector3D(1.4918014-1.56467,0,-0.7198-(-0.7+0.015)),min_wavelength=0.01,max_wavelength=1200,bins=1200*1000)	# LOS pointing at x-point central
-	ray = Ray(origin=Point3D(1.4918014 + (1.4918014-1.56467)*4,0 + (-0.0198-0.009)*4,-0.7198 + (-0.7198-(-0.7+0.007))*4),direction=Vector3D(1.4918014-1.56467,-0.0198-0.009,-0.7198-(-0.7+0.007)),min_wavelength=0.01,max_wavelength=1200,bins=1200*1000)	# LOS pointing at x-point
-	type = 'x_point'
-	spectrum = ray.trace(world)
-	np.savez(mastu_path + '/spectra_'+'enables_'+str(enables)+'_'+type,spectrum)
+	if False:
+		point_midplane = Point3D(-1.5,0,0)
+		direction_midplane = Vector3D(1,0,0)*0.1
+		type = 'midplane'
+		ray = Ray(origin=point_midplane,direction=direction_midplane,min_wavelength=0.01,max_wavelength=1200,bins=1200*1000)
+		spectrum = ray.trace(world)	# samples of spectral radiance: W/m2/str/nm
+		np.savez(mastu_path + '/spectra_'+'enables_'+str(enables)+'_'+type,spectrum)
+	elif False:
+		point_as_up_as_possible_MU04 = Point3D(1.4918014 + (1.4918014-1.56467)*2,0,-0.7198 + (-0.7198-(-0.7-0.045-0.012))*2)
+		direction_as_up_as_possible_MU04 = Vector3D(1.4918014-1.56467,-0.0198-0.01,-0.7198-(-0.7-0.045-0.012))
+		# ray = Ray(origin=Point3D(1.4918014 + (1.4918014-1.56467)*2,0,-0.7198 + (-0.7198-(-0.7-0.045-0.012))*2),direction=Vector3D(1.4918014-1.56467,0,-0.7198-(-0.7-0.045-0.012)),min_wavelength=0.01,max_wavelength=1200,bins=1200*1000)	# LOS pointing as up as it can central
+		type = 'as_up_as_possible_MU04'
+		ray = Ray(origin=point_as_up_as_possible_MU04,direction=direction_as_up_as_possible_MU04,min_wavelength=0.01,max_wavelength=1200,bins=1200*1000)	# LOS pointing as up as it can
+		spectrum = ray.trace(world)	# samples of spectral radiance: W/m2/str/nm
+		np.savez(mastu_path + '/spectra_'+'enables_'+str(enables)+'_'+type,spectrum)
+	elif False:
+		point_as_up_as_possible = Point3D(1.4918014 + (1.4918014-1.56467)*2,0 + (-0.0198-0.02)*2,-0.7198 + (-0.7198-(-0.7-0.045))*2)
+		direction_as_up_as_possible = Vector3D(1.4918014-1.56467,-0.0198-0.02,-0.7198-(-0.7-0.045))
+		# ray = Ray(origin=Point3D(1.4918014 + (1.4918014-1.56467)*2,0,-0.7198 + (-0.7198-(-0.7-0.045))*2),direction=Vector3D(1.4918014-1.56467,0,-0.7198-(-0.7-0.045)),min_wavelength=0.01,max_wavelength=1200,bins=1200*1000)	# LOS pointing as up as it can central from the new foin shame from mu04
+		ray = Ray(origin=point_as_up_as_possible,direction=direction_as_up_as_possible,min_wavelength=0.01,max_wavelength=1200,bins=1200*1000)	# LOS pointing as up as it can from the new foin shame from mu04
+		type = 'as_up_as_possible'
+		spectrum = ray.trace(world)	# samples of spectral radiance: W/m2/str/nm
+		np.savez(mastu_path + '/spectra_'+'enables_'+str(enables)+'_'+type,spectrum)
+	elif False:
+		point_as_low_as_possible = Point3D(1.4918014 + (1.4918014-1.56467)*5,0 + (-0.0198-0.017-0.003)*5,-0.7198 + (-0.7198-(-0.7+0.03-0.005))*5)
+		direction_as_low_as_possible = Vector3D(1.4918014-1.56467,-0.0198-0.017-0.003,-0.7198-(-0.7+0.03-0.005))
+		# # ray = Ray(origin=Point3D(1.4918014 + (1.4918014-1.56467)*5,0,-0.7198 + (-0.7198-(-0.7+0.045))*5),direction=Vector3D(1.4918014-1.56467,0,-0.7198-(-0.7+0.045)),min_wavelength=0.01,max_wavelength=1200,bins=1200*1000)	# LOS pointing as low as it can central
+		ray = Ray(origin=point_as_low_as_possible,direction=direction_as_low_as_possible,min_wavelength=0.01,max_wavelength=1200,bins=1200*1000)	# LOS pointing in the SXD
+		type = 'as_low_as_possible'
+		spectrum = ray.trace(world)	# samples of spectral radiance: W/m2/str/nm
+		np.savez(mastu_path + '/spectra_'+'enables_'+str(enables)+'_'+type,spectrum)
+	elif True:
+		point_x_point = Point3D(1.4918014 + (1.4918014-1.56467)*4,0 + (-0.0198-0.009)*4,-0.7198 + (-0.7198-(-0.7+0.007))*4)
+		direction_x_point = Vector3D(1.4918014-1.56467,-0.0198-0.009,-0.7198-(-0.7+0.007))
+		# ray = Ray(origin=Point3D(1.4918014 + (1.4918014-1.56467)*5,0,-0.7198 + (-0.7198-(-0.7+0.015))*4),direction=Vector3D(1.4918014-1.56467,0,-0.7198-(-0.7+0.015)),min_wavelength=0.01,max_wavelength=1200,bins=1200*1000)	# LOS pointing at x-point central
+		ray = Ray(origin=point_x_point,direction=direction_x_point,min_wavelength=0.01,max_wavelength=1200,bins=1200*1000)	# LOS pointing at x-point
+		type = 'x_point'
+		spectrum = ray.trace(world)	# samples of spectral radiance: W/m2/str/nm
+		np.savez(mastu_path + '/spectra_'+'enables_'+str(enables)+'_'+type,spectrum)
 
 		# # spectrum = ray.trace(world, keep_alive=True)
 		# # plt.plot(spectrum.wavelengths,spectrum.samples)
@@ -999,8 +1015,39 @@ if True:	# related to the SOLPS phantom
 	exit()
 
 
-	SOLPS_case = 'seed_1'
-	mastu_path = "/home/ffederic/work/SOLPS/seeding/" + SOLPS_case
+
+	if False:
+		ax = plt.figure().add_subplot(projection='3d')
+		plt.plot(point_midplane.x+np.arange(20)*direction_midplane.x,point_midplane.y+np.arange(20)*direction_midplane.y,point_midplane.z+np.arange(20)*direction_midplane.z,label='midplane')
+		plt.plot(point_as_up_as_possible_MU04.x+np.arange(20)*direction_as_up_as_possible_MU04.x,point_as_up_as_possible_MU04.y+np.arange(20)*direction_as_up_as_possible_MU04.y,point_as_up_as_possible_MU04.z+np.arange(20)*direction_as_up_as_possible_MU04.z,label='as_up_as_possible_MU04')
+		plt.plot(point_as_up_as_possible.x+np.arange(20)*direction_as_up_as_possible.x,point_as_up_as_possible.y+np.arange(20)*direction_as_up_as_possible.y,point_as_up_as_possible.z+np.arange(20)*direction_as_up_as_possible.z,label='as_up_as_possible')
+		plt.plot(point_as_low_as_possible.x+np.arange(20)*direction_as_low_as_possible.x,point_as_low_as_possible.y+np.arange(20)*direction_as_low_as_possible.y,point_as_low_as_possible.z+np.arange(20)*direction_as_low_as_possible.z,label='as_low_as_possible')
+		plt.plot(point_x_point.x+np.arange(20)*direction_x_point.x,point_x_point.y+np.arange(20)*direction_x_point.y,point_x_point.z+np.arange(20)*direction_x_point.z,label='x_point')
+		plt.plot(grid_x.values[total_radiation_density.values>0],np.zeros_like(grid_y.values)[total_radiation_density.values>0] ,grid_y.values[total_radiation_density.values>0],'.k',alpha=0.01)
+		plt.plot(-grid_x.values[total_radiation_density.values>0],np.zeros_like(grid_y.values)[total_radiation_density.values>0] ,grid_y.values[total_radiation_density.values>0],'.k',alpha=0.01)
+		plt.plot(np.zeros_like(grid_y.values)[total_radiation_density.values>0],grid_x.values[total_radiation_density.values>0],grid_y.values[total_radiation_density.values>0],'.k',alpha=0.01)
+		plt.plot(np.zeros_like(grid_y.values)[total_radiation_density.values>0],-grid_x.values[total_radiation_density.values>0],grid_y.values[total_radiation_density.values>0],'.k',alpha=0.01)
+		plt.plot(grid_x.values[total_radiation_density.values>0]/(2**0.5),grid_x.values[total_radiation_density.values>0]/(2**0.5) ,grid_y.values[total_radiation_density.values>0],'.r',alpha=0.01)
+		plt.plot(-grid_x.values[total_radiation_density.values>0]/(2**0.5),grid_x.values[total_radiation_density.values>0]/(2**0.5) ,grid_y.values[total_radiation_density.values>0],'.r',alpha=0.01)
+		plt.plot(grid_x.values[total_radiation_density.values>0]/(2**0.5),-grid_x.values[total_radiation_density.values>0]/(2**0.5) ,grid_y.values[total_radiation_density.values>0],'.r',alpha=0.01)
+		plt.plot(-grid_x.values[total_radiation_density.values>0]/(2**0.5),-grid_x.values[total_radiation_density.values>0]/(2**0.5) ,grid_y.values[total_radiation_density.values>0],'.r',alpha=0.01)
+		plt.plot(FULL_MASTU_CORE_GRID_POLYGON[:, 0], FULL_MASTU_CORE_GRID_POLYGON[:, 0]*0, FULL_MASTU_CORE_GRID_POLYGON[:, 1], '-k')
+		plt.plot(FULL_MASTU_CORE_GRID_POLYGON[:, 0]*0, FULL_MASTU_CORE_GRID_POLYGON[:, 0], FULL_MASTU_CORE_GRID_POLYGON[:, 1], '-k')
+		plt.plot(-FULL_MASTU_CORE_GRID_POLYGON[:, 0], FULL_MASTU_CORE_GRID_POLYGON[:, 0]*0, FULL_MASTU_CORE_GRID_POLYGON[:, 1], '-k')
+		plt.plot(FULL_MASTU_CORE_GRID_POLYGON[:, 0]*0, -FULL_MASTU_CORE_GRID_POLYGON[:, 0], FULL_MASTU_CORE_GRID_POLYGON[:, 1], '-k')
+		plt.plot(FULL_MASTU_CORE_GRID_POLYGON[:, 0]/(2**0.5), FULL_MASTU_CORE_GRID_POLYGON[:, 0]/(2**0.5), FULL_MASTU_CORE_GRID_POLYGON[:, 1], '-r')
+		plt.plot(-FULL_MASTU_CORE_GRID_POLYGON[:, 0]/(2**0.5), FULL_MASTU_CORE_GRID_POLYGON[:, 0]/(2**0.5), FULL_MASTU_CORE_GRID_POLYGON[:, 1], '-r')
+		plt.plot(FULL_MASTU_CORE_GRID_POLYGON[:, 0]/(2**0.5), -FULL_MASTU_CORE_GRID_POLYGON[:, 0]/(2**0.5), FULL_MASTU_CORE_GRID_POLYGON[:, 1], '-r')
+		plt.plot(-FULL_MASTU_CORE_GRID_POLYGON[:, 0]/(2**0.5), -FULL_MASTU_CORE_GRID_POLYGON[:, 0]/(2**0.5), FULL_MASTU_CORE_GRID_POLYGON[:, 1], '-r')
+
+		ax.set_xlabel('x')
+		ax.set_ylabel('y')
+		ax.set_zlabel('z')
+
+
+
+	# SOLPS_case = 'seed_1'
+	# mastu_path = "/home/ffederic/work/SOLPS/seeding/" + SOLPS_case
 
 	# SOLPS_case = 'ramp_11'
 	# mastu_path = "/home/ffederic/work/SOLPS/dscan/" + SOLPS_case
@@ -1014,19 +1061,22 @@ if True:	# related to the SOLPS phantom
 	enables = np.int32(enables)
 
 
-	for SOLPS_case in ['seed_1','seed_5','seed_10']:
-		mastu_path = "/home/ffederic/work/SOLPS/seeding/" + SOLPS_case
+	integrated_power = []
 
-	# for SOLPS_case in ['ramp_1','ramp_3.3','ramp_11']:
-	# 	mastu_path = "/home/ffederic/work/SOLPS/dscan/" + SOLPS_case
+	# for i_SOLPS_case,SOLPS_case in enumerate(['seed_1','seed_5','seed_10']):
+	# 	mastu_path = "/home/ffederic/work/SOLPS/seeding/" + SOLPS_case
 
-		types = ['midplane','as_up_as_possible','as_up_as_possible_MU04','as_low_as_possible','x_point']
+	for i_SOLPS_case,SOLPS_case in enumerate(['ramp_1','ramp_3.3','ramp_11']):
+		mastu_path = "/home/ffederic/work/SOLPS/dscan/" + SOLPS_case
+
+		# types = ['midplane','as_up_as_possible','as_up_as_possible_MU04','as_low_as_possible','x_point']
+		types = ['as_up_as_possible_MU04','x_point']	# in reality these are the only one that matter and are usefull
 		all_spectra = []
 		for i in range(len(types)):
 			try:
 				gna = np.load(mastu_path + '/spectra_'+'enables_'+str(enables)+'_'+types[i]+'.npz')
 				gna.allow_pickle=True
-				spectrum = gna['arr_0'].all()
+				spectrum = gna['arr_0'].all()	# samples of spectral radiance: W/m2/str/nm
 				all_spectra.append(spectrum)
 			except:
 				all_spectra.append([])
@@ -1034,14 +1084,20 @@ if True:	# related to the SOLPS phantom
 
 
 
-		if False:
-			plt.figure()
+		if True:
+			plt.figure(2)
 			plt.title('Spectra '+mastu_path[20:]+'\n enables '+str(enables))
 			# plt.plot(spectrum.wavelengths,spectrum.samples)
+			vmin = np.inf
 			for i in range(len(all_spectra)):
 				try:
 					dwave = np.median(np.diff(all_spectra[i].wavelengths))
-					plt.plot(all_spectra[i].wavelengths,all_spectra[i].samples,'--',label=types[i])
+					plt.plot(all_spectra[i].wavelengths,all_spectra[i].samples,'--',label=types[i],color='C'+str(i+1))
+					vmin=min(vmin,all_spectra[i].samples[all_spectra[i].wavelengths.argmax()])
+					print(SOLPS_case+' enables '+str(enables)+''+types[i]+' %.3g W/m2/str' %(np.trapz(all_spectra[i].samples,all_spectra[i].wavelengths)))
+					integrated_power.append(np.trapz(all_spectra[i].samples,all_spectra[i].wavelengths))
+
+					# a=plt.plot(1239.8/all_spectra[i].wavelengths,all_spectra[i].samples,'--',label=types[i])
 					# a=plt.plot(1239.8/all_spectra[i].wavelengths,all_spectra[i].samples*dwave,'--',label=types[i])
 					# plt.plot(1239.8/all_spectra[i].wavelengths,all_spectra[i].samples*dwave,'|',color=a[0].get_color())
 					# plt.plot(1239.8/((all_spectra[i].wavelengths[1:]+all_spectra[i].wavelengths[:-1])/2),(all_spectra[i].samples[1:]+all_spectra[i].samples[:-1])/2*dwave/np.abs(np.diff(1239.8/all_spectra[i].wavelengths)),'--',label=types[i])
@@ -1049,9 +1105,12 @@ if True:	# related to the SOLPS phantom
 					pass
 			plt.ylabel('W/m2/sr/nm')
 			plt.xlabel('nm')
+			plt.grid()
 			plt.xlim(left=0,right=2)
-			# plt.semilogy()
-			# plt.legend(loc='best', fontsize='xx-small')
+			plt.ylim(bottom=vmin)
+			plt.semilogy()
+
+			plt.legend(loc='best', fontsize='xx-small')
 			# plt.grid()
 			# plt.xlabel('eV')
 			# plt.xlim(left=1,right=100000)
@@ -1105,16 +1164,31 @@ if True:	# related to the SOLPS phantom
 
 		# now I have to look for what is the absorption level for every wavelength bin
 		# foil components thicknesses
-		C_thickness = 200*1e-9	# for 1 side
+		C_thickness = 250*1e-9	# for 1 side
 		C_thickness *= 2	# total
 		Pt_thickness = 250*1e-9	# for 1 side
 		Pt_thickness *= 2	# total
 		Ti_thickness = 1000*1e-9
+		Re_thickness = 0*1e-9	# for 1 side
+		Re_thickness *= 2	# total
+		W_thickness = 0*1e-9	# for 1 side
+		W_thickness *= 2	# total
+		Os_thickness = 0*1e-9	# for 1 side
+		Os_thickness *= 2	# total
+		Ta_thickness = 50*1e-9	# for 1 side
+		Ta_thickness *= 2	# total
+		Hf_thickness = 0*1e-9	# for 1 side
+		Hf_thickness *= 2	# total
+
 
 		fraction_absorbed_photons = 1 - \
 		np.exp(-linear_coefficient_C_attenuation_interpolator(scipy.constants.c*scipy.constants.h*(scipy.constants.physical_constants['joule-electron volt relationship'][0])/(all_spectra[i_].wavelengths*1e-9))*C_thickness) * \
 		np.exp(-linear_coefficient_Pt_attenuation_interpolator(scipy.constants.c*scipy.constants.h*(scipy.constants.physical_constants['joule-electron volt relationship'][0])/(all_spectra[i_].wavelengths*1e-9))*Pt_thickness) * \
-		np.exp(-linear_coefficient_Ti_attenuation_interpolator(scipy.constants.c*scipy.constants.h*(scipy.constants.physical_constants['joule-electron volt relationship'][0])/(all_spectra[i_].wavelengths*1e-9))*Ti_thickness)
+		np.exp(-linear_coefficient_Re_attenuation_interpolator(scipy.constants.c*scipy.constants.h*(scipy.constants.physical_constants['joule-electron volt relationship'][0])/(all_spectra[i_].wavelengths*1e-9))*Re_thickness) * \
+		np.exp(-linear_coefficient_W_attenuation_interpolator(scipy.constants.c*scipy.constants.h*(scipy.constants.physical_constants['joule-electron volt relationship'][0])/(all_spectra[i_].wavelengths*1e-9))*W_thickness) * \
+		np.exp(-linear_coefficient_Os_attenuation_interpolator(scipy.constants.c*scipy.constants.h*(scipy.constants.physical_constants['joule-electron volt relationship'][0])/(all_spectra[i_].wavelengths*1e-9))*Os_thickness) * \
+		np.exp(-linear_coefficient_Ti_attenuation_interpolator(scipy.constants.c*scipy.constants.h*(scipy.constants.physical_constants['joule-electron volt relationship'][0])/(all_spectra[i_].wavelengths*1e-9))*Ti_thickness) * \
+		np.exp(-linear_coefficient_Ta_attenuation_interpolator(scipy.constants.c*scipy.constants.h*(scipy.constants.physical_constants['joule-electron volt relationship'][0])/(all_spectra[i_].wavelengths*1e-9))*Ta_thickness)
 
 		if False:
 			plt.figure()
@@ -1125,44 +1199,57 @@ if True:	# related to the SOLPS phantom
 			# plt.xlim(left=1,right=100000)
 			# plt.plot(scipy.constants.c*scipy.constants.h*(scipy.constants.physical_constants['joule-electron volt relationship'][0])/(all_spectra[i_].wavelengths*1e-9),fraction_absorbed_photons)
 			# plt.plot(scipy.constants.c*scipy.constants.h*(scipy.constants.physical_constants['joule-electron volt relationship'][0])/(all_spectra[i_].wavelengths*1e-9),1/linear_coefficient_Pt_attenuation_interpolator(scipy.constants.c*scipy.constants.h*(scipy.constants.physical_constants['joule-electron volt relationship'][0])/(all_spectra[i_].wavelengths*1e-9))*1e6)
-			plt.plot(all_spectra[i_].wavelengths,fraction_absorbed_photons)
+			# plt.plot(all_spectra[i_].wavelengths,fraction_absorbed_photons,label='C=%.2g Pt=%.2g Ti=%.2g Re=%.2g W=%.2g Os=%.2g Ta=%.2g P=%.3g' %(C_thickness/1000*1e9,Pt_thickness/1000*1e9,Ti_thickness/1000*1e9,Re_thickness/1000*1e9,W_thickness/1000*1e9,Os_thickness/1000*1e9,Ta_thickness/1000*1e9,np.trapz(all_spectra[0].samples*fraction_absorbed_photons,all_spectra[i_].wavelengths)/np.trapz(all_spectra[0].samples,all_spectra[i_].wavelengths)))
+			plt.plot(all_spectra[i_].wavelengths,fraction_absorbed_photons,label='C=%.2g Pt=%.2g Ti=%.2g Re=%.2g W=%.2g Os=%.2g Ta=%.2g P=%.3g' %(C_thickness/1000*1e9,Pt_thickness/1000*1e9,Ti_thickness/1000*1e9,Re_thickness/1000*1e9,W_thickness/1000*1e9,Os_thickness/1000*1e9,Ta_thickness/1000*1e9,np.trapz(power_density*fraction_absorbed_photons,all_spectra[i_].wavelengths)/np.trapz(power_density,all_spectra[i_].wavelengths)))
+			print('C=%.2g Pt=%.2g Ti=%.2g Re=%.2g W=%.2g Os=%.2g Ta=%.2g P=%.3g' %(C_thickness/1000*1e9,Pt_thickness/1000*1e9,Ti_thickness/1000*1e9,Re_thickness/1000*1e9,W_thickness/1000*1e9,Os_thickness/1000*1e9,Ta_thickness/1000*1e9,np.trapz(power_density*fraction_absorbed_photons,all_spectra[i_].wavelengths)/np.trapz(power_density,all_spectra[i_].wavelengths)))
 			plt.xlabel('nm')
 			plt.xlim(left=0,right=2)
 			plt.grid()
+			plt.legend(loc='best', fontsize='xx-small')
 			# plt.ylim(bottom=0.5,top=1.02)
 			# plt.xlim(left=10,right=30000)
 
 			plt.figure()
 			plt.title('Spectra '+mastu_path[20:]+'\n enables '+str(enables))
 			# plt.plot(spectrum.wavelengths,spectrum.samples)
+			vmin = np.inf
 			for i in range(len(all_spectra)):
 				try:
 					dwave = np.median(np.diff(all_spectra[i].wavelengths))
 					a=plt.plot(all_spectra[i].wavelengths,all_spectra[i].samples*dwave,'--',label=types[i])
 					plt.plot(all_spectra[i].wavelengths,all_spectra[i].samples*fraction_absorbed_photons*dwave,'-',color=a[0].get_color())
+					vmin=min(vmin,all_spectra[i].samples[all_spectra[i].wavelengths.argmax()])
+					# a=plt.plot(1239.8/all_spectra[i].wavelengths,all_spectra[i].samples*dwave,'--',label=types[i])
 					# plt.plot(1239.8/all_spectra[i].wavelengths,all_spectra[i].samples*dwave,'|',color=a[0].get_color())
+					# plt.plot(1239.8/all_spectra[i].wavelengths,all_spectra[i].samples*fraction_absorbed_photons*dwave,'-',color=a[0].get_color())
 					# plt.plot(1239.8/((all_spectra[i].wavelengths[1:]+all_spectra[i].wavelengths[:-1])/2),(all_spectra[i].samples[1:]+all_spectra[i].samples[:-1])/2*dwave/np.abs(np.diff(1239.8/all_spectra[i].wavelengths)),'--',label=types[i])
 				except:
 					pass
+			plt.grid()
 			plt.ylabel('W/m2/sr')
 			plt.xlabel('nm')
 			plt.xlim(left=0,right=2)
-			# plt.semilogy()
-			# plt.legend(loc='best', fontsize='xx-small')
+			plt.semilogy()
+			plt.legend(loc='best', fontsize='xx-small')
+			plt.ylim(bottom=vmin)
 			# plt.grid()
 			# plt.xlabel('eV')
 			# plt.xlim(left=1,right=100000)
 			# plt.ylabel('W/m2/sr')
 			# plt.ylim(bottom=1E-6,top=1e3)
+			# plt.semilogy()
+			# plt.xlim(right=20000)
 			# # plt.ylabel('W/m2/sr/eV')
 			# # plt.ylim(bottom=1E-3,top=1e6)
 			# plt.semilogx()
-			# plt.semilogy()
 			# plt.ylim(bottom=1E-6,top=1e5)
 			# plt.pause(0.01)
+		else:
+			pass
 
 
 		all_absorbed_power = []
+		all_emitted_power = []
 		for i_ in range(len(types)):
 			try:
 				dwave = np.median(np.diff(all_spectra[i_].wavelengths))
@@ -1170,16 +1257,68 @@ if True:	# related to the SOLPS phantom
 				# for i in range(1,len(all_spectra[i_].wavelengths)):
 				# 	absorbed_power += np.sum(all_spectra[i_].samples[i-1:i+1] * fraction_absorbed_photons[i-1:i+1])*dwave/2
 				absorbed_power = np.trapz(all_spectra[i_].samples*fraction_absorbed_photons,all_spectra[i_].wavelengths)
+				emitted_power = np.trapz(all_spectra[i_].samples,all_spectra[i_].wavelengths)
 			except:
 				absorbed_power=0
+				emitted_power=0
 			all_absorbed_power.append(absorbed_power)
+			all_emitted_power.append(emitted_power)
 		all_absorbed_power = np.array(all_absorbed_power)
+		all_emitted_power = np.array(all_emitted_power)
 
 
 		print('Spectra '+mastu_path[20:]+'\n enables '+str(enables))
 		print(['midplane','as_up_as_possible','as_up_as_possible_MU04','as_low_as_possible','x_point'])
-		print(all_absorbed_power/np.array([np.max(all_integral[i]) for i in range(len(types))]))
+		print(all_absorbed_power/all_emitted_power)
 
+
+
+	# this works reasonably well.
+	# just to make sure that i'm not doing some mistake, i just want to calculate the spectra from bremsstrahlung 0d, and see hos much it is per wavelength
+	# taking it from wikipedia		https://en.wikipedia.org/wiki/Bremsstrahlung#In_plasma
+	from scipy.special import exp1
+	wave_range = np.linspace(0.1,1200,1200000)*10**-9
+	wave_energy = scipy.constants.Planck*scipy.constants.c/wave_range*6.242e+18
+	ne = 1*10**21	# #/m3
+	Te = 1000	# eV
+	ang_freq = 2*np.pi*scipy.constants.c/wave_range
+	y = 0.5*(( scipy.constants.Planck*ang_freq/(2*np.pi*Te*1.60218e-19) )**2)
+	plasma_frequency = (ne* (scipy.constants.elementary_charge**2) / (scipy.constants.epsilon_0*scipy.constants.electron_mass))**0.5
+	zeta_i = 1	# let's see hydrogen
+	n_i = ne*zeta_i	# #/m3
+	# power_density = 8*((2**0.5)/(3*(np.pi**0.5))) * (scipy.constants.elementary_charge**2/(2*np.pi*scipy.constants.epsilon_0))**3 * (1/(scipy.constants.electron_mass* scipy.constants.c**2)**(3/2)) * (1 - (plasma_frequency / ang_freq)**2)**0.5 * zeta_i**2 * ne*n_i * exp1(y) / (Te**0.5)
+	# power_density = 8*(2**0.5)/(3*(np.pi**0.5)) * (scipy.constants.elementary_charge**2/(2*np.pi*scipy.constants.epsilon_0))**3 * 1/(scipy.constants.electron_mass* scipy.constants.c**2)**(3/2) * (1 - (plasma_frequency**2) / (ang_freq**2))**0.5 * zeta_i**2 * ne*n_i * (-np.log(y) * np.exp(0.577)) / (Te**0.5)
+	# power_density = (np.log(Te/wave_energy)) * np.exp(-wave_energy/(Te))
+	# power_density = (np.log(2* (Te/6.242E+18)**(3/2)/(ang_freq * scipy.constants.elementary_charge**2 * scipy.constants.electron_mass**0.5))) * np.exp(-wave_energy/(Te))
+	power_density = 1/(wave_range**2) * np.exp(-wave_energy/(Te))	# this is from eq 6.83 in Kunze 2009. from there it neglects the gaunt factor, that should be ~1
+
+	temp = []
+	for multiplier in np.linspace(0.1,8,20):
+		C_thickness = 250*1e-9	# for 1 side
+		C_thickness *= 2	# total
+		Pt_thickness = multiplier*100*1e-9	# for 1 side
+		Pt_thickness *= 2	# total
+		Ti_thickness = 400*1e-9
+		Re_thickness = multiplier*100*1e-9	# for 1 side
+		Re_thickness *= 2	# total
+		W_thickness = 0*1e-9	# for 1 side
+		W_thickness *= 2	# total
+		Os_thickness = 0*1e-9	# for 1 side
+		Os_thickness *= 2	# total
+
+
+		fraction_absorbed_photons = 1 - \
+		np.exp(-linear_coefficient_C_attenuation_interpolator(scipy.constants.c*scipy.constants.h*(scipy.constants.physical_constants['joule-electron volt relationship'][0])/(all_spectra[i_].wavelengths*1e-9))*C_thickness) * \
+		np.exp(-linear_coefficient_Pt_attenuation_interpolator(scipy.constants.c*scipy.constants.h*(scipy.constants.physical_constants['joule-electron volt relationship'][0])/(all_spectra[i_].wavelengths*1e-9))*Pt_thickness) * \
+		np.exp(-linear_coefficient_Re_attenuation_interpolator(scipy.constants.c*scipy.constants.h*(scipy.constants.physical_constants['joule-electron volt relationship'][0])/(all_spectra[i_].wavelengths*1e-9))*Re_thickness) * \
+		np.exp(-linear_coefficient_W_attenuation_interpolator(scipy.constants.c*scipy.constants.h*(scipy.constants.physical_constants['joule-electron volt relationship'][0])/(all_spectra[i_].wavelengths*1e-9))*W_thickness) * \
+		np.exp(-linear_coefficient_Os_attenuation_interpolator(scipy.constants.c*scipy.constants.h*(scipy.constants.physical_constants['joule-electron volt relationship'][0])/(all_spectra[i_].wavelengths*1e-9))*Os_thickness) * \
+		np.exp(-linear_coefficient_Ti_attenuation_interpolator(scipy.constants.c*scipy.constants.h*(scipy.constants.physical_constants['joule-electron volt relationship'][0])/(all_spectra[i_].wavelengths*1e-9))*Ti_thickness)
+
+		absorbed_power = np.trapz(power_density*fraction_absorbed_photons,wave_range)
+		radiated_power = np.trapz(power_density,wave_range)
+		print(absorbed_power/radiated_power)
+		temp.append(absorbed_power/radiated_power)
 
 
 	# I need to add the core

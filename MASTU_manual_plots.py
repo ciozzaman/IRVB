@@ -48,6 +48,9 @@ try:
 	x_point_tot_rad_power_sigma_all = inverted_dict[str(grid_resolution)]['x_point_tot_rad_power_sigma_all']
 	covariance_out = inverted_dict[str(grid_resolution)]['inverted_data_covariance']
 	grid_data_masked_crop = inverted_dict[str(grid_resolution)]['grid_data_masked_crop']
+
+	local_inner_leg_mean_emissivity = inverted_dict[str(grid_resolution)]['local_inner_leg_mean_emissivity']
+	local_outer_leg_mean_emissivity = inverted_dict[str(grid_resolution)]['local_outer_leg_mean_emissivity']
 	try:
 		x_point_region_radious = inverted_dict[str(grid_resolution)]['x_point_region_radious']
 	except:
@@ -61,16 +64,17 @@ try:
 	efit_reconstruction = coleval.mclass(EFIT_path_default+'/epm0'+laser_to_analyse[-9:-4]+'.nc',pulse_ID=laser_to_analyse[-9:-4])
 	inversion_R = inverted_dict[str(grid_resolution)]['geometry']['R']
 	inversion_Z = inverted_dict[str(grid_resolution)]['geometry']['Z']
+	shotnumber = int(laser_to_analyse[-9:-4])
 
 	client=pyuda.Client()
 	try:
-		ne_bar_dict=calc_ne_bar(efit_reconstruction.shotnumber, efit_data = None)
+		ne_bar_dict=calc_ne_bar(shotnumber, efit_data = None)
 		greenwald_density = np.interp(time_full_binned_crop,ne_bar_dict['t'],ne_bar_dict['greenwald_density'])
 		ne_bar = np.interp(time_full_binned_crop,ne_bar_dict['t'],ne_bar_dict['data'])	# this should be the line averaged density
 		density_data_missing = False
 		full_saved_file_dict_FAST['multi_instrument']['greenwald_density'] = greenwald_density
 		full_saved_file_dict_FAST['multi_instrument']['ne_bar'] = ne_bar
-		data = client.get('/ANE/DENSITY',efit_reconstruction.shotnumber)
+		data = client.get('/ANE/DENSITY',shotnumber)
 		# core_density = np.array([data.data[np.abs(data.time.data-time).argmin()] for time in time_full_binned_crop])
 		core_density = np.interp(time_full_binned_crop,data.time.data,data.data)	# this is core line integrated density
 		full_saved_file_dict_FAST['multi_instrument']['line_integrated_density'] = core_density
@@ -79,9 +83,37 @@ try:
 	coleval.reset_connection(client)
 	del client
 
+	filename_root = inverted_dict[str(grid_resolution)]['filename_root']
+	filename_root_add = inverted_dict[str(grid_resolution)]['filename_root_add']
 
+	if True:	# added to deal with the fact that the peak radiation is extremely volatile, and hard to track consistently
+		local_inner_leg_mean_emissivity = np.array(local_inner_leg_mean_emissivity)
+		local_inner_leg_mean_emissivity[local_inner_leg_mean_emissivity==0] = np.nan
+		temp = []
+		for i in range(len(local_inner_leg_mean_emissivity)):
+			if np.sum(np.isfinite([local_inner_leg_mean_emissivity[i]]))==0:
+				temp.append(np.nan)
+			elif not (local_inner_leg_mean_emissivity[i]<np.nanmax(local_inner_leg_mean_emissivity[i])/2)[0]:
+				temp.append(0)
+			else:
+				temp.append(((np.arange(len(local_inner_leg_mean_emissivity[i]))[(local_inner_leg_mean_emissivity[i]<np.nanmax(local_inner_leg_mean_emissivity[i])/2)])[-1]+0.5) / ((np.arange(len(local_inner_leg_mean_emissivity[i]))[np.isfinite(local_inner_leg_mean_emissivity[i])])[-1]))
+		movement_local_inner_leg_mean_emissivity = np.array(temp)
 
-	outer_local_mean_emis_all,outer_local_power_all,outer_local_L_poloidal_all,outer_leg_length_interval_all,outer_leg_length_all,outer_data_length,outer_leg_resolution,outer_emissivity_baricentre_all,outer_emissivity_peak_all,outer_L_poloidal_baricentre_all,outer_L_poloidal_peak_all,outer_L_poloidal_peak_only_leg_all,trash,dr_sep_in,dr_sep_out,outer_L_poloidal_x_point_all,outer_L_poloidal_midplane_all,outer_leg_reliable_power_all,outer_leg_reliable_power_sigma_all,x_point_tot_rad_power_all,x_point_tot_rad_power_sigma_all,sxd_tot_rad_power_all,sxd_tot_rad_power_sigma_all = coleval.baricentre_outer_separatrix_radiation(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,covariance_out,grid_data_masked_crop,x_point_region_radious=x_point_region_radious)
+		local_outer_leg_mean_emissivity = np.array(local_outer_leg_mean_emissivity)
+		local_outer_leg_mean_emissivity[local_outer_leg_mean_emissivity==0] = np.nan
+		temp = []
+		for i in range(len(local_outer_leg_mean_emissivity)):
+			if np.sum(np.isfinite([local_outer_leg_mean_emissivity[i]]))==0:
+				temp.append(np.nan)
+			elif not (local_outer_leg_mean_emissivity[i]<np.nanmax(local_outer_leg_mean_emissivity[i])/2)[0]:
+				temp.append(0)
+			else:
+				temp.append(((np.arange(len(local_outer_leg_mean_emissivity[i]))[(local_outer_leg_mean_emissivity[i]<np.nanmax(local_outer_leg_mean_emissivity[i])/2)])[-1]+0.5) / ((np.arange(len(local_outer_leg_mean_emissivity[i]))[np.isfinite(local_outer_leg_mean_emissivity[i])])[-1]))
+		movement_local_outer_leg_mean_emissivity = np.array(temp)
+		inverted_dict[str(grid_resolution)]['movement_local_inner_leg_mean_emissivity'] = movement_local_inner_leg_mean_emissivity
+		inverted_dict[str(grid_resolution)]['movement_local_outer_leg_mean_emissivity'] = movement_local_outer_leg_mean_emissivity
+
+	outer_local_mean_emis_all,outer_local_power_all,outer_local_L_poloidal_all,outer_leg_length_interval_all,outer_leg_length_all,outer_data_length,outer_leg_resolution,outer_emissivity_baricentre_all,outer_emissivity_peak_all,outer_L_poloidal_baricentre_all,outer_L_poloidal_peak_all,outer_L_poloidal_peak_only_leg_all,outer_L_poloidal_baricentre_only_leg_all,trash,dr_sep_in,dr_sep_out,outer_L_poloidal_x_point_all,outer_L_poloidal_midplane_all,outer_leg_reliable_power_all,outer_leg_reliable_power_sigma_all,DMS_equivalent_all,DMS_equivalent_sigma_all,MWI_equivalent_all,MWI_equivalent_sigma_all,x_point_tot_rad_power_all,x_point_tot_rad_power_sigma_all,sxd_tot_rad_power_all,sxd_tot_rad_power_sigma_all,outer_half_peak_L_pol_all,outer_half_peak_divertor_L_pol_all = coleval.baricentre_outer_separatrix_radiation(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,covariance_out,grid_data_masked_crop,x_point_region_radious=x_point_region_radious)
 	inverted_dict[str(grid_resolution)]['outer_local_mean_emis_all'] = outer_local_mean_emis_all
 	inverted_dict[str(grid_resolution)]['outer_local_power_all'] = outer_local_power_all
 	inverted_dict[str(grid_resolution)]['outer_local_L_poloidal_all'] = outer_local_L_poloidal_all
@@ -94,6 +126,7 @@ try:
 	inverted_dict[str(grid_resolution)]['outer_L_poloidal_baricentre_all'] = outer_L_poloidal_baricentre_all
 	inverted_dict[str(grid_resolution)]['outer_L_poloidal_peak_all'] = outer_L_poloidal_peak_all
 	inverted_dict[str(grid_resolution)]['outer_L_poloidal_peak_only_leg_all'] = outer_L_poloidal_peak_only_leg_all
+	inverted_dict[str(grid_resolution)]['outer_L_poloidal_baricentre_only_leg_all'] = outer_L_poloidal_baricentre_only_leg_all
 	inverted_dict[str(grid_resolution)]['x_point_tot_rad_power_all'] = x_point_tot_rad_power_all
 	inverted_dict[str(grid_resolution)]['x_point_tot_rad_power_sigma_all'] = x_point_tot_rad_power_sigma_all
 	full_saved_file_dict_FAST['multi_instrument']['time_full_binned_crop'] = time_full_binned_crop
@@ -103,7 +136,13 @@ try:
 	inverted_dict[str(grid_resolution)]['outer_L_poloidal_midplane_all'] = outer_L_poloidal_midplane_all
 	inverted_dict[str(grid_resolution)]['outer_leg_reliable_power_all'] = outer_leg_reliable_power_all
 	inverted_dict[str(grid_resolution)]['outer_leg_reliable_power_sigma_all'] = outer_leg_reliable_power_sigma_all
-	inner_local_mean_emis_all,inner_local_power_all,inner_local_L_poloidal_all,inner_leg_length_interval_all,inner_leg_length_all,inner_data_length,inner_leg_resolution,inner_emissivity_baricentre_all,inner_emissivity_peak_all,inner_L_poloidal_baricentre_all,inner_L_poloidal_peak_all,inner_L_poloidal_peak_only_leg_all,inner_L_poloidal_midplane_all,inner_leg_reliable_power_all,inner_leg_reliable_power_sigma_all,trash,dr_sep_in,dr_sep_out,inner_L_poloidal_x_point_all = coleval.baricentre_inner_separatrix_radiation(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,covariance_out,grid_data_masked_crop,x_point_region_radious=x_point_region_radious)
+	inverted_dict[str(grid_resolution)]['DMS_equivalent_all'] = DMS_equivalent_all
+	inverted_dict[str(grid_resolution)]['DMS_equivalent_sigma_all'] = DMS_equivalent_sigma_all
+	inverted_dict[str(grid_resolution)]['MWI_equivalent_all'] = MWI_equivalent_all
+	inverted_dict[str(grid_resolution)]['MWI_equivalent_sigma_all'] = MWI_equivalent_sigma_all
+	inverted_dict[str(grid_resolution)]['outer_half_peak_L_pol_all'] = outer_half_peak_L_pol_all
+	inverted_dict[str(grid_resolution)]['outer_half_peak_divertor_L_pol_all'] = outer_half_peak_divertor_L_pol_all
+	inner_local_mean_emis_all,inner_local_power_all,inner_local_L_poloidal_all,inner_leg_length_interval_all,inner_leg_length_all,inner_data_length,inner_leg_resolution,inner_emissivity_baricentre_all,inner_emissivity_peak_all,inner_L_poloidal_baricentre_all,inner_L_poloidal_peak_all,inner_L_poloidal_peak_only_leg_all,inner_L_poloidal_baricentre_only_leg_all,inner_L_poloidal_midplane_all,inner_leg_reliable_power_all,inner_leg_reliable_power_sigma_all,trash,dr_sep_in,dr_sep_out,inner_L_poloidal_x_point_all,inner_half_peak_L_pol_all,inner_half_peak_divertor_L_pol_all = coleval.baricentre_inner_separatrix_radiation(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,covariance_out,grid_data_masked_crop,x_point_region_radious=x_point_region_radious)
 	inverted_dict[str(grid_resolution)]['inner_local_mean_emis_all'] = inner_local_mean_emis_all
 	inverted_dict[str(grid_resolution)]['inner_local_power_all'] = inner_local_power_all
 	inverted_dict[str(grid_resolution)]['inner_local_L_poloidal_all'] = inner_local_L_poloidal_all
@@ -116,9 +155,12 @@ try:
 	inverted_dict[str(grid_resolution)]['inner_L_poloidal_baricentre_all'] = inner_L_poloidal_baricentre_all
 	inverted_dict[str(grid_resolution)]['inner_L_poloidal_peak_all'] = inner_L_poloidal_peak_all
 	inverted_dict[str(grid_resolution)]['inner_L_poloidal_peak_only_leg_all'] = inner_L_poloidal_peak_only_leg_all
+	inverted_dict[str(grid_resolution)]['inner_L_poloidal_baricentre_only_leg_all'] = inner_L_poloidal_baricentre_only_leg_all
 	inverted_dict[str(grid_resolution)]['inner_L_poloidal_midplane_all'] = inner_L_poloidal_midplane_all
 	inverted_dict[str(grid_resolution)]['inner_leg_reliable_power_all'] = inner_leg_reliable_power_all
 	inverted_dict[str(grid_resolution)]['inner_leg_reliable_power_sigma_all'] = inner_leg_reliable_power_sigma_all
+	inverted_dict[str(grid_resolution)]['inner_half_peak_L_pol_all'] = inner_half_peak_L_pol_all
+	inverted_dict[str(grid_resolution)]['inner_half_peak_divertor_L_pol_all'] = inner_half_peak_divertor_L_pol_all
 	full_saved_file_dict_FAST['multi_instrument']['time_full_binned_crop'] = time_full_binned_crop
 	# full_saved_file_dict_FAST['multi_instrument']['greenwald_density'] = greenwald_density
 	full_saved_file_dict_FAST['multi_instrument']['dr_sep_in'] = dr_sep_in
@@ -136,7 +178,7 @@ try:
 	all_lower_volume_radiation_all = inverted_data[:,:,inversion_Z<0]
 	all_lower_volume_radiation_all = np.nansum(np.nansum(all_lower_volume_radiation_all,axis=-1)*inversion_R*(np.mean(np.diff(inversion_R))**2)*2*np.pi,axis=1)
 	all_lower_volume_radiation_sigma_all = ((np.mean(grid_data_masked_crop,axis=1)[:,1]<=0)*2*np.pi*np.mean(grid_data_masked_crop,axis=1)[:,0]*(np.mean(np.diff(inversion_R))**2)).astype(np.float32)
-	all_lower_volume_radiation_sigma_all = np.nansum((np.transpose(covariance_out[:,:-2,:-2]*all_lower_volume_radiation_sigma_all,(0,2,1))*all_lower_volume_radiation_sigma_all),axis=(1,2))**0.5
+	all_lower_volume_radiation_sigma_all = np.nansum((np.transpose(covariance_out[:,:len(grid_data_masked_crop),:len(grid_data_masked_crop)]*all_lower_volume_radiation_sigma_all,(0,2,1))*all_lower_volume_radiation_sigma_all),axis=(1,2))**0.5
 	# all_lower_volume_radiation_all = real_core_radiation_all + real_non_core_radiation_all
 	# all_lower_volume_radiation_sigma_all = (real_core_radiation_sigma_all**2 + real_non_core_radiation_sigma_all**2)**0.5
 	inverted_dict[str(grid_resolution)]['all_lower_volume_radiation_all'] = all_lower_volume_radiation_all
@@ -177,7 +219,7 @@ try:
 	SL = ''
 	try:
 		for i in range(1,len(shot_list['Sheet1'])):
-			if shot_list['Sheet1'][i][temp1] == efit_reconstruction.shotnumber:
+			if shot_list['Sheet1'][i][temp1] == shotnumber:
 				scenario = shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0])=='Scenario').argmax()]
 				experiment = shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0])=='Experiment Tags').argmax()]
 				useful = shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0])=='Useful').argmax()]
@@ -201,26 +243,28 @@ try:
 	plt.errorbar(time_full_binned_crop,outer_leg_reliable_power_all/1e3,yerr=outer_leg_reliable_power_sigma_all/1e3,label='outer_leg\nno x-point\naccurate no sxd',capsize=5)
 	plt.errorbar(time_full_binned_crop,sxd_tot_rad_power_all/1e3,yerr=sxd_tot_rad_power_sigma_all/1e3,label='sxd',capsize=5)
 	plt.errorbar(time_full_binned_crop,inner_leg_reliable_power_all/1e3,yerr=inner_leg_reliable_power_sigma_all/1e3,label='inner_leg\nno x-point\naccurate',capsize=5)
-	plt.errorbar(time_full_binned_crop,real_core_radiation_all/1e3,yerr=real_core_radiation_sigma_all/1e3,label='core\naccurate',capsize=5)
+	plt.errorbar(time_full_binned_crop,real_core_radiation_all/1e3,yerr=real_core_radiation_sigma_all/1e3,label='core\naccurate\nno x-point',capsize=5)
 	plt.errorbar(time_full_binned_crop,x_point_tot_rad_power_all/1e3,yerr=x_point_tot_rad_power_sigma_all/1e3,label='x_point (dist<%.3gm)' %(x_point_region_radious),capsize=5)
 	plt.errorbar(time_full_binned_crop,all_separatrix_radiation_all/1e3,yerr=all_separatrix_radiation_sigma_all/1e3,label='tot\nwithin separatrix',capsize=5)
 	plt.errorbar(time_full_binned_crop,all_lower_volume_radiation_all/1e3,yerr=all_lower_volume_radiation_sigma_all/1e3,label='tot',capsize=5)
 	plt.errorbar(time_full_binned_crop,inner_SOL_leg_all/1e3,yerr=inner_SOL_leg_sigma_all/1e3,label='inner SOL\n+leg',capsize=5)
+	plt.errorbar(time_full_binned_crop,DMS_equivalent_all/1e3,yerr=DMS_equivalent_sigma_all/1e3,label='DMS equivalent\nLOS19 V2',capsize=5,linestyle='--')
+	plt.errorbar(time_full_binned_crop,MWI_equivalent_all/1e3,yerr=MWI_equivalent_sigma_all/1e3,label='MWI equivalent',capsize=5,linestyle=':')
 	plt.errorbar(time_full_binned_crop,inner_SOL_all/1e3,yerr=inner_SOL_sigma_all/1e3,label='inner SOL',capsize=5,linestyle='--')
 	plt.errorbar(time_full_binned_crop,outer_SOL_leg_all/1e3,yerr=outer_SOL_leg_sigma_all/1e3,label='outer SOL\n+leg\n+sxd',capsize=5,linestyle='--')
 	plt.errorbar(time_full_binned_crop,outer_SOL_all/1e3,yerr=outer_SOL_sigma_all/1e3,label='outer SOL',capsize=5,linestyle='--')
 	plt.errorbar(time_full_binned_crop,out_VV_radiation_all/1e3,yerr=out_VV_radiation_sigma_all/1e3,label='tot\nout VV',capsize=5,linestyle='--')
-	plt.errorbar(time_full_binned_crop,equivalent_res_bolo_view_all/1e3,yerr=equivalent_res_bolo_view_sigma_all/1e3,label='= res bolo',capsize=5,linestyle='--')
+	plt.errorbar(time_full_binned_crop,equivalent_res_bolo_view_all/1e3,yerr=equivalent_res_bolo_view_sigma_all/1e3,label='equivalent\nto res bolo',capsize=5,linestyle='--')
 	plt.errorbar(time_full_binned_crop,all_out_of_sxd_all/1e3,yerr=all_out_of_sxd_sigma_all/1e3,label='out sxd',capsize=5,linestyle='--')
 	plt.title('shot ' + laser_to_analyse[-9:-4]+' '+scenario+'\nradiated power in the lower half of the machine')
-	plt.legend(loc='best', fontsize='x-small')
+	plt.legend(loc='best', fontsize='xx-small')
 	plt.xlabel('time [s]')
 	plt.ylabel('power [kW]')
 	plt.grid()
-	plt.savefig('/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_pass'+str(pass_number)+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_FAST_tot_rad_power.eps')
+	plt.savefig(filename_root+filename_root_add+'_FAST_tot_rad_power.eps')
 	plt.close()
 
-	gas = get_gas_info(efit_reconstruction.shotnumber)
+	gas = get_gas_info(shotnumber)
 	gas_core = 0.
 	gas_core_valves = []
 	gas_div = 0.
@@ -268,11 +312,11 @@ try:
 	badLPs_V0 = np.array(pd.read_csv('/home/ffederic/work/analysis_scripts/scripts/from_Peter/30473_badLPs_V0.csv',index_col=0).index.tolist())
 	try:
 		try:
-			fdir = coleval.uda_transfer(efit_reconstruction.shotnumber,'elp',extra_path='/0'+str(efit_reconstruction.shotnumber)[:2])
-			lp_data,output_contour1 = coleval.read_LP_data(efit_reconstruction.shotnumber,path = os.path.split(fdir)[0])
+			fdir = coleval.uda_transfer(shotnumber,'elp',extra_path='/0'+str(shotnumber)[:2])
+			lp_data,output_contour1 = coleval.read_LP_data(shotnumber,path = os.path.split(fdir)[0])
 			os.remove(fdir)
 		except:
-			lp_data,output_contour1 = coleval.read_LP_data(efit_reconstruction.shotnumber)
+			lp_data,output_contour1 = coleval.read_LP_data(shotnumber)
 		if True:	# use ot Peter Ryan function to combine data within time slice and to filter when strike point is on a dead channel
 			temp = np.logical_and(time_full_binned_crop>output_contour1['time'][0][0].min(),time_full_binned_crop<output_contour1['time'][0][0].max())
 			trange = tuple(map(list, np.array([time_full_binned_crop[temp] - np.mean(np.diff(time_full_binned_crop))/2,time_full_binned_crop[temp] + np.mean(np.diff(time_full_binned_crop))/2]).T))
@@ -287,7 +331,7 @@ try:
 				s10_lower_s = output_contour1['s'][0][0]
 				s10_lower_r = output_contour1['R'][0][0]
 				s10_lower_z = output_contour1['Z'][0][0]
-				output,Eich=compare_shots(filepath='/home/ffederic/work/irvb/from_pryan_LP'+'/',shot=[efit_reconstruction.shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False)
+				output,Eich=compare_shots(filepath='/home/ffederic/work/irvb/from_pryan_LP'+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False)
 				s10_lower_jsat = []
 				s10_lower_jsat_sigma = []
 				s10_lower_jsat_r = []
@@ -318,7 +362,7 @@ try:
 				s4_lower_s = output_contour1['s'][0][0]
 				s4_lower_r = output_contour1['R'][0][0]
 				s4_lower_z = output_contour1['Z'][0][0]
-				output,Eich=compare_shots(filepath='/home/ffederic/work/irvb/from_pryan_LP'+'/',shot=[efit_reconstruction.shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=4, quantity = 'jsat_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False)
+				output,Eich=compare_shots(filepath='/home/ffederic/work/irvb/from_pryan_LP'+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=4, quantity = 'jsat_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False)
 				s4_lower_jsat = []
 				s4_lower_jsat_sigma = []
 				s4_lower_jsat_r = []
@@ -350,7 +394,7 @@ try:
 				s4_upper_s = output_contour1['s'][0][0]
 				s4_upper_r = output_contour1['R'][0][0]
 				s4_upper_z = output_contour1['Z'][0][0]
-				output,Eich=compare_shots(filepath='/home/ffederic/work/irvb/from_pryan_LP'+'/',shot=[efit_reconstruction.shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=4, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False)
+				output,Eich=compare_shots(filepath='/home/ffederic/work/irvb/from_pryan_LP'+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=4, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False)
 				s4_upper_jsat = []
 				s4_upper_jsat_sigma = []
 				s4_upper_jsat_r = []
@@ -381,7 +425,7 @@ try:
 				s10_upper_std_s = output_contour1['s'][0][0]
 				s10_upper_std_r = output_contour1['R'][0][0]
 				s10_upper_std_z = output_contour1['Z'][0][0]
-				output,Eich=compare_shots(filepath='/home/ffederic/work/irvb/from_pryan_LP'+'/',shot=[efit_reconstruction.shotnumber]*len(trange),bin_x_step=1e-4,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4'],time_combine=True,show=False)
+				output,Eich=compare_shots(filepath='/home/ffederic/work/irvb/from_pryan_LP'+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-4,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4'],time_combine=True,show=False)
 				s10_upper_std_jsat = []
 				s10_upper_std_jsat_sigma = []
 				s10_upper_std_jsat_r = []
@@ -412,7 +456,7 @@ try:
 				s10_upper_large_s = output_contour1['s'][0][0]
 				s10_upper_large_r = output_contour1['R'][0][0]
 				s10_upper_large_z = output_contour1['Z'][0][0]
-				output,Eich=compare_shots(filepath='/home/ffederic/work/irvb/from_pryan_LP'+'/',shot=[efit_reconstruction.shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['T5'],time_combine=True,show=False)
+				output,Eich=compare_shots(filepath='/home/ffederic/work/irvb/from_pryan_LP'+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['T5'],time_combine=True,show=False)
 				s10_upper_large_jsat = []
 				s10_upper_large_jsat_sigma = []
 				s10_upper_large_jsat_r = []
@@ -469,6 +513,8 @@ try:
 				ax[1,0].set_xlabel('R [m]')
 				plt.savefig('/home/ffederic/work/irvb/0__outputs'+'/working_vs_bad_LPs.png', bbox_inches='tight')
 				plt.close()
+			else:
+				pass
 
 
 			closeness_limit_to_dead_channels = 0.01	# m
@@ -1021,7 +1067,7 @@ try:
 		print('LP skipped')
 
 	from mastu_exhaust_analysis.read_efit import read_epm
-	fdir = coleval.uda_transfer(efit_reconstruction.shotnumber,'epm')
+	fdir = coleval.uda_transfer(shotnumber,'epm')
 	efit_data = read_epm(fdir,calc_bfield=True)
 	os.remove(fdir)
 	dWdt = calc_w_dot(efit_data = efit_data)
@@ -1124,14 +1170,15 @@ try:
 	radius_inner_separatrix = np.interp(time_full_binned_crop,efit_data['t'],efit_data['rmidplaneIn'],right=0.,left=0.)
 	full_saved_file_dict_FAST['multi_instrument']['radius_inner_separatrix'] = radius_inner_separatrix
 
-	energy_confinement_time_98y2 = 0.0562 * ((plasma_current*1e-6)**0.93) * ((toroidal_field*1)**0.15) * ((ne_bar*1e-19)**0.41) * ((P_loss*1e-6)**-0.69) * ((major_R*1e0)**1.97) * (((minor_radius/major_R)*1e0)**0.58)  * ((kappa*1e0)**0.78) * ((2*1e0)**0.19)
-	full_saved_file_dict_FAST['multi_instrument']['energy_confinement_time_98y2'] = energy_confinement_time_98y2
-	energy_confinement_time_97P = 0.037 * ((plasma_current*1e-6)**0.74) * ((toroidal_field*1)**0.2) * ((ne_bar*1e-19)**0.24) * ((P_loss*1e-6)**-0.75) * ((major_R*1e0)**1.69) * (((minor_radius/major_R)*1e0)**0.31)  * ((kappa*1e0)**0.67) * ((2*1e0)**0.26)
-	full_saved_file_dict_FAST['multi_instrument']['energy_confinement_time_97P'] = energy_confinement_time_97P
-	energy_confinement_time_HST = 0.066 * ((plasma_current*1e-6)**0.53) * ((toroidal_field*1)**1.05) * ((ne_bar*1e-19)**0.65) * ((P_heat*1e-6)**-0.58) * ((major_R*1e0)**2.66) * ((kappa*1e0)**0.78)
-	full_saved_file_dict_FAST['multi_instrument']['energy_confinement_time_HST'] = energy_confinement_time_HST
-	energy_confinement_time_LST = 0.153 * ((plasma_current*1e-6)**1.01) * ((toroidal_field*1)**0.7) * ((ne_bar*1e-19)**-0.07) * ((P_loss*1e-6)**-0.37)
-	full_saved_file_dict_FAST['multi_instrument']['energy_confinement_time_LST'] = energy_confinement_time_LST
+	if not density_data_missing:
+		energy_confinement_time_98y2 = 0.0562 * ((plasma_current*1e-6)**0.93) * ((toroidal_field*1)**0.15) * ((ne_bar*1e-19)**0.41) * ((P_loss*1e-6)**-0.69) * ((major_R*1e0)**1.97) * (((minor_radius/major_R)*1e0)**0.58)  * ((kappa*1e0)**0.78) * ((2*1e0)**0.19)
+		full_saved_file_dict_FAST['multi_instrument']['energy_confinement_time_98y2'] = energy_confinement_time_98y2
+		energy_confinement_time_97P = 0.037 * ((plasma_current*1e-6)**0.74) * ((toroidal_field*1)**0.2) * ((ne_bar*1e-19)**0.24) * ((P_loss*1e-6)**-0.75) * ((major_R*1e0)**1.69) * (((minor_radius/major_R)*1e0)**0.31)  * ((kappa*1e0)**0.67) * ((2*1e0)**0.26)
+		full_saved_file_dict_FAST['multi_instrument']['energy_confinement_time_97P'] = energy_confinement_time_97P
+		energy_confinement_time_HST = 0.066 * ((plasma_current*1e-6)**0.53) * ((toroidal_field*1)**1.05) * ((ne_bar*1e-19)**0.65) * ((P_heat*1e-6)**-0.58) * ((major_R*1e0)**2.66) * ((kappa*1e0)**0.78)
+		full_saved_file_dict_FAST['multi_instrument']['energy_confinement_time_HST'] = energy_confinement_time_HST
+		energy_confinement_time_LST = 0.153 * ((plasma_current*1e-6)**1.01) * ((toroidal_field*1)**0.7) * ((ne_bar*1e-19)**-0.07) * ((P_loss*1e-6)**-0.37)
+		full_saved_file_dict_FAST['multi_instrument']['energy_confinement_time_LST'] = energy_confinement_time_LST
 
 
 	client=pyuda.Client()
@@ -1171,10 +1218,15 @@ try:
 		nu_mean = []
 		for time in time_full_binned_crop:
 			try:
-				temp = divertor_geometry(shot=laser_to_analyse[-9:-4],time=time)
+				temp = divertor_geometry(shot=shotnumber,time=time)
 				tu_cowley.append(temp.tu_cowley)
 				tu_labombard.append(temp.tu_labombard)
 				tu_stangeby.append(temp.tu_stangeby)
+			except:
+				tu_cowley.append(np.nan)
+				tu_labombard.append(np.nan)
+				tu_stangeby.append(np.nan)
+			try:
 				try:
 					temp = np.abs(TS_data.time.data-time).argmin()
 					ne = TS_data.ne.data[temp]
@@ -1201,15 +1253,12 @@ try:
 				ne = ne[1:][np.diff(Te)<=0]
 				R_TS = R_TS[1:][np.diff(Te)<=0]
 				Te = Te[1:][np.diff(Te)<=0]
-				interp_ne_Te = interp1d(Te[Te.argmax():],ne[Te.argmax():])
+				interp_ne_Te = interp1d(Te[Te.argmax():],ne[Te.argmax():],fill_value='extrapolate')
 				nu_cowley.append(interp_ne_Te(tu_cowley[-1]))
 				nu_labombard.append(interp_ne_Te(tu_labombard[-1]))
 				nu_stangeby.append(interp_ne_Te(tu_stangeby[-1]))
 				nu_mean.append(np.nanmean([nu_cowley[-1],nu_labombard[-1],nu_stangeby[-1]]))
 			except:
-				tu_cowley.append(np.nan)
-				tu_labombard.append(np.nan)
-				tu_stangeby.append(np.nan)
 				nu_cowley.append(np.nan)
 				nu_labombard.append(np.nan)
 				nu_stangeby.append(np.nan)
@@ -1383,11 +1432,11 @@ try:
 
 	fig, ax = plt.subplots( 2,1,figsize=(12, 12), squeeze=False,sharex=True)
 	if pass_number ==0:
-		fig.suptitle('shot '+str(efit_reconstruction.shotnumber)+', '+scenario+' , '+experiment+'\nfirst pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
+		fig.suptitle('shot '+str(shotnumber)+', '+scenario+' , '+experiment+'\nfirst pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
 	elif pass_number ==1:
-		fig.suptitle('shot '+str(efit_reconstruction.shotnumber)+', '+scenario+' , '+experiment+'\nsecond pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
+		fig.suptitle('shot '+str(shotnumber)+', '+scenario+' , '+experiment+'\nsecond pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
 	elif pass_number ==2:
-		fig.suptitle('shot '+str(efit_reconstruction.shotnumber)+', '+scenario+' , '+experiment+'\nthird pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
+		fig.suptitle('shot '+str(shotnumber)+', '+scenario+' , '+experiment+'\nthird pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
 	for i in [0,1]:
 		ax[i,0].plot(time_full_binned_crop,inner_L_poloidal_peak_all/inner_L_poloidal_x_point_all,'r-',label='inner_L_poloidal_peak/x-point')
 		ax[i,0].plot(time_full_binned_crop,inner_L_poloidal_baricentre_all/inner_L_poloidal_x_point_all,'r--',label='inner_L_poloidal_baricentre/x-point')
@@ -1417,7 +1466,7 @@ try:
 
 		try:
 			if i==0:
-				power_balance = calc_psol(shot=efit_reconstruction.shotnumber,smooth_dt =0.015)	# in W
+				power_balance = calc_psol(shot=shotnumber,smooth_dt =0.015)	# in W
 				SS_BEAMPOWER = np.interp(power_balance['t'],time_full_binned_crop,SS_BEAMPOWER,right=0.,left=0.)
 				SW_BEAMPOWER = np.interp(power_balance['t'],time_full_binned_crop,SW_BEAMPOWER,right=0.,left=0.)
 				output_pohm = power_balance['pohm']
@@ -1476,34 +1525,48 @@ try:
 	ax[1,0].set_xlabel('time [s]')
 	plt.subplots_adjust(wspace=0, hspace=0)
 	# plt.pause(0.01)
-	plt.savefig('/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_pass'+str(pass_number)+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_all_variables.png')
+	plt.savefig(filename_root+filename_root_add+'_all_variables.png')
 	plt.close()
 
 	# plot of absolute quantities
 	fig, ax = plt.subplots( 11,1,figsize=(12, 40), squeeze=False,sharex=False)
 	if pass_number ==0:
-		fig.suptitle('shot '+str(efit_reconstruction.shotnumber)+', '+scenario+' , '+experiment+'\nfirst pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
+		fig.suptitle('shot '+str(shotnumber)+', '+scenario+' , '+experiment+'\nfirst pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
 	elif pass_number ==1:
-		fig.suptitle('shot '+str(efit_reconstruction.shotnumber)+', '+scenario+' , '+experiment+'\nsecond pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
+		fig.suptitle('shot '+str(shotnumber)+', '+scenario+' , '+experiment+'\nsecond pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
 	elif pass_number ==2:
-		fig.suptitle('shot '+str(efit_reconstruction.shotnumber)+', '+scenario+' , '+experiment+'\nthird pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
+		fig.suptitle('shot '+str(shotnumber)+', '+scenario+' , '+experiment+'\nthird pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
 	ax[0,0].axhline(y=1,color='k',linestyle='--')
 	ax[0,0].plot(time_full_binned_crop,inner_L_poloidal_midplane_all/inner_L_poloidal_x_point_all,'m--')
-	ax[0,0].plot(time_full_binned_crop,inner_L_poloidal_peak_all/inner_L_poloidal_x_point_all,'r-',label='inner_peak')
-	ax[0,0].plot(time_full_binned_crop,inner_L_poloidal_peak_only_leg_all/inner_L_poloidal_x_point_all,'r:',label='inner_peak only leg')
-	ax[0,0].plot(time_full_binned_crop,inner_L_poloidal_baricentre_all/inner_L_poloidal_x_point_all,'r--',label='inner_baricentre')
-	ax[0,0].plot(time_full_binned_crop,np.array([inner_local_L_poloidal_all[i_][i] for i_,i in zip(np.arange(len(inner_local_mean_emis_all)),np.argmax(inner_local_mean_emis_all,axis=1))])/inner_L_poloidal_x_point_all,'r-.',label='inner local emissivity')
-	ax[0,0].plot(time_full_binned_crop,outer_L_poloidal_peak_all/outer_L_poloidal_x_point_all,'b-',label='outer_peak')
-	ax[0,0].plot(time_full_binned_crop,outer_L_poloidal_peak_only_leg_all/outer_L_poloidal_x_point_all,'b:',label='outer_peak only leg')
-	ax[0,0].plot(time_full_binned_crop,outer_L_poloidal_baricentre_all/outer_L_poloidal_x_point_all,'b--',label='outer_baricentre')
-	ax[0,0].plot(time_full_binned_crop,np.array([outer_local_L_poloidal_all[i_][i] for i_,i in zip(np.arange(len(outer_local_mean_emis_all)),np.argmax(outer_local_mean_emis_all,axis=1))])/outer_L_poloidal_x_point_all,'b-.',label='outer local emissivity')
+	ax[0,0].plot(time_full_binned_crop,inner_L_poloidal_peak_all/inner_L_poloidal_x_point_all,'r-',label=r'$IN_{peak}$')
+	ax[0,0].plot(time_full_binned_crop,inner_L_poloidal_peak_only_leg_all/inner_L_poloidal_x_point_all,'r:',label=r'$IN_{peak\;only\;leg}$')
+	# ax[0,0].plot(time_full_binned_crop,inner_L_poloidal_baricentre_only_leg_all/inner_L_poloidal_x_point_all,'r',label=r'$IN_{bari\;only\;leg}$')
+	ax[0,0].plot(time_full_binned_crop,inner_half_peak_L_pol_all/inner_L_poloidal_x_point_all,'r')
+	ax[0,0].plot(time_full_binned_crop,inner_half_peak_L_pol_all/inner_L_poloidal_x_point_all,'r+',label=r'$IN_{0.5\;front\;InLine}$')
+	ax[0,0].plot(time_full_binned_crop,inner_half_peak_divertor_L_pol_all/inner_L_poloidal_x_point_all,'r')
+	ax[0,0].plot(time_full_binned_crop,inner_half_peak_divertor_L_pol_all/inner_L_poloidal_x_point_all,'ro',fillstyle='none',label=r'$IN_{0.5\;front\;InLineDiv}$')
+	ax[0,0].plot(time_full_binned_crop,movement_local_inner_leg_mean_emissivity,'r')
+	ax[0,0].plot(time_full_binned_crop,movement_local_inner_leg_mean_emissivity,'rx',label=r'$IN_{0.5\;front\;binned}$')
+	ax[0,0].plot(time_full_binned_crop,inner_L_poloidal_baricentre_all/inner_L_poloidal_x_point_all,'r--',label=r'$IN_{baricentre}$')
+	ax[0,0].plot(time_full_binned_crop,np.array([inner_local_L_poloidal_all[i_][i] for i_,i in zip(np.arange(len(inner_local_mean_emis_all)),np.argmax(inner_local_mean_emis_all,axis=1))])/inner_L_poloidal_x_point_all,'r-.',label=r'$IN_{loc\;emissivity}$')
+	ax[0,0].plot(time_full_binned_crop,outer_L_poloidal_peak_all/outer_L_poloidal_x_point_all,'b-',label=r'$OUT_{peak}$')
+	ax[0,0].plot(time_full_binned_crop,outer_L_poloidal_peak_only_leg_all/outer_L_poloidal_x_point_all,'b:',label=r'$OUT_{peak\;only\;leg}$')
+	# ax[0,0].plot(time_full_binned_crop,outer_L_poloidal_baricentre_only_leg_all/outer_L_poloidal_x_point_all,'b',label=r'$OUT_{bari\;only\;leg}$')
+	ax[0,0].plot(time_full_binned_crop,outer_half_peak_L_pol_all/outer_L_poloidal_x_point_all,'b')
+	ax[0,0].plot(time_full_binned_crop,outer_half_peak_L_pol_all/outer_L_poloidal_x_point_all,'b+',label=r'$OUT_{0.5\;front\;InLine}$')
+	ax[0,0].plot(time_full_binned_crop,outer_half_peak_divertor_L_pol_all/outer_L_poloidal_x_point_all,'b')
+	ax[0,0].plot(time_full_binned_crop,outer_half_peak_divertor_L_pol_all/outer_L_poloidal_x_point_all,'bo',fillstyle='none',label=r'$OUT_{0.5\;front\;InLineDiv}$')
+	ax[0,0].plot(time_full_binned_crop,movement_local_outer_leg_mean_emissivity,'b')
+	ax[0,0].plot(time_full_binned_crop,movement_local_outer_leg_mean_emissivity,'bx',label=r'$OUT_{0.5\;front\;binned}$')
+	ax[0,0].plot(time_full_binned_crop,outer_L_poloidal_baricentre_all/outer_L_poloidal_x_point_all,'b--',label=r'$OUT_{baricentre}$')
+	ax[0,0].plot(time_full_binned_crop,np.array([outer_local_L_poloidal_all[i_][i] for i_,i in zip(np.arange(len(outer_local_mean_emis_all)),np.argmax(outer_local_mean_emis_all,axis=1))])/outer_L_poloidal_x_point_all,'b-.',label=r'$OUT_{loc\;emissivity}$')
 	ax[0,0].set_ylim(bottom=-0.1,top=4)
 	ax[0,0].grid()
 	ax[0,0].set_ylabel('Lpoloidal/Lpol x-pt [au]')
 	ax0 = ax[0,0].twinx()  # instantiate a second axes that shares the same x-axis
 	# ax2.spines["right"].set_position(("axes", 1.1125))
 	ax0.spines["right"].set_visible(True)
-	a0a, = ax0.plot(time_full_binned_crop,psiN_peak_inner_all,label='psiN_peak_inner_all',color='g')
+	a0a, = ax0.plot(time_full_binned_crop,psiN_peak_inner_all,label=r'$IN\psi_{N\;peak}$',color='g')
 	ax0.axhline(y=1,color='g',linestyle='--')
 	ax0.set_ylabel('psi N [au]', color='g')  # we already handled the x-label with ax1
 	# ax2.tick_params(axis='y', labelcolor=a2a.get_color())
@@ -1511,7 +1574,7 @@ try:
 	handles, labels = ax[0,0].get_legend_handles_labels()
 	handles.append(a0a)
 	labels.append(a0a.get_label())
-	ax0.legend(handles=handles, labels=labels, loc='best', fontsize='xx-small')
+	ax0.legend(handles=handles, labels=labels, loc='upper left', fontsize='xx-small',ncol=3)
 	if time_start_MARFE!=None:
 		ax[0,0].axvline(x=time_start_MARFE,linestyle='--',color='k',label='MARFE start from bolo')
 	if time_active_MARFE!=None:
@@ -1523,7 +1586,7 @@ try:
 	if  not density_data_missing:
 		ax[1,0].plot(time_full_binned_crop,core_density,label='core_density',color=color[0])
 		ax[1,0].plot(time_full_binned_crop,ne_bar,label='ne_bar',color=color[-1])
-		ax[1,0].plot(time_full_binned_crop,greenwald_density,'--',label='greenwald_density',color=color[-2])
+		ax[1,0].plot(time_full_binned_crop,greenwald_density,'--',label='greenwald_density',color=color[-4])
 
 		ax1 = ax[1,0].twinx()  # instantiate a second axes that shares the same x-axis
 		# ax1.spines["right"].set_position(("axes", 1.1125))
@@ -1578,11 +1641,13 @@ try:
 	ax[3,0].legend(loc='best', fontsize='xx-small')
 
 	try:
-		power_balance = calc_psol(shot=efit_reconstruction.shotnumber,smooth_dt =0.015)	# in W
+		power_balance = calc_psol(shot=shotnumber,smooth_dt =0.015)	# in W
 		input_power = np.interp(time_full_binned_crop,power_balance['t'],power_balance['pohm'] + SW_BEAMPOWER + SS_BEAMPOWER-power_balance['pdw_dt'])
 
 		ax[4,0].plot(power_balance['t'],1e-6*(power_balance['pohm'] + SW_BEAMPOWER + SS_BEAMPOWER-power_balance['pdw_dt']),label='input power (ohm+beams-dW/dt)',color=color[5])
 		ax[4,0].plot(power_balance['t'],1e-6*(power_balance['pohm']-power_balance['pdw_dt']),'--',label='ohmic input power (ohm-dW/dt)',color=color[5])
+		ax[4,0].plot(power_balance['t'],1e-6*power_balance['psol'],label='Psol',color=color[0])
+		ax[4,0].plot(power_balance['t'],1e-6*power_balance['pdw_dt'],label='pdw_dt',color=color[6])
 		ax[4,0].plot(power_balance['t'],1e-6*power_balance['prad_core'],label='prad_core res bolo',color=color[7])
 		temp = inverted_data[:,:,inversion_Z<0]
 		temp = np.nansum(np.nansum(temp,axis=-1)*inversion_R*(np.mean(np.diff(inversion_R))**2)*2*np.pi,axis=1)
@@ -1605,10 +1670,10 @@ try:
 		ax[4,0].set_ylim(bottom=0)
 	ax[4,0].plot(time_full_binned_crop,1e-6*real_core_radiation_all*2,label='core_radiation',color=color[3])
 	ax[4,0].plot(time_full_binned_crop,1e-6*real_non_core_radiation_all*2,label='non_core_radiation',color=color[4])
-	ax[4,0].plot(time_full_binned_crop,1e-6*equivalent_res_bolo_view_all*2,label='= res bolo',color=color[1])
+	ax[4,0].errorbar(time_full_binned_crop,1e-6*equivalent_res_bolo_view_all*2,yerr=1e-6*equivalent_res_bolo_view_sigma_all*2,label='= res bolo',color=color[1])
 	ax[4,0].grid()
 	ax[4,0].set_ylabel('power [MW]')
-	ax[4,0].legend(loc='best', fontsize='xx-small')
+	ax[4,0].legend(loc='upper left', fontsize='xx-small')
 	ax5 = ax[5,0].twinx()  # instantiate a second axes that shares the same x-axis
 	if jsat_read:
 		a5a = ax5.errorbar(jsat_time,jsat_lower_inner_small_max,yerr=jsat_lower_inner_small_max_sigma,capsize=5,linestyle='--',label='lower_inner_small',color=color[0])
@@ -1652,9 +1717,9 @@ try:
 		labels.append(a5f.get_label())
 		ax[5,0].legend(handles=handles, labels=labels, loc='best', fontsize='xx-small', ncol=2)
 	ax[5,0].grid()
-	ax[5,0].set_ylabel('jsat max outer [A/m2]')
+	ax[5,0].set_ylabel(r'$j_{sat\;max\;outer}$'+' [A/m2]')
 	ax5.spines["right"].set_visible(True)
-	ax5.set_ylabel('jsat max inner [A/m2]', color='r')  # we already handled the x-label with ax1
+	ax5.set_ylabel(r'$j_{sat\;max\;inner}$'+' [A/m2]', color='r')  # we already handled the x-label with ax1
 	# ax5.tick_params(axis='y', labelcolor=a5a.get_color())
 	# ax5.set_ylim(bottom=0)
 
@@ -1685,9 +1750,9 @@ try:
 		ax[6,0].errorbar(jsat_time,jsat_upper_outer_large_integrated,yerr=jsat_upper_outer_large_integrated_sigma,capsize=5,linestyle=':',label='upper_outer_large',color=color[3])
 		# ax[6,0].plot(jsat_time,jsat_upper_outer_large_integrated,'+',color=color[3])
 	ax[6,0].grid()
-	ax[6,0].set_ylabel('integrated current outer [A]')
+	ax[6,0].set_ylabel(r'$\int j_{sat\;outer}$'+' [A]')
 	ax6.spines["right"].set_visible(True)
-	ax6.set_ylabel('integrated current inner [A]', color='r')  # we already handled the x-label with ax1
+	ax6.set_ylabel(r'$\int j_{sat\;inner}$'+' [A]', color='r')  # we already handled the x-label with ax1
 	# ax5.tick_params(axis='y', labelcolor=a5a.get_color())
 	# ax5.set_ylim(bottom=0)
 	# handles, labels = ax[6,0].get_legend_handles_labels()
@@ -1707,10 +1772,11 @@ try:
 	if not toroidal_field_good:
 		ax[7,0].plot([],[],'+k',label='Toroidal magnetic\nfield at magnetic axis\nflagged as bad data')
 	ax[7,0].plot(time_full_binned_crop,energy_confinement_time,label='confinement time',color=color[0])
-	ax[7,0].plot(time_full_binned_crop,energy_confinement_time_98y2,label='98y2',color=color[3],alpha=0.3)
-	ax[7,0].plot(time_full_binned_crop,energy_confinement_time_97P,label='97P',color=color[2],alpha=0.3)
-	ax[7,0].plot(time_full_binned_crop,energy_confinement_time_HST,label='HST',color=color[1])
-	ax[7,0].plot(time_full_binned_crop,energy_confinement_time_LST,label='LST',color=color[5])
+	if not density_data_missing:
+		ax[7,0].plot(time_full_binned_crop,energy_confinement_time_98y2,label='98y2',color=color[3],alpha=0.3)
+		ax[7,0].plot(time_full_binned_crop,energy_confinement_time_97P,label='97P',color=color[2],alpha=0.3)
+		ax[7,0].plot(time_full_binned_crop,energy_confinement_time_HST,label='HST',color=color[1])
+		ax[7,0].plot(time_full_binned_crop,energy_confinement_time_LST,label='LST',color=color[5])
 	ax[7,0].grid()
 	ax[7,0].set_ylim(bottom=0)
 	ax[7,0].set_ylabel('confinement time [s]')
@@ -1718,10 +1784,11 @@ try:
 	ax7 = ax[7,0].twinx()  # instantiate a second axes that shares the same x-axis
 	# ax7.spines["right"].set_position(("axes", 1.1125))
 	ax7.spines["right"].set_visible(True)
-	a7a, = ax7.plot(time_full_binned_crop,energy_confinement_time/energy_confinement_time_98y2,'--',color=color[3],alpha=0.3)
-	a7b, = ax7.plot(time_full_binned_crop,energy_confinement_time/energy_confinement_time_97P,'--',color=color[2],alpha=0.3)
-	a7c, = ax7.plot(time_full_binned_crop,energy_confinement_time/energy_confinement_time_HST,'--',color=color[1])
-	a7d, = ax7.plot(time_full_binned_crop,energy_confinement_time/energy_confinement_time_LST,'--',color=color[5])
+	if not density_data_missing:
+		a7a, = ax7.plot(time_full_binned_crop,energy_confinement_time/energy_confinement_time_98y2,'--',color=color[3],alpha=0.3)
+		a7b, = ax7.plot(time_full_binned_crop,energy_confinement_time/energy_confinement_time_97P,'--',color=color[2],alpha=0.3)
+		a7c, = ax7.plot(time_full_binned_crop,energy_confinement_time/energy_confinement_time_HST,'--',color=color[1])
+		a7d, = ax7.plot(time_full_binned_crop,energy_confinement_time/energy_confinement_time_LST,'--',color=color[5])
 	ax7.set_ylabel('--=relative time [au]', color='r')  # we already handled the x-label with ax1
 	# ax7.tick_params(axis='y', labelcolor=a7a.get_color())
 	ax7.set_ylim(bottom=0)
@@ -1798,7 +1865,7 @@ try:
 
 	# plt.subplots_adjust(wspace=0, hspace=0)
 	# plt.pause(0.01)
-	plt.savefig('/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_pass'+str(pass_number)+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_all_variables_absolute.png')
+	plt.savefig(filename_root+filename_root_add+'_all_variables_absolute.png')
 	plt.close()
 
 

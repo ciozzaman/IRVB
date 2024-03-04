@@ -800,6 +800,8 @@ centre_of_front_plate = np.array([1.48967+0.002,-0.7,135])	# R,z,teta deg
 pinhole_offset = np.array([-0.0198,-0.0198])	# toroidal direction parallel to the place surface, z
 
 def locate_pinhole(centre_of_front_plate=centre_of_front_plate,pinhole_offset=pinhole_offset):
+	# this is wrong. the movement has to go along the plane of the foil (assumed same as front plate)
+	# as there is no way to verify the rotation of the flange, I assume it is vertical
 	pinhole_location_toroidal = np.array([(centre_of_front_plate[0]**2 + pinhole_offset[0]**2)**0.5,centre_of_front_plate[1]+pinhole_offset[1],centre_of_front_plate[2]+360/(2*np.pi)*np.arctan(pinhole_offset[0]/centre_of_front_plate[0])])	# R,z,teta deg
 	return point_toroidal_to_cartesian(pinhole_location_toroidal)	# x,y,z
 
@@ -807,7 +809,7 @@ def locate_pinhole(centre_of_front_plate=centre_of_front_plate,pinhole_offset=pi
 pinhole_location = locate_pinhole(pinhole_offset=pinhole_offset)	# x,y,z
 pinhole_location_toroidal=point_cartesian_to_toroidal(np.array([pinhole_location]))[0]	# R,z,teta deg
 centre_of_foil = np.array([-Rf/(2**0.5), Rf/(2**0.5), -0.7])	# x,y,z
-foil_size = [0.07,0.09]
+foil_size = [0.07,0.09]	# m
 R_centre_column = 0.2608	# m
 pinhole_relative_location = np.array(foil_size)/2 - pinhole_offset #+ 0.0198
 pinhole_radious = 0.004/2	# m
@@ -817,11 +819,23 @@ def return_MU01_sxd_region_delimiter():
 	MU01_sxd_region_delimiter = interp1d([0.7,0.76,0.95,1.6],[-2.5,-1.83,-1.55,-1],bounds_error=None, fill_value='extrapolate')
 	return MU01_sxd_region_delimiter
 
+def return_DMS_LOS19_V2_higher_delimiter():
+	# return the path of the LOS 19 violet as shown in Figure 2b of Verhaegh2022
+	from scipy.interpolate import interp1d
+	DMS_LOS19_V2_higher_delimiter = interp1d([0.71,1.625],[-1.675,-1.58],bounds_error=None, fill_value='extrapolate')
+	return DMS_LOS19_V2_higher_delimiter
+
+def return_MWI_delimiter():
+	# return the path of the LOS 19 violet as shown in Figure 2b of Verhaegh2022
+	from scipy.interpolate import interp1d
+	MWI_delimiter = interp1d([0.75,1.545],[-1.723,-1.59],bounds_error=None, fill_value='extrapolate')
+	return MWI_delimiter
+
 def calculate_tangency_angle_for_poloidal_section(radius_to_trace,pinhole_location_toroidal=pinhole_location_toroidal,side='left'):
 	if side=='left':
-		reference_radius = pinhole_location_toroidal[2]-(90-np.arcsin(radius_to_trace/pinhole_location_toroidal[0])/np.pi*180)
+		reference_radius = pinhole_location_toroidal[2]-(90-(np.arcsin(radius_to_trace/pinhole_location_toroidal[0])/np.pi)*180)
 	elif side=='right':
-		reference_radius = pinhole_location_toroidal[2]+(90-np.arcsin(radius_to_trace/pinhole_location_toroidal[0])/np.pi*180)
+		reference_radius = pinhole_location_toroidal[2]+(90-(np.arcsin(radius_to_trace/pinhole_location_toroidal[0])/np.pi)*180)
 	return reference_radius
 
 # moved here so that calculate_tangency_angle_for_poloidal_section is calculated
@@ -850,8 +864,8 @@ def absolute_position_on_foil_to_foil_coord(coords,centre_of_foil=centre_of_foil
 # structure_point_location_on_foil.append(np.array([pinhole_relative_location[0] + np.arange(-pinhole_radious,+pinhole_radious+pinhole_radious/10/2,pinhole_radious/10),pinhole_relative_location[1] + np.abs(pinhole_radious**2-np.arange(-pinhole_radious,+pinhole_radious+pinhole_radious/10/2,pinhole_radious/10)**2)**0.5]).T)
 # structure_point_location_on_foil.append(np.array([pinhole_relative_location[0] + np.arange(-pinhole_radious,+pinhole_radious+pinhole_radious/10/2,pinhole_radious/10),pinhole_relative_location[1] - np.abs(pinhole_radious**2-np.arange(-pinhole_radious,+pinhole_radious+pinhole_radious/10/2,pinhole_radious/10)**2)**0.5]).T)
 
-def return_structure_point_location_on_foil(plane_equation=plane_equation,pinhole_offset=pinhole_offset,centre_of_foil=centre_of_foil,foil_size=foil_size):
-	pinhole_location = locate_pinhole(pinhole_offset=pinhole_offset)	# x,y,z
+def return_structure_point_location_on_foil(plane_equation=plane_equation,pinhole_offset=pinhole_offset,centre_of_foil=centre_of_foil,foil_size=foil_size,centre_of_front_plate=centre_of_front_plate,pinhole_radious=pinhole_radious):
+	pinhole_location = locate_pinhole(centre_of_front_plate=centre_of_front_plate,pinhole_offset=pinhole_offset)	# x,y,z
 	pinhole_relative_location = np.array(foil_size)/2 - pinhole_offset #+ 0.0198
 	structure_point_location_on_foil = []
 	for time in range(len(stucture_r)):
@@ -861,6 +875,13 @@ def return_structure_point_location_on_foil(plane_equation=plane_equation,pinhol
 		structure_point_location_on_foil.append(absolute_position_on_foil_to_foil_coord(point_location,centre_of_foil=centre_of_foil,foil_size=foil_size))
 	structure_point_location_on_foil.append(np.array([pinhole_relative_location[0] + np.arange(-pinhole_radious,+pinhole_radious+pinhole_radious/10/2,pinhole_radious/10),pinhole_relative_location[1] + np.abs(pinhole_radious**2-np.arange(-pinhole_radious,+pinhole_radious+pinhole_radious/10/2,pinhole_radious/10)**2)**0.5]).T)
 	structure_point_location_on_foil.append(np.array([pinhole_relative_location[0] + np.arange(-pinhole_radious,+pinhole_radious+pinhole_radious/10/2,pinhole_radious/10),pinhole_relative_location[1] - np.abs(pinhole_radious**2-np.arange(-pinhole_radious,+pinhole_radious+pinhole_radious/10/2,pinhole_radious/10)**2)**0.5]).T)
+	for time in range(len(stucture_r_t_to_recalculate)):
+		for value in ['left','right']:
+			stucture_t_t_to_recalculate =calculate_tangency_angle_for_poloidal_section(stucture_r_t_to_recalculate[time],pinhole_location_toroidal=point_cartesian_to_toroidal(np.array([pinhole_location]))[0],side=value)
+			point_location = np.array([stucture_r_t_to_recalculate[time],stucture_z_t_to_recalculate[time],stucture_t_t_to_recalculate]).T
+			point_location = point_toroidal_to_cartesian(point_location)
+			point_location = find_location_on_foil(point_location,plane_equation=plane_equation,pinhole_location=pinhole_location)
+			structure_point_location_on_foil.append(absolute_position_on_foil_to_foil_coord(point_location,centre_of_foil=centre_of_foil,foil_size=foil_size))
 	return structure_point_location_on_foil
 
 structure_radial_profile = [_MASTU_CORE_GRID_POLYGON]
@@ -1160,7 +1181,7 @@ def movie_from_data(data,framerate,integration=1,xlabel=(),ylabel=(),barlabel=()
 				print('EFIT reconstruction externally supplied')
 			EFIT_dt = np.median(np.diff(efit_reconstruction.time))
 		except Exception as e:
-			print('reading '+EFIT_path+'/epm0'+str(pulse_ID)+'.nc failed')
+			print('reading '+EFIT_path+'/epm0'+str(pulse_ID)+'.nc failed '+'with error: ' + str(e))
 			logging.exception('with error: ' + str(e))
 			include_EFIT=False
 			overlay_x_point=False
@@ -6277,7 +6298,7 @@ def build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window
 					plt.xlabel('counts [au]')
 					plt.title('digitizer,j,k='+str((z,j,k)))
 					# plt.pause(0.01)
-					plt.savefig('/home/ffederic/work/irvb/flatfield'+'/example_BB_fit'+str((z,j,k))+'.png', bbox_inches='tight')
+					plt.savefig('/home/ffederic/work/irvb/flatfield'+'/example_BB_fit'+str((z,j,k))+'.png')#, bbox_inches='tight')
 				if False:	# same but with only window
 					plt.figure(figsize=(10, 7))
 					plt.grid()
@@ -6289,7 +6310,7 @@ def build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window
 					plt.xlabel('counts [au]')
 					plt.title('digitizer,j,k='+str((z,j,k)))
 					# plt.pause(0.01)
-					plt.savefig('/home/ffederic/work/irvb/flatfield'+'/example_BB_fit'+str((z,j,k))+'2.png', bbox_inches='tight')
+					plt.savefig('/home/ffederic/work/irvb/flatfield'+'/example_BB_fit'+str((z,j,k))+'2.png')#, bbox_inches='tight')
 				if False:	# small piece to check how the uncertainty goes between the 2 models
 					delta_counts = 7194-5800
 					a1a3 = fit[0][0]*fit[0][2]
@@ -6644,13 +6665,18 @@ def reset_connection(client):
 	except Exception as e:
 		print('the reading that should always work part of reset_connection failed')
 		print('Error '+str(e))
-		exit()
+		# exit()
 	client.set_property("timeout", 0)
 	try:
 		_ = client.get('help::ping()','')
 	except pyuda.UDAException:
+		print("_ = client.get('help::ping()','') failed")
 		pass
-	client.set_property("timeout", 600)
+	try:
+		client.set_property('timeout', 600)
+	except pyuda.UDAException:
+		print("client.set_property('timeout', 600) failed")
+		pass
 	print('client reset done')
 
 class mclass:
@@ -6660,6 +6686,7 @@ class mclass:
 		# from multiprocessing.dummy import Pool as ThreadPool
 		from multiprocessing.pool import ThreadPool
 		# from multiprocessing import Pool as ThreadPool
+		import time as tm
 		import netCDF4
 		def abortable_worker(func,timeout, *arg):
 			p = ThreadPool(1)
@@ -6686,16 +6713,19 @@ class mclass:
 		fdir = 'failed'
 		try:
 			fdir = uda_transfer(pulse_ID,'epm')
-			print('uda_transfer successfull')
+			if fdir!='failed':
+				print('uda_transfer successfull')
+			else:
+				print('uda_transfer fail')
 		except:
 			pass
 		if os.path.exists(path) or fdir!='failed':
 			try:
 				if fdir!='failed':
-					f = abortable_worker(netCDF4.Dataset,5,fdir)	# 5 seconds timeout
+					f = abortable_worker(netCDF4.Dataset,10,fdir)	# 5 seconds timeout
 					os.remove(fdir)
 				else:
-					f = abortable_worker(netCDF4.Dataset,5,path)	# 5 seconds timeout
+					f = abortable_worker(netCDF4.Dataset,10,path)	# 5 seconds timeout
 				# f = netCDF4.Dataset(fdir)
 				if f==False:
 					print(path+' reading failed')
@@ -6760,11 +6790,12 @@ class mclass:
 			# self.strikepointR = efit_reconstruction['strikepointR']
 			# self.strikepointZ = efit_reconstruction['strikepointZ']
 			client_int=pyuda.Client()
-			self.strikepointR = np.array([efit_reconstruction['outer_strikepoint_upper_r'],efit_reconstruction['outer_strikepoint_lower_r'],client_int.get('epm/output/separatrixGeometry/dndXpoint2InnerStrikepointR',source=pulse_ID).data,client_int.get('epm/output/separatrixGeometry/dndXpoint2InnerStrikepointR',source=pulse_ID).data]).T
+			self.strikepointR = np.array([efit_reconstruction['outer_strikepoint_upper_r'],efit_reconstruction['outer_strikepoint_lower_r'],client_int.get('epm/output/separatrixGeometry/dndXpoint2InnerStrikepointR',source=pulse_ID).data,client_int.get('epm/output/separatrixGeometry/dndXpoint1InnerStrikepointR',source=pulse_ID).data]).T
 			self.strikepointR[np.isnan(self.strikepointR)] = 0
 			self.strikepointZ = np.array([efit_reconstruction['outer_strikepoint_upper_z'],efit_reconstruction['outer_strikepoint_lower_z'],client_int.get('epm/output/separatrixGeometry/dndXpoint2InnerStrikepointZ',source=pulse_ID).data,client_int.get('epm/output/separatrixGeometry/dndXpoint1InnerStrikepointZ',source=pulse_ID).data]).T
-			reset_connection(client_int)
-			del client_int
+			client_int.reset_connection()
+			# reset_connection(client_int)
+			# del client_int
 			self.strikepointZ[np.isnan(self.strikepointZ)] = 0
 			self.psi_bnd = efit_reconstruction['psi_boundary']
 			self.psi_axis = efit_reconstruction['psi_axis']
@@ -7185,146 +7216,349 @@ def proper_homo_binning_t(time,shrink_factor_t,type='np.nanmean',running_time=Fa
 def efit_reconstruction_to_separatrix_on_foil(efit_reconstruction,refinement=1000):
 	from scipy.signal import find_peaks, peak_prominences as get_proms
 	from scipy.interpolate import interp2d
+	import mastu_exhaust_analysis.fluxsurface_tracer as ft
+	from mastu_exhaust_analysis.read_efit import read_epm
+
+	fdir = uda_transfer(efit_reconstruction.shotnumber,'epm')
+	efit_data = read_epm(fdir,calc_bfield=True)
+	os.remove(fdir)
+
 	all_time_sep_r = []
 	all_time_sep_z = []
-	r_fine = np.unique(np.linspace(efit_reconstruction.R.min(),efit_reconstruction.R.max(),refinement).tolist() + np.linspace(R_centre_column-0.01,R_centre_column+0.08,refinement).tolist())
+	# r_fine = np.unique(np.linspace(efit_reconstruction.R.min(),efit_reconstruction.R.max(),refinement).tolist() + np.linspace(R_centre_column-0.01,R_centre_column+0.08,refinement).tolist())
+	r_fine = np.unique(np.linspace(efit_reconstruction.R.min(),efit_reconstruction.R.max(),refinement).tolist() + np.linspace(R_centre_column-0.01,R_centre_column+0.08,refinement).tolist() + np.linspace(1,1.7,refinement).tolist() + np.linspace(0.5,0.7,refinement).tolist())
 	r_fine = r_fine[r_fine>=R_centre_column-0.01]	# this is to avoid ambiguity around the x-point
-	z_fine = np.linspace(efit_reconstruction.Z.min(),efit_reconstruction.Z.max(),refinement)
+	# z_fine = np.linspace(efit_reconstruction.Z.min(),efit_reconstruction.Z.max(),refinement)
+	z_fine = np.unique(np.linspace(efit_reconstruction.Z.min(),efit_reconstruction.Z.max(),refinement).tolist() + np.linspace(-1.3,-2,refinement).tolist() + np.linspace(1.3,2,refinement).tolist())
 	interp1 = interp1d([1.1,1.5],[-1.5,-1.75],fill_value="extrapolate",bounds_error=False)
 	interp2 = interp1d([1.1,1.5],[-1.5,-1.2],fill_value="extrapolate",bounds_error=False)
 	for time in range(len(efit_reconstruction.time)):
-		gna = efit_reconstruction.psidat[time]
-		sep_up = efit_reconstruction.upper_xpoint_p[time]
-		sep_low = efit_reconstruction.lower_xpoint_p[time]
-		x_point_z_proximity = np.abs(np.nanmin([efit_reconstruction.upper_xpoint_z[time],efit_reconstruction.lower_xpoint_z[time],-0.573-0.2]))-0.2	# -0.573 is an arbitrary treshold in case both are nan
+		try:	# let's do the sensible thing: use already mabe and more trustworthy SW
+			if False:
+				sdfsdaf = asdfsdf	# I want to generate an error and use the older process
+			trace_flux_surface = ft.trace_flux_surface(efit_data, time,efit_reconstruction.lower_xpoint_r[time]+0.03,efit_reconstruction.lower_xpoint_z[time])
+			left_low = np.array(trace_flux_surface.r)
+			left_low_z = np.array(trace_flux_surface.z)
+			left_low = np.round(np.interp(left_low, r_fine,np.arange(len(r_fine)))).astype(int)
+			left_low_z = np.round(np.interp(left_low_z, z_fine,np.arange(len(z_fine)))).astype(int)
+			trace_flux_surface = ft.trace_flux_surface(efit_data, time,efit_reconstruction.lower_xpoint_r[time]-0.03,efit_reconstruction.lower_xpoint_z[time])
+			right_low = np.array(trace_flux_surface.r)
+			right_low_z = np.array(trace_flux_surface.z)
+			right_low = np.round(np.interp(right_low, r_fine,np.arange(len(r_fine)))).astype(int)
+			right_low_z = np.round(np.interp(right_low_z, z_fine,np.arange(len(z_fine)))).astype(int)
+			trace_flux_surface = ft.trace_flux_surface(efit_data, time,efit_reconstruction.upper_xpoint_r[time]+0.03,efit_reconstruction.upper_xpoint_z[time])
+			left_up = np.array(trace_flux_surface.r)
+			left_up_z = np.array(trace_flux_surface.z)
+			left_up = np.round(np.interp(left_up, r_fine,np.arange(len(r_fine)))).astype(int)
+			left_up_z = np.round(np.interp(left_up_z, z_fine,np.arange(len(z_fine)))).astype(int)
+			trace_flux_surface = ft.trace_flux_surface(efit_data, time,efit_reconstruction.upper_xpoint_r[time]-0.03,efit_reconstruction.upper_xpoint_z[time])
+			right_up = np.array(trace_flux_surface.r)
+			right_up_z = np.array(trace_flux_surface.z)
+			right_up = np.round(np.interp(right_up, r_fine,np.arange(len(r_fine)))).astype(int)
+			right_up_z = np.round(np.interp(right_up_z, z_fine,np.arange(len(z_fine)))).astype(int)
+		except:
+			gna = efit_reconstruction.psidat[time]
+			sep_up = efit_reconstruction.upper_xpoint_p[time]
+			sep_low = efit_reconstruction.lower_xpoint_p[time]
+			x_point_z_proximity = np.abs(np.nanmin([efit_reconstruction.upper_xpoint_z[time],efit_reconstruction.lower_xpoint_z[time],-0.573-0.2]))-0.2	# -0.573 is an arbitrary treshold in case both are nan
 
-		psi_interpolator = interp2d(efit_reconstruction.R,efit_reconstruction.Z,gna)
-		psi = psi_interpolator(r_fine,z_fine)
-		psi_up = -np.abs(psi-sep_up)
-		psi_low = -np.abs(psi-sep_low)
-		all_peaks_up = []
-		all_z_up = []
-		all_peaks_low = []
-		all_z_low = []
-		z_array = np.arange(len(z_fine))
-		z_array = np.array([np.concatenate((z_array[z_fine>=0],np.flip(z_array[z_fine<0],axis=0))),np.concatenate((z_fine[z_fine>=0],np.flip(z_fine[z_fine<0],axis=0)))]).T
-		# for i_z,z in enumerate(z_fine):
-		for i_z,z in z_array:
-			i_z = int(i_z)
-			# psi_z = psi[i_z]
-			peaks = find_peaks(psi_up[i_z])[0]
-			all_peaks_up.append(peaks)
-			all_z_up.append([i_z]*len(peaks))
-			peaks = find_peaks(psi_low[i_z])[0]
-			all_peaks_low.append(peaks)
-			all_z_low.append([i_z]*len(peaks))
-		all_peaks_up = np.concatenate(all_peaks_up).astype(int)
-		all_z_up = np.concatenate(all_z_up).astype(int)
-		found_psi_up = np.abs(psi_up[all_z_up,all_peaks_up])
-		all_peaks_low = np.concatenate(all_peaks_low).astype(int)
-		all_z_low = np.concatenate(all_z_low).astype(int)
-		found_psi_low = np.abs(psi_low[all_z_low,all_peaks_low])
+			# this scans psi for each z and finds radius of the peaks
+			psi_interpolator = interp2d(efit_reconstruction.R,efit_reconstruction.Z,gna,kind='cubic')
+			psi = psi_interpolator(r_fine,z_fine)
+			psi_up = -np.abs(psi-sep_up)
+			psi_low = -np.abs(psi-sep_low)
+			all_peaks_up = []
+			all_z_up = []
+			all_peaks_low = []
+			all_z_low = []
+			z_array = np.arange(len(z_fine))
+			# z_array = np.array([np.concatenate((z_array[z_fine>=0],np.flip(z_array[z_fine<0],axis=0))),np.concatenate((z_fine[z_fine>=0],np.flip(z_fine[z_fine<0],axis=0)))]).T	# I'm not sure why I was rearranginf z like this
+			z_array = np.array([z_array,z_fine]).T
+			# for i_z,z in enumerate(z_fine):
+			for i_z,z in z_array:
+				i_z = int(i_z)
+				# psi_z = psi[i_z]
+				peaks = find_peaks(psi_up[i_z])[0]
+				all_peaks_up.append(peaks)
+				all_z_up.append([i_z]*len(peaks))
+				peaks = find_peaks(psi_low[i_z])[0]
+				all_peaks_low.append(peaks)
+				all_z_low.append([i_z]*len(peaks))
+			all_peaks_up = np.concatenate(all_peaks_up).astype(int)
+			all_z_up = np.concatenate(all_z_up).astype(int)
+			found_psi_up = np.abs(psi_up[all_z_up,all_peaks_up])
+			all_peaks_low = np.concatenate(all_peaks_low).astype(int)
+			all_z_low = np.concatenate(all_z_low).astype(int)
+			found_psi_low = np.abs(psi_low[all_z_low,all_peaks_low])
 
-		# plt.figure()
-		# plt.plot(z_fine[all_z_up[found_psi_up<(gna.max()-gna.min())/500]],r_fine[all_peaks_up[found_psi_up<(gna.max()-gna.min())/500]],'+b')
-		# plt.plot(z_fine[all_z_low[found_psi_low<(gna.max()-gna.min())/500]],r_fine[all_peaks_low[found_psi_low<(gna.max()-gna.min())/500]],'+r')
-		all_peaks_up = all_peaks_up[found_psi_up<(gna.max()-gna.min())/500]
-		all_z_up = all_z_up[found_psi_up<(gna.max()-gna.min())/500]
-		all_peaks_low = all_peaks_low[found_psi_low<(gna.max()-gna.min())/500]
-		all_z_low = all_z_low[found_psi_low<(gna.max()-gna.min())/500]
+			# this is to remove small peaks found
+			# plt.figure()
+			# plt.plot(z_fine[all_z_up[found_psi_up<(gna.max()-gna.min())/500]],r_fine[all_peaks_up[found_psi_up<(gna.max()-gna.min())/500]],'+b')
+			# plt.plot(z_fine[all_z_low[found_psi_low<(gna.max()-gna.min())/500]],r_fine[all_peaks_low[found_psi_low<(gna.max()-gna.min())/500]],'+r')
+			all_peaks_up = all_peaks_up[found_psi_up<(gna.max()-gna.min())/500]
+			all_z_up = all_z_up[found_psi_up<(gna.max()-gna.min())/500]
+			all_peaks_low = all_peaks_low[found_psi_low<(gna.max()-gna.min())/500]
+			all_z_low = all_z_low[found_psi_low<(gna.max()-gna.min())/500]
 
-		# plt.figure()
-		# plt.plot(z_fine[all_z_up],r_fine[all_peaks_up],'+b')
-		# plt.plot(z_fine[all_z_low],r_fine[all_peaks_low],'+r')
-		# plt.pause(0.01)
-		select = np.logical_or( interp1(r_fine[all_peaks_up])>z_fine[all_z_up] , interp2(r_fine[all_peaks_up])<z_fine[all_z_up] )
-		all_peaks_up = all_peaks_up[select]
-		all_z_up = all_z_up[select]
-		select = np.logical_or( interp1(r_fine[all_peaks_low])>z_fine[all_z_low] , interp2(r_fine[all_peaks_low])<z_fine[all_z_low] )
-		all_peaks_low = all_peaks_low[select]
-		all_z_low = all_z_low[select]
+			# I add the x-points
+			all_peaks_up = np.concatenate([all_peaks_up,[np.abs(r_fine-efit_reconstruction.lower_xpoint_r[time]).argmin()]]).astype(int)
+			all_z_up = np.concatenate([all_z_up,[z_array[:,0][np.abs(z_array[:,1]-efit_reconstruction.lower_xpoint_z[time]).argmin()]]]).astype(int)
+			all_peaks_low = np.concatenate([all_peaks_low,[np.abs(r_fine-efit_reconstruction.upper_xpoint_r[time]).argmin()]]).astype(int)
+			all_z_low = np.concatenate([all_z_low,[z_array[:,0][np.abs(z_array[:,1]-efit_reconstruction.upper_xpoint_z[time]).argmin()]]]).astype(int)
 
-		left_up = []
-		right_up = []
-		left_up_z = []
-		right_up_z = []
-		left_low = []
-		right_low = []
-		left_low_z = []
-		right_low_z = []
-		# for i_z,z in enumerate(z_fine):
-		for i_z,z in z_array:
-			i_z = int(i_z)
-			if i_z in all_z_up:
-				temp = all_peaks_up[all_z_up==i_z]
-				if len(temp) == 1:
-					right_up.append(temp[0])
-					right_up_z.append(i_z)
-				elif len(temp) == 2:
-					# # if r_fine[temp.min()]>R_centre_column or np.abs(z)<x_point_z_proximity:
-					# if r_fine[temp.min()]>R_centre_column_interpolator(-np.abs(z)):
-					if np.abs(z)>1.5 and np.sum(r_fine[temp]<0.8)==0:	# this identifies the condition when the outer separatrix curles up and it gets split in inner and outer
-						right_up.append(temp[np.abs(temp - right_up[-1]).argmin()])
-						right_up_z.append(i_z)
-					else:
-						left_up.append(temp.min())
-						left_up_z.append(i_z)
-						right_up.append(temp.max())
-						right_up_z.append(i_z)
-				elif len(temp) == 3:
-					if np.abs(z)>1.5 and np.sum(r_fine[temp]<0.8)==0:	# this identifies the condition when the outer separatrix curles up and it gets split in inner and outer
-						right_up.append(temp[np.abs(temp - right_up[-1]).argmin()])
-						right_up_z.append(i_z)
-					else:
-						left_up.append(np.sort(temp)[1])
-						left_up_z.append(i_z)
-						right_up.append(temp.max())
-						right_up_z.append(i_z)
-				elif len(temp) == 4:
-					left_up.append(np.sort(temp)[1])
-					left_up_z.append(i_z)
-					right_up.append(np.sort(temp)[2])
-					right_up_z.append(i_z)
-			if i_z in all_z_low:
-				temp = all_peaks_low[all_z_low==i_z]
-				if len(temp) == 1:
-					right_low.append(temp[0])
-					right_low_z.append(i_z)
-				elif len(temp) == 2:
-					# # if r_fine[temp.min()]>R_centre_column or np.abs(z)<x_point_z_proximity:
-					# if r_fine[temp.min()]>R_centre_column_interpolator(-np.abs(z)):
-					if np.abs(z)>1.5 and np.sum(r_fine[temp]<0.8)==0:	# this identifies the condition when the outer separatrix curles up and it gets split in inner and outer
-						right_low.append(temp[np.abs(temp - right_low[-1]).argmin()])
-						right_low_z.append(i_z)
-					else:
-						left_low.append(temp.min())
-						left_low_z.append(i_z)
-						right_low.append(temp.max())
-						right_low_z.append(i_z)
-				elif len(temp) == 3:
-					if np.abs(z)>1.5 and np.sum(r_fine[temp]<0.8)==0:	# this identifies the condition when the outer separatrix curles up and it gets split in inner and outer
-						right_low.append(temp[np.abs(temp - right_low[-1]).argmin()])
-						right_low_z.append(i_z)
-					else:
-						left_low.append(np.sort(temp)[1])
-						left_low_z.append(i_z)
-						right_low.append(temp.max())
-						right_low_z.append(i_z)
-				elif len(temp) == 4:
-					left_low.append(np.sort(temp)[1])
-					left_low_z.append(i_z)
-					right_low.append(np.sort(temp)[2])
-					right_low_z.append(i_z)
-		# sep_r = [left_up,right_up,left_low,right_low]
-		# sep_z = [left_up_z,right_up_z,left_low_z,right_low_z]
-		left_up = np.array([y for _, y in sorted(zip(left_up_z, left_up))])
-		left_up_z = np.sort(left_up_z)
-		right_up = np.array([y for _, y in sorted(zip(right_up_z, right_up))])
-		right_up_z = np.sort(right_up_z)
-		left_low = np.array([y for _, y in sorted(zip(left_low_z, left_low))])
-		left_low_z = np.sort(left_low_z)
-		right_low = np.array([y for _, y in sorted(zip(right_low_z, right_low))])
-		right_low_z = np.sort(right_low_z)
+
+			# this cuts the sections inside the nose. dunno why it is needed, now
+			# plt.figure()
+			# plt.plot(z_fine[all_z_up],r_fine[all_peaks_up],'+b')
+			# plt.plot(z_fine[all_z_low],r_fine[all_peaks_low],'+r')
+			# plt.pause(0.01)
+			select = np.logical_or( interp1(r_fine[all_peaks_up])>z_fine[all_z_up] , interp2(r_fine[all_peaks_up])<z_fine[all_z_up] )
+			all_peaks_up = all_peaks_up[select]
+			all_z_up = all_z_up[select]
+			select = np.logical_or( interp1(r_fine[all_peaks_low])>z_fine[all_z_low] , interp2(r_fine[all_peaks_low])<z_fine[all_z_low] )
+			all_peaks_low = all_peaks_low[select]
+			all_z_low = all_z_low[select]
+
+			if True:	# this takes the scanned sections in z and picks the innermost one for inner separatrix and outermost as outer separatrix
+				left_up = []
+				right_up = []
+				left_up_z = []
+				right_up_z = []
+				left_low = []
+				right_low = []
+				left_low_z = []
+				right_low_z = []
+				# for i_z,z in enumerate(z_fine):
+				for i_z,z in z_array:
+					i_z = int(i_z)
+					if i_z in all_z_up:
+						temp = all_peaks_up[all_z_up==i_z]
+						if len(temp) == 1:
+							right_up.append(temp[0])
+							right_up_z.append(i_z)
+						elif len(temp) == 2:
+							# # if r_fine[temp.min()]>R_centre_column or np.abs(z)<x_point_z_proximity:
+							# if r_fine[temp.min()]>R_centre_column_interpolator(-np.abs(z)):
+							if np.abs(z)>1.5 and np.sum(r_fine[temp]<0.8)==0:	# this identifies the condition when the outer separatrix curles up and it gets split in inner and outer
+								right_up.append(temp[np.abs(temp - right_up[-1]).argmin()])
+								right_up_z.append(i_z)
+							else:
+								left_up.append(temp.min())
+								left_up_z.append(i_z)
+								right_up.append(temp.max())
+								right_up_z.append(i_z)
+						elif len(temp) == 3:
+							if np.abs(z)>1.5 and np.sum(r_fine[temp]<0.8)==0:	# this identifies the condition when the outer separatrix curles up and it gets split in inner and outer
+								right_up.append(temp[np.abs(temp - right_up[-1]).argmin()])
+								right_up_z.append(i_z)
+							else:
+								left_up.append(np.sort(temp)[1])
+								left_up_z.append(i_z)
+								right_up.append(temp.max())
+								right_up_z.append(i_z)
+						elif len(temp) == 4:
+							left_up.append(np.sort(temp)[1])
+							left_up_z.append(i_z)
+							right_up.append(np.sort(temp)[2])
+							right_up_z.append(i_z)
+					if i_z in all_z_low:
+						temp = all_peaks_low[all_z_low==i_z]
+						if len(temp) == 1:
+							right_low.append(temp[0])
+							right_low_z.append(i_z)
+						elif len(temp) == 2:
+							# # if r_fine[temp.min()]>R_centre_column or np.abs(z)<x_point_z_proximity:
+							# if r_fine[temp.min()]>R_centre_column_interpolator(-np.abs(z)):
+							if np.abs(z)>1.5 and np.sum(r_fine[temp]<0.8)==0:	# this identifies the condition when the outer separatrix curles up and it gets split in inner and outer
+								right_low.append(temp[np.abs(temp - right_low[-1]).argmin()])
+								right_low_z.append(i_z)
+							else:
+								left_low.append(temp.min())
+								left_low_z.append(i_z)
+								right_low.append(temp.max())
+								right_low_z.append(i_z)
+						elif len(temp) == 3:
+							if np.abs(z)>1.5 and np.sum(r_fine[temp]<0.8)==0:	# this identifies the condition when the outer separatrix curles up and it gets split in inner and outer
+								right_low.append(temp[np.abs(temp - right_low[-1]).argmin()])
+								right_low_z.append(i_z)
+							else:
+								left_low.append(np.sort(temp)[1])
+								left_low_z.append(i_z)
+								right_low.append(temp.max())
+								right_low_z.append(i_z)
+						elif len(temp) == 4:
+							left_low.append(np.sort(temp)[1])
+							left_low_z.append(i_z)
+							right_low.append(np.sort(temp)[2])
+							right_low_z.append(i_z)
+				# sep_r = [left_up,right_up,left_low,right_low]
+				# sep_z = [left_up_z,right_up_z,left_low_z,right_low_z]
+				left_up = np.array([y for _, y in sorted(zip(left_up_z, left_up))])
+				left_up_z = np.sort(left_up_z)
+				right_up = np.array([y for _, y in sorted(zip(right_up_z, right_up))])
+				right_up_z = np.sort(right_up_z)
+				left_low = np.array([y for _, y in sorted(zip(left_low_z, left_low))])
+				left_low_z = np.sort(left_low_z)
+				right_low = np.array([y for _, y in sorted(zip(right_low_z, right_low))])
+				right_low_z = np.sort(right_low_z)
+			elif False:	# something I can do is to build a crowler that starts from the HFS or LFS and finds the closer point sticking to the previous that stays on the left or right
+				# inner side
+				last_point = np.abs((z_fine[all_z_up]-0)**2 + (r_fine[all_peaks_up]-R_centre_column)**2).argmin()	# point closer to midplane
+				# z is in increasing direction
+				# I crawl first up. the point is to stay always on the left
+				radious_of_search = 0.05	# m
+				next_point = ((z_fine[all_z_up]-z_fine[all_z_up][last_point])**2 + (r_fine[all_peaks_up]-r_fine[all_peaks_up][last_point])**2 + (z_fine[all_z_up]<=z_fine[all_z_up][last_point])*1e3*radious_of_search).argmin()
+				left_up = [r_fine[all_peaks_up][last_point],r_fine[all_peaks_up][next_point]]
+				left_up_z = [z_fine[all_z_up][last_point],z_fine[all_z_up][next_point]]
+				points_used = [last_point,next_point]
+				points_masked = [last_point,next_point]
+				points_masked.extend(np.arange(len(z_fine[all_z_up]))[z_fine[all_z_up]<z_fine[all_z_up][last_point]])
+				select = ((z_fine[all_z_up]-z_fine[all_z_up][next_point])**2 + (r_fine[all_peaks_up]-r_fine[all_peaks_up][next_point])**2) <= radious_of_search**2
+				select[points_masked] = False
+				while np.sum(select)>0:
+					last_angle = np.arctan2(z_fine[all_z_up][last_point]-z_fine[all_z_up][next_point],r_fine[all_peaks_up][last_point]-r_fine[all_peaks_up][next_point])*180/np.pi
+					if last_angle<0:
+						last_angle = 360+last_angle
+					next_angle = []
+					next_radius = []
+					for i_ in range(np.sum(select)):
+						temp = np.arctan2(z_fine[all_z_up][select][i_]-z_fine[all_z_up][next_point],r_fine[all_peaks_up][select][i_]-r_fine[all_peaks_up][next_point])*180/np.pi
+						if temp<0:
+							temp = 360+temp
+						next_angle.append(temp)
+						next_radius.append(((z_fine[all_z_up][select][i_]-z_fine[all_z_up][next_point])**2 + (r_fine[all_peaks_up][select][i_]-r_fine[all_peaks_up][next_point])**2)**0.5)
+					# next_angle = np.array(next_angle)
+					# next_angle[next_angle<0] = 360-next_angle[next_angle<0]
+					angle_difference = last_angle-np.array(next_angle)
+					angle_difference[angle_difference<0] = 360+angle_difference[angle_difference<0]
+					next_perimeter = angle_difference* np.array(next_radius)**2
+					last_point = cp.deepcopy(next_point)
+					next_point = np.arange(len(z_fine[all_z_up]))[select][angle_difference>20][next_perimeter[angle_difference>20].argmin()]
+					# next_point = np.arange(len(z_fine[all_z_up]))[select][next_perimeter.argmin()]
+					points_masked.append(next_point)
+					points_used.append(next_point)
+					left_up.append(r_fine[all_peaks_up][next_point])
+					left_up_z.append(z_fine[all_z_up][next_point])
+					select = ((z_fine[all_z_up]-z_fine[all_z_up][next_point])**2 + (r_fine[all_peaks_up]-r_fine[all_peaks_up][next_point])**2) <= radious_of_search**2
+					select[points_masked] = False
+
+				left_up = np.flip(left_up,axis=0).tolist()
+				left_up_z = np.flip(left_up_z,axis=0).tolist()
+				points_used = np.flip(points_used,axis=0).tolist()
+				# now I go down. the point is to stay alwaus on the right
+				last_point = cp.deepcopy(points_used[-2])
+				next_point = cp.deepcopy(points_used[-1])
+				points_masked = cp.deepcopy(points_used)
+				points_masked.extend(np.arange(len(z_fine[all_z_up]))[z_fine[all_z_up]>z_fine[all_z_up][last_point]])
+				select = ((z_fine[all_z_up]-z_fine[all_z_up][next_point])**2 + (r_fine[all_peaks_up]-r_fine[all_peaks_up][next_point])**2) <= radious_of_search**2
+				select[points_masked] = False
+				while np.sum(select)>0:
+					last_angle = np.arctan2(z_fine[all_z_up][last_point]-z_fine[all_z_up][next_point],r_fine[all_peaks_up][last_point]-r_fine[all_peaks_up][next_point])*180/np.pi
+					if last_angle<0:
+						last_angle = 360+last_angle
+					next_angle = []
+					next_radius = []
+					for i_ in range(np.sum(select)):
+						temp = np.arctan2(z_fine[all_z_up][select][i_]-z_fine[all_z_up][next_point],r_fine[all_peaks_up][select][i_]-r_fine[all_peaks_up][next_point])*180/np.pi
+						if temp<0:
+							temp = 360+temp
+						next_angle.append(temp)
+						next_radius.append(((z_fine[all_z_up][select][i_]-z_fine[all_z_up][next_point])**2 + (r_fine[all_peaks_up][select][i_]-r_fine[all_peaks_up][next_point])**2)**0.5)
+					# next_angle = np.array(next_angle)
+					# next_angle[next_angle<0] = 360-next_angle[next_angle<0]
+					angle_difference = np.array(next_angle) - last_angle	# this way going down it stays to the right
+					angle_difference[angle_difference<0] = 360+angle_difference[angle_difference<0]
+					next_perimeter = angle_difference* np.array(next_radius)**2
+					last_point = cp.deepcopy(next_point)
+					next_point = np.arange(len(z_fine[all_z_up]))[select][angle_difference>20][next_perimeter[angle_difference>20].argmin()]
+					# next_point = np.arange(len(z_fine[all_z_up]))[select][next_perimeter.argmin()]
+					points_masked.append(next_point)
+					points_used.append(next_point)
+					left_up.append(r_fine[all_peaks_up][next_point])
+					left_up_z.append(z_fine[all_z_up][next_point])
+					select = ((z_fine[all_z_up]-z_fine[all_z_up][next_point])**2 + (r_fine[all_peaks_up]-r_fine[all_peaks_up][next_point])**2) <= radious_of_search**2
+					select[points_masked] = False
+
+
+				# now I do the outer one
+				last_point = np.abs((z_fine[all_z_up]-0)**2 + (r_fine[all_peaks_up]-1.4)**2).argmin()	# point closer to midplane and to an arbitrary 1.4 radious
+				# z is in increasing direction
+				# I crawl first up. the point is to stay always on the right
+				radious_of_search = 0.05	# m
+				next_point = ((z_fine[all_z_up]-z_fine[all_z_up][last_point])**2 + (r_fine[all_peaks_up]-r_fine[all_peaks_up][last_point])**2 + (z_fine[all_z_up]<=z_fine[all_z_up][last_point])*1e3*radious_of_search).argmin()
+				right_up = [r_fine[all_peaks_up][last_point],r_fine[all_peaks_up][next_point]]
+				right_up_z = [z_fine[all_z_up][last_point],z_fine[all_z_up][next_point]]
+				points_used = [last_point,next_point]
+				points_masked = [last_point,next_point]
+				points_masked.extend(np.arange(len(z_fine[all_z_up]))[z_fine[all_z_up]<z_fine[all_z_up][last_point]])
+				select = ((z_fine[all_z_up]-z_fine[all_z_up][next_point])**2 + (r_fine[all_peaks_up]-r_fine[all_peaks_up][next_point])**2) <= radious_of_search**2
+				select[points_masked] = False
+				while np.sum(select)>0:
+					last_angle = np.arctan2(z_fine[all_z_up][last_point]-z_fine[all_z_up][next_point],r_fine[all_peaks_up][last_point]-r_fine[all_peaks_up][next_point])*180/np.pi
+					if last_angle<0:
+						last_angle = 360+last_angle
+					next_angle = []
+					next_radius = []
+					for i_ in range(np.sum(select)):
+						temp = np.arctan2(z_fine[all_z_up][select][i_]-z_fine[all_z_up][next_point],r_fine[all_peaks_up][select][i_]-r_fine[all_peaks_up][next_point])*180/np.pi
+						if temp<0:
+							temp = 360+temp
+						next_angle.append(temp)
+						next_radius.append(((z_fine[all_z_up][select][i_]-z_fine[all_z_up][next_point])**2 + (r_fine[all_peaks_up][select][i_]-r_fine[all_peaks_up][next_point])**2)**0.5)
+					# next_angle = np.array(next_angle)
+					# next_angle[next_angle<0] = 360-next_angle[next_angle<0]
+					angle_difference = np.array(next_angle) - last_angle	# this way going up it stays to the right
+					angle_difference[angle_difference<0] = 360+angle_difference[angle_difference<0]
+					next_perimeter = angle_difference* np.array(next_radius)**2
+					last_point = cp.deepcopy(next_point)
+					next_point = np.arange(len(z_fine[all_z_up]))[select][angle_difference>20][next_perimeter[angle_difference>20].argmin()]
+					# next_point = np.arange(len(z_fine[all_z_up]))[select][next_perimeter.argmin()]
+					points_masked.append(next_point)
+					points_used.append(next_point)
+					right_up.append(r_fine[all_peaks_up][next_point])
+					right_up_z.append(z_fine[all_z_up][next_point])
+					select = ((z_fine[all_z_up]-z_fine[all_z_up][next_point])**2 + (r_fine[all_peaks_up]-r_fine[all_peaks_up][next_point])**2) <= radious_of_search**2
+					select[points_masked] = False
+
+				right_up = np.flip(right_up,axis=0).tolist()
+				right_up_z = np.flip(right_up_z,axis=0).tolist()
+				points_used = np.flip(points_used,axis=0).tolist()
+				# now I go down. the point is to stay alwaus on the right
+				last_point = cp.deepcopy(points_used[-2])
+				next_point = cp.deepcopy(points_used[-1])
+				points_masked = cp.deepcopy(points_used)
+				points_masked.extend(np.arange(len(z_fine[all_z_up]))[z_fine[all_z_up]>z_fine[all_z_up][last_point]])
+				select = ((z_fine[all_z_up]-z_fine[all_z_up][next_point])**2 + (r_fine[all_peaks_up]-r_fine[all_peaks_up][next_point])**2) <= radious_of_search**2
+				select[points_masked] = False
+				while np.sum(select)>0:
+					last_angle = np.arctan2(z_fine[all_z_up][last_point]-z_fine[all_z_up][next_point],r_fine[all_peaks_up][last_point]-r_fine[all_peaks_up][next_point])*180/np.pi
+					if last_angle<0:
+						last_angle = 360+last_angle
+					next_angle = []
+					next_radius = []
+					for i_ in range(np.sum(select)):
+						temp = np.arctan2(z_fine[all_z_up][select][i_]-z_fine[all_z_up][next_point],r_fine[all_peaks_up][select][i_]-r_fine[all_peaks_up][next_point])*180/np.pi
+						if temp<0:
+							temp = 360+temp
+						next_angle.append(temp)
+						next_radius.append(((z_fine[all_z_up][select][i_]-z_fine[all_z_up][next_point])**2 + (r_fine[all_peaks_up][select][i_]-r_fine[all_peaks_up][next_point])**2)**0.5)
+					# next_angle = np.array(next_angle)
+					# next_angle[next_angle<0] = 360-next_angle[next_angle<0]
+					angle_difference = last_angle - np.array(next_angle)	# this way going down it stays to the left
+					angle_difference[angle_difference<0] = 360+angle_difference[angle_difference<0]
+					next_perimeter = angle_difference* np.array(next_radius)**2
+					last_point = cp.deepcopy(next_point)
+					next_point = np.arange(len(z_fine[all_z_up]))[select][angle_difference>20][next_perimeter[angle_difference>20].argmin()]
+					# next_point = np.arange(len(z_fine[all_z_up]))[select][next_perimeter.argmin()]
+					points_masked.append(next_point)
+					points_used.append(next_point)
+					right_up.append(r_fine[all_peaks_up][next_point])
+					right_up_z.append(z_fine[all_z_up][next_point])
+					select = ((z_fine[all_z_up]-z_fine[all_z_up][next_point])**2 + (r_fine[all_peaks_up]-r_fine[all_peaks_up][next_point])**2) <= radious_of_search**2
+					select[points_masked] = False
+				# forget about it, it's way too fiddly
+
+
 		# plt.figure()
 		# plt.plot(z_fine[left_up_z],r_fine[left_up],'-b')
 		# plt.plot(z_fine[right_up_z],r_fine[right_up],'-r')
@@ -7384,7 +7618,7 @@ def get_rotation_crop_parameters(testrot,foil_position_dict,laser_to_analyse,pla
 	plt.colorbar().set_label('counts [au]')
 	plt.plot(foilx-1,foily-1,'k--',alpha=0.5)
 	plt.plot(foilcenter[0],foilcenter[1],'k+',markersize=30)
-	plt.savefig(laser_to_analyse[:-4]+'_foil_fit.eps', bbox_inches='tight')
+	plt.savefig(laser_to_analyse[:-4]+'_foil_fit.eps')#, bbox_inches='tight')
 	plt.close('all')
 	plt.figure(figsize=(20, 10))
 	plt.title('Foil search in '+laser_to_analyse+'\nFoil center '+str(foilcenter)+', foil rot '+str(foilrotdeg)+'deg, foil size '+str([foilhorizwpixel,foilvertwpixel])+'pixel\n sobel filter\n')
@@ -7400,7 +7634,7 @@ def get_rotation_crop_parameters(testrot,foil_position_dict,laser_to_analyse,pla
 	plt.colorbar().set_label('counts [au]')
 	plt.plot(foilx-1,foily-1,'k--',alpha=0.5)
 	plt.plot(foilcenter[0],foilcenter[1],'k+',markersize=30)
-	plt.savefig(laser_to_analyse[:-4]+'_foil_fit_sobel.eps', bbox_inches='tight')
+	plt.savefig(laser_to_analyse[:-4]+'_foil_fit_sobel.eps')#, bbox_inches='tight')
 	plt.close('all')
 
 	plt.figure(figsize=(20, 10))
@@ -7414,7 +7648,7 @@ def get_rotation_crop_parameters(testrot,foil_position_dict,laser_to_analyse,pla
 	plt.colorbar().set_label('deviation from running average [au]')
 	plt.plot(foilx-1,foily-1,'r')
 	plt.plot(foilcenter[0],foilcenter[1],'k+',markersize=30)
-	plt.savefig(laser_to_analyse[:-4]+'_foil_fit_plasma.eps', bbox_inches='tight')
+	plt.savefig(laser_to_analyse[:-4]+'_foil_fit_plasma.eps')#, bbox_inches='tight')
 	plt.close('all')
 
 	testrotback=rotate(testrot,foilrotdeg,axes=(-1,-2))
@@ -7460,7 +7694,7 @@ def get_rotation_crop_parameters(testrot,foil_position_dict,laser_to_analyse,pla
 		plt.imshow(testrotback_crop,'rainbow',origin='lower')
 		plt.plot([10-0.5,testrotback_crop.shape[1]-10-0.5,testrotback_crop.shape[1]-10-0.5,10-0.5,10-0.5],[10-0.5,10-0.5,testrotback_crop.shape[0]-10-0.5,testrotback_crop.shape[0]-10-0.5,10-0.5],'--k')
 		plt.colorbar().set_label('counts [au]')
-		plt.savefig(laser_to_analyse[:-4]+'_foil_fit_2.eps', bbox_inches='tight')
+		plt.savefig(laser_to_analyse[:-4]+'_foil_fit_2.eps')#, bbox_inches='tight')
 		plt.close('all')
 
 	return foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx
@@ -7701,7 +7935,7 @@ def find_radiator_location(inverted_data,inversion_R,inversion_Z,time_full_binne
 		try:
 			i_efit_time = np.abs(efit_reconstruction.time-time_full_binned_crop[i_t]).argmin()
 
-			central_voxel = inverted_data[i_t,1:-1,1:-1]
+			central_voxel = cp.deepcopy(inverted_data[i_t,1:-1,1:-1])
 			central_voxel_flat = central_voxel.flatten()
 			highest_surrounding_voxel = np.nanmax([inverted_data[i_t,1:-1,:-2],inverted_data[i_t,:-2,:-2],inverted_data[i_t,:-2,1:-1],inverted_data[i_t,:-2,2:],inverted_data[i_t,1:-1,2:],inverted_data[i_t,2:,2:],inverted_data[i_t,2:,1:-1],inverted_data[i_t,2:,:-2]],axis=0)
 			peaks = np.logical_and(central_voxel>highest_surrounding_voxel,central_voxel>0)
@@ -7866,7 +8100,7 @@ def track_outer_leg_radiation(inverted_data,inversion_R,inversion_Z,time_full_bi
 
 			local_mean_emis = []
 			local_power = []
-			emissivity_flat = inverted_data[i_t].flatten()
+			emissivity_flat = cp.deepcopy(inverted_data[i_t].flatten())
 			for i_ref_point in range(1,len(ref_points)):
 				# print(i_ref_point)
 				select = []
@@ -8005,7 +8239,7 @@ def track_inner_leg_radiation(inverted_data,inversion_R,inversion_Z,time_full_bi
 
 			local_mean_emis = []
 			local_power = []
-			emissivity_flat = inverted_data[i_t].flatten()
+			emissivity_flat = cp.deepcopy(inverted_data[i_t].flatten())
 			for i_ref_point in range(1,len(ref_points)):
 				# print(i_ref_point)
 				select = []
@@ -8946,6 +9180,54 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 	# created 2022/01/11
 	# created modifying MASTU_pulse_process_FAST3 to go from polynomial temperature calibration fo black body
 
+	# if False:	# lines just for debugging
+	# 	retrive_shot_scenario = coleval.retrive_shot_scenario
+	# 	real_mean_filter_agent = coleval.real_mean_filter_agent
+	# 	estimate_counts_std = coleval.estimate_counts_std
+	# 	get_rotation_crop_parameters = coleval.get_rotation_crop_parameters
+	# 	rotate_and_crop_3D = coleval.rotate_and_crop_3D
+	# 	retrive_vessel_average_temp_archve = coleval.retrive_vessel_average_temp_archve
+	# 	count_to_temp_BB_multi_digitizer = coleval.count_to_temp_BB_multi_digitizer
+	# 	real_mean_filter_agent = coleval.real_mean_filter_agent
+	# 	rotate_and_crop_3D = coleval.rotate_and_crop_3D
+	# 	rotate_and_crop_2D = coleval.rotate_and_crop_2D
+	# 	proper_homo_binning_t_2D = coleval.proper_homo_binning_t_2D
+	# 	proper_homo_binning_2D = coleval.proper_homo_binning_2D
+	# 	proper_homo_binning_t = coleval.proper_homo_binning_t
+	# 	calc_temp_to_power_BB_1 = coleval.calc_temp_to_power_BB_1
+	# 	calc_temp_to_power_BB_2 = coleval.calc_temp_to_power_BB_2
+	# 	movie_from_data = coleval.movie_from_data
+	# 	all_file_names = coleval.all_file_names
+	# 	reduce_voxels = coleval.reduce_voxels
+	# 	proper_homo_binning_1D_1D_1D = coleval.proper_homo_binning_1D_1D_1D
+	# 	cut_sensitivity_matrix_based_on_foil_anysotropy = coleval.cut_sensitivity_matrix_based_on_foil_anysotropy
+	# 	build_laplacian = coleval.build_laplacian
+	# 	select_region_with_plasma = coleval.select_region_with_plasma
+	# 	build_Z_derivate = coleval.build_Z_derivate
+	# 	build_R_derivate = coleval.build_R_derivate
+	#
+	# 	calculate_tangency_angle_for_poloidal_section=coleval.calculate_tangency_angle_for_poloidal_section
+	# 	exec(open("/home/ffederic/work/analysis_scripts/scripts/python_library/collect_and_eval/collect_and_eval/MASTU_structure.py").read())
+	#
+	# 	calculate_tile_geometry = coleval.calculate_tile_geometry
+	# 	define_fitting_functions = coleval.define_fitting_functions
+	# 	loop_fit_over_regularisation = coleval.loop_fit_over_regularisation
+	# 	calc_IRVB_head_power_correction = coleval.calc_IRVB_head_power_correction
+	# 	find_optimal_regularisation_minimal = coleval.find_optimal_regularisation_minimal
+	# 	find_optimal_regularisation = coleval.find_optimal_regularisation
+	# 	translate_emissivity_profile_with_homo_temp = coleval.translate_emissivity_profile_with_homo_temp
+	# 	efit_reconstruction_to_separatrix_on_foil = coleval.efit_reconstruction_to_separatrix_on_foil
+	# 	return_all_time_strike_points_location_radial = coleval.return_all_time_strike_points_location_radial
+	# 	return_MU01_sxd_region_delimiter = coleval.return_MU01_sxd_region_delimiter
+	# 	get_tend = coleval.get_tend
+
+	# define filename
+	filename_root = '/home/ffederic/work/irvb/MAST-U/FAST_results/'+laser_to_analyse[-9:-4]
+	if not os.path.exists(filename_root):
+		os.makedirs(filename_root)
+	filename_root = filename_root+'/'+os.path.split(laser_to_analyse[:-4])[1]+'_pass'+str(pass_number)
+
+
 	# sanity check to see that the data is good
 	force_reference_after_shot = False
 	if np.sum([np.diff(time_of_experiment_digitizer_ID[i]).max()>np.median(np.diff(time_of_experiment_digitizer_ID[i]))*1.8 for i in range(len(laser_digitizer_ID))])>0:
@@ -9127,18 +9409,32 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 		sigma_thickness_over_diffusivity = (sigma_diffusivity**2 + sigma_thickness**2)**0.5
 	elif True:
 		# 2023/10/10 Laser_data_analysis3_3.py,
-		# fiol properties from laser 22 and laser 33, using the sum of the power from both large and small area
-		diffusivity = 9.475792174791206e-06
-		thickness_over_diffusivity = 0.07522113087718789	# this is the real measurement I obtain
+		# foil properties from laser 22 and laser 33, using the sum of the power from both large and small area
+		diffusivity = 9.466307489300497e-06
+		thickness_over_diffusivity = 0.07502143143067985	# this is the real measurement I obtain
 		thickness = thickness_over_diffusivity*diffusivity	# m
-		emissivity = 0.6274716761572996
+		emissivity = 0.6311559794933064
+
+		# I don't have a measurement of anysotropy of the foil, so I use the one given us by the japanese group
+		thickness_variability_japanese_measurement = 0.13257174	# np.std(foilthickness)/np.mean(foilthickness)
+		emissivity_variability_japanese_measurement = 0.049993	# np.std(foilemissivity)/np.mean(foilemissivity)
 
 		# these quantities are ok to be relative
-		sigma_diffusivity = 1.033095658337323e-06/diffusivity
-		sigma_thickness_over_diffusivity = 0.010927297023862682/thickness_over_diffusivity
+		sigma_diffusivity = 8.366535349083484e-07/diffusivity	# the variability from the japanese measurement assumes constand divvusivity, therefore including also its variability, so i don't need to increase this
+		if True:
+			sigma_thickness_over_diffusivity = 0.009226369537711715/thickness_over_diffusivity	# this is at enuc=1
+		else:	# considering that I do not know exactly the NUC plate emissivity, I take as uncertainty the result at Enuc=1 - Enuc=0.7 / Enuc=1
+			sigma_thickness_over_diffusivity = 0.02/thickness_over_diffusivity	# this is at enuc=1
+		sigma_thickness_over_diffusivity = (sigma_thickness_over_diffusivity**2 + thickness_variability_japanese_measurement**2)**0.5
 		sigma_thickness = (sigma_diffusivity**2+sigma_thickness_over_diffusivity**2)**0.5
-		sigma_emissivity = 0.10077707492241648/emissivity
+		if True:
+			sigma_emissivity = 0.08937985599750203/emissivity
+		else:	# considering that I do not know exactly the NUC plate emissivity, I take as uncertainty the result at Enuc=1 - Enuc=0.7 / Enuc=1
+			sigma_emissivity = 0.15/emissivity
+		sigma_emissivity = (sigma_emissivity**2 + emissivity_variability_japanese_measurement**2)**0.5
 	sigma_rec_diffusivity = sigma_diffusivity
+
+	NUC_plate_emissivity = 1
 
 
 	foil_properties_used = dict([])
@@ -9162,9 +9458,15 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 	# errparams_BB[:,:,:,:,0] *= emissivity
 	params_BB_int = cp.deepcopy(params_BB)
 	errparams_BB_int = cp.deepcopy(errparams_BB)
-	params_BB_int[:,:,:,0] *= emissivity
-	errparams_BB_int[:,:,:,0,:] *= emissivity
-	errparams_BB_int[:,:,:,:,0] *= emissivity
+	params_BB_int[:,:,:,0] *= emissivity/NUC_plate_emissivity
+	errparams_BB_int[:,:,:,0,:] *= emissivity/NUC_plate_emissivity
+	errparams_BB_int[:,:,:,:,0] *= emissivity/NUC_plate_emissivity
+	errparams_BB_int[:,:,:,0,0] += (params_BB_int[:,:,:,0]*emissivity/NUC_plate_emissivity*sigma_emissivity)**2
+	if params_BB_int.shape[-1]>2:	# the only coefficient that matters is the other proportional one
+		errparams_BB_int[:,:,:,0,2] += (params_BB_int[:,:,:,0]*emissivity/NUC_plate_emissivity*sigma_emissivity)
+		errparams_BB_int[:,:,:,2,0] += (params_BB_int[:,:,:,0]*emissivity/NUC_plate_emissivity*sigma_emissivity)
+	BB_proportional *= emissivity
+	BB_proportional_std *= emissivity
 
 	averaged_params = np.mean(params,axis=(0))
 	averaged_errparams = np.mean(errparams,axis=(0))
@@ -9248,11 +9550,17 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 
 
 	# this is only for checking at disruptions. it will be heavily effected by noise
-	temperature_minus_background_crop_dt = np.mean(np.diff(temperature_minus_background_crop,axis=1),axis=0).astype(np.float16)
 	temperature_minus_background_crop_dt_time = np.array(time_partial)
 	temperature_minus_background_crop_dt_time = (temperature_minus_background_crop_dt_time[:,1:]+temperature_minus_background_crop_dt_time[:,:-1])/2
 	temperature_minus_background_crop_dt_time = np.mean(temperature_minus_background_crop_dt_time,axis=0)
-
+	# temperature_minus_background_crop_dt = np.mean(np.diff(temperature_minus_background_crop,axis=1),axis=0).astype(np.float16)
+	temperature_minus_background_crop = np.array(temperature_minus_background_crop).astype(np.float32)
+	temperature_minus_background_crop_dt = ((foil_properties_used['thickness'] * foil_properties_used['thermalconductivity'] / foil_properties_used['diffusivity']) * np.mean(np.diff(temperature_minus_background_crop,axis=1),axis=0)/np.median(np.diff(temperature_minus_background_crop_dt_time))/1000).astype(np.float16)
+	temperature_minus_background_crop_dt[:,1:-1,1:-1] -= ((foil_properties_used['thickness'] * foil_properties_used['thermalconductivity']) * np.mean(temperature_minus_background_crop[:,1:,0:-2,1:-1]-2*temperature_minus_background_crop[:,1:,1:-1,1:-1]+temperature_minus_background_crop[:,1:,2:,1:-1],axis=0)/((foil_position_dict['foilhorizw']/foil_position_dict['foilhorizwpixel'])**2)/1000).astype(np.float16)
+	temperature_minus_background_crop_dt[:,1:-1,1:-1] -= ((foil_properties_used['thickness'] * foil_properties_used['thermalconductivity']) * np.mean(temperature_minus_background_crop[:,1:,1:-1,0:-2]-2*temperature_minus_background_crop[:,1:,1:-1,1:-1]+temperature_minus_background_crop[:,1:,1:-1,2:],axis=0)/((foil_position_dict['foilhorizw']/foil_position_dict['foilhorizwpixel'])**2)/1000).astype(np.float16)
+	sigmaSB=5.6704e-08 #[W/(m2 K4)]
+	temperature_minus_background_crop_dt += ((2* sigmaSB* foil_properties_used['emissivity']) * np.mean((temperature_minus_background_crop[:,1:]+ref_temperature+273)**4 - (ref_temperature+273)**4,axis=0)/1000).astype(np.float16)
+	# as it is now this is no more the actualt power  -->> in kW <<--
 
 	# rotation and crop
 	# temp_ref_counts_rot=rotate(temp_ref_counts,foilrotdeg,axes=(-1,-2))
@@ -9284,9 +9592,14 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 		BB_proportional_std_crop = [rotate_and_crop_2D(BB_proportional_std[i],foilrotdeg,max_ROI,height,width,out_of_ROI_mask,foildw,foilup,foillx,foilrx) for i in range(len(laser_digitizer_ID))]
 
 	shrink_factor_t = 1	# int(round(frames_to_average))	# I don't bin anymore because I already averaged with frames_to_average. If I bin it means that I filter twice
-	shrink_factor_x = 3	# with large time averaging this should be enough
+	# shrink_factor_x = 3	# with large time averaging this should be enough
 	if laser_framerate<60:
 		shrink_factor_x = 5	# increase spatial averaging if I have very low framerate
+	# shrink_factor_x = 1	# Test. if error is propagated forward properly, binning should only cause a loss of information with no gain. The bayesian part should do something similar to a smoothing of the input data. checked with Chris Bowman
+	if pass_number==0:	# I sample less to make the analysis faster for the first loop
+		shrink_factor_x = 3
+	else:
+		shrink_factor_x = 1	# this seems to work well, so I make it permanent
 	binning_type = 'bin' + str(np.round(frames_to_average,decimals=2)) + 'x' + str(shrink_factor_x) + 'x' + str(shrink_factor_x)
 
 	if False:
@@ -9378,6 +9691,7 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 		time_binned = cp.deepcopy(temp)
 	else:	# normal process
 		pass
+	filename_root = filename_root + '_'+binning_type
 
 	foil_properties_used['ref_temperature'] = ref_temperature
 	foil_properties_used['ref_temperature_std'] = ref_temperature_std
@@ -9386,6 +9700,11 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 	foilthicknessscaled=thickness*np.ones(np.array(FAST_counts_minus_background_crop_binned[0].shape)-2)
 	conductivityscaled=Ptthermalconductivity*np.ones(np.array(FAST_counts_minus_background_crop_binned[0].shape)-2)
 	reciprdiffusivityscaled=(1/diffusivity)*np.ones(np.array(FAST_counts_minus_background_crop_binned[0].shape)-2)
+	foilemissivityscaled_sigma=sigma_emissivity*emissivity*np.ones(np.array(FAST_counts_minus_background_crop_binned[0].shape)-2)	# absolute quantity, not relative
+	foilthickness_over_diffusivityscaled_sigma=sigma_thickness_over_diffusivity*thickness/diffusivity*np.ones(np.array(FAST_counts_minus_background_crop_binned[0].shape)-2)	# absolute quantity, not relative
+	conductivityscaled_sigma=0*Ptthermalconductivity*np.ones(np.array(FAST_counts_minus_background_crop_binned[0].shape)-2)	# absolute quantity, not relative
+	thicknessscaled_sigma=sigma_thickness*thickness*np.ones(np.array(FAST_counts_minus_background_crop_binned[0].shape)-2)	# absolute quantity, not relative
+
 
 	dx=foil_position_dict['foilhorizw']/foil_position_dict['foilhorizwpixel']*shrink_factor_x
 
@@ -9404,7 +9723,7 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 		T4_T04_std = [[],[]]
 		dTdt[0],dTdt_std[0],d2Tdxy[0],d2Tdxy_std[0],negd2Tdxy[0],negd2Tdxy_std[0],T4_T04[0],T4_T04_std[0] = output1[0]
 		dTdt[1],dTdt_std[1],d2Tdxy[1],d2Tdxy_std[1],negd2Tdxy[1],negd2Tdxy_std[1],T4_T04[1],T4_T04_std[1] = output1[1]
-		output1 = [calc_temp_to_power_BB_2(dTdt[i],dTdt_std[i],d2Tdxy[i],d2Tdxy_std[i],negd2Tdxy[i],negd2Tdxy_std[i],T4_T04[i],T4_T04_std[i],nan_ROI_mask,foilemissivityscaled,foilthicknessscaled,reciprdiffusivityscaled,Ptthermalconductivity) for i in range(len(laser_digitizer_ID))]
+		output1 = [calc_temp_to_power_BB_2(dTdt[i],dTdt_std[i],d2Tdxy[i],d2Tdxy_std[i],negd2Tdxy[i],negd2Tdxy_std[i],T4_T04[i],T4_T04_std[i],nan_ROI_mask,foilemissivityscaled,foilthicknessscaled,reciprdiffusivityscaled,conductivityscaled,foilemissivityscaled_sigma=foilemissivityscaled_sigma,foilthickness_over_diffusivityscaled_sigma=foilthickness_over_diffusivityscaled_sigma,conductivityscaled_sigma=conductivityscaled_sigma,thicknessscaled_sigma=thicknessscaled_sigma) for i in range(len(laser_digitizer_ID))]
 		BBrad = [[],[]]	# W/m2
 		diffusion = [[],[]]	# W/m2
 		timevariation = [[],[]]	# W/m2
@@ -9416,6 +9735,11 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 		BBrad[0],diffusion[0],timevariation[0],powernoback[0],BBrad_std[0],diffusion_std[0],timevariation_std[0],powernoback_std[0] = output1[0]
 		BBrad[1],diffusion[1],timevariation[1],powernoback[1],BBrad_std[1],diffusion_std[1],timevariation_std[1],powernoback_std[1] = output1[1]
 
+	# What I just calculated is the power absorbed by the foil.
+	# this is DIFFERENT from the power emitted by the plasma! only the emissivity*Pplasma i absorbed by the foil
+	for i in range(len(laser_digitizer_ID)):
+		powernoback[i] /= foilemissivityscaled
+		powernoback_std[i] = ((powernoback_std[i]/foilemissivityscaled)**2 + (powernoback[i]/(foilemissivityscaled**2)*foilemissivityscaled_sigma)**2)**0.5
 
 	if int(laser_to_analyse[-9:-4])> 45517:	# MU02 geometry
 		stand_off_length = 0.06	# m
@@ -9447,12 +9771,12 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 	rmax_pinhole_plate=0.045/2	# radious left open by the pinhole plate holder
 	IRVB_head_radious = 0.180/2
 	rmax_IRVB_tube = IRVB_head_radious+np.sum(pinhole_offset**2)**0.5
-	dr_pinhole_plate = 0.001
-	R_pinhole_plate = np.arange(pinhole_radious,rmax_IRVB_tube,dr_pinhole_plate)+dr_pinhole_plate/2
+	dr_pinhole_plate = 0.0001
+	R_IRVB_head_from_pinhole = np.arange(pinhole_radious,rmax_IRVB_tube,dr_pinhole_plate)+dr_pinhole_plate/2
 	# IRVB_head_emissivity = 0.4	# completely arbitrary, similar to the one of shiny stainless steel
 	IRVB_head_emissivity = 1	# the IRVB head is coated in carbon, so high emissivity
 	pinhole_plate_to_foil_weight = []
-	for r in R_pinhole_plate:
+	for r in R_IRVB_head_from_pinhole:
 		a = distance_from_vertical**2 + r**2 + pinhole_to_foil_vertical**2
 		b = 2*distance_from_vertical*r
 		pinhole_plate_to_foil_weight.append( sigmaSB*emissivity *(pinhole_to_foil_vertical**2)* r*dr_pinhole_plate * 2*a * (a**2 - b**2)**0.5 / (b**2 - a**2)**2 )
@@ -9480,8 +9804,8 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 		DT_head = 0
 		DT_ring = 0
 		pinhole_plate_T_slope = +100000000
-		DT_head_r = DT_max + DT_head + ( -DT_max - pinhole_plate_T_slope*(rmax_pinhole_plate-pinhole_radious) ) * ((R_pinhole_plate-pinhole_radious)/(rmax_pinhole_plate-pinhole_radious))**2 + pinhole_plate_T_slope*(R_pinhole_plate-pinhole_radious)
-		DT_head_r[R_pinhole_plate>=rmax_pinhole_plate] = DT_head
+		DT_head_r = DT_max + DT_head + ( -DT_max - pinhole_plate_T_slope*(rmax_pinhole_plate-pinhole_radious) ) * ((R_IRVB_head_from_pinhole-pinhole_radious)/(rmax_pinhole_plate-pinhole_radious))**2 + pinhole_plate_T_slope*(R_IRVB_head_from_pinhole-pinhole_radious)
+		DT_head_r[R_IRVB_head_from_pinhole>=rmax_pinhole_plate] = DT_head
 		DT_head_r[DT_head_r<DT_head] = DT_head
 		DT_head_r[DT_head_r>DT_max+DT_head] = DT_max+DT_head
 		IRVB_head_power_correction = np.sum((pinhole_plate_to_foil_weight.T*((DT_head_r+ref_temperature+zeroC)**4 - (ref_temperature+zeroC)**4)).T,axis=0) + IRVB_head_ring_to_foil_weight*((DT_ring+ref_temperature+zeroC)**4 - (ref_temperature+zeroC)**4)
@@ -9510,10 +9834,12 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 	time_full_binned = np.mean(time_binned,axis=0)[1:-1]
 	time_full_binned_crop = time_full_binned[time_full_binned<tend]
 	powernoback_full_orig = np.mean(powernoback,axis=0)[time_full_binned<tend]
-	try:	# in case i change something and sigma_thickness_over_diffusivity is no longer defined
-		sigma_powernoback_full = 0.5*(np.sum([( (diffusion[i]**2)*((diffusion_std[i]/diffusion[i])**2+sigma_thickness**2) + (timevariation[i]**2)*((timevariation_std[i]/timevariation[i])**2+sigma_thickness_over_diffusivity**2) + (BBrad[i]**2)*((BBrad_std[i]/BBrad[i])**2+sigma_emissivity**2) ) for i in range(len(laser_digitizer_ID))] ,axis=0)**0.5)
-	except:
-		sigma_powernoback_full = 0.5*(np.sum([( (diffusion[i]**2)*((diffusion_std[i]/diffusion[i])**2+sigma_thickness**2) + (timevariation[i]**2)*((timevariation_std[i]/timevariation[i])**2+sigma_thickness**2+sigma_rec_diffusivity**2) + (BBrad[i]**2)*((BBrad_std[i]/BBrad[i])**2+sigma_emissivity**2) ) for i in range(len(laser_digitizer_ID))] ,axis=0)**0.5)
+	# now I calculate the uncertainty completely within calc_temp_to_power_BB_2,m so i don't need to re-do it
+	# try:	# in case i change something and sigma_thickness_over_diffusivity is no longer defined
+	# 	sigma_powernoback_full = 0.5*(np.sum([( (diffusion[i]**2)*((diffusion_std[i]/diffusion[i])**2+sigma_thickness**2) + (timevariation[i]**2)*((timevariation_std[i]/timevariation[i])**2+sigma_thickness_over_diffusivity**2) + (BBrad[i]**2)*((BBrad_std[i]/BBrad[i])**2+sigma_emissivity**2) ) for i in range(len(laser_digitizer_ID))] ,axis=0)**0.5)
+	# except:
+	# 	sigma_powernoback_full = 0.5*(np.sum([( (diffusion[i]**2)*((diffusion_std[i]/diffusion[i])**2+sigma_thickness**2) + (timevariation[i]**2)*((timevariation_std[i]/timevariation[i])**2+sigma_thickness**2+sigma_rec_diffusivity**2) + (BBrad[i]**2)*((BBrad_std[i]/BBrad[i])**2+sigma_emissivity**2) ) for i in range(len(laser_digitizer_ID))] ,axis=0)**0.5)
+	sigma_powernoback_full =  0.5*(np.sum(np.array(powernoback_std)**2,axis=0)**0.5).astype(np.float32)
 	sigma_powernoback_output = cp.deepcopy(sigma_powernoback_full)
 	brightness_sigma = 4*np.pi*sigma_powernoback_full/etendue
 	sigma_powernoback_full = sigma_powernoback_full[time_full_binned<tend]
@@ -9521,7 +9847,7 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 	temp = brightness[:,:,:int(np.shape(brightness)[2]*0.75)]
 	temp = np.sort(temp[np.max(temp,axis=(1,2)).argmax()].flatten())
 	ani,efit_reconstruction = movie_from_data(np.array([np.flip(np.transpose(brightness,(0,2,1)),axis=2)])/1000, 1/np.median(np.diff(time_full_binned)),timesteps=time_full_binned,integration=laser_int_time/1000,time_offset=time_full_binned[0],extvmin=0,xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='brightness [kW/m2]', prelude='shot ' + laser_to_analyse[-9:-4]+' '+scenario+'\n'+binning_type+'\n',overlay_structure=True,include_EFIT=True,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True,EFIT_output_requested=True)
-	ani.save('/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_pass'+str(pass_number)+'_'+binning_type+ '_FAST_brightness.mp4', fps=5*(1/np.mean(np.diff(time_full_binned)))/383, writer='ffmpeg',codec='mpeg4')
+	ani.save(filename_root+ '_FAST_brightness.mp4', fps=5*(1/np.mean(np.diff(time_full_binned)))/383, writer='ffmpeg',codec='mpeg4')
 	plt.close('all')
 
 
@@ -9623,8 +9949,10 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 		# ROI = np.array([[0.2,0.85],[0.1,0.9]])
 		# ROI = np.array([[0.05,0.95],[0.05,0.95]])
 		# ROI = np.array([[0.2,0.95],[0.1,1]])
-		ROI1 = np.array([[0.03,0.82],[0.03,0.90]])	# horizontal, vertical
-		ROI2 = np.array([[0.03,0.68],[0.03,0.91]])
+		# ROI1 = np.array([[0.03,0.82],[0.03,0.90]])	# horizontal, vertical
+		# ROI2 = np.array([[0.03,0.68],[0.03,0.91]])
+		ROI1 = np.array([np.array([1,52])/62,np.array([1,72])/80])	# horizontal, vertical
+		ROI2 = np.array([np.array([1,41])/62,np.array([1,78])/80])
 		# # 2022/10/02, no, it' create stripes on the LFS
 		# ROI1 = np.array([[0.15,0.82],[0.03,0.90]])	# horizontal, vertical
 		# ROI2 = np.array([[0.15,0.68],[0.03,0.91]])
@@ -9635,7 +9963,7 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 		if int(laser_to_analyse[-9:-4])< 45514:	# difference between MU01 and MU02
 			ROI_beams = np.array([[0.,0.32],[0.42,1]])
 		else:
-			ROI_beams = np.array([np.array([0.,10,25,25,30,0])/62,np.array([25,35,60,70,80,80])/78])
+			ROI_beams = np.array([np.array([0.,10,25,25,30,0])/62,np.array([25,33,60,70,80,80])/80])
 		sensitivities_binned_crop,selected_ROI,ROI1,ROI2,ROI_beams = cut_sensitivity_matrix_based_on_foil_anysotropy(sensitivities_binned,ROI1,ROI2,ROI_beams,laser_to_analyse,additional_output=True)	# W/m^2/str /(W/m^3) of emitter
 
 		additional_polygons_dict = dict([])
@@ -9653,7 +9981,7 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 		# temp = np.sort(temp[np.max(temp,axis=(1,2)).argmax()].flatten())
 		brightness_extvmax = np.nanmax(brightness[:,np.nansum(sensitivities_binned_crop,axis=-1)>0],axis=-1)
 		ani,efit_reconstruction = movie_from_data(np.array([np.flip(np.transpose(brightness,(0,2,1)),axis=2)])/1000, 1/np.median(np.diff(time_full_binned)),timesteps=time_full_binned,integration=laser_int_time/1000,time_offset=time_full_binned[0],extvmin=0,extvmax=brightness_extvmax/1000,xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='brightness [kW/m2]', prelude='shot ' + laser_to_analyse[-9:-4]+' '+scenario+'\n'+binning_type+'\n',overlay_structure=True,include_EFIT=True,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True,EFIT_output_requested=True,additional_polygons_dict=additional_polygons_dict)
-		ani.save('/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_pass'+str(pass_number)+'_'+binning_type+ '_FAST_brightness.mp4', fps=5*(1/np.mean(np.diff(time_full_binned)))/383, writer='ffmpeg',codec='mpeg4')
+		ani.save(filename_root+ '_FAST_brightness.mp4', fps=5*(1/np.mean(np.diff(time_full_binned)))/383, writer='ffmpeg',codec='mpeg4')
 		plt.close('all')
 
 		if only_plot_brightness:
@@ -9682,16 +10010,21 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 		grid_laplacian_masked_crop_temp = build_laplacian(grid_data_masked_crop,cells_to_exclude=select)
 		select = np.max(grid_laplacian_masked_crop_temp,axis=0)<2.9
 		sensitivities_binned_crop,grid_laplacian_masked_crop,grid_data_masked_crop,grid_Z_derivate_masked_crop,grid_R_derivate_masked_crop = reduce_voxels(sensitivities_binned_crop,grid_laplacian_masked_crop,grid_data_masked_crop,sum_treshold=0,std_treshold = 0,restrict_polygon=[],chop_corner_close_to_baffle=False,cells_to_exclude=select)
-		selected_edge_cells_for_laplacian = np.sum(sensitivities_binned_crop,axis=(0,1))>np.sum(sensitivities_binned_crop,axis=(0,1)).max()*0.2
-		# I need to do this again because when I remove some cells from the laplacian I reintroduce the problem of poorly connected ones again
-		grid_laplacian_masked_crop_temp = build_laplacian(grid_data_masked_crop,cells_to_exclude=selected_edge_cells_for_laplacian)
-		select = np.max(grid_laplacian_masked_crop_temp,axis=0)<2.9
-		grid_laplacian_masked_crop_temp = build_laplacian(grid_data_masked_crop,cells_to_exclude=select)
-		select = np.max(grid_laplacian_masked_crop_temp,axis=0)<2.9
-		grid_laplacian_masked_crop_temp = build_laplacian(grid_data_masked_crop,cells_to_exclude=select)
-		select = np.logical_and(np.max(grid_laplacian_masked_crop_temp,axis=0)<2.9,np.logical_not(selected_edge_cells_for_laplacian))
-		sensitivities_binned_crop,grid_laplacian_masked_crop,grid_data_masked_crop,grid_Z_derivate_masked_crop,grid_R_derivate_masked_crop = reduce_voxels(sensitivities_binned_crop,grid_laplacian_masked_crop,grid_data_masked_crop,sum_treshold=0,std_treshold = 0,restrict_polygon=[],chop_corner_close_to_baffle=False,cells_to_exclude=select)
-		selected_edge_cells_for_laplacian = selected_edge_cells_for_laplacian[np.logical_not(select)]
+		if False:	# normal path to select the cells close to the pinhole and allow them to not be bound by the limitation of the laplacian
+			selected_edge_cells_for_laplacian = np.sum(sensitivities_binned_crop,axis=(0,1))>np.sum(sensitivities_binned_crop,axis=(0,1)).max()*0.2
+			# I need to do this again because when I remove some cells from the laplacian I reintroduce the problem of poorly connected ones again
+			grid_laplacian_masked_crop_temp = build_laplacian(grid_data_masked_crop,cells_to_exclude=selected_edge_cells_for_laplacian)
+			select = np.max(grid_laplacian_masked_crop_temp,axis=0)<2.9
+			grid_laplacian_masked_crop_temp = build_laplacian(grid_data_masked_crop,cells_to_exclude=select)
+			select = np.max(grid_laplacian_masked_crop_temp,axis=0)<2.9
+			grid_laplacian_masked_crop_temp = build_laplacian(grid_data_masked_crop,cells_to_exclude=select)
+			select = np.logical_and(np.max(grid_laplacian_masked_crop_temp,axis=0)<2.9,np.logical_not(selected_edge_cells_for_laplacian))
+			sensitivities_binned_crop,grid_laplacian_masked_crop,grid_data_masked_crop,grid_Z_derivate_masked_crop,grid_R_derivate_masked_crop = reduce_voxels(sensitivities_binned_crop,grid_laplacian_masked_crop,grid_data_masked_crop,sum_treshold=0,std_treshold = 0,restrict_polygon=[],chop_corner_close_to_baffle=False,cells_to_exclude=select)
+			selected_edge_cells_for_laplacian = selected_edge_cells_for_laplacian[np.logical_not(select)]
+		else:
+			selected_edge_cells_for_laplacian = np.sum(sensitivities_binned_crop,axis=(0,1))>np.sum(sensitivities_binned_crop,axis=(0,1)).max()*0.2
+			selected_edge_cells_for_laplacian = np.zeros_like(selected_edge_cells_for_laplacian)
+
 
 		selected_super_x_cells = np.logical_and(np.mean(grid_data_masked_crop,axis=1)[:,0]>0.85,np.mean(grid_data_masked_crop,axis=1)[:,1]<-1.65)
 		# select_foil_region_with_plasma = (np.sum(sensitivities_binned_crop,axis=-1)>1e-3)	# this does not work if you change the ROI
@@ -9708,10 +10041,19 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 		interp = interp1d([x1[0],x2[0]],[x1[1],x2[1]],fill_value="extrapolate",bounds_error=False)
 		select = np.mean(grid_data_masked_crop,axis=1)[:,1]>interp(np.mean(grid_data_masked_crop,axis=1)[:,0])
 		selected_central_border_cells = np.logical_and(select,np.logical_and(np.max(grid_Z_derivate_masked_crop,axis=(1))==1,np.mean(grid_data_masked_crop,axis=1)[:,1]>-0.5))
-		selected_central_border_cells = np.dot(grid_laplacian_masked_crop,selected_central_border_cells*np.random.random(selected_central_border_cells.shape))!=0
 
-		selected_central_column_border_cells = np.logical_and(np.logical_and(np.max(grid_R_derivate_masked_crop,axis=(1))==1,np.mean(grid_data_masked_crop,axis=1)[:,0]<0.7),np.mean(grid_data_masked_crop,axis=1)[:,1]<-0.7)
-		selected_central_column_border_cells = np.logical_and(np.logical_and(np.dot(grid_laplacian_masked_crop,selected_central_column_border_cells*np.random.random(selected_central_column_border_cells.shape))!=0,np.mean(grid_data_masked_crop,axis=1)[:,0]<0.7),np.mean(grid_data_masked_crop,axis=1)[:,1]<-0.7)
+		# selected_central_column_border_cells = np.logical_and(np.logical_and(np.max(grid_R_derivate_masked_crop,axis=(1))==1,np.mean(grid_data_masked_crop,axis=1)[:,0]<0.7),np.mean(grid_data_masked_crop,axis=1)[:,1]<-0.7)
+		selected_central_column_border_cells = np.logical_and(np.logical_and(np.max(grid_R_derivate_masked_crop,axis=(1))==1,np.logical_and(np.mean(grid_data_masked_crop,axis=1)[:,0]<0.6,np.abs(np.mean(grid_data_masked_crop,axis=1)[:,1])>0.5)),np.logical_not(selected_central_border_cells))
+		# selected_central_column_border_cells = np.logical_and(np.logical_and(np.dot(grid_laplacian_masked_crop,selected_central_column_border_cells*np.random.random(selected_central_column_border_cells.shape))!=0,np.mean(grid_data_masked_crop,axis=1)[:,0]<0.7),np.mean(grid_data_masked_crop,axis=1)[:,1]<-0.7)
+		selected_central_column_border_cells = np.dot(grid_laplacian_masked_crop,selected_central_column_border_cells*np.random.random(selected_central_column_border_cells.shape))!=0
+		selected_central_column_border_cells = np.dot(grid_laplacian_masked_crop,selected_central_column_border_cells*np.random.random(selected_central_column_border_cells.shape))!=0
+
+		selected_central_border_cells = np.logical_or(selected_central_border_cells,np.logical_and(np.dot(grid_laplacian_masked_crop,selected_central_border_cells*np.random.random(selected_central_border_cells.shape))!=0,np.mean(grid_data_masked_crop,axis=1)[:,0]>=0.33))
+		selected_central_border_cells = np.logical_or(selected_central_border_cells,np.logical_and(np.dot(grid_laplacian_masked_crop,selected_central_border_cells*np.random.random(selected_central_border_cells.shape))!=0,np.mean(grid_data_masked_crop,axis=1)[:,0]>=0.33))
+		selected_central_border_cells = np.logical_or(selected_central_border_cells,np.logical_and(np.dot(grid_laplacian_masked_crop,selected_central_border_cells*np.random.random(selected_central_border_cells.shape))!=0,np.mean(grid_data_masked_crop,axis=1)[:,0]>=0.33))
+		selected_central_border_cells = np.logical_or(selected_central_border_cells,np.logical_and(np.dot(grid_laplacian_masked_crop,selected_central_border_cells*np.random.random(selected_central_border_cells.shape))!=0,np.mean(grid_data_masked_crop,axis=1)[:,0]>=0.33))
+		selected_central_border_cells = np.logical_or(selected_central_border_cells,np.logical_and(np.dot(grid_laplacian_masked_crop,selected_central_border_cells*np.random.random(selected_central_border_cells.shape))!=0,np.mean(grid_data_masked_crop,axis=1)[:,0]>=0.33))
+		selected_central_border_cells = np.logical_or(selected_central_border_cells,np.logical_and(np.dot(grid_laplacian_masked_crop,selected_central_border_cells*np.random.random(selected_central_border_cells.shape))!=0,np.mean(grid_data_masked_crop,axis=1)[:,0]>=0.33))
 
 		# selected_edge_cells = np.logical_and(np.logical_and(np.max(grid_laplacian_masked_crop,axis=(0))<=5.5,np.mean(grid_data_masked_crop,axis=1)[:,0]>1.35),np.logical_and(np.mean(grid_data_masked_crop,axis=1)[:,1]>-1.1,np.mean(grid_data_masked_crop,axis=1)[:,1]<-0.6))
 		# selected_edge_cells = np.logical_or(selected_edge_cells,np.logical_and(np.logical_and(np.logical_and(np.max(grid_laplacian_masked_crop,axis=(0))<=5.5,np.mean(grid_data_masked_crop,axis=1)[:,0]>1.05),np.mean(grid_data_masked_crop,axis=1)[:,1]>-1.5),np.mean(grid_data_masked_crop,axis=1)[:,1]<-0.6))
@@ -9829,7 +10171,18 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 		sigma_emissivity = 1e6	# 2e3	# this is completely arbitrary
 		sigma_emissivity_2 = sigma_emissivity**2
 		r_int = np.mean(grid_data_masked_crop,axis=1)[:,0]
+		z_int = np.mean(grid_data_masked_crop,axis=1)[:,1]
 		r_int_2 = r_int**2
+
+		# it seems that I have some radiation on the central column that I don't know how to eliminate.
+		# I can limit the r derivative there, but I don't want to do it close to the strike point.
+		# if available I take the strike point position and use it to not limit the r derivative close to it
+		# first I build the coordinate system
+
+		limiter_r,limiter_z,s_lookup = calculate_tile_geometry()
+		if len(s_lookup)>1:
+			from mast.geom.geomTileSurfaceUtils import get_nearest_s_coordinates_mastu
+			grid_data_masked_crop_s = get_nearest_s_coordinates_mastu(r_int,z_int,s_lookup,tol=5e-3)[0]
 
 		sigma_powernoback_full[np.isnan(sigma_powernoback_full)] = 1e10
 		# inverted_dict[str(grid_resolution)]['foil_power'] = powernoback_full_orig
@@ -9849,6 +10202,12 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 		inverted_data_info = []
 		inverted_data_plasma_region_offset = []
 		inverted_data_homogeneous_offset = []
+		DT_max_all = []
+		DT_head_all = []
+		DT_ring_all = []
+		pinhole_plate_T_slope_all = []
+		DT_head_r_all = []
+		IRVB_head_power_correction_all = []
 		fitted_foil_power = []
 		fitted_foil_power_excluded = []
 		foil_power = []
@@ -9877,6 +10236,30 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 		if laser_framerate<60:
 			regolarisation_coeff_upper_limit = 0.2
 			regolarisation_coeff_lower_limit = 8e-4
+
+		# regularisation coefficients list
+		# regolarisation_coeff_edge = 10
+		# regolarisation_coeff_edge_multiplier = 100
+		regolarisation_coeff_central_border_Z_derivate_multiplier = 200	#0
+		regolarisation_coeff_central_column_border_R_derivate_multiplier = 0	#100
+		regolarisation_coeff_edge_laplacian_multiplier = 0
+		regolarisation_coeff_divertor_multiplier = 1
+		regolarisation_coeff_non_negativity_multiplier = 200
+		regolarisation_coeff_offsets_multiplier = 0#1e-10
+		# regolarisation_coeff_edge_laplacian = 0.01#0.001#0.02
+		regolarisation_coeff_edge = 0# 500 while writing the thesis ~13/12/2022 I realised this is not necessary
+
+		# if EFIT is available, I find the strike point and allow any emissivity gradient in R in its vicinity
+		tollerance_for_strike_point = 0.15
+
+		target_chi_square = sensitivities_binned_crop.shape[1]	# obtained doing a scan of the regularisation coefficient. this was the result for regolarisation_coeff~1e-3
+		target_chi_square_sigma = 200	# this should be tight, because for such a high number of degrees of freedom things should average very well
+
+		important_parameters_list = [regolarisation_coeff_central_border_Z_derivate_multiplier,regolarisation_coeff_central_column_border_R_derivate_multiplier,regolarisation_coeff_edge_laplacian_multiplier,regolarisation_coeff_divertor_multiplier,regolarisation_coeff_non_negativity_multiplier,regolarisation_coeff_offsets_multiplier,regolarisation_coeff_edge,tollerance_for_strike_point,target_chi_square_sigma]
+		filename_root_add = '_GridRes'+str(grid_resolution)+'cm_'+'ParList'+str(important_parameters_list)
+		print(filename_root+filename_root_add)
+		homogeneous_scaling=1e-4
+
 		for i_t in range(len(time_full_binned_crop)):
 			time_start = tm.time()
 
@@ -9896,36 +10279,32 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 			reference_sigma_powernoback = reference_sigma_powernoback_all[i_t]
 			# sigma_powernoback = np.ones_like(powernoback)*10
 			sigma_powernoback_2 = sigma_powernoback**2
-			homogeneous_scaling=1e-4
 
 			if use_pinhole_plate_over_temperature:
-				guess = np.array((np.random.random(sensitivities_binned_crop.shape[1]+2)*1e2).tolist() + [0,0,0,0])
+				guess = np.array((np.random.random(sensitivities_binned_crop.shape[1])*1e2).tolist() + [0,0] + [1,1,1,-10])
 			else:
-				guess = np.array((np.random.random(sensitivities_binned_crop.shape[1]+2)*1e2).tolist() )
+				guess = np.array((np.random.random(sensitivities_binned_crop.shape[1])*1e2).tolist() + [0,0])
 			if len(first_guess) != 0:
 				guess = cp.deepcopy(first_guess)
 
-			target_chi_square = sensitivities_binned_crop.shape[1]	# obtained doing a scan of the regularisation coefficient. this was the result for regolarisation_coeff~1e-3
-			target_chi_square_sigma = 200	# this should be tight, because for such a high number of degrees of freedom things should average very well
+			# if EFIT is available, I find the strike point and allow any emissivity gradient in R in its vicinity
+			selected_central_column_border_cells_int = cp.deepcopy(selected_central_column_border_cells)
+			if efit_reconstruction!=None:# and len(s_lookup)>1:
+				i_t_efit = np.abs(time_full_binned_crop[i_t] - efit_reconstruction.time).argmin()
 
-			# regolarisation_coeff_edge = 10
-			# regolarisation_coeff_edge_multiplier = 100
-			regolarisation_coeff_central_border_Z_derivate_multiplier = 0
-			regolarisation_coeff_central_column_border_R_derivate_multiplier = 0
-			regolarisation_coeff_edge_laplacian_multiplier = 0
-			regolarisation_coeff_divertor_multiplier = 1
-			regolarisation_coeff_non_negativity_multiplier = 200
-			regolarisation_coeff_offsets_multiplier = 0#1e-10
-			# regolarisation_coeff_edge_laplacian = 0.01#0.001#0.02
-			regolarisation_coeff_edge = 0# 500 while writing the thesis ~13/12/2022 I realised this is not necessary
+				# I can simply use the distance r,z from the strike point, I don't really need to use the linear distance from it
+				# strike_point_s = get_nearest_s_coordinates_mastu(efit_reconstruction.strikepointR[i_t_efit],efit_reconstruction.strikepointZ[i_t_efit],s_lookup,tol=5e-3)[0]
 
-			prob_and_gradient,calc_hessian = define_fitting_functions(homogeneous_scaling,regolarisation_coeff_divertor_multiplier,regolarisation_coeff_central_column_border_R_derivate_multiplier,regolarisation_coeff_central_border_Z_derivate_multiplier,regolarisation_coeff_edge_laplacian_multiplier,sensitivities_binned_crop,selected_ROI_internal,select_foil_region_with_plasma,grid_laplacian_masked_crop_scaled,not_selected_super_x_cells,selected_edge_cells_for_laplacian,selected_super_x_cells,selected_central_column_border_cells,selected_central_border_cells,regolarisation_coeff_non_negativity_multiplier,selected_edge_cells,r_int,regolarisation_coeff_edge,regolarisation_coeff_offsets_multiplier,number_cells_ROI,reference_sigma_powernoback,number_cells_plasma,r_int_2, rmax_pinhole_plate=rmax_pinhole_plate,R_pinhole_plate=R_pinhole_plate,pinhole_plate_to_foil_weight=pinhole_plate_to_foil_weight,IRVB_head_ring_to_foil_weight=IRVB_head_ring_to_foil_weight,ref_temperature=ref_temperature,use_pinhole_plate_over_temperature=use_pinhole_plate_over_temperature)
+				for i_ in range(len(efit_reconstruction.strikepointR[i_t_efit])):
+					selected_central_column_border_cells_int[(r_int-efit_reconstruction.strikepointR[i_t_efit][i_])**2 + (z_int+np.abs(efit_reconstruction.strikepointZ[i_t_efit][i_]))**2 < tollerance_for_strike_point**2] = False
+
+			prob_and_gradient,calc_hessian = define_fitting_functions(homogeneous_scaling,regolarisation_coeff_divertor_multiplier,regolarisation_coeff_central_column_border_R_derivate_multiplier,regolarisation_coeff_central_border_Z_derivate_multiplier,regolarisation_coeff_edge_laplacian_multiplier,sensitivities_binned_crop,selected_ROI_internal,select_foil_region_with_plasma,grid_laplacian_masked_crop_scaled,not_selected_super_x_cells,selected_edge_cells_for_laplacian,selected_super_x_cells,selected_central_column_border_cells_int,selected_central_border_cells,regolarisation_coeff_non_negativity_multiplier,selected_edge_cells,r_int,regolarisation_coeff_edge,regolarisation_coeff_offsets_multiplier,number_cells_ROI,reference_sigma_powernoback,number_cells_plasma,r_int_2,grid_R_derivate_masked_crop_scaled,grid_Z_derivate_masked_crop_scaled, rmax_pinhole_plate=rmax_pinhole_plate,R_IRVB_head_from_pinhole=R_IRVB_head_from_pinhole,pinhole_plate_to_foil_weight=pinhole_plate_to_foil_weight,IRVB_head_ring_to_foil_weight=IRVB_head_ring_to_foil_weight,ref_temperature=ref_temperature,use_pinhole_plate_over_temperature=use_pinhole_plate_over_temperature)
 
 			if False:	# only for testinf the prob_and_gradient function
 				args = [powernoback,sigma_powernoback,sigma_emissivity,regolarisation_coeff,sigma_powernoback**2,sigma_emissivity**2]
-				target = 1001
+				target = 1297
 				scale = 1e-3
-				guess = np.array((np.random.random(sensitivities_binned_crop.shape[1]+2)*1e2).tolist() + [10,10,0,-10])
+				# guess = np.array((np.random.random(sensitivities_binned_crop.shape[1]+2)*1e2).tolist() + [1,1,0,-10])
 				# guess = np.array((np.ones(sensitivities_binned_crop.shape[1]+2)*1e2).tolist() + [10,10,0,-10])
 				# guess[target] *=10
 				# guess = np.array((np.random.random(sensitivities_binned_crop.shape[1]+2)*1e2).tolist() )
@@ -9936,6 +10315,7 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 
 				# guess[target] = 1e5
 				temp1 = prob_and_gradient(guess,*args)
+				print(temp1[0])
 				guess[target] +=scale
 				temp2 = prob_and_gradient(guess,*args)
 				guess[target] += -2*scale
@@ -9947,7 +10327,7 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 
 
 			if pass_number<2:
-				regolarisation_coeff_range = np.array([5e-3])
+				regolarisation_coeff_range = np.array([4e-3])
 			else:
 				# regolarisation_coeff_range = 10**np.linspace(1,-6,num=120)
 				# regolarisation_coeff_range = 10**np.linspace(1,-5,num=102)
@@ -9958,10 +10338,18 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 				# regolarisation_coeff_range = 10**np.linspace(0.5,-4.5,num=85)
 				# if laser_framerate<60:
 				# 	regolarisation_coeff_range = 10**np.linspace(0.5,-4,num=76)
+			if pass_number<1:
+				pgtol = 4e-7
+				factr=1e5
+			else:
+				pgtol = 2e-7
+				factr=1e5
+			if shrink_factor_x==1:
+				regolarisation_coeff_range /= 4
 
 			if (override_second_pass and pass_number==1) or (override_third_pass and pass_number==2) or pass_number==0:
 				# x_optimal_all,recompose_voxel_emissivity_all,y_opt_all,opt_info_all,voxels_centre,recompose_voxel_emissivity_excluded_all = loop_fit_over_regularisation(prob_and_gradient,regolarisation_coeff_range,guess,grid_data_masked_crop,powernoback,sigma_powernoback,sigma_emissivity,x_optimal_all_guess=x_optimal_all_guess,factr=1e10,excluded_cells = selected_edge_cells_for_laplacian)
-				x_optimal_all,recompose_voxel_emissivity_all,y_opt_all,opt_info_all,voxels_centre,recompose_voxel_emissivity_excluded_all = loop_fit_over_regularisation(prob_and_gradient,regolarisation_coeff_range,guess,grid_data_masked_crop,powernoback,sigma_powernoback,sigma_emissivity,factr=1e8,excluded_cells = selected_edge_cells_for_laplacian)
+				x_optimal_all,recompose_voxel_emissivity_all,y_opt_all,opt_info_all,voxels_centre,recompose_voxel_emissivity_excluded_all = loop_fit_over_regularisation(prob_and_gradient,regolarisation_coeff_range,guess,grid_data_masked_crop,powernoback,sigma_powernoback,sigma_emissivity,excluded_cells = selected_edge_cells_for_laplacian,pgtol=pgtol,factr=factr)#,factr=1e8)#,iprint=2,pgtol=5e-5)
 
 				# if first_guess == []:
 				x_optimal_all_guess = cp.deepcopy(x_optimal_all)	# W/m^3/str of emitter
@@ -9974,12 +10362,21 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 				y_opt_all = np.flip(y_opt_all,axis=0)
 				opt_info_all = np.flip(opt_info_all,axis=0)
 
+				IRVB_head_power_correction_all_int = 0
 				if use_pinhole_plate_over_temperature:
-					score_x = np.sum(((np.dot(sensitivities_binned_crop,np.array(x_optimal_all)[:,:-2-4].T).T  + (np.array([selected_ROI_internal.tolist()]*len(x_optimal_all)).T*np.array(x_optimal_all)[:,-1]).T*homogeneous_scaling + (np.array([select_foil_region_with_plasma.tolist()]*len(x_optimal_all)).T*np.array(x_optimal_all)[:,-2-4]).T*homogeneous_scaling  - powernoback) ** 2) / (sigma_powernoback**2),axis=1)
-					score_y = np.sum(((np.dot(grid_laplacian_masked_crop_scaled,(np.logical_not(selected_edge_cells_for_laplacian)*np.array(x_optimal_all)[:,:-2-4]).T).T) ** 2) / (sigma_emissivity**2),axis=1)
-				else:
-					score_x = np.sum(((np.dot(sensitivities_binned_crop,np.array(x_optimal_all)[:,:-2].T).T  + (np.array([selected_ROI_internal.tolist()]*len(x_optimal_all)).T*np.array(x_optimal_all)[:,-1]).T*homogeneous_scaling + (np.array([select_foil_region_with_plasma.tolist()]*len(x_optimal_all)).T*np.array(x_optimal_all)[:,-2]).T*homogeneous_scaling  - powernoback) ** 2) / (sigma_powernoback**2),axis=1)
-					score_y = np.sum(((np.dot(grid_laplacian_masked_crop_scaled,(np.logical_not(selected_edge_cells_for_laplacian)*np.array(x_optimal_all)[:,:-2]).T).T) ** 2) / (sigma_emissivity**2),axis=1)
+					DT_head_r = []
+					IRVB_head_power_correction_all_int = []
+					for i in range(len(x_optimal_all)):
+						DT_max,DT_head,DT_ring,pinhole_plate_T_slope = x_optimal_all[i][-4:]*homogeneous_scaling
+						# pinhole_plate_T_slope = x_optimal_all[i][-1]
+						temp1,temp2 = calc_IRVB_head_power_correction(DT_max,DT_head,DT_ring,pinhole_plate_T_slope,rmax_pinhole_plate,pinhole_radious,R_IRVB_head_from_pinhole,pinhole_plate_to_foil_weight,ref_temperature,IRVB_head_ring_to_foil_weight)
+						IRVB_head_power_correction_all_int.append( temp2.flatten())
+					IRVB_head_power_correction_all_int = np.array(IRVB_head_power_correction_all_int)
+
+				# score_x = np.sum(((np.dot(sensitivities_binned_crop,x_optimal_all[:,:-2].T).T  + (np.array([selected_ROI_internal.tolist()]*len(x_optimal_all)).T*x_optimal_all[:,-1]).T*homogeneous_scaling + (np.array([select_foil_region_with_plasma.tolist()]*len(x_optimal_all)).T*x_optimal_all[:,-2]).T*homogeneous_scaling  - powernoback) ** 2) / (sigma_powernoback**2),axis=1)
+				# score_y = np.sum(((np.dot(grid_laplacian_masked_crop_scaled,(np.logical_not(selected_edge_cells_for_laplacian)*x_optimal_all[:,:-2]).T).T) ** 2) / (sigma_emissivity**2),axis=1)
+				score_x = np.sum(((np.dot(sensitivities_binned_crop,x_optimal_all[:,:len(grid_data_masked_crop)].T).T  + (np.array([selected_ROI_internal.tolist()]*len(x_optimal_all)).T*x_optimal_all[:,len(grid_data_masked_crop)+1]).T*homogeneous_scaling + (np.array([select_foil_region_with_plasma.tolist()]*len(x_optimal_all)).T*x_optimal_all[:,len(grid_data_masked_crop)]).T*homogeneous_scaling + IRVB_head_power_correction_all_int - powernoback) ** 2) / (sigma_powernoback**2),axis=1)
+				score_y = np.sum(((np.dot(grid_laplacian_masked_crop_scaled,(np.logical_not(selected_edge_cells_for_laplacian)*x_optimal_all[:,:len(grid_data_masked_crop)]).T).T) ** 2) / (sigma_emissivity**2),axis=1)
 
 				score_x_all.append(score_x)
 				score_y_all.append(score_y)
@@ -10002,7 +10399,7 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 				regolarisation_coeff_range_all.append(regolarisation_coeff_range)
 
 				trash,trash,trash,trash,trash,trash,trash,trash,regolarisation_coeff,trash,trash,trash,trash,trash = find_optimal_regularisation_minimal(score_x,score_y,regolarisation_coeff_range,x_optimal_all,regolarisation_coeff_upper_limit=regolarisation_coeff_upper_limit,regolarisation_coeff_lower_limit=regolarisation_coeff_lower_limit,fraction_of_L_curve_for_fit = fraction_of_L_curve_for_fit)
-				x_optimal_all,recompose_voxel_emissivity_all,y_opt_all,opt_info_all,voxels_centre,recompose_voxel_emissivity_excluded_all = loop_fit_over_regularisation(prob_and_gradient,np.array([regolarisation_coeff]),guess,grid_data_masked_crop,powernoback,sigma_powernoback,sigma_emissivity,factr=1e8,excluded_cells = selected_edge_cells_for_laplacian)
+				x_optimal_all,recompose_voxel_emissivity_all,y_opt_all,opt_info_all,voxels_centre,recompose_voxel_emissivity_excluded_all = loop_fit_over_regularisation(prob_and_gradient,np.array([regolarisation_coeff]),guess,grid_data_masked_crop,powernoback,sigma_powernoback,sigma_emissivity,excluded_cells = selected_edge_cells_for_laplacian,pgtol=pgtol,factr=factr)#,factr=1e8)
 
 				x_optimal_all_guess = cp.deepcopy(x_optimal_all)	# W/m^3/str of emitter
 				first_guess = x_optimal_all[0]
@@ -10013,10 +10410,15 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 				opt_info_all = np.array(list(opt_info_all)*len(score_x))
 				recompose_voxel_emissivity_excluded_all = np.array(list(recompose_voxel_emissivity_excluded_all)*len(score_x))
 
+			IRVB_head_power_correction = 0
 			if pass_number<2:
 				recompose_voxel_emissivity,x_optimal,regolarisation_coeff,y_opt,opt_info,recompose_voxel_emissivity_excluded = recompose_voxel_emissivity_all[0],x_optimal_all[0],regolarisation_coeff_range[0],y_opt_all[0],opt_info_all[0],recompose_voxel_emissivity_excluded_all[0]
+				if use_pinhole_plate_over_temperature:
+					IRVB_head_power_correction = IRVB_head_power_correction_all_int[0]
 			else:
 				score_y,score_x,score_y_record_rel,score_x_record_rel,curvature_range,Lcurve_curvature,recompose_voxel_emissivity,x_optimal,points_removed,regolarisation_coeff,regolarisation_coeff_range,y_opt,opt_info,curvature_range_left_all,curvature_range_right_all,peaks,best_index,recompose_voxel_emissivity_excluded = find_optimal_regularisation(score_x,score_y,regolarisation_coeff_range,x_optimal_all,recompose_voxel_emissivity_all,y_opt_all,opt_info_all,recompose_voxel_emissivity_excluded_all,regolarisation_coeff_upper_limit=regolarisation_coeff_upper_limit,regolarisation_coeff_lower_limit=regolarisation_coeff_lower_limit,fraction_of_L_curve_for_fit = fraction_of_L_curve_for_fit)
+				if use_pinhole_plate_over_temperature:
+					IRVB_head_power_correction = IRVB_head_power_correction_all[best_index]
 
 				plt.figure(10)
 				# plt.plot(score_x,score_y,color=str(0.9-i_t/(len(time_full_binned_crop)/0.9)))
@@ -10029,7 +10431,7 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 				plt.xlabel('log ||Gm-d||2')
 				plt.ylabel('log ||Laplacian(m)||2')
 				plt.title('shot ' + laser_to_analyse[-9:-4]+' '+scenario+'L-curve evolution\nlight=early, dark=late\ntime_per_iteration [s] '+str(np.round(time_per_iteration).astype(int)))
-				plt.savefig('/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_L_curve_evolution.eps')
+				plt.savefig(filename_root+filename_root_add+'_L_curve_evolution.eps')
 				plt.figure(11)
 				plt.plot(regolarisation_coeff_range,Lcurve_curvature,color=str(0.9-i_t/(len(time_full_binned_crop)/0.9)))
 				plt.plot(regolarisation_coeff_range,Lcurve_curvature,'+',color=str(0.9-i_t/(len(time_full_binned_crop)/0.9)))
@@ -10041,13 +10443,11 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 				plt.xlabel('regularisation coeff')
 				plt.ylabel('L-curve turvature')
 				plt.title('shot ' + laser_to_analyse[-9:-4]+' '+scenario+'L-curve curvature evolution\nlight=early, dark=late\nfraction_of_L_curve_for_fit = '+str(fraction_of_L_curve_for_fit)+'\ncurvature_range_left_all = '+str(curvature_range_left_all)+'\ncurvature_range_right_all = '+str(curvature_range_right_all))
-				plt.savefig('/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_L_curve_curvature_evolution.eps')
+				plt.savefig(filename_root+filename_root_add+'_L_curve_curvature_evolution.eps')
 
 
-			if use_pinhole_plate_over_temperature:
-				foil_power_guess = np.dot(sensitivities_binned_crop,x_optimal[:-2-4])+x_optimal[-2-4]*select_foil_region_with_plasma*homogeneous_scaling+x_optimal[-1]*selected_ROI_internal*homogeneous_scaling
-			else:
-				foil_power_guess = np.dot(sensitivities_binned_crop,x_optimal[:-2])+x_optimal[-2]*select_foil_region_with_plasma*homogeneous_scaling+x_optimal[-1]*selected_ROI_internal*homogeneous_scaling
+			# foil_power_guess = np.dot(sensitivities_binned_crop,x_optimal[:-2])+x_optimal[-2]*select_foil_region_with_plasma*homogeneous_scaling+x_optimal[-1]*selected_ROI_internal*homogeneous_scaling
+			foil_power_guess = np.dot(sensitivities_binned_crop,x_optimal[:len(grid_data_masked_crop)])+x_optimal[len(grid_data_masked_crop)]*select_foil_region_with_plasma*homogeneous_scaling+x_optimal[len(grid_data_masked_crop)+1]*selected_ROI_internal*homogeneous_scaling + IRVB_head_power_correction
 			foil_power_error = powernoback - foil_power_guess
 			chi_square = np.sum((foil_power_error/sigma_powernoback)**2)
 			print('chi_square '+str(chi_square))
@@ -10081,16 +10481,24 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 			x_optimal_ext.append(x_optimal)	# W/m^3/str of emitter
 			inverted_data_likelihood.append(y_opt)
 			inverted_data_info.append(opt_info)
+			IRVB_head_power_correction = 0
+			DT_head_r = 0
 			if use_pinhole_plate_over_temperature:
-				inverted_data_plasma_region_offset.append(x_optimal[-2-4]*homogeneous_scaling)
-				inverted_data_homogeneous_offset.append(x_optimal[-1]*homogeneous_scaling)
-				fitted_foil_power.append((np.dot(sensitivities_binned_crop,x_optimal[:-2-4])+x_optimal[-2-4]*select_foil_region_with_plasma*homogeneous_scaling+x_optimal[-1]*selected_ROI_internal*homogeneous_scaling).reshape(powernoback_full_orig[i_t].shape))
-				fitted_foil_power_excluded.append((np.dot(sensitivities_binned_crop,x_optimal[:-2-4]*selected_edge_cells_for_laplacian)).reshape(powernoback_full_orig[i_t].shape))
-			else:
-				inverted_data_plasma_region_offset.append(x_optimal[-2]*homogeneous_scaling)
-				inverted_data_homogeneous_offset.append(x_optimal[-1]*homogeneous_scaling)
-				fitted_foil_power.append((np.dot(sensitivities_binned_crop,x_optimal[:-2])+x_optimal[-2]*select_foil_region_with_plasma*homogeneous_scaling+x_optimal[-1]*selected_ROI_internal*homogeneous_scaling).reshape(powernoback_full_orig[i_t].shape))
-				fitted_foil_power_excluded.append((np.dot(sensitivities_binned_crop,x_optimal[:-2]*selected_edge_cells_for_laplacian)).reshape(powernoback_full_orig[i_t].shape))
+				DT_max_all.append(x_optimal[-4]*homogeneous_scaling)
+				DT_head_all.append(x_optimal[-3]*homogeneous_scaling)
+				DT_ring_all.append(x_optimal[-2]*homogeneous_scaling)
+				pinhole_plate_T_slope_all.append(x_optimal[-1]*homogeneous_scaling)
+				DT_head_r,IRVB_head_power_correction = calc_IRVB_head_power_correction(DT_max_all[-1],DT_head_all[-1],DT_ring_all[-1],pinhole_plate_T_slope_all[-1],rmax_pinhole_plate,pinhole_radious,R_IRVB_head_from_pinhole,pinhole_plate_to_foil_weight,ref_temperature,IRVB_head_ring_to_foil_weight)
+			DT_head_r_all.append(DT_head_r)
+			IRVB_head_power_correction_all.append(IRVB_head_power_correction)
+			# inverted_data_plasma_region_offset.append(x_optimal[-2]*homogeneous_scaling)
+			# inverted_data_homogeneous_offset.append(x_optimal[-1]*homogeneous_scaling)
+			# fitted_foil_power.append((np.dot(sensitivities_binned_crop,x_optimal[:-2])+x_optimal[-2]*select_foil_region_with_plasma*homogeneous_scaling+x_optimal[-1]*selected_ROI_internal*homogeneous_scaling).reshape(powernoback_full_orig[i_t].shape))
+			# fitted_foil_power_excluded.append((np.dot(sensitivities_binned_crop,x_optimal[:-2]*selected_edge_cells_for_laplacian)).reshape(powernoback_full_orig[i_t].shape))
+			inverted_data_plasma_region_offset.append(x_optimal[len(grid_data_masked_crop)]*homogeneous_scaling)
+			inverted_data_homogeneous_offset.append(x_optimal[len(grid_data_masked_crop)+1]*homogeneous_scaling)
+			fitted_foil_power.append((np.dot(sensitivities_binned_crop,x_optimal[:len(grid_data_masked_crop)])+x_optimal[len(grid_data_masked_crop)]*select_foil_region_with_plasma*homogeneous_scaling+x_optimal[len(grid_data_masked_crop)+1]*selected_ROI_internal*homogeneous_scaling).reshape(powernoback_full_orig[i_t].shape) + IRVB_head_power_correction)
+			fitted_foil_power_excluded.append((np.dot(sensitivities_binned_crop,x_optimal[:len(grid_data_masked_crop)]*selected_edge_cells_for_laplacian) +x_optimal[len(grid_data_masked_crop)]*select_foil_region_with_plasma*homogeneous_scaling+x_optimal[len(grid_data_masked_crop)+1]*selected_ROI_internal*homogeneous_scaling).reshape(powernoback_full_orig[i_t].shape) + IRVB_head_power_correction)
 			foil_power.append(powernoback_full_orig[i_t])
 			foil_power_std.append(sigma_powernoback_full[i_t])
 			foil_power_residuals.append(powernoback_full_orig[i_t]-fitted_foil_power[-1])
@@ -10108,13 +10516,13 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 					Lcurve_curvature = np.concatenate([Lcurve_curvature[:value],[np.nan],Lcurve_curvature[value:]])
 				Lcurve_curvature_all.append(Lcurve_curvature)
 
-			args = [powernoback,sigma_powernoback,sigma_emissivity,regolarisation_coeff,sigma_powernoback**2,sigma_emissivity**2]
-			hessian=calc_hessian(x_optimal,*args)	# W/m^3
-			covariance = np.linalg.inv(hessian)
-			trash,recompose_voxel_sigma,recompose_voxel_excluded_sigma = translate_emissivity_profile_with_homo_temp(np.mean(grid_data_masked_crop,axis=1,dtype=np.float32),(np.diag(covariance).astype(np.float32))**0.5,np.mean(grid_data_masked_crop,axis=1),cells_to_exclude=selected_edge_cells_for_laplacian)
-			inverted_data_sigma.append(recompose_voxel_sigma)	# W/m^3
-			inverted_data_excluded_sigma.append(recompose_voxel_excluded_sigma)	# W/m^3
-			inverted_data_covariance.append(covariance)	# W/m^3
+			# args = [powernoback,sigma_powernoback,sigma_emissivity,regolarisation_coeff,sigma_powernoback**2,sigma_emissivity**2]
+			# hessian=calc_hessian(x_optimal,*args)	# W/m^3
+			# covariance = np.linalg.inv(hessian)
+			# trash,recompose_voxel_sigma,recompose_voxel_excluded_sigma = translate_emissivity_profile_with_homo_temp(np.mean(grid_data_masked_crop,axis=1,dtype=np.float32),(np.diag(covariance).astype(np.float32))**0.5,np.mean(grid_data_masked_crop,axis=1),cells_to_exclude=selected_edge_cells_for_laplacian)
+			# inverted_data_sigma.append(recompose_voxel_sigma)	# W/m^3
+			# inverted_data_excluded_sigma.append(recompose_voxel_excluded_sigma)	# W/m^3
+			# inverted_data_covariance.append(covariance)	# W/m^3
 
 			# inverted_dict[str(grid_resolution)]['score_x_all'] = score_x_all
 			# inverted_dict[str(grid_resolution)]['score_y_all'] = score_y_all
@@ -10128,13 +10536,18 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 			time_per_iteration.append(tm.time()-time_start)
 
 		inverted_data = np.array(inverted_data)	# W/m^3
-		inverted_data_sigma = np.array(inverted_data_sigma)	# W/m^3
 		inverted_data_excluded = np.array(inverted_data_excluded)	# W/m^3
-		inverted_data_excluded_sigma = np.array(inverted_data_excluded_sigma)	# W/m^3
-		inverted_data_covariance = np.array(inverted_data_covariance,dtype=np.float32)
 		inverted_data_likelihood = -np.array(inverted_data_likelihood)
 		inverted_data_plasma_region_offset = np.array(inverted_data_plasma_region_offset)
 		inverted_data_homogeneous_offset = np.array(inverted_data_homogeneous_offset)
+		if use_pinhole_plate_over_temperature:
+			DT_max_all = np.array(DT_max_all)
+			DT_head_all = np.array(DT_head_all)
+			DT_ring_all = np.array(DT_ring_all)
+			pinhole_plate_T_slope_all = np.array(pinhole_plate_T_slope_all)
+		DT_head_r_all = np.array(DT_head_r_all)
+		IRVB_head_power_correction_all = np.array(IRVB_head_power_correction_all)
+		inverted_data_info = np.array(inverted_data_info)
 		x_optimal_ext = np.array(x_optimal_ext)	# W/m^3/str of emitter
 		fit_error = np.array(fit_error)
 		chi_square_all = np.array(chi_square_all)
@@ -10148,7 +10561,7 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 		fitted_brightness = 4*np.pi*(fitted_foil_power-fitted_foil_power_excluded)/etendue
 
 		timeout = 20*60	# 20 minutes
-		timeout = 0	# TEMPORARY to process them all
+		# timeout = 0	# TEMPORARY to process them all
 		while efit_reconstruction==None and timeout>0:
 			try:
 				EFIT_path_default = '/common/uda-scratch/lkogan/efitpp_eshed'
@@ -10164,9 +10577,56 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 			# temp = brightness[:,:,:int(np.shape(brightness)[2]*0.75)]
 			# temp = np.sort(temp[np.max(temp,axis=(1,2)).argmax()].flatten())
 			ani,efit_reconstruction = movie_from_data(np.array([np.flip(np.transpose(brightness,(0,2,1)),axis=2)])/1000, 1/np.median(np.diff(time_full_binned)),timesteps=time_full_binned,integration=laser_int_time/1000,time_offset=time_full_binned[0],extvmin=0,extvmax=brightness_extvmax/1000,xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel='brightness [kW/m2]', prelude='shot ' + laser_to_analyse[-9:-4]+' '+scenario+'\n'+binning_type+'\n',overlay_structure=True,include_EFIT=True,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True,EFIT_output_requested=True,efit_reconstruction=efit_reconstruction,additional_polygons_dict=additional_polygons_dict)
-			ani.save('/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_pass'+str(pass_number)+'_'+binning_type+ '_FAST_brightness.mp4', fps=5*(1/np.mean(np.diff(time_full_binned)))/383, writer='ffmpeg',codec='mpeg4')
+			ani.save(filename_root+ '_FAST_brightness.mp4', fps=5*(1/np.mean(np.diff(time_full_binned)))/383, writer='ffmpeg',codec='mpeg4')
 			plt.close('all')
 
+		print('calculation of the uncertainty')
+		# I had to split it because it cakes a long time, and I want the inversions earlier
+		for i_t in range(len(time_full_binned_crop)):
+			time_start = tm.time()
+
+			print('starting t=%.4gms' %(time_full_binned_crop[i_t]*1e3))
+
+			powernoback = powernoback_full_orig[i_t].flatten()
+			sigma_powernoback = sigma_powernoback_full[i_t].flatten()
+			reference_sigma_powernoback = reference_sigma_powernoback_all[i_t]
+			# sigma_powernoback = np.ones_like(powernoback)*10
+			sigma_powernoback_2 = sigma_powernoback**2
+
+			# if EFIT is available, I find the strike point and allow any emissivity gradient in R in its vicinity
+			selected_central_column_border_cells_int = cp.deepcopy(selected_central_column_border_cells)
+			if efit_reconstruction!=None:# and len(s_lookup)>1:
+				i_t_efit = np.abs(time_full_binned_crop[i_t] - efit_reconstruction.time).argmin()
+
+				# I can simply use the distance r,z from the strike point, I don't really need to use the linear distance from it
+				# strike_point_s = get_nearest_s_coordinates_mastu(efit_reconstruction.strikepointR[i_t_efit],efit_reconstruction.strikepointZ[i_t_efit],s_lookup,tol=5e-3)[0]
+
+				for i_ in range(len(efit_reconstruction.strikepointR[i_t_efit])):
+					selected_central_column_border_cells_int[(r_int-efit_reconstruction.strikepointR[i_t_efit][i_])**2 + (z_int+np.abs(efit_reconstruction.strikepointZ[i_t_efit][i_]))**2 < tollerance_for_strike_point**2] = False
+
+			prob_and_gradient,calc_hessian = define_fitting_functions(homogeneous_scaling,regolarisation_coeff_divertor_multiplier,regolarisation_coeff_central_column_border_R_derivate_multiplier,regolarisation_coeff_central_border_Z_derivate_multiplier,regolarisation_coeff_edge_laplacian_multiplier,sensitivities_binned_crop,selected_ROI_internal,select_foil_region_with_plasma,grid_laplacian_masked_crop_scaled,not_selected_super_x_cells,selected_edge_cells_for_laplacian,selected_super_x_cells,selected_central_column_border_cells_int,selected_central_border_cells,regolarisation_coeff_non_negativity_multiplier,selected_edge_cells,r_int,regolarisation_coeff_edge,regolarisation_coeff_offsets_multiplier,number_cells_ROI,reference_sigma_powernoback,number_cells_plasma,r_int_2,grid_R_derivate_masked_crop_scaled,grid_Z_derivate_masked_crop_scaled, rmax_pinhole_plate=rmax_pinhole_plate,R_IRVB_head_from_pinhole=R_IRVB_head_from_pinhole,pinhole_plate_to_foil_weight=pinhole_plate_to_foil_weight,IRVB_head_ring_to_foil_weight=IRVB_head_ring_to_foil_weight,ref_temperature=ref_temperature,use_pinhole_plate_over_temperature=use_pinhole_plate_over_temperature)
+
+			args = [powernoback,sigma_powernoback,sigma_emissivity,regolarisation_coeff_all[i_t],sigma_powernoback**2,sigma_emissivity**2]
+			hessian=calc_hessian(x_optimal_ext[i_t],*args)	# W/m^3
+			covariance = np.linalg.inv(hessian.astype(np.float64))
+			eigenvalues, eigenvectors = np.linalg.eigh(covariance)
+			# from Svensson2008, pag 20
+			# eigenvalues[eigenvalues<0] = 0
+			# U, s, Vh = np.linalg.svd(covariance)
+			# s[s<0] = 0
+			# covariance = U @ np.diag(s) @ (Vh)
+			eigenvalues[eigenvalues<0] = 0
+			covariance = eigenvectors @ np.diag(eigenvalues) @ (eigenvectors.T)
+
+			trash,recompose_voxel_sigma,recompose_voxel_excluded_sigma = translate_emissivity_profile_with_homo_temp(np.mean(grid_data_masked_crop,axis=1,dtype=np.float32),(np.diag(covariance).astype(np.float32))**0.5,np.mean(grid_data_masked_crop,axis=1),cells_to_exclude=selected_edge_cells_for_laplacian)
+			inverted_data_sigma.append(recompose_voxel_sigma)	# W/m^3
+			inverted_data_excluded_sigma.append(recompose_voxel_excluded_sigma)	# W/m^3
+			inverted_data_covariance.append(covariance)	# W/m^3
+		inverted_data_sigma = np.array(inverted_data_sigma)	# W/m^3
+		inverted_data_excluded_sigma = np.array(inverted_data_excluded_sigma)	# W/m^3
+		inverted_data_covariance = np.array(inverted_data_covariance,dtype=np.float32)
+
+		if efit_reconstruction!=None:
 			all_time_sep_r,all_time_sep_z,r_fine,z_fine = efit_reconstruction_to_separatrix_on_foil(efit_reconstruction)
 			all_time_strike_points_location = return_all_time_strike_points_location_radial(efit_reconstruction,all_time_sep_r,all_time_sep_z,r_fine,z_fine)
 			outer_leg_tot_rad_power_all = []
@@ -10180,12 +10640,8 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 			sxd_tot_rad_power_sigma_all = []
 			x_point_tot_rad_power_sigma_all = []
 			for i_t in range(len(time_full_binned_crop)):
-				if use_pinhole_plate_over_temperature:
-					x_optimal_no_offsets_and_plate = x_optimal_ext[i_t][:-2-4]
-					inverted_data_covariance_ = inverted_data_covariance[i_t][:-2-4,:-2-4]
-				else:
-					x_optimal_no_offsets_and_plate = x_optimal_ext[i_t][:-2]
-					inverted_data_covariance_ = inverted_data_covariance[i_t][:-2,:-2]
+				x_optimal_no_offsets_and_plate = x_optimal_ext[i_t][:len(grid_data_masked_crop)]
+				inverted_data_covariance_ = inverted_data_covariance[i_t][:len(grid_data_masked_crop),:len(grid_data_masked_crop)]
 				temp = np.abs(efit_reconstruction.time-time_full_binned_crop[i_t]).argmin()
 				xpoint_r = efit_reconstruction.lower_xpoint_r[temp]
 				xpoint_z = efit_reconstruction.lower_xpoint_z[temp]
@@ -10250,6 +10706,7 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 				# x_point_tot_rad_power_sigma = np.nansum((temp_sigma*2*np.pi*r_*((grid_resolution*0.01)**2))**2)**0.5
 				temp = (temp_sigma!=0)*2*np.pi*np.mean(grid_data_masked_crop,axis=1)[:,0]*((grid_resolution*0.01)**2)
 				x_point_tot_rad_power_sigma = np.nansum(((inverted_data_covariance_*temp).T*temp).T)**0.5
+
 				outer_leg_tot_rad_power_all.append(outer_leg_tot_rad_power)
 				inner_leg_tot_rad_power_all.append(inner_leg_tot_rad_power)
 				core_tot_rad_power_all.append(core_tot_rad_power)
@@ -10283,7 +10740,7 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 			plt.xlabel('time [s]')
 			plt.ylabel('power [kW]')
 			plt.grid()
-			plt.savefig('/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_pass'+str(pass_number)+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_FAST_tot_rad_power.eps')
+			plt.savefig(filename_root+filename_root_add+'_FAST_tot_rad_power.eps')
 			plt.close()
 
 			inverted_dict[str(grid_resolution)]['outer_leg_tot_rad_power_all'] = outer_leg_tot_rad_power_all
@@ -10304,12 +10761,16 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 			os.makedirs(path_power_output)
 		plt.figure(figsize=(20, 10))
 		plt.plot(time_full_binned_crop,time_per_iteration)
+		task = np.array([gna['task'] for gna in inverted_data_info])
+		for i__ in range(len(np.unique(task))):
+			plt.plot(time_full_binned_crop[task==np.unique(task)[i__]],time_per_iteration[task==np.unique(task)[i__]],'o',color='C'+str(i__),label=np.unique(task)[i__])
 		# plt.semilogy()
-		plt.title('shot ' + laser_to_analyse[-9:-4]+' '+scenario+'\ntime spent per iteration')
+		plt.legend(loc='best', fontsize='x-small')
+		plt.title('shot ' + laser_to_analyse[-9:-4]+' '+scenario+'\ntime spent per iteration\npgtol=%.3g, factr=%.3g' %(pgtol,factr))
 		plt.xlabel('time [s]')
 		plt.ylabel('time [s]')
 		plt.grid()
-		plt.savefig(path_power_output + '/'+ str(shot_number)+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_FAST_time_trace.eps')
+		plt.savefig(filename_root+filename_root_add+'_FAST_time_trace.eps')
 		plt.close()
 
 		plt.figure(figsize=(20, 10))
@@ -10319,7 +10780,7 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 		plt.xlabel('time [s]')
 		plt.ylabel('log likelihoog [au]')
 		plt.grid()
-		plt.savefig(path_power_output + '/'+ str(shot_number)+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_FAST_likelihood.eps')
+		plt.savefig(filename_root+filename_root_add+'_FAST_likelihood.eps')
 		plt.close()
 
 		plt.figure(figsize=(20, 10))
@@ -10333,7 +10794,7 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 		plt.xlabel('time [s]')
 		plt.ylabel('chi square [au]')
 		plt.grid()
-		plt.savefig(path_power_output + '/'+ str(shot_number)+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_FAST_chi_square.eps')
+		plt.savefig(filename_root+filename_root_add+'_FAST_chi_square.eps')
 		plt.close()
 
 		plt.figure(figsize=(20, 10))
@@ -10344,7 +10805,7 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 		plt.xlabel('time [s]')
 		plt.ylabel('regolarisation coefficient [au]')
 		plt.grid()
-		plt.savefig(path_power_output + '/'+ str(shot_number)+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_FAST_regolarisation_coeff.eps')
+		plt.savefig(filename_root+filename_root_add+'_FAST_regolarisation_coeff.eps')
 		plt.close()
 
 		plt.figure(figsize=(20, 10))
@@ -10354,7 +10815,7 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 		plt.xlabel('time [s]')
 		plt.ylabel('average fit error [W/m2]')
 		plt.grid()
-		plt.savefig(path_power_output + '/'+ str(shot_number)+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_FAST_fit_error.eps')
+		plt.savefig(filename_root+filename_root_add+'_FAST_fit_error.eps')
 		plt.close()
 
 		# plt.figure(figsize=(20, 10))
@@ -10371,21 +10832,50 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 		# plt.savefig(path_power_output + '/'+ str(shot_number)+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_FAST_offsets.eps')
 		# plt.close()
 
-		fig, ax = plt.subplots( 2,1,figsize=(20, 18), squeeze=False, sharex=True)
+		fig, ax = plt.subplots( 4,1,figsize=(20, 18), squeeze=False, sharex=True)
 		fig.suptitle('shot ' + laser_to_analyse[-9:-4]+' '+scenario+'\nOffsets to match foil power')
 		ax[0,0].plot(time_full_binned_crop,inverted_data_plasma_region_offset,label='plasma region')
 		ax[0,0].plot(time_full_binned_crop,inverted_data_homogeneous_offset,label='whole foil')
-		ax[1,0].plot(time_full_binned_crop,np.nanmax(powernoback_full_orig,axis=(1,2)),'--',label='whole foil max')
-		ax[1,0].plot(time_full_binned_crop,np.nanmean(powernoback_full_orig,axis=(1,2)),'--',label='whole foil mean')
+		ax[0,0].plot(time_full_binned_crop,np.mean(fitted_foil_power_excluded,axis=(-1,-2)),label='averaged\noffs+excl+head')
+		if use_pinhole_plate_over_temperature:
+			IRVB_head_power_correction_pinhole_plate_all = []
+			IRVB_head_power_correction_head_all = []
+			IRVB_head_power_correction_ring_all = []
+			for i_t in range(len(time_full_binned_crop)):
+				DT_head_r = DT_head_r_all[i_t]
+				DT_ring = DT_ring_all[i_t]
+				IRVB_head_power_correction_pinhole_plate = np.sum(((pinhole_plate_to_foil_weight.T*((DT_head_r+ref_temperature+zeroC)**4 - (ref_temperature+zeroC)**4)).T)[R_IRVB_head_from_pinhole<rmax_pinhole_plate],axis=0)
+				IRVB_head_power_correction_head = np.sum(((pinhole_plate_to_foil_weight.T*((DT_head_r+ref_temperature+zeroC)**4 - (ref_temperature+zeroC)**4)).T)[R_IRVB_head_from_pinhole>=rmax_pinhole_plate],axis=0)
+				IRVB_head_power_correction_ring = IRVB_head_ring_to_foil_weight*((DT_ring+ref_temperature+zeroC)**4 - (ref_temperature+zeroC)**4)
+				IRVB_head_power_correction_pinhole_plate_all.append(np.mean(IRVB_head_power_correction_pinhole_plate))
+				IRVB_head_power_correction_head_all.append(np.mean(IRVB_head_power_correction_head))
+				IRVB_head_power_correction_ring_all.append(np.mean(IRVB_head_power_correction_ring))
+			a1 = ax[0,0].plot(time_full_binned_crop,IRVB_head_power_correction_pinhole_plate_all,label='averaged pinhole plate')
+			a2 = ax[0,0].plot(time_full_binned_crop,IRVB_head_power_correction_head_all,label='averaged IRVB head')
+			a3 = ax[0,0].plot(time_full_binned_crop,IRVB_head_power_correction_ring_all,label='averaged IRVB head ring')
+			ax[1,0].plot(time_full_binned_crop,DT_max_all,label='DT_max',color = a1[0].get_color())
+			ax[1,0].plot(time_full_binned_crop,DT_head_all,label='DT_head',color = a2[0].get_color())
+			ax[1,0].plot(time_full_binned_crop,DT_ring_all,label='DT_ring',color = a3[0].get_color())
+			ax[1,0].legend(loc='best', fontsize='x-small')
+			ax[2,0].plot(time_full_binned_crop,pinhole_plate_T_slope_all,label='pinhole_plate_T_slope')
+			ax[2,0].legend(loc='best', fontsize='x-small')
+		ax[3,0].plot(time_full_binned_crop,np.nanmax(powernoback_full_orig,axis=(1,2)),'--',label='whole foil max')
+		ax[3,0].plot(time_full_binned_crop,np.nanmean(powernoback_full_orig,axis=(1,2)),'--',label='whole foil mean')
+		ax[3,0].plot(time_full_binned_crop,np.mean(fitted_foil_power_excluded,axis=(-1,-2)),label='averaged\noffs+excl+head')
+		ax[3,0].set_ylim(bottom=1)
 		ax[0,0].grid()
 		ax[1,0].grid()
+		ax[2,0].grid()
+		ax[3,0].grid()
 		ax[0,0].set_ylabel('power density [W/m2]')
-		ax[1,0].set_ylabel('power density [W/m2]')
-		ax[1,0].set_xlabel('time [s]')
+		ax[1,0].set_ylabel('Temperature [C]')
+		ax[2,0].set_ylabel('slope [C/m]')
+		ax[3,0].set_ylabel('power density [W/m2]')
+		ax[3,0].set_xlabel('time [s]')
 		ax[0,0].legend(loc='best', fontsize='x-small')
-		ax[1,0].legend(loc='best', fontsize='x-small')
-		ax[1,0].semilogy()
-		plt.savefig(path_power_output + '/'+ str(shot_number)+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_FAST_offsets.eps')
+		ax[3,0].legend(loc='best', fontsize='x-small')
+		ax[3,0].semilogy()
+		plt.savefig(filename_root+filename_root_add+'_FAST_offsets.eps')
 		plt.close()
 
 		# it's necessary here to limit the range for when the regularisation goes really low
@@ -10396,7 +10886,7 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 			polygon = Polygon(FULL_MASTU_CORE_GRID_POLYGON)
 			select_good_voxels = select_cells_inside_polygon(polygon,[np.unique(np.mean(grid_data_masked_crop,axis=1)[:,0]),np.unique(np.mean(grid_data_masked_crop,axis=1)[:,1])])
 			# select_good_voxels = select_good_voxels.reshape(np.shape(inverted_data[0]))
-			sample = inverted_data[:,select_good_voxels]
+			sample = cp.deepcopy(inverted_data[:,select_good_voxels])
 			extvmin = np.nanmin(sample,axis=1)*0
 			extvmax = np.nanmax(sample,axis=1)
 		else:
@@ -10425,7 +10915,7 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 			ax[1,0].set_xlabel('time [s]')
 			ax[1,0].set_ylabel('position above x-point [m]')
 			ax[1,0].grid()
-			plt.savefig('/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_FAST_x_point_location.eps')
+			plt.savefig(filename_root+filename_root_add+'_FAST_x_point_location.eps')
 			plt.close()
 
 			extent = [grid_data_masked_crop[:,:,0].min(), grid_data_masked_crop[:,:,0].max(), grid_data_masked_crop[:,:,1].min(), grid_data_masked_crop[:,:,1].max()]
@@ -10442,7 +10932,7 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 			additional_each_frame_label_description = ['reg coeff=']*len(inverted_data)
 			additional_each_frame_label_number = np.array(regolarisation_coeff_all)
 			ani,trash = movie_from_data_radial_profile(np.array([np.flip(np.transpose(inverted_data,(0,2,1)),axis=2)])/1000, 1/(np.mean(np.diff(time_full_binned_crop))), extent = extent, image_extent=image_extent,timesteps=time_full_binned_crop,integration=laser_int_time/1000,barlabel='Emissivity [kW/m3]',xlabel='R [m]', ylabel='Z [m]', prelude='shot ' + laser_to_analyse[-9:-4]+' '+scenario+'\n'+binning_type+'\n'+'sigma_emissivity %.3g\nregolarisation_coeff_edge %.3g\nregolarisation_coeff_central_border_Z_derivate_multiplier %.3g\nregolarisation_coeff_central_column_border_R_derivate_multiplier %.3g\nregolarisation_coeff_edge_laplacian_multiplier %.3g\nregolarisation_coeff_divertor_multiplier %.3g\nregolarisation_coeff_non_negativity_multiplier %.3g\ngrid resolution %.3g\n' %(sigma_emissivity,regolarisation_coeff_edge,regolarisation_coeff_central_border_Z_derivate_multiplier,regolarisation_coeff_central_column_border_R_derivate_multiplier,regolarisation_coeff_edge_laplacian_multiplier,regolarisation_coeff_divertor_multiplier,regolarisation_coeff_non_negativity_multiplier,grid_resolution) ,overlay_structure=True,include_EFIT=True,EFIT_output_requested=True,efit_reconstruction=efit_reconstruction,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True,additional_each_frame_label_description=additional_each_frame_label_description,additional_each_frame_label_number=additional_each_frame_label_number,extvmin=extvmin,extvmax=extvmax)#,extvmin=0,extvmax=4e4)
-		ani.save('/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_pass'+str(pass_number)+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_FAST_reconstruct_emissivity_bayesian.mp4', fps=5*(1/(np.mean(np.diff(time_full_binned_crop))))/383, writer='ffmpeg',codec='mpeg4')
+		ani.save(filename_root+filename_root_add+'_FAST_reconstruct_emissivity_bayesian.mp4', fps=5*(1/(np.mean(np.diff(time_full_binned_crop))))/383, writer='ffmpeg',codec='mpeg4')
 		plt.close()
 
 
@@ -10457,6 +10947,13 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 		inverted_dict[str(grid_resolution)]['select_foil_region_with_plasma'] = select_foil_region_with_plasma
 		inverted_dict[str(grid_resolution)]['inverted_data_plasma_region_offset'] = inverted_data_plasma_region_offset
 		inverted_dict[str(grid_resolution)]['inverted_data_homogeneous_offset'] = inverted_data_homogeneous_offset
+		if use_pinhole_plate_over_temperature:
+			inverted_dict[str(grid_resolution)]['DT_max_all'] = DT_max_all
+			inverted_dict[str(grid_resolution)]['DT_head_all'] = DT_head_all
+			inverted_dict[str(grid_resolution)]['DT_head_all'] = DT_head_all
+			inverted_dict[str(grid_resolution)]['pinhole_plate_T_slope_all'] = pinhole_plate_T_slope_all
+		inverted_dict[str(grid_resolution)]['DT_head_r_all'] = DT_head_r_all
+		inverted_dict[str(grid_resolution)]['IRVB_head_power_correction_all'] = IRVB_head_power_correction_all
 		inverted_dict[str(grid_resolution)]['x_optimal_ext'] = x_optimal_ext
 		inverted_dict[str(grid_resolution)]['grid_data_masked_crop'] = grid_data_masked_crop
 		inverted_dict[str(grid_resolution)]['time_full_binned_crop'] = time_full_binned_crop
@@ -10484,6 +10981,8 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 		inverted_dict[str(grid_resolution)]['params_BB_used'] = params_BB_int
 		inverted_dict[str(grid_resolution)]['errparams_BB_used'] = errparams_BB_int
 		inverted_dict[str(grid_resolution)]['temperature_crop_binned'] = np.mean(temperature_crop_binned,axis=0).astype(np.float16)
+		inverted_dict[str(grid_resolution)]['filename_root'] = filename_root
+		inverted_dict[str(grid_resolution)]['filename_root_add'] = filename_root_add
 
 		if efit_reconstruction!=None:
 
@@ -10513,7 +11012,7 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 				ax[0,1].grid()
 				# ax[0,1].colorbar().set_label('Emissivity [W/m3]')
 				plt.colorbar(im2,ax=ax[0,1]).set_label('Emissivity [W/m3]')
-				plt.savefig('/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_pass'+str(pass_number)+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_outer_leg_radiation_tracking.eps')
+				plt.savefig(filename_root+filename_root_add+'_outer_leg_radiation_tracking.eps')
 				plt.close()
 
 
@@ -10553,7 +11052,7 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 				ax[1,0].set_xlabel('distance from x-point [m]')
 				ax[0,0].grid()
 				ax[1,0].grid()
-				plt.savefig('/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_pass'+str(pass_number)+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_outer_leg_radiation_tracking_2.png')
+				plt.savefig(filename_root+filename_root_add+'_outer_leg_radiation_tracking_2.png')
 				plt.close()
 
 			except Exception as e:
@@ -10589,7 +11088,7 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 				ax[0,1].grid()
 				# ax[0,1].colorbar().set_label('Emissivity [W/m3]')
 				plt.colorbar(im2,ax=ax[0,1]).set_label('Emissivity [W/m3]')
-				plt.savefig('/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_pass'+str(pass_number)+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_inner_leg_radiation_tracking.eps')
+				plt.savefig(filename_root+filename_root_add+'_inner_leg_radiation_tracking.eps')
 				plt.close()
 
 
@@ -10629,7 +11128,7 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 				ax[1,0].set_xlabel('distance from x-point [m]')
 				ax[0,0].grid()
 				ax[1,0].grid()
-				plt.savefig('/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_pass'+str(pass_number)+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_inner_leg_radiation_tracking_2.png')
+				plt.savefig(filename_root+filename_root_add+'_inner_leg_radiation_tracking_2.png')
 				plt.close()
 
 			except Exception as e:
@@ -10641,12 +11140,28 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 			inverted_dict[str(grid_resolution)]['leg_inner_length_all'] = leg_length_all
 			inverted_dict[str(grid_resolution)]['leg_inner_length_interval_all'] = leg_length_interval_all
 
+	# # temporary
+	# plt.figure()
+	# plt.imshow(inverted_data[15])
+	# plt.title('shot ' + laser_to_analyse[-9:-4]+' '+'\ntemp')
+	# plt.savefig(filename_root+filename_root_add+'_temp1.eps')
+	# plt.close()
+
 	if disruption_check:
 		return foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop_binned,time_full_binned,powernoback_output,brightness,binning_type,inverted_dict,temperature_minus_background_crop_dt,temperature_minus_background_crop_dt_time
 	else:
 		return foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop_binned,time_full_binned,powernoback_output,brightness,binning_type,inverted_dict
 
-def define_fitting_functions(homogeneous_scaling,regolarisation_coeff_divertor_multiplier,regolarisation_coeff_central_column_border_R_derivate_multiplier,regolarisation_coeff_central_border_Z_derivate_multiplier,regolarisation_coeff_edge_laplacian_multiplier,sensitivities_binned_crop,selected_ROI_internal,select_foil_region_with_plasma,grid_laplacian_masked_crop_scaled,not_selected_super_x_cells,selected_edge_cells_for_laplacian,selected_super_x_cells,selected_central_column_border_cells,selected_central_border_cells,regolarisation_coeff_non_negativity_multiplier,selected_edge_cells,r_int,regolarisation_coeff_edge,regolarisation_coeff_offsets_multiplier,number_cells_ROI,reference_sigma_powernoback,number_cells_plasma,r_int_2, rmax_pinhole_plate=0,R_pinhole_plate=[],pinhole_plate_to_foil_weight=[],IRVB_head_ring_to_foil_weight=[],ref_temperature=0,use_pinhole_plate_over_temperature=True):
+def calc_IRVB_head_power_correction(DT_max,DT_head,DT_ring,pinhole_plate_T_slope,rmax_pinhole_plate,pinhole_radious,R_IRVB_head_from_pinhole,pinhole_plate_to_foil_weight,ref_temperature,IRVB_head_ring_to_foil_weight):
+	zeroC=273.15 #K / C
+	DT_head_r = DT_max + DT_head + ( -DT_max - pinhole_plate_T_slope*(rmax_pinhole_plate-pinhole_radious) ) * ((R_IRVB_head_from_pinhole-pinhole_radious)/(rmax_pinhole_plate-pinhole_radious))**2 + pinhole_plate_T_slope*(R_IRVB_head_from_pinhole-pinhole_radious)
+	DT_head_r[R_IRVB_head_from_pinhole>=rmax_pinhole_plate] = DT_head
+	DT_head_r[DT_head_r<DT_head] = DT_head
+	DT_head_r[DT_head_r>DT_max+DT_head] = DT_max+DT_head
+	IRVB_head_power_correction = np.sum((pinhole_plate_to_foil_weight.T*((DT_head_r+ref_temperature+zeroC)**4 - (ref_temperature+zeroC)**4)).T,axis=0) + IRVB_head_ring_to_foil_weight*((DT_ring+ref_temperature+zeroC)**4 - (ref_temperature+zeroC)**4)
+	return DT_head_r,IRVB_head_power_correction
+
+def define_fitting_functions(homogeneous_scaling,regolarisation_coeff_divertor_multiplier,regolarisation_coeff_central_column_border_R_derivate_multiplier,regolarisation_coeff_central_border_Z_derivate_multiplier,regolarisation_coeff_edge_laplacian_multiplier,sensitivities_binned_crop,selected_ROI_internal,select_foil_region_with_plasma,grid_laplacian_masked_crop_scaled,not_selected_super_x_cells,selected_edge_cells_for_laplacian,selected_super_x_cells,selected_central_column_border_cells,selected_central_border_cells,regolarisation_coeff_non_negativity_multiplier,selected_edge_cells,r_int,regolarisation_coeff_edge,regolarisation_coeff_offsets_multiplier,number_cells_ROI,reference_sigma_powernoback,number_cells_plasma,r_int_2,grid_R_derivate_masked_crop_scaled,grid_Z_derivate_masked_crop_scaled, rmax_pinhole_plate=0,R_IRVB_head_from_pinhole=[],pinhole_plate_to_foil_weight=[],IRVB_head_ring_to_foil_weight=[],ref_temperature=0,use_pinhole_plate_over_temperature=True):
 
 	zeroC=273.15 #K / C
 
@@ -10661,15 +11176,16 @@ def define_fitting_functions(homogeneous_scaling,regolarisation_coeff_divertor_m
 		sigma_emissivity_2 = args[5]
 		IRVB_head_power_correction = 0
 		if use_pinhole_plate_over_temperature:
-			DT_max = emissivity_plus[-4]
-			DT_head = emissivity_plus[-3]
-			DT_ring = emissivity_plus[-2]
-			pinhole_plate_T_slope = emissivity_plus[-1]
-			DT_head_r = DT_max + DT_head + ( -DT_max - pinhole_plate_T_slope*(rmax_pinhole_plate-pinhole_radious) ) * ((R_pinhole_plate-pinhole_radious)/(rmax_pinhole_plate-pinhole_radious))**2 + pinhole_plate_T_slope*(R_pinhole_plate-pinhole_radious)
-			DT_head_r[R_pinhole_plate>=rmax_pinhole_plate] = DT_head
-			DT_head_r[DT_head_r<DT_head] = DT_head
-			DT_head_r[DT_head_r>DT_max+DT_head] = DT_max+DT_head
-			IRVB_head_power_correction = np.sum((pinhole_plate_to_foil_weight.T*((DT_head_r+ref_temperature+zeroC)**4 - (ref_temperature+zeroC)**4)).T,axis=0) + IRVB_head_ring_to_foil_weight*((DT_ring+ref_temperature+zeroC)**4 - (ref_temperature+zeroC)**4)
+			DT_max = emissivity_plus[-4]*homogeneous_scaling	# scaling added such that all variables have the same order of magnitude
+			DT_head = emissivity_plus[-3]*homogeneous_scaling	# scaling added such that all variables have the same order of magnitude
+			DT_ring = emissivity_plus[-2]*homogeneous_scaling	# scaling added such that all variables have the same order of magnitude
+			pinhole_plate_T_slope = emissivity_plus[-1]*homogeneous_scaling	# scaling added such that all variables have the same order of magnitude
+			# DT_head_r = DT_max + DT_head + ( -DT_max - pinhole_plate_T_slope*(rmax_pinhole_plate-pinhole_radious) ) * ((R_IRVB_head_from_pinhole-pinhole_radious)/(rmax_pinhole_plate-pinhole_radious))**2 + pinhole_plate_T_slope*(R_IRVB_head_from_pinhole-pinhole_radious)
+			# DT_head_r[R_IRVB_head_from_pinhole>=rmax_pinhole_plate] = DT_head
+			# DT_head_r[DT_head_r<DT_head] = DT_head
+			# DT_head_r[DT_head_r>DT_max+DT_head] = DT_max+DT_head
+			# IRVB_head_power_correction = np.sum((pinhole_plate_to_foil_weight.T*((DT_head_r+ref_temperature+zeroC)**4 - (ref_temperature+zeroC)**4)).T,axis=0) + IRVB_head_ring_to_foil_weight*((DT_ring+ref_temperature+zeroC)**4 - (ref_temperature+zeroC)**4)
+			DT_head_r,IRVB_head_power_correction = calc_IRVB_head_power_correction(DT_max,DT_head,DT_ring,pinhole_plate_T_slope,rmax_pinhole_plate,pinhole_radious,R_IRVB_head_from_pinhole,pinhole_plate_to_foil_weight,ref_temperature,IRVB_head_ring_to_foil_weight)
 			IRVB_head_power_correction = IRVB_head_power_correction.flatten()
 			emissivity_plus = emissivity_plus[:-4]
 
@@ -10724,10 +11240,10 @@ def define_fitting_functions(homogeneous_scaling,regolarisation_coeff_divertor_m
 		temp = foil_power_error/sigma_powernoback_2
 		likelihood_power_fit_derivate = np.concatenate((-2*0.5*np.dot(temp,sensitivities_binned_crop),[-2*0.5*np.sum(temp*select_foil_region_with_plasma)*homogeneous_scaling,-2*0.5*np.sum(temp*selected_ROI_internal)*homogeneous_scaling]))
 		if use_pinhole_plate_over_temperature:
-			likelihood_power_fit_derivate = np.concatenate((likelihood_power_fit_derivate,[-2*0.5*np.sum(temp*np.sum(((pinhole_plate_to_foil_weight.T*4*((DT_head_r+ref_temperature+zeroC)**3)*(1-((R_pinhole_plate-pinhole_radious)/(rmax_pinhole_plate-pinhole_radious))**2)).T)[R_pinhole_plate<rmax_pinhole_plate],axis=0).flatten())]))
-			likelihood_power_fit_derivate = np.concatenate((likelihood_power_fit_derivate,[-2*0.5*np.sum(temp*np.sum(((pinhole_plate_to_foil_weight.T*4*((DT_head_r+ref_temperature+zeroC)**3)*(1)).T),axis=0).flatten())]))
-			likelihood_power_fit_derivate = np.concatenate((likelihood_power_fit_derivate,[-2*0.5*np.sum(temp*(IRVB_head_ring_to_foil_weight*4*((DT_ring+ref_temperature+zeroC)**3)*(1)).flatten())]))
-			likelihood_power_fit_derivate = np.concatenate((likelihood_power_fit_derivate,[-2*0.5*np.sum(temp*np.sum(((pinhole_plate_to_foil_weight.T*4*((DT_head_r+ref_temperature+zeroC)**3)*(0-(rmax_pinhole_plate-pinhole_radious) * ((R_pinhole_plate-pinhole_radious)/(rmax_pinhole_plate-pinhole_radious))**2 + (R_pinhole_plate-pinhole_radious))).T)[R_pinhole_plate<rmax_pinhole_plate],axis=0).flatten())]))
+			likelihood_power_fit_derivate = np.concatenate((likelihood_power_fit_derivate,[-2*0.5*np.sum(temp*np.sum(((pinhole_plate_to_foil_weight.T*4*((DT_head_r+ref_temperature+zeroC)**3)*(1-((R_IRVB_head_from_pinhole-pinhole_radious)/(rmax_pinhole_plate-pinhole_radious))**2)).T)[R_IRVB_head_from_pinhole<rmax_pinhole_plate],axis=0).flatten())*homogeneous_scaling]))
+			likelihood_power_fit_derivate = np.concatenate((likelihood_power_fit_derivate,[-2*0.5*np.sum(temp*np.sum(((pinhole_plate_to_foil_weight.T*4*((DT_head_r+ref_temperature+zeroC)**3)*(1)).T),axis=0).flatten())*homogeneous_scaling]))
+			likelihood_power_fit_derivate = np.concatenate((likelihood_power_fit_derivate,[-2*0.5*np.sum(temp*(IRVB_head_ring_to_foil_weight*4*((DT_ring+ref_temperature+zeroC)**3)*(1)).flatten())*homogeneous_scaling]))
+			likelihood_power_fit_derivate = np.concatenate((likelihood_power_fit_derivate,[-2*0.5*np.sum(temp*np.sum(((pinhole_plate_to_foil_weight.T*4*((DT_head_r+ref_temperature+zeroC)**3)*(0-(rmax_pinhole_plate-pinhole_radious) * ((R_IRVB_head_from_pinhole-pinhole_radious)/(rmax_pinhole_plate-pinhole_radious))**2 + (R_IRVB_head_from_pinhole-pinhole_radious))).T)[R_IRVB_head_from_pinhole<rmax_pinhole_plate],axis=0).flatten())*homogeneous_scaling]))
 
 		likelihood_emissivity_pos_derivate = 2*(regolarisation_coeff_non_negativity_multiplier**2)*np.minimum(0.,emissivity*np.logical_not(selected_edge_cells))*r_int_2/sigma_emissivity_2*1
 
@@ -10757,7 +11273,7 @@ def define_fitting_functions(homogeneous_scaling,regolarisation_coeff_divertor_m
 		# time_start = tm.time()
 		return likelihood,likelihood_derivate
 
-	def calc_hessian(emissivity_plus,*args):
+	def calc_hessian_old(emissivity_plus,*args):	# this is wrong because in reality the double partial derivative is different from the product of the single derivative, as I wrongly assumed here
 		print('this has to change with: gaussian weight of the foil fit divided by 2 AND the matrix built with equation 2.21 in the thesis (proper double derivative)')
 		# time_start = tm.time()
 		# emissivity_plus = emissivity_plus
@@ -10769,15 +11285,11 @@ def define_fitting_functions(homogeneous_scaling,regolarisation_coeff_divertor_m
 		sigma_emissivity_2 = args[5]
 		IRVB_head_power_correction = 0
 		if use_pinhole_plate_over_temperature:
-			DT_max = emissivity_plus[-4]
-			DT_head = emissivity_plus[-3]
-			DT_ring = emissivity_plus[-2]
+			DT_max = emissivity_plus[-4]*homogeneous_scaling
+			DT_head = emissivity_plus[-3]*homogeneous_scaling
+			DT_ring = emissivity_plus[-2]*homogeneous_scaling
 			pinhole_plate_T_slope = emissivity_plus[-1]
-			DT_head_r = DT_max + DT_head + ( -DT_max - pinhole_plate_T_slope*(rmax_pinhole_plate-pinhole_radious) ) * ((R_pinhole_plate-pinhole_radious)/(rmax_pinhole_plate-pinhole_radious))**2 + pinhole_plate_T_slope*(R_pinhole_plate-pinhole_radious)
-			DT_head_r[R_pinhole_plate>=rmax_pinhole_plate] = DT_head
-			DT_head_r[DT_head_r<DT_head] = DT_head
-			DT_head_r[DT_head_r>DT_max+DT_head] = DT_max+DT_head
-			IRVB_head_power_correction = np.sum((pinhole_plate_to_foil_weight.T*((DT_head_r+ref_temperature+zeroC)**4 - (ref_temperature+zeroC)**4)).T,axis=0) + IRVB_head_ring_to_foil_weight*((DT_ring+ref_temperature+zeroC)**4 - (ref_temperature+zeroC)**4)
+			DT_head_r,IRVB_head_power_correction = calc_IRVB_head_power_correction(DT_max,DT_head,DT_ring,pinhole_plate_T_slope,rmax_pinhole_plate,pinhole_radious,R_IRVB_head_from_pinhole,pinhole_plate_to_foil_weight,ref_temperature,IRVB_head_ring_to_foil_weight)
 			IRVB_head_power_correction = IRVB_head_power_correction.flatten()
 			emissivity_plus = emissivity_plus[:-4]
 
@@ -10850,9 +11362,167 @@ def define_fitting_functions(homogeneous_scaling,regolarisation_coeff_divertor_m
 		likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1],sensitivities_binned_crop.shape[1]] += likelihood_homogeneous_offset_plasma_derivate
 		return likelihood_power_fit_derivate
 
+	def calc_hessian(emissivity_plus,*args):
+		# version created with the proper double derivatives of the penalty to all variables. at the moment this does not include empirical bayes
+		# time_start = tm.time()
+		# emissivity_plus = emissivity_plus
+		powernoback = args[0]
+		sigma_powernoback = args[1]
+		sigma_emissivity = args[2]
+		regolarisation_coeff = args[3]
+		sigma_powernoback_2 = args[4]
+		sigma_emissivity_2 = args[5]
+		IRVB_head_power_correction = 0
+		if use_pinhole_plate_over_temperature:
+			DT_max = emissivity_plus[-4]*homogeneous_scaling
+			DT_head = emissivity_plus[-3]*homogeneous_scaling
+			DT_ring = emissivity_plus[-2]*homogeneous_scaling
+			pinhole_plate_T_slope = emissivity_plus[-1]*homogeneous_scaling
+			DT_head_r,IRVB_head_power_correction = calc_IRVB_head_power_correction(DT_max,DT_head,DT_ring,pinhole_plate_T_slope,rmax_pinhole_plate,pinhole_radious,R_IRVB_head_from_pinhole,pinhole_plate_to_foil_weight,ref_temperature,IRVB_head_ring_to_foil_weight)
+			IRVB_head_power_correction = IRVB_head_power_correction.flatten()
+			emissivity_plus = emissivity_plus[:-4]
+
+		homogeneous_offset = emissivity_plus[-1]*homogeneous_scaling	# scaling added such that all variables have the same order of magnitude
+		homogeneous_offset_plasma = emissivity_plus[-2]*homogeneous_scaling	# scaling added such that all variables have the same order of magnitude
+		regolarisation_coeff_divertor = regolarisation_coeff*regolarisation_coeff_divertor_multiplier
+		regolarisation_coeff_central_column_border_R_derivate = regolarisation_coeff*regolarisation_coeff_central_column_border_R_derivate_multiplier
+		regolarisation_coeff_central_border_Z_derivate = regolarisation_coeff*regolarisation_coeff_central_border_Z_derivate_multiplier
+		regolarisation_coeff_edge_laplacian = regolarisation_coeff*regolarisation_coeff_edge_laplacian_multiplier
+		# regolarisation_coeff_edge = regolarisation_coeff*regolarisation_coeff_edge_multiplier
+		# print(homogeneous_offset,homogeneous_offset_plasma)
+		emissivity = emissivity_plus[:-2]
+		# emissivity[emissivity==0] = 1e-10
+		# foil_power_guess = np.dot(sensitivities_binned_crop,emissivity) + selected_ROI_internal*homogeneous_offset + homogeneous_offset_plasma*select_foil_region_with_plasma
+		# foil_power_error = powernoback - (np.dot(sensitivities_binned_crop,emissivity) + selected_ROI_internal*homogeneous_offset + homogeneous_offset_plasma*select_foil_region_with_plasma)
+		foil_power_error = powernoback - (np.dot(sensitivities_binned_crop,emissivity) + selected_ROI_internal*homogeneous_offset + homogeneous_offset_plasma*select_foil_region_with_plasma + IRVB_head_power_correction)
+		emissivity_laplacian = np.dot(grid_laplacian_masked_crop_scaled,emissivity)
+		emissivity_laplacian_not_selected_super_x_cells = emissivity_laplacian*not_selected_super_x_cells
+		emissivity_laplacian_selected_super_x_cells = emissivity_laplacian*selected_super_x_cells
+		emissivity_laplacian_selected_edge_cells_for_laplacian = emissivity_laplacian*selected_edge_cells_for_laplacian
+		if regolarisation_coeff_central_column_border_R_derivate!=0:
+			R_derivate = np.dot(grid_R_derivate_masked_crop_scaled,emissivity)
+			R_derivate_selected_central_column_border_cells = R_derivate*selected_central_column_border_cells
+		if regolarisation_coeff_central_border_Z_derivate!=0:
+			Z_derivate = np.dot(grid_Z_derivate_masked_crop_scaled,emissivity)
+			Z_derivate_selected_central_border_cells = Z_derivate*selected_central_border_cells
+		# print(tm.time()-time_start)
+		# time_start = tm.time()
+
+		if use_pinhole_plate_over_temperature:
+			likelihood_power_fit_derivate = np.zeros((np.shape(sensitivities_binned_crop)[1]+2+4,np.shape(sensitivities_binned_crop)[1]+2+4)).astype(np.float32)
+		else:
+			likelihood_power_fit_derivate = np.zeros((np.shape(sensitivities_binned_crop)[1]+2,np.shape(sensitivities_binned_crop)[1]+2)).astype(np.float32)
+		# I need to add all the contributions to the error double partial derivative
+		# foil fit error, emissivities
+		# temp = (sensitivities_binned_crop[selected_ROI_internal].astype(np.float32)).T
+		# for i in range(np.shape(sensitivities_binned_crop)[1]):
+		# 	likelihood_power_fit_derivate[i,:sensitivities_binned_crop.shape[1]] += np.sum((temp*temp[i])/sigma_powernoback_2[selected_ROI_internal],axis=-1)
+		likelihood_power_fit_derivate[:sensitivities_binned_crop.shape[1]][:,:sensitivities_binned_crop.shape[1]] += ((sensitivities_binned_crop.T/sigma_powernoback) @ (sensitivities_binned_crop.T/sigma_powernoback).T)
+		# foil fit error, offsets
+		likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1],:sensitivities_binned_crop.shape[1]] += np.sum(sensitivities_binned_crop.T/sigma_powernoback_2*select_foil_region_with_plasma,axis=-1)*homogeneous_scaling
+		likelihood_power_fit_derivate[:sensitivities_binned_crop.shape[1],sensitivities_binned_crop.shape[1]] += np.sum(sensitivities_binned_crop.T/sigma_powernoback_2*select_foil_region_with_plasma,axis=-1)*homogeneous_scaling
+		likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1],sensitivities_binned_crop.shape[1]] += np.sum(1/sigma_powernoback_2*select_foil_region_with_plasma,axis=-1)*homogeneous_scaling*homogeneous_scaling
+		likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+1,:sensitivities_binned_crop.shape[1]] += np.sum(sensitivities_binned_crop.T/sigma_powernoback_2,axis=-1)*homogeneous_scaling
+		likelihood_power_fit_derivate[:sensitivities_binned_crop.shape[1],sensitivities_binned_crop.shape[1]+1] += np.sum(sensitivities_binned_crop.T/sigma_powernoback_2,axis=-1)*homogeneous_scaling
+		likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+1,sensitivities_binned_crop.shape[1]] += np.sum(1/sigma_powernoback_2*select_foil_region_with_plasma,axis=-1)*homogeneous_scaling*homogeneous_scaling
+		likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1],sensitivities_binned_crop.shape[1]+1] += np.sum(1/sigma_powernoback_2*select_foil_region_with_plasma,axis=-1)*homogeneous_scaling*homogeneous_scaling
+		likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+1,sensitivities_binned_crop.shape[1]+1] += np.sum(1/sigma_powernoback_2,axis=-1)*homogeneous_scaling*homogeneous_scaling
+		if use_pinhole_plate_over_temperature:
+			dT_DT_max = 1 - ((R_IRVB_head_from_pinhole-pinhole_radious)/(rmax_pinhole_plate-pinhole_radious))**2
+			dT_DT_head = 1
+			dT_DT_ring = 1
+			dT_pinhole_plate_T_slope = - ((R_IRVB_head_from_pinhole-pinhole_radious)**2/(rmax_pinhole_plate-pinhole_radious)) + (R_IRVB_head_from_pinhole-pinhole_radious)
+			T_head_r = DT_head_r+ref_temperature+zeroC
+			# foil fit error, dT_DT_max
+			select_pinhole_plate = R_IRVB_head_from_pinhole<rmax_pinhole_plate
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+2,:sensitivities_binned_crop.shape[1]] += np.sum(sensitivities_binned_crop.T * (1/sigma_powernoback_2 * np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_DT_max)[:,:,select_pinhole_plate],axis=-1).T.flatten()),axis=-1)*homogeneous_scaling
+			likelihood_power_fit_derivate[:sensitivities_binned_crop.shape[1],sensitivities_binned_crop.shape[1]+2] += np.sum(sensitivities_binned_crop.T * (1/sigma_powernoback_2 * np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_DT_max)[:,:,select_pinhole_plate],axis=-1).T.flatten()),axis=-1)*homogeneous_scaling
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+2,sensitivities_binned_crop.shape[1]] += np.sum(select_foil_region_with_plasma * (1/sigma_powernoback_2 * np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_DT_max)[:,:,select_pinhole_plate],axis=-1).T.flatten()))*homogeneous_scaling*homogeneous_scaling
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1],sensitivities_binned_crop.shape[1]+2] += np.sum(select_foil_region_with_plasma * (1/sigma_powernoback_2 * np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_DT_max)[:,:,select_pinhole_plate],axis=-1).T.flatten()))*homogeneous_scaling*homogeneous_scaling
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+2,sensitivities_binned_crop.shape[1]+1] += np.sum( (1/sigma_powernoback_2 * np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_DT_max)[:,:,select_pinhole_plate],axis=-1).T.flatten()))*homogeneous_scaling*homogeneous_scaling
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+1,sensitivities_binned_crop.shape[1]+2] += np.sum( (1/sigma_powernoback_2 * np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_DT_max)[:,:,select_pinhole_plate],axis=-1).T.flatten()))*homogeneous_scaling*homogeneous_scaling
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+2,sensitivities_binned_crop.shape[1]+2] += np.sum( (1/sigma_powernoback_2 * (np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_DT_max)[:,:,select_pinhole_plate],axis=-1).T.flatten())**2))*homogeneous_scaling*homogeneous_scaling - np.sum(foil_power_error/sigma_powernoback_2 * np.sum((pinhole_plate_to_foil_weight.T*4*3*(T_head_r**2)*(dT_DT_max**2) )[:,:,select_pinhole_plate],axis=-1).T.flatten() )*homogeneous_scaling*homogeneous_scaling
+			# foil fit error, dT_DT_head
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+2+1,:sensitivities_binned_crop.shape[1]] += np.sum(sensitivities_binned_crop.T * (1/sigma_powernoback_2 * np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_DT_head)[:,:,:],axis=-1).T.flatten()),axis=-1)*homogeneous_scaling
+			likelihood_power_fit_derivate[:sensitivities_binned_crop.shape[1],sensitivities_binned_crop.shape[1]+2+1] += np.sum(sensitivities_binned_crop.T * (1/sigma_powernoback_2 * np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_DT_head)[:,:,:],axis=-1).T.flatten()),axis=-1)*homogeneous_scaling
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+2+1,sensitivities_binned_crop.shape[1]] += np.sum(select_foil_region_with_plasma * (1/sigma_powernoback_2 * np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_DT_head)[:,:,:],axis=-1).T.flatten()))*homogeneous_scaling*homogeneous_scaling
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1],sensitivities_binned_crop.shape[1]+2+1] += np.sum(select_foil_region_with_plasma * (1/sigma_powernoback_2 * np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_DT_head)[:,:,:],axis=-1).T.flatten()))*homogeneous_scaling*homogeneous_scaling
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+2+1,sensitivities_binned_crop.shape[1]+1] += np.sum( (1/sigma_powernoback_2 * np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_DT_head)[:,:,:],axis=-1).T.flatten()))*homogeneous_scaling*homogeneous_scaling
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+1,sensitivities_binned_crop.shape[1]+2+1] += np.sum( (1/sigma_powernoback_2 * np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_DT_head)[:,:,:],axis=-1).T.flatten()))*homogeneous_scaling*homogeneous_scaling
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+2+1,sensitivities_binned_crop.shape[1]+2] += np.sum( (1/sigma_powernoback_2 * (np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_DT_max)[:,:,select_pinhole_plate],axis=-1)*np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_DT_head)[:,:,:],axis=-1)).T.flatten()))*homogeneous_scaling*homogeneous_scaling - np.sum(foil_power_error/sigma_powernoback_2 * np.sum((pinhole_plate_to_foil_weight.T*4*3*(T_head_r**2)*(dT_DT_max*dT_DT_head))[:,:,select_pinhole_plate],axis=-1).T.flatten() )*homogeneous_scaling*homogeneous_scaling
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+2,sensitivities_binned_crop.shape[1]+2+1] += np.sum( (1/sigma_powernoback_2 * (np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_DT_max)[:,:,select_pinhole_plate],axis=-1)*np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_DT_head)[:,:,:],axis=-1)).T.flatten()))*homogeneous_scaling*homogeneous_scaling - np.sum(foil_power_error/sigma_powernoback_2 * np.sum((pinhole_plate_to_foil_weight.T*4*3*(T_head_r**2)*(dT_DT_max*dT_DT_head))[:,:,select_pinhole_plate],axis=-1).T.flatten() )*homogeneous_scaling*homogeneous_scaling
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+2+1,sensitivities_binned_crop.shape[1]+2+1] += np.sum( (1/sigma_powernoback_2 * (np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_DT_head)[:,:,:],axis=-1).T.flatten())**2))*homogeneous_scaling*homogeneous_scaling - np.sum(foil_power_error/sigma_powernoback_2 * np.sum((pinhole_plate_to_foil_weight.T*4*3*(T_head_r**2)*(dT_DT_head**2))[:,:,:],axis=-1).T.flatten() )*homogeneous_scaling*homogeneous_scaling
+			# foil fit error, dT_DT_ring
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+2+2,:sensitivities_binned_crop.shape[1]] += np.sum(sensitivities_binned_crop.T * (1/sigma_powernoback_2 * (IRVB_head_ring_to_foil_weight.T*4*((DT_ring+ref_temperature+zeroC)**3)*dT_DT_ring).T.flatten()),axis=-1)*homogeneous_scaling
+			likelihood_power_fit_derivate[:sensitivities_binned_crop.shape[1],sensitivities_binned_crop.shape[1]+2+2] += np.sum(sensitivities_binned_crop.T * (1/sigma_powernoback_2 * (IRVB_head_ring_to_foil_weight.T*4*((DT_ring+ref_temperature+zeroC)**3)*dT_DT_ring).T.flatten()),axis=-1)*homogeneous_scaling
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+2+2,sensitivities_binned_crop.shape[1]] += np.sum(select_foil_region_with_plasma * (1/sigma_powernoback_2 * (IRVB_head_ring_to_foil_weight.T*4*((DT_ring+ref_temperature+zeroC)**3)*dT_DT_ring).T.flatten()))*homogeneous_scaling*homogeneous_scaling
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1],sensitivities_binned_crop.shape[1]+2+2] += np.sum(select_foil_region_with_plasma * (1/sigma_powernoback_2 * (IRVB_head_ring_to_foil_weight.T*4*((DT_ring+ref_temperature+zeroC)**3)*dT_DT_ring).T.flatten()))*homogeneous_scaling*homogeneous_scaling
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+2+2,sensitivities_binned_crop.shape[1]+1] += np.sum( (1/sigma_powernoback_2 * (IRVB_head_ring_to_foil_weight.T*4*((DT_ring+ref_temperature+zeroC)**3)*dT_DT_ring).T.flatten()))*homogeneous_scaling*homogeneous_scaling
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+1,sensitivities_binned_crop.shape[1]+2+2] += np.sum( (1/sigma_powernoback_2 * (IRVB_head_ring_to_foil_weight.T*4*((DT_ring+ref_temperature+zeroC)**3)*dT_DT_ring).T.flatten()))*homogeneous_scaling*homogeneous_scaling
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+2+2,sensitivities_binned_crop.shape[1]+2] += np.sum( (1/sigma_powernoback_2 * (np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_DT_max)[:,:,select_pinhole_plate],axis=-1)* (IRVB_head_ring_to_foil_weight.T*4*((DT_ring+ref_temperature+zeroC)**3)*dT_DT_ring)).T.flatten()))*homogeneous_scaling*homogeneous_scaling
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+2,sensitivities_binned_crop.shape[1]+2+2] += np.sum( (1/sigma_powernoback_2 * (np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_DT_max)[:,:,select_pinhole_plate],axis=-1)* (IRVB_head_ring_to_foil_weight.T*4*((DT_ring+ref_temperature+zeroC)**3)*dT_DT_ring)).T.flatten()))*homogeneous_scaling*homogeneous_scaling
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+2+2,sensitivities_binned_crop.shape[1]+2+1] += np.sum( (1/sigma_powernoback_2 * (np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_DT_head)[:,:,:],axis=-1)* (IRVB_head_ring_to_foil_weight.T*4*((DT_ring+ref_temperature+zeroC)**3)*dT_DT_ring)).T.flatten()))*homogeneous_scaling*homogeneous_scaling
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+2+1,sensitivities_binned_crop.shape[1]+2+2] += np.sum( (1/sigma_powernoback_2 * (np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_DT_head)[:,:,:],axis=-1)* (IRVB_head_ring_to_foil_weight.T*4*((DT_ring+ref_temperature+zeroC)**3)*dT_DT_ring)).T.flatten()))*homogeneous_scaling*homogeneous_scaling
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+2+2,sensitivities_binned_crop.shape[1]+2+2] += np.sum( (1/sigma_powernoback_2 * ((IRVB_head_ring_to_foil_weight.T*4*((DT_ring+ref_temperature+zeroC)**3)*dT_DT_ring).T.flatten())**2))*homogeneous_scaling*homogeneous_scaling - np.sum(foil_power_error/sigma_powernoback_2 * (IRVB_head_ring_to_foil_weight.T*4*3*((DT_ring+ref_temperature+zeroC)**2)*(dT_DT_ring**2)).T.flatten() )*homogeneous_scaling*homogeneous_scaling
+			# foil fit error, dT_pinhole_plate_T_slope
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+2+3,:sensitivities_binned_crop.shape[1]] += np.sum(sensitivities_binned_crop.T * (1/sigma_powernoback_2 * np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_pinhole_plate_T_slope)[:,:,select_pinhole_plate],axis=-1).T.flatten()),axis=-1)*homogeneous_scaling
+			likelihood_power_fit_derivate[:sensitivities_binned_crop.shape[1],sensitivities_binned_crop.shape[1]+2+3] += np.sum(sensitivities_binned_crop.T * (1/sigma_powernoback_2 * np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_pinhole_plate_T_slope)[:,:,select_pinhole_plate],axis=-1).T.flatten()),axis=-1)*homogeneous_scaling
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+2+3,sensitivities_binned_crop.shape[1]] += np.sum(select_foil_region_with_plasma * (1/sigma_powernoback_2 * np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_pinhole_plate_T_slope)[:,:,select_pinhole_plate],axis=-1).T.flatten()))*homogeneous_scaling*homogeneous_scaling
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1],sensitivities_binned_crop.shape[1]+2+3] += np.sum(select_foil_region_with_plasma * (1/sigma_powernoback_2 * np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_pinhole_plate_T_slope)[:,:,select_pinhole_plate],axis=-1).T.flatten()))*homogeneous_scaling*homogeneous_scaling
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+2+3,sensitivities_binned_crop.shape[1]+1] += np.sum( (1/sigma_powernoback_2 * np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_pinhole_plate_T_slope)[:,:,select_pinhole_plate],axis=-1).T.flatten()))*homogeneous_scaling*homogeneous_scaling
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+1,sensitivities_binned_crop.shape[1]+2+3] += np.sum( (1/sigma_powernoback_2 * np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_pinhole_plate_T_slope)[:,:,select_pinhole_plate],axis=-1).T.flatten()))*homogeneous_scaling*homogeneous_scaling
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+2+3,sensitivities_binned_crop.shape[1]+2] += np.sum( (1/sigma_powernoback_2 * (np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_DT_max)[:,:,select_pinhole_plate],axis=-1)*np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_pinhole_plate_T_slope)[:,:,select_pinhole_plate],axis=-1)).T.flatten()))*homogeneous_scaling*homogeneous_scaling - np.sum(foil_power_error/sigma_powernoback_2 * np.sum((pinhole_plate_to_foil_weight.T*4*3*(T_head_r**2)*(dT_DT_max*dT_pinhole_plate_T_slope))[:,:,select_pinhole_plate],axis=-1).T.flatten() )*homogeneous_scaling*homogeneous_scaling
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+2,sensitivities_binned_crop.shape[1]+2+3] += np.sum( (1/sigma_powernoback_2 * (np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_DT_max)[:,:,select_pinhole_plate],axis=-1)*np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_pinhole_plate_T_slope)[:,:,select_pinhole_plate],axis=-1)).T.flatten()))*homogeneous_scaling*homogeneous_scaling - np.sum(foil_power_error/sigma_powernoback_2 * np.sum((pinhole_plate_to_foil_weight.T*4*3*(T_head_r**2)*(dT_DT_max*dT_pinhole_plate_T_slope))[:,:,select_pinhole_plate],axis=-1).T.flatten() )*homogeneous_scaling*homogeneous_scaling
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+2+3,sensitivities_binned_crop.shape[1]+2+1] += np.sum( (1/sigma_powernoback_2 * (np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_DT_head)[:,:,:],axis=-1)*np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_pinhole_plate_T_slope)[:,:,select_pinhole_plate],axis=-1)).T.flatten()))*homogeneous_scaling*homogeneous_scaling - np.sum(foil_power_error/sigma_powernoback_2 * np.sum((pinhole_plate_to_foil_weight.T*4*3*(T_head_r**2)*(dT_DT_head*dT_pinhole_plate_T_slope))[:,:,select_pinhole_plate],axis=-1).T.flatten() )*homogeneous_scaling*homogeneous_scaling
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+2+1,sensitivities_binned_crop.shape[1]+2+3] += np.sum( (1/sigma_powernoback_2 * (np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_DT_head)[:,:,:],axis=-1)*np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_pinhole_plate_T_slope)[:,:,select_pinhole_plate],axis=-1)).T.flatten()))*homogeneous_scaling*homogeneous_scaling - np.sum(foil_power_error/sigma_powernoback_2 * np.sum((pinhole_plate_to_foil_weight.T*4*3*(T_head_r**2)*(dT_DT_head*dT_pinhole_plate_T_slope))[:,:,select_pinhole_plate],axis=-1).T.flatten() )*homogeneous_scaling*homogeneous_scaling
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+2+3,sensitivities_binned_crop.shape[1]+2+2] += np.sum( (1/sigma_powernoback_2 * (np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_pinhole_plate_T_slope)[:,:,select_pinhole_plate],axis=-1)* (IRVB_head_ring_to_foil_weight.T*4*((DT_ring+ref_temperature+zeroC)**3)*dT_DT_ring)).T.flatten()))*homogeneous_scaling*homogeneous_scaling
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+2+2,sensitivities_binned_crop.shape[1]+2+3] += np.sum( (1/sigma_powernoback_2 * (np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_pinhole_plate_T_slope)[:,:,select_pinhole_plate],axis=-1)* (IRVB_head_ring_to_foil_weight.T*4*((DT_ring+ref_temperature+zeroC)**3)*dT_DT_ring)).T.flatten()))*homogeneous_scaling*homogeneous_scaling
+			likelihood_power_fit_derivate[sensitivities_binned_crop.shape[1]+2+3,sensitivities_binned_crop.shape[1]+2+3] += np.sum( (1/sigma_powernoback_2 * (np.sum((pinhole_plate_to_foil_weight.T*4*(T_head_r**3)*dT_pinhole_plate_T_slope)[:,:,select_pinhole_plate],axis=-1).T.flatten())**2))*homogeneous_scaling*homogeneous_scaling - np.sum(foil_power_error/sigma_powernoback_2 * np.sum((pinhole_plate_to_foil_weight.T*4*3*(T_head_r**2)*(dT_pinhole_plate_T_slope**2))[:,:,select_pinhole_plate],axis=-1).T.flatten() )*homogeneous_scaling*homogeneous_scaling
+		# laplacian, radial derivative, Z derivative at the top domain boundary, non negativity penalty, emissivities
+		# temporary definitions to speed up calculations
+		temp1 = ((regolarisation_coeff)*not_selected_super_x_cells + (regolarisation_coeff_divertor)*selected_super_x_cells + (regolarisation_coeff_edge_laplacian)*selected_edge_cells_for_laplacian + (regolarisation_coeff_edge)*selected_edge_cells)/sigma_emissivity
+		# select1 = temp1!=0
+		# temp1 = temp1[select1].astype(np.float32)
+		# temp1_ = grid_laplacian_masked_crop_scaled[select1][:,select1].astype(np.float32)
+		temp2 = ((regolarisation_coeff_central_column_border_R_derivate)*selected_central_column_border_cells)/sigma_emissivity
+		# select2 = temp2!=0
+		# temp2 = temp2[select2].astype(np.float32)
+		# temp2_ = grid_R_derivate_masked_crop_scaled[select2][:,select2].astype(np.float32)
+		temp3 = ((regolarisation_coeff_central_border_Z_derivate)*selected_central_border_cells)/sigma_emissivity
+		# select3 = temp3!=0
+		# temp3 = temp3[select3].astype(np.float32)
+		# temp3_ = grid_Z_derivate_masked_crop_scaled[select3][:,select3].astype(np.float32)
+		# for i in range(np.shape(sensitivities_binned_crop)[1]):
+		# 	# laplacian, emissivities
+		# 	likelihood_power_fit_derivate[i,:sensitivities_binned_crop.shape[1]] += 2*np.sum((grid_laplacian_masked_crop_scaled.T*grid_laplacian_masked_crop_scaled[:,i]*temp1),axis=-1)*temp1[i]
+		# 	# radial derivative, emissivities
+		# 	likelihood_power_fit_derivate[i,:sensitivities_binned_crop.shape[1]] += 2*np.sum((grid_R_derivate_masked_crop_scaled.T*grid_R_derivate_masked_crop_scaled[:,i]*temp2),axis=-1)*temp2[i]
+		# 	# Z derivative at the top domain boundary, emissivities
+		# 	likelihood_power_fit_derivate[i,:sensitivities_binned_crop.shape[1]] += 2*np.sum((grid_Z_derivate_masked_crop_scaled.T*grid_Z_derivate_masked_crop_scaled[:,i]*temp3),axis=-1)*temp3[i]
+		# 	# non negativity penalty, emissivities. i add it here as i cannot operate on the diagonal of the matrix easily, as far as i know
+		# 	likelihood_power_fit_derivate[i,i] += (regolarisation_coeff_non_negativity_multiplier**2)*(emissivity[i]<0)*(not selected_edge_cells[i])*2*((r_int[i]/sigma_emissivity)**2)	# I added a weight on the redious, becaus the power increase with radious and a negative voxel at high r is more important that one at low r
+		# laplacian, emissivities
+		# for i in range(np.sum(select1)):
+		# 	likelihood_power_fit_derivate[:sensitivities_binned_crop.shape[1]][select1][i,:sensitivities_binned_crop.shape[1]][select1] += 2*np.sum((temp1_.T*temp1_[:,i]*temp1),axis=-1)*temp1[i]
+		likelihood_power_fit_derivate[:sensitivities_binned_crop.shape[1]][:,:sensitivities_binned_crop.shape[1]] += 2*(temp1*grid_laplacian_masked_crop_scaled) @ ((temp1*grid_laplacian_masked_crop_scaled).T)
+		# radial derivative, emissivities
+		# for i in range(np.sum(select2)):
+		# 	likelihood_power_fit_derivate[:sensitivities_binned_crop.shape[1]][select2][i,:sensitivities_binned_crop.shape[1]][select2] += 2*np.sum((temp2_.T*temp2_[:,i]*temp2),axis=-1)*temp2[i]
+		likelihood_power_fit_derivate[:sensitivities_binned_crop.shape[1]][:,:sensitivities_binned_crop.shape[1]] += 2*(temp2*grid_R_derivate_masked_crop_scaled) @ ((temp2*grid_R_derivate_masked_crop_scaled).T)
+		# Z derivative at the top domain boundary, emissivities
+		# for i in range(np.sum(select3)):
+		# 	likelihood_power_fit_derivate[:sensitivities_binned_crop.shape[1]][select3][i,:sensitivities_binned_crop.shape[1]][select3] += 2*np.sum((temp3_.T*temp3_[:,i]*temp3),axis=-1)*temp3[i]
+		likelihood_power_fit_derivate[:sensitivities_binned_crop.shape[1]][:,:sensitivities_binned_crop.shape[1]] += 2*(temp3*grid_Z_derivate_masked_crop_scaled) @ ((temp3*grid_Z_derivate_masked_crop_scaled).T)
+		# non negativity penalty, emissivities
+		# for i in range(np.shape(sensitivities_binned_crop)[1]):
+		# 	likelihood_power_fit_derivate[i,i] += (regolarisation_coeff_non_negativity_multiplier**2)*(emissivity[i]<0)*(not selected_edge_cells[i])*2*((r_int[i]/sigma_emissivity)**2)	# I added a weight on the redious, becaus the power increase with radious and a negative voxel at high r is more important that one at low r
+		likelihood_power_fit_derivate[:sensitivities_binned_crop.shape[1]][:,:sensitivities_binned_crop.shape[1]] += 2*np.diag((regolarisation_coeff_non_negativity_multiplier**2)*(emissivity<0)*(np.logical_not(selected_edge_cells))*2*((r_int/sigma_emissivity)**2))	# I added a weight on the redious, becaus the power increase with radious and a negative voxel at high r is more important that one at low r
+
+		return likelihood_power_fit_derivate
+
 	return prob_and_gradient,calc_hessian
 
-def loop_fit_over_regularisation(prob_and_gradient,regolarisation_coeff_range,guess,grid_data_masked_crop,powernoback,sigma_powernoback,sigma_emissivity,factr=1e9,pgtol=5e-7,x_optimal_all_guess=[],iprint=0,excluded_cells = []):
+def loop_fit_over_regularisation(prob_and_gradient,regolarisation_coeff_range,guess,grid_data_masked_crop,powernoback,sigma_powernoback,sigma_emissivity,factr=1e5,pgtol=1e-6,x_optimal_all_guess=[],iprint=0,excluded_cells = []):
 	import scipy
 	import time as tm
 
@@ -10865,9 +11535,9 @@ def loop_fit_over_regularisation(prob_and_gradient,regolarisation_coeff_range,gu
 	else:
 		excluded_cells = np.logical_not(excluded_cells)
 	if len(guess) > (len(grid_data_masked_crop) + 2):
-		bds = [[None,None]]*(len(grid_data_masked_crop) + 2) + [[0,np.inf]]*3 + [[-np.inf,0]]
+		bds = [[None,None]]*(len(grid_data_masked_crop)) + [[-0.01,0.01]] + [[-0.01,0.01]] + [[0,np.inf]]*3 + [[-np.inf,0]]
 	else:
-		bds = [[None,None]]*(len(grid_data_masked_crop) + 2)
+		bds = [[None,None]]*(len(grid_data_masked_crop)) + [[-0.01,0.01]] + [[-0.01,0.01]]
 
 	x_optimal_all = []
 	recompose_voxel_emissivity_all = []
@@ -10905,7 +11575,7 @@ def loop_fit_over_regularisation(prob_and_gradient,regolarisation_coeff_range,gu
 		recompose_voxel_emissivity_all.append(recompose_voxel_emissivity)
 		recompose_voxel_emissivity_excluded *= 4*np.pi	# this exist because the sensitivity matrix is built with 1W/str/m^3/ x nm emitters while I use 1W as reference, so I need to multiply the results by 4pi
 		recompose_voxel_emissivity_excluded_all.append(recompose_voxel_emissivity_excluded)
-		print('done in %.3g' %(tm.time()-start))
+		print('done in %.3gs' %(tm.time()-start))
 		start = tm.time()
 	return x_optimal_all,recompose_voxel_emissivity_all,y_opt_all,opt_info_all,voxels_centre,recompose_voxel_emissivity_excluded_all
 
@@ -11469,6 +12139,25 @@ def select_region_with_plasma(sensitivities_binned_crop,selected_ROI,outline_are
 	select_foil_region_with_plasma = np.logical_and(select,selected_ROI)
 	return select_foil_region_with_plasma
 
+def calculate_tile_geometry():
+	# import pyuda as uda
+	from mast.geom.geomTileSurfaceUtils import get_s_coords_tables_mastu
+
+	client_int = pyuda.Client()
+	try:
+		limiter=client_int.geometry("/limiter/efit",50000, no_cal=False)
+		limiter_r=limiter.data.R
+		limiter_z=limiter.data.Z
+		s_lookup=get_s_coords_tables_mastu(limiter_r, limiter_z, ds=1e-4, debug_plot=False)
+	except:
+		limiter_r = [0]
+		limiter_z = [0]
+		s_lookup = [0]
+	client_int.reset_connection()
+	# reset_connection(client_int)
+	# del client_int
+	return limiter_r,limiter_z,s_lookup
+
 
 def calc_temp_to_power_BB_1(photon_flux_over_temperature_interpolator,temperature_minus_background_crop_binned,ref_temperature,time_binned,dx,counts_std_crop_binned,BB_proportional_crop_binned,BB_proportional_std_crop_binned,reference_background_std_crop_binned,temperature_std_crop_binned,nan_ROI_mask,grid_laplacian=[],ref_temperature_std=0,return_grid_laplacian=False):
 	zeroC=273.15 #K / C
@@ -11525,22 +12214,42 @@ def calc_temp_to_power_BB_1(photon_flux_over_temperature_interpolator,temperatur
 		return dTdt,dTdt_std,d2Tdxy,d2Tdxy_std,negd2Tdxy,negd2Tdxy_std,T4_T04,T4_T04_std
 
 
-def calc_temp_to_power_BB_2(dTdt,dTdt_std,d2Tdxy,d2Tdxy_std,negd2Tdxy,negd2Tdxy_std,T4_T04,T4_T04_std,nan_ROI_mask,foilemissivityscaled,foilthicknessscaled,reciprdiffusivityscaled,Ptthermalconductivity):
+def calc_temp_to_power_BB_2(dTdt,dTdt_std,d2Tdxy,d2Tdxy_std,negd2Tdxy,negd2Tdxy_std,T4_T04,T4_T04_std,nan_ROI_mask,foilemissivityscaled,foilthicknessscaled,reciprdiffusivityscaled,conductivityscaled,foilemissivityscaled_sigma=0,foilthickness_over_diffusivityscaled_sigma=0,conductivityscaled_sigma=0,thicknessscaled_sigma=0):
+	# edit 2023-12-11 this function calculates the ABSORBED power. this is different from the power from the plasma
 	sigmaSB=5.6704e-08 #[W/(m2 K4)]
 
+	try:
+		len(conductivityscaled)
+	except:
+		conductivityscaled = conductivityscaled*np.ones_like(T4_T04[0])
 	BBrad = np.ones_like(dTdt).astype(np.float32)*np.nan
 	BBrad[:,nan_ROI_mask[1:-1,1:-1]] = (2*sigmaSB*((T4_T04 * foilemissivityscaled)[:,nan_ROI_mask[1:-1,1:-1]])).astype(np.float32)	# W/m2
 	diffusion = np.ones_like(dTdt).astype(np.float32)*np.nan
-	diffusion[:,nan_ROI_mask[1:-1,1:-1]] = ((Ptthermalconductivity*negd2Tdxy*foilthicknessscaled)[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)	# W/m2
+	diffusion[:,nan_ROI_mask[1:-1,1:-1]] = ((conductivityscaled*negd2Tdxy*foilthicknessscaled)[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)	# W/m2
 	timevariation = np.ones_like(dTdt).astype(np.float32)*np.nan
-	timevariation[:,nan_ROI_mask[1:-1,1:-1]] = ((Ptthermalconductivity*dTdt*foilthicknessscaled*reciprdiffusivityscaled)[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)	# W/m2
+	timevariation[:,nan_ROI_mask[1:-1,1:-1]] = ((conductivityscaled*dTdt*foilthicknessscaled*reciprdiffusivityscaled)[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)	# W/m2
 	powernoback = (diffusion + timevariation + BBrad).astype(np.float32)	# W/m2
 	BBrad_std = np.ones_like(dTdt).astype(np.float32)*np.nan
-	BBrad_std[:,nan_ROI_mask[1:-1,1:-1]] = (2*sigmaSB*((T4_T04_std*foilemissivityscaled)[:,nan_ROI_mask[1:-1,1:-1]])).astype(np.float32)
+	BBrad_std[:,nan_ROI_mask[1:-1,1:-1]] = (2*sigmaSB*((T4_T04_std)[:,nan_ROI_mask[1:-1,1:-1]])).astype(np.float32)
+	# if len(foilemissivityscaled_sigma)==0:
+	# 	foilemissivityscaled_sigma = np.zeros_like(T4_T04[0])
+	# foilemissivityscaled_sigma = foilemissivityscaled_sigma[nan_ROI_mask[1:-1,1:-1]]
+	BBrad_std[:,nan_ROI_mask[1:-1,1:-1]] = ( ((BBrad_std*foilemissivityscaled)[:,nan_ROI_mask[1:-1,1:-1]])**2 + ((BBrad*foilemissivityscaled_sigma)[:,nan_ROI_mask[1:-1,1:-1]])**2 ).astype(np.float32)**0.5
 	diffusion_std = np.ones_like(dTdt).astype(np.float32)*np.nan
-	diffusion_std[:,nan_ROI_mask[1:-1,1:-1]] = (((Ptthermalconductivity*negd2Tdxy_std*foilthicknessscaled)[:,nan_ROI_mask[1:-1,1:-1]])).astype(np.float32)
+	diffusion_std[:,nan_ROI_mask[1:-1,1:-1]] = (((negd2Tdxy_std)[:,nan_ROI_mask[1:-1,1:-1]])).astype(np.float32)
+	# if len(thicknessscaled_sigma)==0:
+	# 	thicknessscaled_sigma = np.zeros_like(T4_T04[0])
+	# thicknessscaled_sigma = thicknessscaled_sigma[nan_ROI_mask[1:-1,1:-1]]
+	# if len(conductivityscaled_sigma)==0:
+	# 	conductivityscaled_sigma = np.zeros_like(T4_T04[0])
+	# conductivityscaled_sigma = conductivityscaled_sigma[nan_ROI_mask[1:-1,1:-1]]
+	diffusion_std[:,nan_ROI_mask[1:-1,1:-1]] = ( ((diffusion_std*conductivityscaled*foilthicknessscaled)[:,nan_ROI_mask[1:-1,1:-1]])**2 + ((diffusion*conductivityscaled*thicknessscaled_sigma)[:,nan_ROI_mask[1:-1,1:-1]])**2 + ((diffusion_std*conductivityscaled_sigma*foilthicknessscaled)[:,nan_ROI_mask[1:-1,1:-1]])**2 ).astype(np.float32)**0.5
 	timevariation_std = np.ones_like(dTdt).astype(np.float32)*np.nan
-	timevariation_std[:,nan_ROI_mask[1:-1,1:-1]] = ((Ptthermalconductivity*dTdt_std*foilthicknessscaled*reciprdiffusivityscaled)[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
+	timevariation_std[:,nan_ROI_mask[1:-1,1:-1]] = ((dTdt_std)[:,nan_ROI_mask[1:-1,1:-1]]).astype(np.float32)
+	# if len(foilthickness_over_diffusivityscaled_sigma)==0:
+	# 	foilthickness_over_diffusivityscaled_sigma = np.zeros_like(T4_T04[0])
+	# foilthickness_over_diffusivityscaled_sigma = foilthickness_over_diffusivityscaled_sigma[nan_ROI_mask[1:-1,1:-1]]
+	timevariation_std[:,nan_ROI_mask[1:-1,1:-1]] = ( ((timevariation_std*conductivityscaled*foilthicknessscaled*reciprdiffusivityscaled)[:,nan_ROI_mask[1:-1,1:-1]])**2 + ((timevariation*conductivityscaled_sigma*foilthicknessscaled*reciprdiffusivityscaled)[:,nan_ROI_mask[1:-1,1:-1]])**2 + ((timevariation*conductivityscaled*foilthickness_over_diffusivityscaled_sigma)[:,nan_ROI_mask[1:-1,1:-1]])**2 ).astype(np.float32)**0.5
 	powernoback_std = np.ones_like(powernoback)*np.nan
 	powernoback_std[:,nan_ROI_mask[1:-1,1:-1]] = ((diffusion_std[:,nan_ROI_mask[1:-1,1:-1]]**2 + timevariation_std[:,nan_ROI_mask[1:-1,1:-1]]**2 + BBrad_std[:,nan_ROI_mask[1:-1,1:-1]]**2)**0.5).astype(np.float32)
 	return BBrad,diffusion,timevariation,powernoback,BBrad_std,diffusion_std,timevariation_std,powernoback_std
@@ -12149,8 +12858,9 @@ def get_tend(shot_id):
 			tend = Plasma_current_time[np.logical_and(Plasma_current_time>0.1,Plasma_current<20).argmax()]	# the 20 (kA) treshold comes from Jimmy Measures
 		except:
 			tend = 1	# arbitrary time
-	reset_connection(client_int)
-	del client_int
+	client_int.reset_connection()
+	# reset_connection(client_int)
+	# del client_int
 	return tend
 
 def check_beams_on(shot_id,timefirst=0.2,time_last=False,path='/home/ffederic/work/irvb/MAST-U/'+'shot_list2.ods'):
@@ -12162,12 +12872,15 @@ def check_beams_on(shot_id,timefirst=0.2,time_last=False,path='/home/ffederic/wo
 		temp1 = (np.array(shot_list['Sheet1'][0])=='shot number').argmax()
 		shot_found = False
 		for i in range(1,len(shot_list['Sheet1'])):
-			if shot_list['Sheet1'][i][temp1] == int(shot):
-				shot_found = True
-				if shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0])=='SW beam').argmax()] in ['x','X']:
-					beams_on_flag = True
-				if shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0])=='SS beam').argmax()] in ['x','X']:
-					beams_on_flag = True
+			if shot_list['Sheet1'][i][temp1] == int(shot_id):
+				if shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0])=='SW beam').argmax()] in ['x','X','Y','N']:
+					shot_found = True
+					if shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0])=='SW beam').argmax()] in ['x','X','Y']:
+						beams_on_flag = True
+				if shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0])=='SS beam').argmax()] in ['x','X','Y','N']:
+					shot_found = True
+					if shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0])=='SS beam').argmax()] in ['x','X','Y']:
+						beams_on_flag = True
 				break
 		if not shot_found:
 			sba=gnu	# shot not found in the shot list file, I want this to generate an error
@@ -12180,6 +12893,7 @@ def check_beams_on(shot_id,timefirst=0.2,time_last=False,path='/home/ffederic/wo
 			if np.nanmax(np.abs(data.data))>0:
 				beams_on_flag = True
 		except:
+			beams_on_flag = True	# in case I cannot know, better assume there are beams
 			pass
 		try:
 			signal_name = '/XNB/SW/BEAMPOWER'
@@ -12187,9 +12901,11 @@ def check_beams_on(shot_id,timefirst=0.2,time_last=False,path='/home/ffederic/wo
 			if np.nanmax(np.abs(data.data))>0:
 				beams_on_flag = True
 		except:
+			beams_on_flag = True	# in case I cannot know, better assume there are beams
 			pass
-		reset_connection(client_int)
-		del client_int
+		client_int.reset_connection()
+		# reset_connection(client_int)
+		# del client_int
 	return beams_on_flag
 
 ################################################################################################################################################################################################################
@@ -12558,11 +13274,11 @@ def retrive_shot_date_and_time(shot,path='/home/ffederic/work/irvb/MAST-U/'+'sho
 
 	shot_list = get_data(path)
 	temp1 = (np.array(shot_list['Sheet1'][0])=='shot number').argmax()
-	all_shots = [shot_list['Sheet1'][i][3] for i in range(len(shot_list['Sheet1'])) if len(shot_list['Sheet1'][i])>0][1:]
+	all_shots = np.array([shot_list['Sheet1'][i][3] for i in range(len(shot_list['Sheet1'])) if (len(shot_list['Sheet1'][i])>0 and shot_list['Sheet1'][i][3]!='')][1:])
 	try:
 		date=''
 		if int(shot) in all_shots:
-			date = shot_list['Sheet1'][np.argmax(np.array(all_shots).astype(int)==int(shot))+1][(np.array(shot_list['Sheet1'][0])=='date').argmax()]
+			date = shot_list['Sheet1'][np.argmax(all_shots.astype(int)==int(shot))+1][(np.array(shot_list['Sheet1'][0])=='date').argmax()]
 		# for i in range(1,len(shot_list['Sheet1'])):
 		# 	if shot_list['Sheet1'][i][temp1] == int(shot):
 		# 		date = shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0])=='date').argmax()]
@@ -12578,7 +13294,7 @@ def retrive_shot_date_and_time(shot,path='/home/ffederic/work/irvb/MAST-U/'+'sho
 			# shot_list = get_data(path)
 			# temp1 = (np.array(shot_list['Sheet1'][0])=='shot number').argmax()
 			if int(shot) in all_shots:
-				shot_list['Sheet1'][np.argmax(np.array(all_shots).astype(int)==int(shot))+1][(np.array(shot_list['Sheet1'][0])=='date').argmax()] = date
+				shot_list['Sheet1'][np.argmax(all_shots.astype(int)==int(shot))+1][(np.array(shot_list['Sheet1'][0])=='date').argmax()] = date
 				save_data(path,shot_list)
 			# for i in range(1,len(shot_list['Sheet1'])):
 			# 	if shot_list['Sheet1'][i][temp1] == int(shot):
@@ -12588,19 +13304,40 @@ def retrive_shot_date_and_time(shot,path='/home/ffederic/work/irvb/MAST-U/'+'sho
 		except:
 			pass
 		try:
-			reset_connection(client_int)
+			client_int.reset_connection()
+			# reset_connection(client_int)
 		except:
 			pass
-		try:
-			del client_int
-		except:
-			pass
+		# try:
+		# 	del client_int
+		# except:
+		# 	pass
 
 	# try:
 	# 	day = str(date.date())
 	# except:
 	# 	day = str(date)
 	return date[:10],date[11:]
+
+def retrive_aborted(shot,path='/home/ffederic/work/irvb/MAST-U/'+'shot_list2.ods'):
+	from pyexcel_ods import save_data,get_data
+
+	shot_list = get_data(path)
+	temp1 = (np.array(shot_list['Sheet1'][0])=='shot number').argmax()
+	all_shots = np.array([shot_list['Sheet1'][i][3] for i in range(len(shot_list['Sheet1'])) if (len(shot_list['Sheet1'][i])>0 and shot_list['Sheet1'][i][3]!='')][1:])
+	try:
+		Abort=''
+		if int(shot) in all_shots:
+			Abort = shot_list['Sheet1'][np.argmax(all_shots.astype(int)==int(shot))+1][(np.array(shot_list['Sheet1'][0])=='Abort').argmax()]
+
+		if Abort=='':
+			sba=gnu	# abort state not found in the shot list file
+		elif Abort in ['yes', 'effectively yes']:
+			Abort=True
+	except:
+		Abort=False
+
+	return Abort
 
 def retrive_vessel_average_temp_archve(shot):
 	import csv
@@ -12662,8 +13399,9 @@ def uda_transfer(shotnr,tag,savedir=os.getcwd()+'/dum.nc',extra_path = ''):
 		client_int.get_file('$MAST_DATA'+extra_path+'/'+shotnr+'/LATEST/'+tag+'0'+shotnr+'.nc',savedir)
 	except:
 		savedir = 'failed'
-	reset_connection(client_int)
-	del client_int
+	client_int.reset_connection()
+	# reset_connection(client_int)
+	# del client_int
 
 	return savedir
 
@@ -12692,13 +13430,14 @@ def L_poloidal_from_point_to_target(r_coord_smooth_origial,z_coord_smooth_origia
 	return L_poloidal_point
 
 
-def baricentre_outer_separatrix_radiation(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,covariance_out,grid_data_masked_crop,leg_resolution = 0.1,sideways_leg_resolution=0.1,x_point_region_radious=0.1):
+def baricentre_outer_separatrix_radiation(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,covariance_out,grid_data_masked_crop,leg_resolution = 0.1,sideways_leg_resolution=0.1,x_point_region_radious=0.1,sideways_leg_resolution_for_interp=0.02):
 	from shapely.geometry import Point
 	from shapely.geometry.polygon import Polygon
 	from scipy.ndimage import generic_filter
 	import mastu_exhaust_analysis.fluxsurface_tracer as ft
 	from mastu_exhaust_analysis.read_efit import read_epm
 	from scipy.interpolate import interp1d
+	from scipy.interpolate import RegularGridInterpolator
 
 	all_time_sep_r,all_time_sep_z,r_fine,z_fine = efit_reconstruction_to_separatrix_on_foil(efit_reconstruction)
 	all_time_strike_points_location = return_all_time_strike_points_location_radial(efit_reconstruction,all_time_sep_r,all_time_sep_z,r_fine,z_fine)
@@ -12722,6 +13461,8 @@ def baricentre_outer_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 	# structure_radial_profile = return_structure_radial_profile()
 	z_,r_ = np.meshgrid(inversion_Z,inversion_R)
 	MU01_sxd_region_delimiter = return_MU01_sxd_region_delimiter()
+	DMS_LOS19_V2_higher_delimiter = return_DMS_LOS19_V2_higher_delimiter()
+	MWI_delimiter = return_MWI_delimiter()
 
 	data_length = 0
 	local_mean_emis_all = []
@@ -12729,15 +13470,22 @@ def baricentre_outer_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 	local_L_poloidal_all = []
 	leg_length_all = []
 	leg_length_interval_all = []
+	half_peak_L_pol_all = []
+	half_peak_divertor_L_pol_all = []
 	emissivity_baricentre_all = []
 	emissivity_peak_all = []
 	L_poloidal_baricentre_all = []
 	L_poloidal_peak_all = []
 	L_poloidal_peak_only_leg_all = []
+	L_poloidal_baricentre_only_leg_all = []
 	L_poloidal_x_point_all = []
 	L_poloidal_midplane_all = []
 	leg_reliable_power_all = []
 	leg_reliable_power_sigma_all = []
+	DMS_equivalent_power_all = []
+	DMS_equivalent_power_sigma_all = []
+	MWI_equivalent_power_all = []
+	MWI_equivalent_power_sigma_all = []
 	x_point_power_all = []
 	x_point_power_sigma_all = []
 	sxd_tot_rad_power_all = []
@@ -12747,7 +13495,7 @@ def baricentre_outer_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 		try:
 			i_efit_time = np.abs(efit_reconstruction.time-time_full_binned_crop[i_t]).argmin()
 			try:
-				trace_flux_surface = ft.trace_flux_surface(efit_data, i_efit_time,efit_data['lower_xpoint_r'][i_efit_time]+0.04,efit_data['lower_xpoint_z'][i_efit_time])
+				trace_flux_surface = ft.trace_flux_surface(efit_data, i_efit_time,efit_data['lower_xpoint_r'][i_efit_time]+0.02,efit_data['lower_xpoint_z'][i_efit_time])
 				r_coord_smooth = np.array(trace_flux_surface.r)
 				z_coord_smooth = np.array(trace_flux_surface.z)
 				if False:
@@ -12766,15 +13514,22 @@ def baricentre_outer_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 					local_L_poloidal_all.append([])
 					leg_length_all.append(0)
 					leg_length_interval_all.append([])
+					half_peak_L_pol_all.append(0)
+					half_peak_divertor_L_pol_all.append(0)
 					emissivity_baricentre_all.append([np.nan,np.nan])
 					emissivity_peak_all.append([np.nan,np.nan])
 					L_poloidal_baricentre_all.append(0)
 					L_poloidal_peak_all.append(0)
 					L_poloidal_peak_only_leg_all.append(0)
+					L_poloidal_baricentre_only_leg_all.append(0)
 					L_poloidal_x_point_all.append(np.inf)
 					L_poloidal_midplane_all.append(np.inf)
 					leg_reliable_power_all.append(0)
 					leg_reliable_power_sigma_all.append(0)
+					DMS_equivalent_power_all.append(0)
+					DMS_equivalent_power_sigma_all.append(0)
+					MWI_equivalent_power_all.append(0)
+					MWI_equivalent_power_sigma_all.append(0)
 					x_point_power_all.append(0)
 					x_point_power_sigma_all.append(0)
 					sxd_tot_rad_power_all.append(0)
@@ -12824,29 +13579,46 @@ def baricentre_outer_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 			ref_points = np.concatenate([[ref_points[0]],ref_points[1:][np.abs(np.diff(ref_points[:,0]))+np.abs(np.diff(ref_points[:,1]))>0]])
 			leg_length_interval = np.array(leg_length_interval)[np.array(leg_length_interval)>0].tolist()
 
-			ref_points_1 = []
-			ref_points_2 = []
-			try:
-				m = -1/((z_coord_smooth[i_ref_points[0]]-z_coord_smooth[i_ref_points[0]+1])/(r_coord_smooth[i_ref_points[0]]-r_coord_smooth[i_ref_points[0]+1]))
-				ref_points_1.append([r_coord_smooth[i_ref_points[0]] - sideways_leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[0]] - m*sideways_leg_resolution/((1+m**2)**0.5)])
-				ref_points_2.append([r_coord_smooth[i_ref_points[0]] + sideways_leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[0]] + m*sideways_leg_resolution/((1+m**2)**0.5)])
-			except:
-				pass
-			for i_ref_point in range(1,len(i_ref_points)):
-				try:
-					m = -1/((z_coord_smooth[i_ref_points[i_ref_point]-1]-z_coord_smooth[i_ref_points[i_ref_point]+1])/(r_coord_smooth[i_ref_points[i_ref_point]-1]-r_coord_smooth[i_ref_points[i_ref_point]+1]))
-					ref_points_1.append([r_coord_smooth[i_ref_points[i_ref_point]] - sideways_leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[i_ref_point]] - m*sideways_leg_resolution/((1+m**2)**0.5)])
-					ref_points_2.append([r_coord_smooth[i_ref_points[i_ref_point]] + sideways_leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[i_ref_point]] + m*sideways_leg_resolution/((1+m**2)**0.5)])
-				except:
-					pass
-			try:
-				m = -1/((z_coord_smooth[i_ref_points[-1]-1]-z_coord_smooth[i_ref_points[-1]])/(r_coord_smooth[i_ref_points[-1]-1]-r_coord_smooth[i_ref_points[-1]]))
-				ref_points_1.append([r_coord_smooth[i_ref_points[-1]] - sideways_leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[-1]] - m*sideways_leg_resolution/((1+m**2)**0.5)])
-				ref_points_2.append([r_coord_smooth[i_ref_points[-1]] + sideways_leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[-1]] + m*sideways_leg_resolution/((1+m**2)**0.5)])
-			except:
-				pass
-			ref_points_1 = np.array(ref_points_1)
-			ref_points_2 = np.array(ref_points_2)
+			ref_points_1 = expand_line_sideways(r_coord_smooth,z_coord_smooth,i_ref_points,-sideways_leg_resolution)
+			ref_points_2 = expand_line_sideways(r_coord_smooth,z_coord_smooth,i_ref_points,+sideways_leg_resolution)
+			ref_points_for_interp_vlx = expand_line_sideways(r_coord_smooth,z_coord_smooth,np.arange(len(r_coord_smooth)),-sideways_leg_resolution_for_interp)
+			ref_points_for_interp_lx = expand_line_sideways(r_coord_smooth,z_coord_smooth,np.arange(len(r_coord_smooth)),-sideways_leg_resolution_for_interp/2)
+			ref_points_for_interp_rx = expand_line_sideways(r_coord_smooth,z_coord_smooth,np.arange(len(r_coord_smooth)),+sideways_leg_resolution_for_interp/2)
+			ref_points_for_interp_vrx = expand_line_sideways(r_coord_smooth,z_coord_smooth,np.arange(len(r_coord_smooth)),+sideways_leg_resolution_for_interp)
+
+			# ref_points_1 = []
+			# ref_points_2 = []
+			# ref_points_for_interp_lx = []
+			# ref_points_for_interp_rx = []
+			# try:
+			# 	m = -1/((z_coord_smooth[i_ref_points[0]]-z_coord_smooth[i_ref_points[0]+1])/(r_coord_smooth[i_ref_points[0]]-r_coord_smooth[i_ref_points[0]+1]))
+			# 	ref_points_1.append([r_coord_smooth[i_ref_points[0]] - sideways_leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[0]] - m*sideways_leg_resolution/((1+m**2)**0.5)])
+			# 	ref_points_2.append([r_coord_smooth[i_ref_points[0]] + sideways_leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[0]] + m*sideways_leg_resolution/((1+m**2)**0.5)])
+			# 	ref_points_for_interp_lx.append([r_coord_smooth[i_ref_points[0]] - sideways_leg_resolution_for_interp/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[0]] - m*sideways_leg_resolution_for_interp/((1+m**2)**0.5)])
+			# 	ref_points_for_interp_rx.append([r_coord_smooth[i_ref_points[0]] + sideways_leg_resolution_for_interp/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[0]] + m*sideways_leg_resolution_for_interp/((1+m**2)**0.5)])
+			# except:
+			# 	pass
+			# for i_ref_point in range(1,len(i_ref_points)):
+			# 	try:
+			# 		m = -1/((z_coord_smooth[i_ref_points[i_ref_point]-1]-z_coord_smooth[i_ref_points[i_ref_point]+1])/(r_coord_smooth[i_ref_points[i_ref_point]-1]-r_coord_smooth[i_ref_points[i_ref_point]+1]))
+			# 		ref_points_1.append([r_coord_smooth[i_ref_points[i_ref_point]] - sideways_leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[i_ref_point]] - m*sideways_leg_resolution/((1+m**2)**0.5)])
+			# 		ref_points_2.append([r_coord_smooth[i_ref_points[i_ref_point]] + sideways_leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[i_ref_point]] + m*sideways_leg_resolution/((1+m**2)**0.5)])
+			# 		ref_points_for_interp_lx.append([r_coord_smooth[i_ref_points[i_ref_point]] - sideways_leg_resolution_for_interp/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[i_ref_point]] - m*sideways_leg_resolution_for_interp/((1+m**2)**0.5)])
+			# 		ref_points_for_interp_rx.append([r_coord_smooth[i_ref_points[i_ref_point]] + sideways_leg_resolution_for_interp/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[i_ref_point]] + m*sideways_leg_resolution_for_interp/((1+m**2)**0.5)])
+			# 	except:
+			# 		pass
+			# try:
+			# 	m = -1/((z_coord_smooth[i_ref_points[-1]-1]-z_coord_smooth[i_ref_points[-1]])/(r_coord_smooth[i_ref_points[-1]-1]-r_coord_smooth[i_ref_points[-1]]))
+			# 	ref_points_1.append([r_coord_smooth[i_ref_points[-1]] - sideways_leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[-1]] - m*sideways_leg_resolution/((1+m**2)**0.5)])
+			# 	ref_points_2.append([r_coord_smooth[i_ref_points[-1]] + sideways_leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[-1]] + m*sideways_leg_resolution/((1+m**2)**0.5)])
+			# 	ref_points_for_interp_lx.append([r_coord_smooth[i_ref_points[-1]] - sideways_leg_resolution_for_interp/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[-1]] - m*sideways_leg_resolution_for_interp/((1+m**2)**0.5)])
+			# 	ref_points_for_interp_rx.append([r_coord_smooth[i_ref_points[-1]] + sideways_leg_resolution_for_interp/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[-1]] + m*sideways_leg_resolution_for_interp/((1+m**2)**0.5)])
+			# except:
+			# 	pass
+			# ref_points_1 = np.array(ref_points_1)
+			# ref_points_2 = np.array(ref_points_2)
+			# ref_points_for_interp_lx = np.array(ref_points_for_interp_lx)
+			# ref_points_for_interp_rx = np.array(ref_points_for_interp_rx)
 
 			ref_points_1_original = cp.deepcopy(ref_points_1)
 			ref_points_2_original = cp.deepcopy(ref_points_2)
@@ -12855,6 +13627,17 @@ def baricentre_outer_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 			ref_points_1 = np.array(np.array([interp1d([0,1],ref_points_1[:,0][:2],bounds_error=False, fill_value='extrapolate')([-2,-1]),interp1d([0,1],ref_points_1[:,1][:2],bounds_error=False, fill_value='extrapolate')([-2,-1])]).T.tolist() + ref_points_1.tolist())	# r,z
 			ref_points_2 = np.array(ref_points_2.tolist() + np.array([interp1d([0,1],ref_points_2[:,0][-2:],bounds_error=False, fill_value='extrapolate')([2,3]),interp1d([0,1],ref_points_2[:,1][-2:],bounds_error=False, fill_value='extrapolate')([2,3])]).T.tolist())	# r,z
 			ref_points_2 = np.array(np.array([interp1d([0,1],ref_points_2[:,0][:2],bounds_error=False, fill_value='extrapolate')([-2,-1]),interp1d([0,1],ref_points_2[:,1][:2],bounds_error=False, fill_value='extrapolate')([-2,-1])]).T.tolist() + ref_points_2.tolist())	# r,z
+			ref_points_for_interp_vlx = np.array(ref_points_for_interp_vlx.tolist() + np.array([interp1d([0,1],ref_points_for_interp_vlx[:,0][-2:],bounds_error=False, fill_value='extrapolate')([2,3]),interp1d([0,1],ref_points_for_interp_vlx[:,1][-2:],bounds_error=False, fill_value='extrapolate')([2,3])]).T.tolist())	# r,z
+			ref_points_for_interp_vlx = np.array(np.array([interp1d([0,1],ref_points_for_interp_vlx[:,0][:2],bounds_error=False, fill_value='extrapolate')([-2,-1]),interp1d([0,1],ref_points_for_interp_vlx[:,1][:2],bounds_error=False, fill_value='extrapolate')([-2,-1])]).T.tolist() + ref_points_for_interp_vlx.tolist())	# r,z
+			ref_points_for_interp_lx = np.array(ref_points_for_interp_lx.tolist() + np.array([interp1d([0,1],ref_points_for_interp_lx[:,0][-2:],bounds_error=False, fill_value='extrapolate')([2,3]),interp1d([0,1],ref_points_for_interp_lx[:,1][-2:],bounds_error=False, fill_value='extrapolate')([2,3])]).T.tolist())	# r,z
+			ref_points_for_interp_lx = np.array(np.array([interp1d([0,1],ref_points_for_interp_lx[:,0][:2],bounds_error=False, fill_value='extrapolate')([-2,-1]),interp1d([0,1],ref_points_for_interp_lx[:,1][:2],bounds_error=False, fill_value='extrapolate')([-2,-1])]).T.tolist() + ref_points_for_interp_lx.tolist())	# r,z
+			ref_points_for_interp_rx = np.array(ref_points_for_interp_rx.tolist() + np.array([interp1d([0,1],ref_points_for_interp_rx[:,0][-2:],bounds_error=False, fill_value='extrapolate')([2,3]),interp1d([0,1],ref_points_for_interp_rx[:,1][-2:],bounds_error=False, fill_value='extrapolate')([2,3])]).T.tolist())	# r,z
+			ref_points_for_interp_rx = np.array(np.array([interp1d([0,1],ref_points_for_interp_rx[:,0][:2],bounds_error=False, fill_value='extrapolate')([-2,-1]),interp1d([0,1],ref_points_for_interp_rx[:,1][:2],bounds_error=False, fill_value='extrapolate')([-2,-1])]).T.tolist() + ref_points_for_interp_rx.tolist())	# r,z
+			ref_points_for_interp_vrx = np.array(ref_points_for_interp_vrx.tolist() + np.array([interp1d([0,1],ref_points_for_interp_vrx[:,0][-2:],bounds_error=False, fill_value='extrapolate')([2,3]),interp1d([0,1],ref_points_for_interp_vrx[:,1][-2:],bounds_error=False, fill_value='extrapolate')([2,3])]).T.tolist())	# r,z
+			ref_points_for_interp_vrx = np.array(np.array([interp1d([0,1],ref_points_for_interp_vrx[:,0][:2],bounds_error=False, fill_value='extrapolate')([-2,-1]),interp1d([0,1],ref_points_for_interp_vrx[:,1][:2],bounds_error=False, fill_value='extrapolate')([-2,-1])]).T.tolist() + ref_points_for_interp_vrx.tolist())	# r,z
+			coord_smooth_extended = np.array([r_coord_smooth,z_coord_smooth]).T
+			coord_smooth_extended = np.array(coord_smooth_extended.tolist() + np.array([interp1d([0,1],coord_smooth_extended[:,0][-2:],bounds_error=False, fill_value='extrapolate')([2,3]),interp1d([0,1],coord_smooth_extended[:,1][-2:],bounds_error=False, fill_value='extrapolate')([2,3])]).T.tolist())	# r,z
+			coord_smooth_extended = np.array(np.array([interp1d([0,1],coord_smooth_extended[:,0][:2],bounds_error=False, fill_value='extrapolate')([-2,-1]),interp1d([0,1],coord_smooth_extended[:,1][:2],bounds_error=False, fill_value='extrapolate')([-2,-1])]).T.tolist() + coord_smooth_extended.tolist())	# r,z
 
 			# in the outer separatrix the inner side is always good and the outer bad, the reverse in the inner separatrix
 			# ref_points_1[:,0] = scipy.signal.savgol_filter(ref_points_1[:,0],5,2)
@@ -12882,10 +13665,14 @@ def baricentre_outer_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 			selected_sigma = select_cells_inside_polygon(polygon,[np.mean(grid_data_masked_crop,axis=1)])
 			# selected_sigma[np.mean(grid_data_masked_crop,axis=1)[:,1]<efit_reconstruction.mag_axis_z[i_efit_time]] = False
 
-			temp = inverted_data[i_t]
+			temp = cp.deepcopy(inverted_data[i_t])
+			temp1 = cp.deepcopy(inverted_data[i_t])
+			temp1[np.isnan(temp1)] = 0
+			inverted_data_interpolator = RegularGridInterpolator((inversion_R, inversion_Z), temp1,bounds_error=False,fill_value=0)
+
 			# temp_sigma = inverted_data_sigma[i_t]
 			# temp[temp<0] = 0
-			emissivity_baricentre = [(np.nansum(selected*temp*(b**2)/inverted_data_sigma[i_t])/np.nansum(selected*temp/inverted_data_sigma[i_t]))**0.5,np.nansum(selected*temp*a/inverted_data_sigma[i_t])/np.nansum(selected*temp/inverted_data_sigma[i_t])]
+			emissivity_baricentre = [(np.nansum(selected*temp*(b**2))/np.nansum(selected*temp))**0.5,np.nansum(selected*temp*a)/np.nansum(selected*temp)]
 			L_poloidal_baricentre = L_poloidal_from_point_to_target(r_coord_smooth_origial,z_coord_smooth_origial,emissivity_baricentre,efit_data,i_efit_time)
 
 			emissivity_peak = np.unravel_index(np.nanargmax(selected*inverted_data[i_t]),np.shape(selected))
@@ -12903,6 +13690,8 @@ def baricentre_outer_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 			emissivity_peak_only_leg = np.unravel_index(np.nanargmax(selected*inverted_data[i_t]),np.shape(selected))
 			emissivity_peak_only_leg = [inversion_R[emissivity_peak_only_leg[0]],inversion_Z[emissivity_peak_only_leg[1]]]
 			L_poloidal_peak_only_leg = L_poloidal_from_point_to_target(r_coord_smooth_origial,z_coord_smooth_origial,emissivity_peak_only_leg,efit_data,i_efit_time)
+			emissivity_baricentre_only_leg = [(np.nansum(selected*temp*(b**2))/np.nansum(selected*temp))**0.5,np.nansum(selected*temp*a)/np.nansum(selected*temp)]
+			L_poloidal_baricentre_only_leg = L_poloidal_from_point_to_target(r_coord_smooth_origial,z_coord_smooth_origial,emissivity_baricentre_only_leg,efit_data,i_efit_time)
 
 			L_poloidal_midplane = L_poloidal_from_point_to_target(r_coord_smooth_origial,z_coord_smooth_origial,np.array([r_coord_smooth_origial[np.abs(r_coord_smooth_origial-0).argmin()],z_coord_smooth_origial[np.abs(r_coord_smooth_origial-0).argmin()]]),efit_data,i_efit_time)
 
@@ -12916,7 +13705,7 @@ def baricentre_outer_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 
 			leg_reliable_power = np.nansum((temp.T*inversion_R).T*selected*2*np.pi*(grid_resolution**2))
 			temp_select = selected_sigma*2*np.pi*(grid_resolution**2)*(np.mean(grid_data_masked_crop,axis=1)[:,0])
-			leg_reliable_power_sigma = np.nansum((covariance_out[i_t][:-2,:-2]*temp_select).T*temp_select)**0.5
+			leg_reliable_power_sigma = np.nansum((covariance_out[i_t][:len(grid_data_masked_crop),:len(grid_data_masked_crop)]*temp_select).T*temp_select)**0.5
 			# leg_reliable_power_sigma = np.nansum(((temp_sigma.T*inversion_R).T*selected*2*np.pi*(grid_resolution**2))**2)**0.5
 
 			selected = np.zeros_like(inverted_data[0]).astype(bool)
@@ -12925,15 +13714,33 @@ def baricentre_outer_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 			selected_sigma = np.zeros_like(np.mean(grid_data_masked_crop,axis=1)[:,0]).astype(bool)
 			selected_sigma[((np.mean(grid_data_masked_crop,axis=1)[:,1]-efit_reconstruction.lower_xpoint_z[i_efit_time])**2 + (np.mean(grid_data_masked_crop,axis=1)[:,0]-efit_reconstruction.lower_xpoint_r[i_efit_time])**2)**0.5<=x_point_region_radious] = True
 			temp_select = selected_sigma*2*np.pi*(grid_resolution**2)*(np.mean(grid_data_masked_crop,axis=1)[:,0])
-			x_point_power_sigma = np.nansum((covariance_out[i_t][:-2,:-2]*temp_select).T*temp_select)**0.5
+			x_point_power_sigma = np.nansum((covariance_out[i_t][:len(grid_data_masked_crop),:len(grid_data_masked_crop)]*temp_select).T*temp_select)**0.5
 
 			selected = np.zeros_like(inverted_data[0]).astype(bool)
 			selected[z_<MU01_sxd_region_delimiter(r_)] = True	# delimiter as used in the thesis
 			sxd_tot_rad_power = np.nansum((temp.T*inversion_R).T*selected*2*np.pi*(grid_resolution**2))
 			selected_sigma = np.zeros_like(np.mean(grid_data_masked_crop,axis=1)[:,0]).astype(bool)
-			selected_sigma[np.mean(grid_data_masked_crop,axis=1)[:,1]<MU01_sxd_region_delimiter(np.mean(grid_data_masked_crop,axis=1)[:,0])] = 0	# delimiter as used in the thesis
+			selected_sigma[np.mean(grid_data_masked_crop,axis=1)[:,1]<MU01_sxd_region_delimiter(np.mean(grid_data_masked_crop,axis=1)[:,0])] = True	# delimiter as used in the thesis
 			temp_select = selected_sigma*2*np.pi*(grid_resolution**2)*(np.mean(grid_data_masked_crop,axis=1)[:,0])
-			sxd_tot_rad_power_sigma = np.nansum((covariance_out[i_t][:-2,:-2]*temp_select).T*temp_select)**0.5
+			sxd_tot_rad_power_sigma = np.nansum((covariance_out[i_t][:len(grid_data_masked_crop),:len(grid_data_masked_crop)]*temp_select).T*temp_select)**0.5
+
+			# selecting the volume of the SXD that coincides with the DMS
+			selected = np.zeros_like(inverted_data[0]).astype(bool)
+			selected[z_<DMS_LOS19_V2_higher_delimiter(r_)] = True
+			DMS_equivalent_power = np.nansum((temp.T*inversion_R).T*selected*2*np.pi*(grid_resolution**2))
+			selected_sigma = np.zeros_like(np.mean(grid_data_masked_crop,axis=1)[:,0]).astype(bool)
+			selected_sigma[np.mean(grid_data_masked_crop,axis=1)[:,1]<DMS_LOS19_V2_higher_delimiter(np.mean(grid_data_masked_crop,axis=1)[:,0])] = True
+			temp_select = selected_sigma*2*np.pi*(grid_resolution**2)*(np.mean(grid_data_masked_crop,axis=1)[:,0])
+			DMS_equivalent_power_sigma = np.nansum((covariance_out[i_t][:len(grid_data_masked_crop),:len(grid_data_masked_crop)]*temp_select).T*temp_select)**0.5
+
+			# selecting the volume of the SXD that coincides with the DMS
+			selected = np.zeros_like(inverted_data[0]).astype(bool)
+			selected[z_<MWI_delimiter(r_)] = True
+			MWI_equivalent_power = np.nansum((temp.T*inversion_R).T*selected*2*np.pi*(grid_resolution**2))
+			selected_sigma = np.zeros_like(np.mean(grid_data_masked_crop,axis=1)[:,0]).astype(bool)
+			selected_sigma[np.mean(grid_data_masked_crop,axis=1)[:,1]<MWI_delimiter(np.mean(grid_data_masked_crop,axis=1)[:,0])] = True
+			temp_select = selected_sigma*2*np.pi*(grid_resolution**2)*(np.mean(grid_data_masked_crop,axis=1)[:,0])
+			MWI_equivalent_power_sigma = np.nansum((covariance_out[i_t][:len(grid_data_masked_crop),:len(grid_data_masked_crop)]*temp_select).T*temp_select)**0.5
 
 			ref_points_1 = cp.deepcopy(ref_points_1_original)
 			ref_points_2 = cp.deepcopy(ref_points_2_original)
@@ -12959,6 +13766,44 @@ def baricentre_outer_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 				local_mean_emis.append(np.nanmean(emissivity_flat[select]))
 				local_power.append(2*np.pi*np.nansum(emissivity_flat[select]*b_flat[select]*(grid_resolution**2)))
 				local_L_poloidal.append(L_poloidal_from_point_to_target(r_coord_smooth_origial,z_coord_smooth_origial,[np.mean(b_flat[select]),np.mean(a_flat[select])],efit_data,i_efit_time))
+
+			# section to find the half peak
+			ref1 = inverted_data_interpolator((ref_points_for_interp_vlx[:,0],ref_points_for_interp_vlx[:,1]))
+			ref2 = inverted_data_interpolator((ref_points_for_interp_lx[:,0],ref_points_for_interp_lx[:,1]))
+			ref3 = inverted_data_interpolator((coord_smooth_extended[:,0],coord_smooth_extended[:,1]))
+			ref4 = inverted_data_interpolator((ref_points_for_interp_rx[:,0],ref_points_for_interp_rx[:,1]))
+			ref5 = inverted_data_interpolator((ref_points_for_interp_vrx[:,0],ref_points_for_interp_vrx[:,1]))
+			midpoint_ref1 = (np.arange(len(ref1))[ref1>np.nanmax(ref1)/2])[-1]
+			midpoint_ref2 = (np.arange(len(ref2))[ref1>np.nanmax(ref2)/2])[-1]
+			midpoint_ref3 = (np.arange(len(ref3))[ref2>np.nanmax(ref3)/2])[-1]
+			midpoint_ref4 = (np.arange(len(ref4))[ref3>np.nanmax(ref4)/2])[-1]
+			midpoint_ref5 = (np.arange(len(ref5))[ref3>np.nanmax(ref5)/2])[-1]
+			ref1=ref_points_for_interp_vlx[midpoint_ref1]
+			ref2=ref_points_for_interp_lx[midpoint_ref2]
+			ref3=coord_smooth_extended[midpoint_ref3]
+			ref4=ref_points_for_interp_rx[midpoint_ref4]
+			ref5=ref_points_for_interp_vrx[midpoint_ref5]
+			half_peak = np.array([np.median([ref1[0],ref2[0],ref3[0],ref4[0],ref5[0]]),np.median([ref1[1],ref2[1],ref3[1],ref4[1],ref5[1]])])
+			half_peak_L_pol = L_poloidal_from_point_to_target(r_coord_smooth_origial,z_coord_smooth_origial,half_peak,efit_data,i_efit_time)
+
+			ref1 = inverted_data_interpolator((ref_points_for_interp_vlx[:,0][ref_points_for_interp_vlx[:,1]<=efit_reconstruction.lower_xpoint_z[i_efit_time]],ref_points_for_interp_vlx[:,1][ref_points_for_interp_vlx[:,1]<=efit_reconstruction.lower_xpoint_z[i_efit_time]]))
+			ref2 = inverted_data_interpolator((ref_points_for_interp_lx[:,0][ref_points_for_interp_lx[:,1]<=efit_reconstruction.lower_xpoint_z[i_efit_time]],ref_points_for_interp_lx[:,1][ref_points_for_interp_lx[:,1]<=efit_reconstruction.lower_xpoint_z[i_efit_time]]))
+			ref3 = inverted_data_interpolator((coord_smooth_extended[:,0][coord_smooth_extended[:,1]<=efit_reconstruction.lower_xpoint_z[i_efit_time]],coord_smooth_extended[:,1][coord_smooth_extended[:,1]<=efit_reconstruction.lower_xpoint_z[i_efit_time]]))
+			ref4 = inverted_data_interpolator((ref_points_for_interp_rx[:,0][ref_points_for_interp_rx[:,1]<=efit_reconstruction.lower_xpoint_z[i_efit_time]],ref_points_for_interp_rx[:,1][ref_points_for_interp_rx[:,1]<=efit_reconstruction.lower_xpoint_z[i_efit_time]]))
+			ref5 = inverted_data_interpolator((ref_points_for_interp_vrx[:,0][ref_points_for_interp_vrx[:,1]<=efit_reconstruction.lower_xpoint_z[i_efit_time]],ref_points_for_interp_vrx[:,1][ref_points_for_interp_vrx[:,1]<=efit_reconstruction.lower_xpoint_z[i_efit_time]]))
+			midpoint_ref1 = (np.arange(len(ref1))[ref1>np.nanmax(ref1)/2])[-1]
+			midpoint_ref2 = (np.arange(len(ref2))[ref2>np.nanmax(ref2)/2])[-1]
+			midpoint_ref3 = (np.arange(len(ref3))[ref3>np.nanmax(ref3)/2])[-1]
+			midpoint_ref4 = (np.arange(len(ref4))[ref4>np.nanmax(ref4)/2])[-1]
+			midpoint_ref5 = (np.arange(len(ref5))[ref5>np.nanmax(ref5)/2])[-1]
+			ref1=ref_points_for_interp_vlx[ref_points_for_interp_vlx[:,1]<=efit_reconstruction.lower_xpoint_z[i_efit_time]][midpoint_ref1]
+			ref2=ref_points_for_interp_lx[ref_points_for_interp_lx[:,1]<=efit_reconstruction.lower_xpoint_z[i_efit_time]][midpoint_ref2]
+			ref3=coord_smooth_extended[coord_smooth_extended[:,1]<=efit_reconstruction.lower_xpoint_z[i_efit_time]][midpoint_ref3]
+			ref4=ref_points_for_interp_rx[ref_points_for_interp_rx[:,1]<=efit_reconstruction.lower_xpoint_z[i_efit_time]][midpoint_ref4]
+			ref5=ref_points_for_interp_vrx[ref_points_for_interp_vrx[:,1]<=efit_reconstruction.lower_xpoint_z[i_efit_time]][midpoint_ref5]
+			half_peak_divertor = np.array([np.median([ref1[0],ref2[0],ref3[0],ref4[0],ref5[0]]),np.median([ref1[1],ref2[1],ref3[1],ref4[1],ref5[1]])])
+			half_peak_divertor_L_pol = L_poloidal_from_point_to_target(r_coord_smooth_origial,z_coord_smooth_origial,half_peak_divertor,efit_data,i_efit_time)
+
 			# local_mean_emis = np.array(local_mean_emis)
 			# local_power = np.array(local_power)
 			# local_mean_emis = local_mean_emis[np.logical_not(np.isnan(local_mean_emis))].tolist()
@@ -12968,10 +13813,15 @@ def baricentre_outer_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 			emissivity_peak_all.append(emissivity_peak)
 			L_poloidal_peak_all.append(L_poloidal_peak)
 			L_poloidal_peak_only_leg_all.append(L_poloidal_peak_only_leg)
+			L_poloidal_baricentre_only_leg_all.append(L_poloidal_baricentre_only_leg)
 			L_poloidal_x_point_all.append(L_poloidal_x_point)
 			L_poloidal_midplane_all.append(L_poloidal_midplane)
 			leg_reliable_power_all.append(leg_reliable_power)
 			leg_reliable_power_sigma_all.append(leg_reliable_power_sigma)
+			DMS_equivalent_power_all.append(DMS_equivalent_power)
+			DMS_equivalent_power_sigma_all.append(DMS_equivalent_power_sigma)
+			MWI_equivalent_power_all.append(MWI_equivalent_power)
+			MWI_equivalent_power_sigma_all.append(MWI_equivalent_power_sigma)
 			x_point_power_all.append(x_point_power)
 			x_point_power_sigma_all.append(x_point_power_sigma)
 			sxd_tot_rad_power_all.append(sxd_tot_rad_power)
@@ -12982,6 +13832,8 @@ def baricentre_outer_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 			data_length = max(data_length,len(local_power))
 			leg_length_all.append(leg_length)
 			leg_length_interval_all.append(leg_length_interval)
+			half_peak_L_pol_all.append(half_peak_L_pol)
+			half_peak_divertor_L_pol_all.append(half_peak_divertor_L_pol)
 		except Exception as e:
 			print('failed')
 			# logging.exception('with error: ' + str(e))
@@ -12989,16 +13841,23 @@ def baricentre_outer_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 			local_power_all.append([])
 			local_L_poloidal_all.append([])
 			leg_length_interval_all.append([])
+			half_peak_L_pol_all.append(0)
+			half_peak_divertor_L_pol_all.append(0)
 			leg_length_all.append(0)
 			emissivity_baricentre_all.append([np.nan,np.nan])
 			emissivity_peak_all.append([np.nan,np.nan])
 			L_poloidal_baricentre_all.append(0)
 			L_poloidal_peak_all.append(0)
 			L_poloidal_peak_only_leg_all.append(0)
+			L_poloidal_baricentre_only_leg_all.append(0)
 			L_poloidal_x_point_all.append(np.inf)
 			L_poloidal_midplane_all.append(np.inf)
 			leg_reliable_power_all.append(0)
 			leg_reliable_power_sigma_all.append(0)
+			DMS_equivalent_power_all.append(0)
+			DMS_equivalent_power_sigma_all.append(0)
+			MWI_equivalent_power_all.append(0)
+			MWI_equivalent_power_sigma_all.append(0)
 			x_point_power_all.append(0)
 			x_point_power_sigma_all.append(0)
 			sxd_tot_rad_power_all.append(0)
@@ -13008,10 +13867,15 @@ def baricentre_outer_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 	L_poloidal_baricentre_all = np.array(L_poloidal_baricentre_all)
 	L_poloidal_peak_all = np.array(L_poloidal_peak_all)
 	L_poloidal_peak_only_leg_all = np.array(L_poloidal_peak_only_leg_all)
+	L_poloidal_baricentre_only_leg_all = np.array(L_poloidal_baricentre_only_leg_all)
 	L_poloidal_x_point_all = np.array(L_poloidal_x_point_all)
 	L_poloidal_midplane_all = np.array(L_poloidal_midplane_all)
 	leg_reliable_power_all = np.array(leg_reliable_power_all)
 	leg_reliable_power_sigma_all = np.array(leg_reliable_power_sigma_all)
+	DMS_equivalent_power_all = np.array(DMS_equivalent_power_all)
+	DMS_equivalent_power_sigma_all = np.array(DMS_equivalent_power_sigma_all)
+	MWI_equivalent_power_all = np.array(MWI_equivalent_power_all)
+	MWI_equivalent_power_sigma_all = np.array(MWI_equivalent_power_sigma_all)
 	x_point_power_all = np.array(x_point_power_all)
 	x_point_power_sigma_all = np.array(x_point_power_sigma_all)
 	sxd_tot_rad_power_all = np.array(sxd_tot_rad_power_all)
@@ -13024,16 +13888,38 @@ def baricentre_outer_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 			local_L_poloidal_all[i_t].extend([0]*(data_length-len(local_L_poloidal_all[i_t])))
 			leg_length_interval_all[i_t].extend([0]*(data_length-len(leg_length_interval_all[i_t])))
 
-	return local_mean_emis_all,local_power_all,local_L_poloidal_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution,emissivity_baricentre_all,emissivity_peak_all,L_poloidal_baricentre_all,L_poloidal_peak_all,L_poloidal_peak_only_leg_all,greenwald_density,dr_sep_in,dr_sep_out,L_poloidal_x_point_all,L_poloidal_midplane_all,leg_reliable_power_all,leg_reliable_power_sigma_all,x_point_power_all,x_point_power_sigma_all,sxd_tot_rad_power_all,sxd_tot_rad_power_sigma_all
+	return local_mean_emis_all,local_power_all,local_L_poloidal_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution,emissivity_baricentre_all,emissivity_peak_all,L_poloidal_baricentre_all,L_poloidal_peak_all,L_poloidal_peak_only_leg_all,L_poloidal_baricentre_only_leg_all,greenwald_density,dr_sep_in,dr_sep_out,L_poloidal_x_point_all,L_poloidal_midplane_all,leg_reliable_power_all,leg_reliable_power_sigma_all,DMS_equivalent_power_all,DMS_equivalent_power_sigma_all,MWI_equivalent_power_all,MWI_equivalent_power_sigma_all,x_point_power_all,x_point_power_sigma_all,sxd_tot_rad_power_all,sxd_tot_rad_power_sigma_all,half_peak_L_pol_all,half_peak_divertor_L_pol_all
 
 
-def baricentre_inner_separatrix_radiation(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,covariance_out,grid_data_masked_crop,leg_resolution = 0.1,sideways_leg_resolution=0.1,x_point_region_radious=0.1):
+def expand_line_sideways(r_coord_smooth,z_coord_smooth,i_ref_points,sideways_leg_resolution):
+	ref_points_1 = []
+	try:
+		m = -1/((z_coord_smooth[i_ref_points[0]]-z_coord_smooth[i_ref_points[0]+1])/(r_coord_smooth[i_ref_points[0]]-r_coord_smooth[i_ref_points[0]+1]))
+		ref_points_1.append([r_coord_smooth[i_ref_points[0]] + sideways_leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[0]] + m*sideways_leg_resolution/((1+m**2)**0.5)])
+	except:
+		pass
+	for i_ref_point in range(1,len(i_ref_points)):
+		try:
+			m = -1/((z_coord_smooth[i_ref_points[i_ref_point]-1]-z_coord_smooth[i_ref_points[i_ref_point]+1])/(r_coord_smooth[i_ref_points[i_ref_point]-1]-r_coord_smooth[i_ref_points[i_ref_point]+1]))
+			ref_points_1.append([r_coord_smooth[i_ref_points[i_ref_point]] + sideways_leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[i_ref_point]] + m*sideways_leg_resolution/((1+m**2)**0.5)])
+		except:
+			pass
+	try:
+		m = -1/((z_coord_smooth[i_ref_points[-1]-1]-z_coord_smooth[i_ref_points[-1]])/(r_coord_smooth[i_ref_points[-1]-1]-r_coord_smooth[i_ref_points[-1]]))
+		ref_points_1.append([r_coord_smooth[i_ref_points[-1]] + sideways_leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[-1]] + m*sideways_leg_resolution/((1+m**2)**0.5)])
+	except:
+		pass
+	ref_points_1 = np.array(ref_points_1)
+	return ref_points_1
+
+def baricentre_inner_separatrix_radiation(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,covariance_out,grid_data_masked_crop,leg_resolution = 0.1,sideways_leg_resolution=0.1,x_point_region_radious=0.1,sideways_leg_resolution_for_interp=0.02):
 	from shapely.geometry import Point
 	from shapely.geometry.polygon import Polygon
 	from scipy.ndimage import generic_filter
 	import mastu_exhaust_analysis.fluxsurface_tracer as ft
 	from mastu_exhaust_analysis.read_efit import read_epm
 	from scipy.interpolate import interp1d
+	from scipy.interpolate import RegularGridInterpolator
 
 	all_time_sep_r,all_time_sep_z,r_fine,z_fine = efit_reconstruction_to_separatrix_on_foil(efit_reconstruction)
 	all_time_strike_points_location = return_all_time_strike_points_location_radial(efit_reconstruction,all_time_sep_r,all_time_sep_z,r_fine,z_fine)
@@ -13064,11 +13950,14 @@ def baricentre_inner_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 	local_L_poloidal_all = []
 	leg_length_all = []
 	leg_length_interval_all = []
+	half_peak_L_pol_all = []
+	half_peak_divertor_L_pol_all = []
 	emissivity_baricentre_all = []
 	emissivity_peak_all = []
 	L_poloidal_baricentre_all = []
 	L_poloidal_peak_all = []
 	L_poloidal_peak_only_leg_all = []
+	L_poloidal_baricentre_only_leg_all = []
 	L_poloidal_x_point_all = []
 	L_poloidal_midplane_all = []
 	leg_reliable_power_all = []
@@ -13078,7 +13967,7 @@ def baricentre_inner_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 		try:
 			i_efit_time = np.abs(efit_reconstruction.time-time_full_binned_crop[i_t]).argmin()
 			try:
-				trace_flux_surface = ft.trace_flux_surface(efit_data, i_efit_time,efit_data['lower_xpoint_r'][i_efit_time]-0.04,efit_data['lower_xpoint_z'][i_efit_time])
+				trace_flux_surface = ft.trace_flux_surface(efit_data, i_efit_time,efit_data['lower_xpoint_r'][i_efit_time]-0.02,efit_data['lower_xpoint_z'][i_efit_time])
 				r_coord_smooth = np.array(trace_flux_surface.r)
 				z_coord_smooth = np.array(trace_flux_surface.z)
 				if False:
@@ -13098,11 +13987,14 @@ def baricentre_inner_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 					local_L_poloidal_all.append([])
 					leg_length_all.append(0)
 					leg_length_interval_all.append([])
+					half_peak_L_pol_all.append(0)
+					half_peak_divertor_L_pol_all.append(0)
 					emissivity_baricentre_all.append([np.nan,np.nan])
 					emissivity_peak_all.append([np.nan,np.nan])
 					L_poloidal_baricentre_all.append(0)
 					L_poloidal_peak_all.append(0)
 					L_poloidal_peak_only_leg_all.append(0)
+					L_poloidal_baricentre_only_leg_all.append(0)
 					L_poloidal_x_point_all.append(np.inf)
 					L_poloidal_midplane_all.append(np.inf)
 					leg_reliable_power_all.append(0)
@@ -13152,29 +14044,36 @@ def baricentre_inner_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 			ref_points = np.concatenate([[ref_points[0]],ref_points[1:][np.abs(np.diff(ref_points[:,0]))+np.abs(np.diff(ref_points[:,1]))>0]])
 			leg_length_interval = np.array(leg_length_interval)[np.array(leg_length_interval)>0].tolist()
 
-			ref_points_1 = []
-			ref_points_2 = []
-			try:
-				m = -1/((z_coord_smooth[i_ref_points[0]]-z_coord_smooth[i_ref_points[0]+1])/(r_coord_smooth[i_ref_points[0]]-r_coord_smooth[i_ref_points[0]+1]))
-				ref_points_1.append([r_coord_smooth[i_ref_points[0]] - sideways_leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[0]] - m*sideways_leg_resolution/((1+m**2)**0.5)])
-				ref_points_2.append([r_coord_smooth[i_ref_points[0]] + sideways_leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[0]] + m*sideways_leg_resolution/((1+m**2)**0.5)])
-			except:
-				pass
-			for i_ref_point in range(1,len(i_ref_points)):
-				try:
-					m = -1/((z_coord_smooth[i_ref_points[i_ref_point]-1]-z_coord_smooth[i_ref_points[i_ref_point]+1])/(r_coord_smooth[i_ref_points[i_ref_point]-1]-r_coord_smooth[i_ref_points[i_ref_point]+1]))
-					ref_points_1.append([r_coord_smooth[i_ref_points[i_ref_point]] - sideways_leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[i_ref_point]] - m*sideways_leg_resolution/((1+m**2)**0.5)])
-					ref_points_2.append([r_coord_smooth[i_ref_points[i_ref_point]] + sideways_leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[i_ref_point]] + m*sideways_leg_resolution/((1+m**2)**0.5)])
-				except:
-					pass
-			try:
-				m = -1/((z_coord_smooth[i_ref_points[-1]-1]-z_coord_smooth[i_ref_points[-1]])/(r_coord_smooth[i_ref_points[-1]-1]-r_coord_smooth[i_ref_points[-1]]))
-				ref_points_1.append([r_coord_smooth[i_ref_points[-1]] - sideways_leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[-1]] - m*sideways_leg_resolution/((1+m**2)**0.5)])
-				ref_points_2.append([r_coord_smooth[i_ref_points[-1]] + sideways_leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[-1]] + m*sideways_leg_resolution/((1+m**2)**0.5)])
-			except:
-				pass
-			ref_points_1 = np.array(ref_points_1)
-			ref_points_2 = np.array(ref_points_2)
+			ref_points_1 = expand_line_sideways(r_coord_smooth,z_coord_smooth,i_ref_points,-sideways_leg_resolution)
+			ref_points_2 = expand_line_sideways(r_coord_smooth,z_coord_smooth,i_ref_points,+sideways_leg_resolution)
+			ref_points_for_interp_vlx = expand_line_sideways(r_coord_smooth,z_coord_smooth,np.arange(len(r_coord_smooth)),-sideways_leg_resolution_for_interp)
+			ref_points_for_interp_lx = expand_line_sideways(r_coord_smooth,z_coord_smooth,np.arange(len(r_coord_smooth)),-sideways_leg_resolution_for_interp/2)
+			ref_points_for_interp_rx = expand_line_sideways(r_coord_smooth,z_coord_smooth,np.arange(len(r_coord_smooth)),+sideways_leg_resolution_for_interp/2)
+			ref_points_for_interp_vrx = expand_line_sideways(r_coord_smooth,z_coord_smooth,np.arange(len(r_coord_smooth)),+sideways_leg_resolution_for_interp)
+
+			# ref_points_1 = []
+			# ref_points_2 = []
+			# try:
+			# 	m = -1/((z_coord_smooth[i_ref_points[0]]-z_coord_smooth[i_ref_points[0]+1])/(r_coord_smooth[i_ref_points[0]]-r_coord_smooth[i_ref_points[0]+1]))
+			# 	ref_points_1.append([r_coord_smooth[i_ref_points[0]] - sideways_leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[0]] - m*sideways_leg_resolution/((1+m**2)**0.5)])
+			# 	ref_points_2.append([r_coord_smooth[i_ref_points[0]] + sideways_leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[0]] + m*sideways_leg_resolution/((1+m**2)**0.5)])
+			# except:
+			# 	pass
+			# for i_ref_point in range(1,len(i_ref_points)):
+			# 	try:
+			# 		m = -1/((z_coord_smooth[i_ref_points[i_ref_point]-1]-z_coord_smooth[i_ref_points[i_ref_point]+1])/(r_coord_smooth[i_ref_points[i_ref_point]-1]-r_coord_smooth[i_ref_points[i_ref_point]+1]))
+			# 		ref_points_1.append([r_coord_smooth[i_ref_points[i_ref_point]] - sideways_leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[i_ref_point]] - m*sideways_leg_resolution/((1+m**2)**0.5)])
+			# 		ref_points_2.append([r_coord_smooth[i_ref_points[i_ref_point]] + sideways_leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[i_ref_point]] + m*sideways_leg_resolution/((1+m**2)**0.5)])
+			# 	except:
+			# 		pass
+			# try:
+			# 	m = -1/((z_coord_smooth[i_ref_points[-1]-1]-z_coord_smooth[i_ref_points[-1]])/(r_coord_smooth[i_ref_points[-1]-1]-r_coord_smooth[i_ref_points[-1]]))
+			# 	ref_points_1.append([r_coord_smooth[i_ref_points[-1]] - sideways_leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[-1]] - m*sideways_leg_resolution/((1+m**2)**0.5)])
+			# 	ref_points_2.append([r_coord_smooth[i_ref_points[-1]] + sideways_leg_resolution/((1+m**2)**0.5) , z_coord_smooth[i_ref_points[-1]] + m*sideways_leg_resolution/((1+m**2)**0.5)])
+			# except:
+			# 	pass
+			# ref_points_1 = np.array(ref_points_1)
+			# ref_points_2 = np.array(ref_points_2)
 
 			ref_points_1_original = cp.deepcopy(ref_points_1)
 			ref_points_2_original = cp.deepcopy(ref_points_2)
@@ -13183,6 +14082,17 @@ def baricentre_inner_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 			ref_points_1 = np.array(np.array([interp1d([0,1],ref_points_1[:,0][:2],bounds_error=False, fill_value='extrapolate')([-2,-1]),interp1d([0,1],ref_points_1[:,1][:2],bounds_error=False, fill_value='extrapolate')([-2,-1])]).T.tolist() + ref_points_1.tolist())	# r,z
 			ref_points_2 = np.array(ref_points_2.tolist() + np.array([interp1d([0,1],ref_points_2[:,0][-2:],bounds_error=False, fill_value='extrapolate')([2,3]),interp1d([0,1],ref_points_2[:,1][-2:],bounds_error=False, fill_value='extrapolate')([2,3])]).T.tolist())	# r,z
 			ref_points_2 = np.array(np.array([interp1d([0,1],ref_points_2[:,0][:2],bounds_error=False, fill_value='extrapolate')([-2,-1]),interp1d([0,1],ref_points_2[:,1][:2],bounds_error=False, fill_value='extrapolate')([-2,-1])]).T.tolist() + ref_points_2.tolist())	# r,z
+			ref_points_for_interp_vlx = np.array(ref_points_for_interp_vlx.tolist() + np.array([interp1d([0,1],ref_points_for_interp_vlx[:,0][-2:],bounds_error=False, fill_value='extrapolate')([2,3]),interp1d([0,1],ref_points_for_interp_vlx[:,1][-2:],bounds_error=False, fill_value='extrapolate')([2,3])]).T.tolist())	# r,z
+			ref_points_for_interp_vlx = np.array(np.array([interp1d([0,1],ref_points_for_interp_vlx[:,0][:2],bounds_error=False, fill_value='extrapolate')([-2,-1]),interp1d([0,1],ref_points_for_interp_vlx[:,1][:2],bounds_error=False, fill_value='extrapolate')([-2,-1])]).T.tolist() + ref_points_for_interp_vlx.tolist())	# r,z
+			ref_points_for_interp_lx = np.array(ref_points_for_interp_lx.tolist() + np.array([interp1d([0,1],ref_points_for_interp_lx[:,0][-2:],bounds_error=False, fill_value='extrapolate')([2,3]),interp1d([0,1],ref_points_for_interp_lx[:,1][-2:],bounds_error=False, fill_value='extrapolate')([2,3])]).T.tolist())	# r,z
+			ref_points_for_interp_lx = np.array(np.array([interp1d([0,1],ref_points_for_interp_lx[:,0][:2],bounds_error=False, fill_value='extrapolate')([-2,-1]),interp1d([0,1],ref_points_for_interp_lx[:,1][:2],bounds_error=False, fill_value='extrapolate')([-2,-1])]).T.tolist() + ref_points_for_interp_lx.tolist())	# r,z
+			ref_points_for_interp_rx = np.array(ref_points_for_interp_rx.tolist() + np.array([interp1d([0,1],ref_points_for_interp_rx[:,0][-2:],bounds_error=False, fill_value='extrapolate')([2,3]),interp1d([0,1],ref_points_for_interp_rx[:,1][-2:],bounds_error=False, fill_value='extrapolate')([2,3])]).T.tolist())	# r,z
+			ref_points_for_interp_rx = np.array(np.array([interp1d([0,1],ref_points_for_interp_rx[:,0][:2],bounds_error=False, fill_value='extrapolate')([-2,-1]),interp1d([0,1],ref_points_for_interp_rx[:,1][:2],bounds_error=False, fill_value='extrapolate')([-2,-1])]).T.tolist() + ref_points_for_interp_rx.tolist())	# r,z
+			ref_points_for_interp_vrx = np.array(ref_points_for_interp_vrx.tolist() + np.array([interp1d([0,1],ref_points_for_interp_vrx[:,0][-2:],bounds_error=False, fill_value='extrapolate')([2,3]),interp1d([0,1],ref_points_for_interp_vrx[:,1][-2:],bounds_error=False, fill_value='extrapolate')([2,3])]).T.tolist())	# r,z
+			ref_points_for_interp_vrx = np.array(np.array([interp1d([0,1],ref_points_for_interp_vrx[:,0][:2],bounds_error=False, fill_value='extrapolate')([-2,-1]),interp1d([0,1],ref_points_for_interp_vrx[:,1][:2],bounds_error=False, fill_value='extrapolate')([-2,-1])]).T.tolist() + ref_points_for_interp_vrx.tolist())	# r,z
+			coord_smooth_extended = np.array([r_coord_smooth,z_coord_smooth]).T
+			coord_smooth_extended = np.array(coord_smooth_extended.tolist() + np.array([interp1d([0,1],coord_smooth_extended[:,0][-2:],bounds_error=False, fill_value='extrapolate')([2,3]),interp1d([0,1],coord_smooth_extended[:,1][-2:],bounds_error=False, fill_value='extrapolate')([2,3])]).T.tolist())	# r,z
+			coord_smooth_extended = np.array(np.array([interp1d([0,1],coord_smooth_extended[:,0][:2],bounds_error=False, fill_value='extrapolate')([-2,-1]),interp1d([0,1],coord_smooth_extended[:,1][:2],bounds_error=False, fill_value='extrapolate')([-2,-1])]).T.tolist() + coord_smooth_extended.tolist())	# r,z
 
 			# in the outer separatrix the inner side is always good and the outer bad, the reverse in the inner separatrix
 			ref_points_1[:,0] = scipy.signal.savgol_filter(ref_points_1[:,0],7,2)
@@ -13207,9 +14117,14 @@ def baricentre_inner_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 			# selected[:,inversion_Z>efit_reconstruction.mag_axis_z[i_efit_time]] = False
 			selected_sigma = select_cells_inside_polygon(polygon,[np.mean(grid_data_masked_crop,axis=1)])
 			# selected_sigma[np.mean(grid_data_masked_crop,axis=1)[:,1]<efit_reconstruction.mag_axis_z[i_efit_time]] = False
-			temp = inverted_data[i_t]
+			temp = cp.deepcopy(inverted_data[i_t])
+			temp1 = cp.deepcopy(inverted_data[i_t])
+			temp1[np.isnan(temp1)] = 0
+			inverted_data_interpolator = RegularGridInterpolator((inversion_R, inversion_Z), temp1,bounds_error=False,fill_value=0)
+
 			# temp[temp<0] = 0
-			emissivity_baricentre = [(np.nansum(selected*temp*(b**2)/inverted_data_sigma[i_t])/np.nansum(selected*temp/inverted_data_sigma[i_t]))**0.5,np.nansum(selected*temp*a/inverted_data_sigma[i_t])/np.nansum(selected*temp/inverted_data_sigma[i_t])]
+			# emissivity_baricentre = [(np.nansum(selected*temp*(b**2)/inverted_data_sigma[i_t])/np.nansum(selected*temp/inverted_data_sigma[i_t]))**0.5,np.nansum(selected*temp*a/inverted_data_sigma[i_t])/np.nansum(selected*temp/inverted_data_sigma[i_t])]
+			emissivity_baricentre = [(np.nansum(selected*temp*(b**2))/np.nansum(selected*temp))**0.5,np.nansum(selected*temp*a)/np.nansum(selected*temp)]
 			L_poloidal_baricentre = L_poloidal_from_point_to_target(r_coord_smooth_origial,z_coord_smooth_origial,emissivity_baricentre,efit_data,i_efit_time)
 
 			emissivity_peak = np.unravel_index(np.nanargmax(selected*inverted_data[i_t]),np.shape(selected))
@@ -13226,6 +14141,8 @@ def baricentre_inner_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 			emissivity_peak_only_leg = np.unravel_index(np.nanargmax(selected*inverted_data[i_t]),np.shape(selected))
 			emissivity_peak_only_leg = [inversion_R[emissivity_peak_only_leg[0]],inversion_Z[emissivity_peak_only_leg[1]]]
 			L_poloidal_peak_only_leg = L_poloidal_from_point_to_target(r_coord_smooth_origial,z_coord_smooth_origial,emissivity_peak_only_leg,efit_data,i_efit_time)
+			emissivity_baricentre_only_leg = [(np.nansum(selected*temp*(b**2))/np.nansum(selected*temp))**0.5,np.nansum(selected*temp*a)/np.nansum(selected*temp)]
+			L_poloidal_baricentre_only_leg = L_poloidal_from_point_to_target(r_coord_smooth_origial,z_coord_smooth_origial,emissivity_baricentre_only_leg,efit_data,i_efit_time)
 
 			L_poloidal_midplane = L_poloidal_from_point_to_target(r_coord_smooth_origial,z_coord_smooth_origial,np.array([r_coord_smooth_origial[np.abs(r_coord_smooth_origial-0).argmin()],z_coord_smooth_origial[np.abs(r_coord_smooth_origial-0).argmin()]]),efit_data,i_efit_time)
 
@@ -13243,7 +14160,7 @@ def baricentre_inner_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 			# temp1[np.mean(grid_data_masked_crop,axis=1)[:,1]<MU01_sxd_region_delimiter(np.mean(grid_data_masked_crop,axis=1)[:,0])] = False	# delimiter as used in the thesis
 			# selected_sigma = np.logical_and(selected_sigma,np.logical_not(temp1))
 			temp_select = selected_sigma*2*np.pi*(grid_resolution**2)*(np.mean(grid_data_masked_crop,axis=1)[:,0])
-			leg_reliable_power_sigma = np.nansum((covariance_out[i_t][:-2,:-2]*temp_select).T*temp_select)**0.5
+			leg_reliable_power_sigma = np.nansum((covariance_out[i_t][:len(grid_data_masked_crop),:len(grid_data_masked_crop)]*temp_select).T*temp_select)**0.5
 			# leg_reliable_power_sigma = np.nansum(((temp_sigma.T*inversion_R).T*selected*2*np.pi*(grid_resolution**2))**2)**0.5
 
 			ref_points_1 = cp.deepcopy(ref_points_1_original)
@@ -13259,7 +14176,7 @@ def baricentre_inner_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 			local_mean_emis = []
 			local_power = []
 			local_L_poloidal = []
-			emissivity_flat = inverted_data[i_t].flatten()
+			emissivity_flat = cp.deepcopy(inverted_data[i_t].flatten())
 			for i_ref_point in range(1,len(ref_points_1)):
 				# print(i_ref_point)
 				select = []
@@ -13270,6 +14187,44 @@ def baricentre_inner_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 				local_mean_emis.append(np.nanmean(emissivity_flat[select]))
 				local_power.append(2*np.pi*np.nansum(emissivity_flat[select]*b_flat[select]*(grid_resolution**2)))
 				local_L_poloidal.append(L_poloidal_from_point_to_target(r_coord_smooth_origial,z_coord_smooth_origial,[np.mean(b_flat[select]),np.mean(a_flat[select])],efit_data,i_efit_time))
+
+			# section to find the half peak
+			ref1 = inverted_data_interpolator((ref_points_for_interp_vlx[:,0],ref_points_for_interp_vlx[:,1]))
+			ref2 = inverted_data_interpolator((ref_points_for_interp_lx[:,0],ref_points_for_interp_lx[:,1]))
+			ref3 = inverted_data_interpolator((coord_smooth_extended[:,0],coord_smooth_extended[:,1]))
+			ref4 = inverted_data_interpolator((ref_points_for_interp_rx[:,0],ref_points_for_interp_rx[:,1]))
+			ref5 = inverted_data_interpolator((ref_points_for_interp_vrx[:,0],ref_points_for_interp_vrx[:,1]))
+			midpoint_ref1 = (np.arange(len(ref1))[ref1>np.nanmax(ref1)/2])[0]
+			midpoint_ref2 = (np.arange(len(ref2))[ref2>np.nanmax(ref2)/2])[0]
+			midpoint_ref3 = (np.arange(len(ref3))[ref3>np.nanmax(ref3)/2])[0]
+			midpoint_ref4 = (np.arange(len(ref4))[ref4>np.nanmax(ref4)/2])[0]
+			midpoint_ref5 = (np.arange(len(ref5))[ref5>np.nanmax(ref5)/2])[0]
+			ref1=ref_points_for_interp_vlx[midpoint_ref1]
+			ref2=ref_points_for_interp_lx[midpoint_ref2]
+			ref3=coord_smooth_extended[midpoint_ref3]
+			ref4=ref_points_for_interp_rx[midpoint_ref4]
+			ref5=ref_points_for_interp_vrx[midpoint_ref5]
+			half_peak = np.array([np.median([ref1[0],ref2[0],ref3[0],ref4[0],ref5[0]]),np.median([ref1[1],ref2[1],ref3[1],ref4[1],ref5[1]])])
+			half_peak_L_pol = L_poloidal_from_point_to_target(r_coord_smooth_origial,z_coord_smooth_origial,half_peak,efit_data,i_efit_time)
+
+			ref1 = inverted_data_interpolator((ref_points_for_interp_vlx[:,0][ref_points_for_interp_vlx[:,1]<=efit_reconstruction.lower_xpoint_z[i_efit_time]],ref_points_for_interp_vlx[:,1][ref_points_for_interp_vlx[:,1]<=efit_reconstruction.lower_xpoint_z[i_efit_time]]))
+			ref2 = inverted_data_interpolator((ref_points_for_interp_lx[:,0][ref_points_for_interp_lx[:,1]<=efit_reconstruction.lower_xpoint_z[i_efit_time]],ref_points_for_interp_lx[:,1][ref_points_for_interp_lx[:,1]<=efit_reconstruction.lower_xpoint_z[i_efit_time]]))
+			ref3 = inverted_data_interpolator((coord_smooth_extended[:,0][coord_smooth_extended[:,1]<=efit_reconstruction.lower_xpoint_z[i_efit_time]],coord_smooth_extended[:,1][coord_smooth_extended[:,1]<=efit_reconstruction.lower_xpoint_z[i_efit_time]]))
+			ref4 = inverted_data_interpolator((ref_points_for_interp_rx[:,0][ref_points_for_interp_rx[:,1]<=efit_reconstruction.lower_xpoint_z[i_efit_time]],ref_points_for_interp_rx[:,1][ref_points_for_interp_rx[:,1]<=efit_reconstruction.lower_xpoint_z[i_efit_time]]))
+			ref5 = inverted_data_interpolator((ref_points_for_interp_vrx[:,0][ref_points_for_interp_vrx[:,1]<=efit_reconstruction.lower_xpoint_z[i_efit_time]],ref_points_for_interp_vrx[:,1][ref_points_for_interp_vrx[:,1]<=efit_reconstruction.lower_xpoint_z[i_efit_time]]))
+			midpoint_ref1 = (np.arange(len(ref1))[ref1>np.nanmax(ref1)/2])[0]
+			midpoint_ref2 = (np.arange(len(ref2))[ref2>np.nanmax(ref2)/2])[0]
+			midpoint_ref3 = (np.arange(len(ref3))[ref3>np.nanmax(ref3)/2])[0]
+			midpoint_ref4 = (np.arange(len(ref4))[ref4>np.nanmax(ref4)/2])[0]
+			midpoint_ref5 = (np.arange(len(ref5))[ref5>np.nanmax(ref5)/2])[0]
+			ref1=ref_points_for_interp_vlx[ref_points_for_interp_vlx[:,1]<=efit_reconstruction.lower_xpoint_z[i_efit_time]][midpoint_ref1]
+			ref2=ref_points_for_interp_lx[ref_points_for_interp_lx[:,1]<=efit_reconstruction.lower_xpoint_z[i_efit_time]][midpoint_ref2]
+			ref3=coord_smooth_extended[coord_smooth_extended[:,1]<=efit_reconstruction.lower_xpoint_z[i_efit_time]][midpoint_ref3]
+			ref4=ref_points_for_interp_rx[ref_points_for_interp_rx[:,1]<=efit_reconstruction.lower_xpoint_z[i_efit_time]][midpoint_ref4]
+			ref5=ref_points_for_interp_vrx[ref_points_for_interp_vrx[:,1]<=efit_reconstruction.lower_xpoint_z[i_efit_time]][midpoint_ref5]
+			half_peak_divertor = np.array([np.median([ref1[0],ref2[0],ref3[0],ref4[0],ref5[0]]),np.median([ref1[1],ref2[1],ref3[1],ref4[1],ref5[1]])])
+			half_peak_divertor_L_pol = L_poloidal_from_point_to_target(r_coord_smooth_origial,z_coord_smooth_origial,half_peak_divertor,efit_data,i_efit_time)
+
 			# local_mean_emis = np.array(local_mean_emis)
 			# local_power = np.array(local_power)
 			# local_mean_emis = local_mean_emis[np.logical_not(np.isnan(local_mean_emis))].tolist()
@@ -13279,6 +14234,7 @@ def baricentre_inner_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 			emissivity_peak_all.append(emissivity_peak)
 			L_poloidal_peak_all.append(L_poloidal_peak)
 			L_poloidal_peak_only_leg_all.append(L_poloidal_peak_only_leg)
+			L_poloidal_baricentre_only_leg_all.append(L_poloidal_baricentre_only_leg)
 			L_poloidal_x_point_all.append(L_poloidal_x_point)
 			L_poloidal_midplane_all.append(L_poloidal_midplane)
 			leg_reliable_power_all.append(leg_reliable_power)
@@ -13289,6 +14245,8 @@ def baricentre_inner_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 			data_length = max(data_length,len(local_power))
 			leg_length_all.append(leg_length)
 			leg_length_interval_all.append(leg_length_interval)
+			half_peak_L_pol_all.append(half_peak_L_pol)
+			half_peak_divertor_L_pol_all.append(half_peak_divertor_L_pol)
 		except Exception as e:
 			print('failed')
 			# logging.exception('with error: ' + str(e))
@@ -13302,15 +14260,19 @@ def baricentre_inner_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 			L_poloidal_baricentre_all.append(0)
 			L_poloidal_peak_all.append(0)
 			L_poloidal_peak_only_leg_all.append(0)
+			L_poloidal_baricentre_only_leg_all.append(0)
 			L_poloidal_x_point_all.append(np.inf)
 			L_poloidal_midplane_all.append(np.inf)
 			leg_reliable_power_all.append(0)
 			leg_reliable_power_sigma_all.append(0)
+			half_peak_L_pol_all.append(0)
+			half_peak_divertor_L_pol_all.append(0)
 	emissivity_baricentre_all = np.array(emissivity_baricentre_all)
 	emissivity_peak_all = np.array(emissivity_peak_all)
 	L_poloidal_baricentre_all = np.array(L_poloidal_baricentre_all)
 	L_poloidal_peak_all = np.array(L_poloidal_peak_all)
 	L_poloidal_peak_only_leg_all = np.array(L_poloidal_peak_only_leg_all)
+	L_poloidal_baricentre_only_leg_all = np.array(L_poloidal_baricentre_only_leg_all)
 	L_poloidal_x_point_all = np.array(L_poloidal_x_point_all)
 	L_poloidal_midplane_all = np.array(L_poloidal_midplane_all)
 	leg_reliable_power_all = np.array(leg_reliable_power_all)
@@ -13323,7 +14285,7 @@ def baricentre_inner_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 			local_L_poloidal_all[i_t].extend([0]*(data_length-len(local_L_poloidal_all[i_t])))
 			leg_length_interval_all[i_t].extend([0]*(data_length-len(leg_length_interval_all[i_t])))
 
-	return local_mean_emis_all,local_power_all,local_L_poloidal_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution,emissivity_baricentre_all,emissivity_peak_all,L_poloidal_baricentre_all,L_poloidal_peak_all,L_poloidal_peak_only_leg_all,L_poloidal_midplane_all,leg_reliable_power_all,leg_reliable_power_sigma_all,greenwald_density,dr_sep_in,dr_sep_out,L_poloidal_x_point_all
+	return local_mean_emis_all,local_power_all,local_L_poloidal_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution,emissivity_baricentre_all,emissivity_peak_all,L_poloidal_baricentre_all,L_poloidal_peak_all,L_poloidal_peak_only_leg_all,L_poloidal_baricentre_only_leg_all,L_poloidal_midplane_all,leg_reliable_power_all,leg_reliable_power_sigma_all,greenwald_density,dr_sep_in,dr_sep_out,L_poloidal_x_point_all,half_peak_L_pol_all,half_peak_divertor_L_pol_all
 
 
 def inside_vs_outside_separatrix_radiation(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,covariance_out,grid_data_masked_crop,x_point_region_radious=0.1):
@@ -13420,9 +14382,9 @@ def inside_vs_outside_separatrix_radiation(inverted_data,inverted_data_sigma,inv
 			# 			if polygon.contains(point):
 			# 				selected[i_r,i_z] = True
 			# 				continue
-			temp = inverted_data[i_t]
+			temp = cp.deepcopy(inverted_data[i_t])
 			temp[:,inversion_Z>efit_reconstruction.mag_axis_z[i_efit_time]] = 0
-			temp1 = covariance_out[i_t][:-2,:-2]
+			temp1 = covariance_out[i_t][:len(grid_data_masked_crop),:len(grid_data_masked_crop)]
 			temp1[np.mean(grid_data_masked_crop,axis=1)[:,1]>efit_reconstruction.mag_axis_z[i_efit_time]]=0
 			temp1[:,np.mean(grid_data_masked_crop,axis=1)[:,1]>efit_reconstruction.mag_axis_z[i_efit_time]]=0
 			# temp_sigma = inverted_data_sigma[i_t]
@@ -13563,7 +14525,7 @@ def symplified_out_core_regions(inverted_data,inverted_data_sigma,inversion_R,in
 			# 				continue
 			temp = cp.deepcopy(inverted_data[i_t])
 			temp[:,inversion_Z>efit_reconstruction.mag_axis_z[i_efit_time]] = 0
-			temp1 = covariance_out[i_t][:-2,:-2]
+			temp1 = covariance_out[i_t][:len(grid_data_masked_crop),:len(grid_data_masked_crop)]
 			temp1[np.mean(grid_data_masked_crop,axis=1)[:,1]>efit_reconstruction.mag_axis_z[i_efit_time]]=0
 			temp1[:,np.mean(grid_data_masked_crop,axis=1)[:,1]>efit_reconstruction.mag_axis_z[i_efit_time]]=0
 			# temp_sigma = inverted_data_sigma[i_t]
@@ -13699,7 +14661,7 @@ def equivalent_res_bolo_view(inverted_data,inverted_data_sigma,inversion_R,inver
 
 			temp = cp.deepcopy(inverted_data[i_t])
 			temp[:,inversion_Z>efit_reconstruction.mag_axis_z[i_efit_time]] = 0
-			temp1 = covariance_out[i_t][:-2,:-2]
+			temp1 = covariance_out[i_t][:len(grid_data_masked_crop),:len(grid_data_masked_crop)]
 			temp1[np.mean(grid_data_masked_crop,axis=1)[:,1]>efit_reconstruction.mag_axis_z[i_efit_time]]=0
 			temp1[:,np.mean(grid_data_masked_crop,axis=1)[:,1]>efit_reconstruction.mag_axis_z[i_efit_time]]=0
 
@@ -13791,13 +14753,14 @@ def shift_beam_to_pulse_time(xnb_time, beam, shot):
 		return shifted_time
 
 	try:
-		reset_connection(client_int)
+		client_int.reset_connection()
+		# reset_connection(client_int)
 	except:
 		pass
-	try:
-		del client_int
-	except:
-		pass
+	# try:
+	# 	del client_int
+	# except:
+	# 	pass
 
 
 	# Smallest interval between data (times 2 to avoid rounding error)

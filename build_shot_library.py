@@ -35,6 +35,20 @@ fuelling_location_list = [string.replace('fuelling ',fuelling_prefix) for string
 if True:
 	for i in range(1,len(shot_list['Sheet1'])):
 		shot = int(np.array(shot_list['Sheet1'][i])[np.array(shot_list['Sheet1'][0]) == 'shot number'])
+		# if shot<48900:
+		# 	continue
+		print(shot)
+		try:
+			data_all = client.get_batch(fuelling_location_list,shot)
+			for i_data,data in enumerate(data_all):
+				if np.nanmax(data.data[data.time.data>0.2])>0:
+					print(fuelling_location_list[i_data]+' set')
+					shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == fuelling_location_list_orig[i_data]).argmax()] = 'X'
+				else:
+					shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == fuelling_location_list_orig[i_data]).argmax()] = ''
+			continue
+		except:
+			pass
 		for i_signal_name,signal_name in enumerate(fuelling_location_list):
 			try:
 				data = client.get(signal_name,shot,timefirst=0.2,time_last=False)
@@ -46,34 +60,44 @@ if True:
 			except:
 				shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == fuelling_location_list_orig[i_signal_name]).argmax()] = ''
 				pass
-		print(shot)
+	save_data(path+'shot_list2.ods',shot_list)
+	print('done')
+
 
 	beams_prefix = '/XNB/'
 	beams_affix = '/BEAMPOWER'
 	for i in range(2,len(shot_list['Sheet1'])):
 		shot = int(np.array(shot_list['Sheet1'][i])[(np.array(shot_list['Sheet1'][0]) == 'shot number').argmax()])
-		signal_name = beams_prefix + 'SW' + beams_affix
+		# if shot<48900:
+		# 	continue
 		try:
-			data = client.get(signal_name,shot,timefirst=0.2,time_last=False)
-			if np.nanmax(np.abs(data.data))>0:
-				shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'SW beam').argmax()] = 'X'
-				print(shot)
-		except:
-			shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'SW beam').argmax()] = ''
-			pass
-		try:
-			signal_name = beams_prefix + 'SS' + beams_affix
-			data = client.get(signal_name,shot)
-			if np.nanmax(np.abs(data.data))>0:
-				shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'SS beam').argmax()] = 'X'
-				print(shot)
+			data = client.get('/AMB/CTIME',shot)
+			shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'SW beam').argmax()] = 'N'
+			shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'SS beam').argmax()] = 'N'
+
+			signal_name = beams_prefix + 'SW' + beams_affix
+			try:
+				data = client.get(signal_name,shot,timefirst=0.2,time_last=False)
+				if np.nanmax(np.abs(data.data))>0:
+					shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'SW beam').argmax()] = 'Y'
+					print(shot+'SW')
+			except:
+				pass
+			try:
+				signal_name = beams_prefix + 'SS' + beams_affix
+				data = client.get(signal_name,shot)
+				if np.nanmax(np.abs(data.data))>0:
+					shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'SS beam').argmax()] = 'Y'
+					print(shot+'SS')
+			except:
+				pass
 		except:
 			shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'SS beam').argmax()] = ''
-			pass
+			shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'SW beam').argmax()] = ''
 
 	save_data(path+'shot_list2.ods',shot_list)
 	print('done')
-	exit()
+	# exit()
 
 
 	# I want to at least get the date automatically so I can run my analysis
@@ -110,7 +134,68 @@ if True:
 	print('done')
 	exit()
 
+	# I want to add the peak greenwald fraction
+	from mastu_exhaust_analysis.calc_ne_bar import calc_ne_bar
+	for i in range(2,len(shot_list['Sheet1'])):
+		shot = int(np.array(shot_list['Sheet1'][i])[(np.array(shot_list['Sheet1'][0]) == 'shot number').argmax()])
+		try:
+			ne_bar_dict=calc_ne_bar(shot, efit_data = None)
+			greenwald_fraction_max = np.nanmax(ne_bar_dict['greenwald_fraction'])
+			if greenwald_fraction_max<10:
+				shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'Greenwald fraction max').argmax()] = str(np.round(greenwald_fraction_max,decimals=3))
+				print(shot)
+			else:
+				shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'Greenwald fraction max').argmax()] = 'too large'
+		except:
+			shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'Greenwald fraction max').argmax()] = ''
+			pass
+	save_data(path+'shot_list2.ods',shot_list)
+	print('done')
+	exit()
 
+	signal_name = '/EPM/OUTPUT/GLOBALPARAMETERS/MAGNETICAXIS/Z'
+	for i in range(2,len(shot_list['Sheet1'])):
+		shot = int(np.array(shot_list['Sheet1'][i])[(np.array(shot_list['Sheet1'][0]) == 'shot number').argmax()])
+		# if shot<48900:
+		# 	continue
+		try:
+			data = client.get(signal_name,shot)
+			# data = client.get(signal_name,shot,timefirst=0.2,time_last=False)
+			if np.nanmin(data.data[-10:])<-0.5:	# arbitrary threshold of 0.5m
+				if not (shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'Ends with lower VDE').argmax()] in ['yes']):
+					shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'Ends with lower VDE').argmax()] = 'maybe'
+					print(str(shot)+' Ends with lower VDE')
+				else:
+					shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'Ends with lower VDE').argmax()] = 'no'
+			elif shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'Ends with lower VDE').argmax()] == '':
+				shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'Ends with lower VDE').argmax()] = 'no'
+		except:
+			if shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'Ends with lower VDE').argmax()] != 'yes':
+				shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'Ends with lower VDE').argmax()] = 'no'
+			pass
+	save_data(path+'shot_list2.ods',shot_list)
+	print('done')
+	exit()
+
+	signal_name = '/AMC/Plasma_current'
+	for i in range(2,len(shot_list['Sheet1'])):
+		shot = int(np.array(shot_list['Sheet1'][i])[(np.array(shot_list['Sheet1'][0]) == 'shot number').argmax()])
+		# if shot<48900:
+		# 	continue
+		try:
+			data = client.get(signal_name,shot)
+			# data = client.get(signal_name,shot,timefirst=0.2,time_last=False)
+			if np.nanmax(data.data[:])<1:	# arbitrary threshold of 1kA to establish an aborted shot
+				if not (shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'Abort').argmax()] in ['yes','no']):
+					shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'Abort').argmax()] = 'effectively yes'
+					print(str(shot)+' aborted')
+		except:
+			shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'Abort').argmax()] = 'yes'
+			print(str(shot)+' aborted')
+			pass
+	save_data(path+'shot_list2.ods',shot_list)
+	print('done')
+	exit()
 
 
 

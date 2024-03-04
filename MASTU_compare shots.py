@@ -139,12 +139,13 @@ if False:	# plot for the papers
 	n_shot_added = 0
 	for name in np.flip(to_do,axis=0):
 		try:
-			temp1 = (np.array(shot_list['Sheet1'][0])=='shot number').argmax()
-			for i in range(1,len(shot_list['Sheet1'])):
-				if shot_list['Sheet1'][i][temp1] == int(name[-9:-4]):
-					date = shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0])=='date').argmax()]
-					break
-			i_day,day = 0,str(date.date())
+			# temp1 = (np.array(shot_list['Sheet1'][0])=='shot number').argmax()
+			# for i in range(1,len(shot_list['Sheet1'])):
+			# 	if shot_list['Sheet1'][i][temp1] == int(name[-9:-4]):
+			# 		date = shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0])=='date').argmax()]
+			# 		break
+			# i_day,day = 0,str(date.date())
+			i_day,day = 0,coleval.retrive_shot_date_and_time(name[-9:-4])[0]
 			laser_to_analyse=path+day+'/'+name
 
 			full_saved_file_dict_FAST = np.load(laser_to_analyse[:-4]+'_FAST'+'.npz')
@@ -155,6 +156,10 @@ if False:	# plot for the papers
 				# gna=gne
 				full_saved_file_dict_FAST['second_pass'] = full_saved_file_dict_FAST['second_pass'].all()
 				inverted_dict = full_saved_file_dict_FAST['second_pass']['inverted_dict']
+				time_full_binned_crop = inverted_dict[str(grid_resolution)]['time_full_binned_crop']
+				nu_cowley = np.array(full_saved_file_dict_FAST['multi_instrument']['nu_stangeby'])*1e-19
+				if len(time_full_binned_crop) != len(nu_cowley):
+					gna=gne
 				print(str(laser_to_analyse[-9:-4])+' second pass')
 			except:
 				full_saved_file_dict_FAST['first_pass'] = full_saved_file_dict_FAST['first_pass'].all()

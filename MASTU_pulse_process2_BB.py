@@ -1,7 +1,10 @@
 # Created 2021-07-08
 # in order to facilitate a proper binning and remotion of the oscillation only after that, here I will only:
 # do the initial adjustment of the ramp up, convert to temperature
-print('starting ' + laser_to_analyse + '\n of \n' + str(shot_available[i_day]))
+# print('starting ' + laser_to_analyse + '\n of \n' + str(shot_available[i_day]))
+print('starting ' + laser_to_analyse + '\n of \n' + str(to_do))
+
+
 
 try:
 	trash = cp.deepcopy(only_plot_brightness)
@@ -15,7 +18,12 @@ try:
 	if laser_to_analyse[-4:]=='.ptw':
 		test = laser_dict['discarded_frames']
 except:
-	print('missing '+laser_to_analyse[:-4]+'.npz'+' file. rigenerated')
+	print('missing '+laser_to_analyse[:-4]+'.npz'+' file.')
+	if os.path.exists(laser_to_analyse):
+		print(laser_to_analyse[:-4]+'.npz'+' file rigenerated')
+	else:
+		print(laser_to_analyse+' file missing, analysis halted.')
+		bla = sgna	# I want this to generate an error. te camera file is not present.
 	if laser_to_analyse[-4:]=='.ats':
 		full_saved_file_dict = coleval.ats_to_dict(laser_to_analyse)
 	else:
@@ -420,7 +428,7 @@ try:
 	photon_flux_over_temperature_interpolator = photon_dict['photon_flux_over_temperature_interpolator']
 
 	if int(laser_to_analyse[-9:-4]) > 47174:	# MU03
-		foil_position_dict = dict([('angle',1),('foilcenter',[156,137]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',246)])	# identified ~2023-08 after checking what is the actual result of the rotation
+		foil_position_dict = dict([('angle',1),('foilcenter',[155,137]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',246)])	# identified ~2023-08 after checking what is the actual result of the rotation
 	elif int(laser_to_analyse[-9:-4]) > 45517:	# MU02
 		foil_position_dict = dict([('angle',1),('foilcenter',[159,137]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',246)])	# identified ~2023-08 after checking what is the actual result of the rotation
 		# foil_position_dict = dict([('angle',1),('foilcenter',[158,136]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',246)])	# identified 2022-11-08 for MU02

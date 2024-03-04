@@ -254,7 +254,7 @@ elif False:
 	data_per_digitizer1,uniques_digitizer_ID = coleval.separate_data_with_digitizer(full_saved_file_dict)
 
 elif False:
-	# his is created to fit simultaneously the curve with and without window
+	# This is created to fit simultaneously the curve with and without window
 
 	if False:	# BB source in focus and no window inttime=1.0	# ms
 		description = 'BB source in focus and no window inttime=1.0 # ms'
@@ -589,11 +589,11 @@ elif False:
 
 		plt.figure(figsize=(10, 10))
 		if len(temperature_window)<6:
-			plt.title('proportional window component BB curve fit NUC\n'+description)
+			plt.title('proportional window component BB curve fit NUC\n'+description+'\n')
 		else:
-			plt.title('proportional window component BB curve fit BB source\n'+description)
+			plt.title('proportional window component BB curve fit BB source\n'+description+'\n')
 		to_plot = median_filter(params2[0,:,:,0]*params2[0,:,:,2],[3,3])
-		plt.imshow(to_plot,vmin=to_plot[30:170,30:170].min(),vmax=to_plot[30:170,30:170].max())
+		plt.imshow(to_plot,'rainbow',vmin=to_plot[30:170,30:170].min(),vmax=to_plot[30:170,30:170].max(),origin='lower')
 		plt.colorbar().set_label('a1*a3 [counts/photons]')
 		plt.pause(0.01)
 
