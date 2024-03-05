@@ -18,7 +18,7 @@ import copy
 
 # Load voxels
 from raysect.optical import World
-if False:	# not used because in source /home/jlovell/venvs/cherab/bin/activate, that has the last stable version of cherab, the option 'path' is not available
+if True:	# not used because in source /home/jlovell/venvs/cherab/bin/activate, that has the last stable version of cherab, the option 'path' is not available
 	from cherab.mastu.bolometry import load_standard_voxel_grid
 elif False:	# used because in source /home/jlovell/venvs/cherab/bin/activate, that has the last stable version of cherab, the option 'path' was not available
 	# os.chdir("/home/ffederic/work/cherab/cherab_mastu/cherab/mastu/bolometry/grid_construction")
@@ -28,8 +28,9 @@ else:	# It seems that now 2024/02/29, using my own venv source /home/ffederic/ve
 world = World()
 grid_type = 'core_res_2cm'
 # grid_type = 'core_high_res'
-core_voxel_grid = load_standard_voxel_grid(grid_type,parent=world, grid_file='/home/ffederic/work/analysis_scripts/grid_construction/'+grid_type+'_rectilinear_grid.pickle')
-# core_voxel_grid = load_standard_voxel_grid(grid_type,parent=world, path='/home/ffederic/work/cherab/cherab_mastu/cherab/mastu/bolometry/grid_construction')
+print(load_standard_voxel_grid.__code__)
+# core_voxel_grid = load_standard_voxel_grid(grid_type,parent=world, grid_file='/home/ffederic/work/analysis_scripts/grid_construction/'+grid_type+'_rectilinear_grid.pickle')
+core_voxel_grid = load_standard_voxel_grid(grid_type,parent=world, directory='/home/ffederic/work/cherab/cherab_mastu/cherab/mastu/bolometry/grid_construction',grid_file=grid_type+'_rectilinear_grid.pickle')
 
 
 
@@ -207,13 +208,12 @@ IRVB.spectral_bins = 1
 IRVB.pixel_samples = n_samples_per_pixel
 # plt.ion()
 # plt.figure()
-IRVB.observe()
-IRVB.calculate_sensitivity(core_voxel_grid)
+# IRVB.observe()
+gna = IRVB.calculate_sensitivity(core_voxel_grid)
 
+np.save('/home/ffederic/work/analysis_scripts/sensitivity_matrix/gna',gna)
 
-
-
-
+exit()
 
 
 

@@ -1169,6 +1169,7 @@ if True:	# related to the SOLPS phantom and calculating the spectra produced by 
 		Pt_thickness = 250*1e-9	# for 1 side
 		Pt_thickness *= 2	# total
 		Ti_thickness = 1000*1e-9
+		Al_thickness = 0*1e-9
 		Re_thickness = 0*1e-9	# for 1 side
 		Re_thickness *= 2	# total
 		W_thickness = 0*1e-9	# for 1 side
@@ -1188,6 +1189,7 @@ if True:	# related to the SOLPS phantom and calculating the spectra produced by 
 		np.exp(-linear_coefficient_W_attenuation_interpolator(scipy.constants.c*scipy.constants.h*(scipy.constants.physical_constants['joule-electron volt relationship'][0])/(all_spectra[i_].wavelengths*1e-9))*W_thickness) * \
 		np.exp(-linear_coefficient_Os_attenuation_interpolator(scipy.constants.c*scipy.constants.h*(scipy.constants.physical_constants['joule-electron volt relationship'][0])/(all_spectra[i_].wavelengths*1e-9))*Os_thickness) * \
 		np.exp(-linear_coefficient_Ti_attenuation_interpolator(scipy.constants.c*scipy.constants.h*(scipy.constants.physical_constants['joule-electron volt relationship'][0])/(all_spectra[i_].wavelengths*1e-9))*Ti_thickness) * \
+		np.exp(-linear_coefficient_Al_attenuation_interpolator(scipy.constants.c*scipy.constants.h*(scipy.constants.physical_constants['joule-electron volt relationship'][0])/(all_spectra[i_].wavelengths*1e-9))*Al_thickness) * \
 		np.exp(-linear_coefficient_Ta_attenuation_interpolator(scipy.constants.c*scipy.constants.h*(scipy.constants.physical_constants['joule-electron volt relationship'][0])/(all_spectra[i_].wavelengths*1e-9))*Ta_thickness)
 
 		if False:
@@ -1200,8 +1202,8 @@ if True:	# related to the SOLPS phantom and calculating the spectra produced by 
 			# plt.plot(scipy.constants.c*scipy.constants.h*(scipy.constants.physical_constants['joule-electron volt relationship'][0])/(all_spectra[i_].wavelengths*1e-9),fraction_absorbed_photons)
 			# plt.plot(scipy.constants.c*scipy.constants.h*(scipy.constants.physical_constants['joule-electron volt relationship'][0])/(all_spectra[i_].wavelengths*1e-9),1/linear_coefficient_Pt_attenuation_interpolator(scipy.constants.c*scipy.constants.h*(scipy.constants.physical_constants['joule-electron volt relationship'][0])/(all_spectra[i_].wavelengths*1e-9))*1e6)
 			# plt.plot(all_spectra[i_].wavelengths,fraction_absorbed_photons,label='C=%.2g Pt=%.2g Ti=%.2g Re=%.2g W=%.2g Os=%.2g Ta=%.2g P=%.3g' %(C_thickness/1000*1e9,Pt_thickness/1000*1e9,Ti_thickness/1000*1e9,Re_thickness/1000*1e9,W_thickness/1000*1e9,Os_thickness/1000*1e9,Ta_thickness/1000*1e9,np.trapz(all_spectra[0].samples*fraction_absorbed_photons,all_spectra[i_].wavelengths)/np.trapz(all_spectra[0].samples,all_spectra[i_].wavelengths)))
-			plt.plot(all_spectra[i_].wavelengths,fraction_absorbed_photons,label='C=%.2g Pt=%.2g Ti=%.2g Re=%.2g W=%.2g Os=%.2g Ta=%.2g P=%.3g' %(C_thickness/1000*1e9,Pt_thickness/1000*1e9,Ti_thickness/1000*1e9,Re_thickness/1000*1e9,W_thickness/1000*1e9,Os_thickness/1000*1e9,Ta_thickness/1000*1e9,np.trapz(power_density*fraction_absorbed_photons,all_spectra[i_].wavelengths)/np.trapz(power_density,all_spectra[i_].wavelengths)))
-			print('C=%.2g Pt=%.2g Ti=%.2g Re=%.2g W=%.2g Os=%.2g Ta=%.2g P=%.3g' %(C_thickness/1000*1e9,Pt_thickness/1000*1e9,Ti_thickness/1000*1e9,Re_thickness/1000*1e9,W_thickness/1000*1e9,Os_thickness/1000*1e9,Ta_thickness/1000*1e9,np.trapz(power_density*fraction_absorbed_photons,all_spectra[i_].wavelengths)/np.trapz(power_density,all_spectra[i_].wavelengths)))
+			plt.plot(all_spectra[i_].wavelengths,fraction_absorbed_photons,label='C=%.2g Pt=%.2g Ti=%.2g Al=%.2g Re=%.2g W=%.2g Os=%.2g Ta=%.2g P=%.3g' %(C_thickness/1000*1e9,Pt_thickness/1000*1e9,Ti_thickness/1000*1e9,Re_thickness/1000*1e9,W_thickness/1000*1e9,Os_thickness/1000*1e9,Ta_thickness/1000*1e9,np.trapz(power_density*fraction_absorbed_photons,all_spectra[i_].wavelengths)/np.trapz(power_density,all_spectra[i_].wavelengths)))
+			print('C=%.2g Pt=%.2g Ti=%.2g Al=%.2g Re=%.2g W=%.2g Os=%.2g Ta=%.2g P=%.3g' %(C_thickness/1000*1e9,Pt_thickness/1000*1e9,Ti_thickness/1000*1e9,Re_thickness/1000*1e9,W_thickness/1000*1e9,Os_thickness/1000*1e9,Ta_thickness/1000*1e9,np.trapz(power_density*fraction_absorbed_photons,all_spectra[i_].wavelengths)/np.trapz(power_density,all_spectra[i_].wavelengths)))
 			plt.xlabel('nm')
 			plt.xlim(left=0,right=2)
 			plt.grid()
