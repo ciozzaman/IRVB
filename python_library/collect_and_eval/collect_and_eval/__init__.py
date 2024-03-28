@@ -16066,7 +16066,7 @@ def butter_bandpass_filter(data, lowcut, highcut, fs, order=1):
     return y
 
 
-def 2D_linear_interpolation(x, y, num_points):
+def linear_interpolation_2D(x, y, num_points):
 	# piecewise 2D interpolation
     """
     Performs linear interpolation between points defined by x and y coordinates.
