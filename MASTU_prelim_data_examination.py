@@ -216,7 +216,7 @@ if False or MU_campaign>0:	# section to use when specifying the days
 			logging.exception('with error: ' + str(e))
 			pass
 
-elif True:	# section to use when specifying the shots
+elif False:	# section to use when specifying the shots
 
 	# simpler way of starting works
 	# to_do = ['IRVB-MASTU_shot-45468.ptw','IRVB-MASTU_shot-45469.ptw','IRVB-MASTU_shot-45470.ptw','IRVB-MASTU_shot-45401.ptw','IRVB-MASTU_shot-45399.ptw','IRVB-MASTU_shot-45371.ptw']#,'IRVB-MASTU_shot-45473.ptw']
@@ -242,8 +242,9 @@ elif True:	# section to use when specifying the shots
 	# shots for David's paper
 	# to_do = ['IRVB-MASTU_shot-45443.ptw','IRVB-MASTU_shot-45444.ptw','IRVB-MASTU_shot-45446.ptw','IRVB-MASTU_shot-45456.ptw','IRVB-MASTU_shot-45459.ptw','IRVB-MASTU_shot-45461.ptw','IRVB-MASTU_shot-45462.ptw','IRVB-MASTU_shot-45463.ptw','IRVB-MASTU_shot-45464.ptw','IRVB-MASTU_shot-45465.ptw','IRVB-MASTU_shot-45468.ptw','IRVB-MASTU_shot-45469.ptw','IRVB-MASTU_shot-45470.ptw','IRVB-MASTU_shot-45473.ptw']
 	# shots for Kevin's paper
-	# to_do = ['IRVB-MASTU_shot-46860.ptw','IRVB-MASTU_shot-47958.ptw','IRVB-MASTU_shot-46866.ptw','IRVB-MASTU_shot-47079.ptw']
+	# to_do = ['IRVB-MASTU_shot-46860.ptw','IRVB-MASTU_shot-47958.ptw','IRVB-MASTU_shot-46866.ptw','IRVB-MASTU_shot-47079.ptw','IRVB-MASTU_shot-46702.ptw']
 	# to_do = ['IRVB-MASTU_shot-49270.ptw','IRVB-MASTU_shot-49267.ptw','IRVB-MASTU_shot-49320.ptw','IRVB-MASTU_shot-49312.ptw']
+	to_do = ['IRVB-MASTU_shot-46860.ptw','IRVB-MASTU_shot-47958.ptw','IRVB-MASTU_shot-46705.ptw','IRVB-MASTU_shot-48330.ptw']
 	# Stuart THR01
 	# to_do = ['IRVB-MASTU_shot-49401.ptw']
 	# to_do = ['IRVB-MASTU_shot-49392.ptw','IRVB-MASTU_shot-49394.ptw','IRVB-MASTU_shot-49396.ptw','IRVB-MASTU_shot-49397.ptw','IRVB-MASTU_shot-49400.ptw','IRVB-MASTU_shot-49401.ptw','IRVB-MASTU_shot-49404.ptw','IRVB-MASTU_shot-49405.ptw']
@@ -350,7 +351,12 @@ else:	# section to use when analysing only one shot
 	# i_day,day = 0,'2021-10-27'
 	# name='IRVB-MASTU_shot-45460.ptw'
 	# i_day,day = 0,'2021-10-12'
-	name='IRVB-MASTU_shot-47079.ptw'
+	# name='IRVB-MASTU_shot-47958.ptw'
+	# name='IRVB-MASTU_shot-46860.ptw'
+	# name='IRVB-MASTU_shot-45371.ptw'
+	# name='IRVB-MASTU_shot-49312.ptw'
+	# name='IRVB-MASTU_shot-49213.ptw'
+	name='IRVB-MASTU_shot-49312.ptw'
 	# name='IRVB-MASTU_shot-49385.ptw'
 	# i_day,day = 0,'2021-10-22'
 	# name='IRVB-MASTU_shot-45225.ptw'

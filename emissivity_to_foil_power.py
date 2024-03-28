@@ -1052,9 +1052,9 @@ if True:	# related to the SOLPS phantom and calculating the spectra produced by 
 	# SOLPS_case = 'ramp_11'
 	# mastu_path = "/home/ffederic/work/SOLPS/dscan/" + SOLPS_case
 
-	use_deuterium_lines = False
-	use_carbon_lines = False
-	use_nitrogen_lines = False
+	use_deuterium_lines = True
+	use_carbon_lines = True
+	use_nitrogen_lines = True
 	use_core = True
 	use_bremmstrahlung = True
 	enables = [use_deuterium_lines,use_carbon_lines,use_nitrogen_lines,use_core,use_bremmstrahlung]
@@ -1063,11 +1063,11 @@ if True:	# related to the SOLPS phantom and calculating the spectra produced by 
 
 	integrated_power = []
 
-	# for i_SOLPS_case,SOLPS_case in enumerate(['seed_1','seed_5','seed_10']):
-	# 	mastu_path = "/home/ffederic/work/SOLPS/seeding/" + SOLPS_case
+	for i_SOLPS_case,SOLPS_case in enumerate(['seed_1','seed_5','seed_10']):
+		mastu_path = "/home/ffederic/work/SOLPS/seeding/" + SOLPS_case
 
-	for i_SOLPS_case,SOLPS_case in enumerate(['ramp_1','ramp_3.3','ramp_11']):
-		mastu_path = "/home/ffederic/work/SOLPS/dscan/" + SOLPS_case
+	# for i_SOLPS_case,SOLPS_case in enumerate(['ramp_1','ramp_3.3','ramp_11']):
+	# 	mastu_path = "/home/ffederic/work/SOLPS/dscan/" + SOLPS_case
 
 		# types = ['midplane','as_up_as_possible','as_up_as_possible_MU04','as_low_as_possible','x_point']
 		types = ['as_up_as_possible_MU04','x_point']	# in reality these are the only one that matter and are usefull
@@ -1085,41 +1085,41 @@ if True:	# related to the SOLPS phantom and calculating the spectra produced by 
 
 
 		if True:
-			plt.figure(2)
+			plt.figure()
 			plt.title('Spectra '+mastu_path[20:]+'\n enables '+str(enables))
 			# plt.plot(spectrum.wavelengths,spectrum.samples)
 			vmin = np.inf
 			for i in range(len(all_spectra)):
 				try:
 					dwave = np.median(np.diff(all_spectra[i].wavelengths))
-					plt.plot(all_spectra[i].wavelengths,all_spectra[i].samples,'--',label=types[i],color='C'+str(i+1))
+					# plt.plot(all_spectra[i].wavelengths,all_spectra[i].samples,'--',label=types[i],color='C'+str(i+1))
 					vmin=min(vmin,all_spectra[i].samples[all_spectra[i].wavelengths.argmax()])
 					print(SOLPS_case+' enables '+str(enables)+''+types[i]+' %.3g W/m2/str' %(np.trapz(all_spectra[i].samples,all_spectra[i].wavelengths)))
 					integrated_power.append(np.trapz(all_spectra[i].samples,all_spectra[i].wavelengths))
 
-					# a=plt.plot(1239.8/all_spectra[i].wavelengths,all_spectra[i].samples,'--',label=types[i])
-					# a=plt.plot(1239.8/all_spectra[i].wavelengths,all_spectra[i].samples*dwave,'--',label=types[i])
+					a=plt.plot(1239.8/all_spectra[i].wavelengths,all_spectra[i].samples,'--',label=types[i])
+					a=plt.plot(1239.8/all_spectra[i].wavelengths,all_spectra[i].samples*dwave,'--',label=types[i])
 					# plt.plot(1239.8/all_spectra[i].wavelengths,all_spectra[i].samples*dwave,'|',color=a[0].get_color())
 					# plt.plot(1239.8/((all_spectra[i].wavelengths[1:]+all_spectra[i].wavelengths[:-1])/2),(all_spectra[i].samples[1:]+all_spectra[i].samples[:-1])/2*dwave/np.abs(np.diff(1239.8/all_spectra[i].wavelengths)),'--',label=types[i])
 				except:
 					pass
-			plt.ylabel('W/m2/sr/nm')
-			plt.xlabel('nm')
-			plt.grid()
-			plt.xlim(left=0,right=2)
-			plt.ylim(bottom=vmin)
-			plt.semilogy()
+			# plt.ylabel('W/m2/sr/nm')
+			# plt.xlabel('nm')
+			# plt.grid()
+			# plt.xlim(left=0,right=2)
+			# plt.ylim(bottom=vmin)
+			# plt.semilogy()
 
 			plt.legend(loc='best', fontsize='xx-small')
-			# plt.grid()
-			# plt.xlabel('eV')
-			# plt.xlim(left=1,right=100000)
-			# plt.ylabel('W/m2/sr')
-			# plt.ylim(bottom=1E-6,top=1e3)
-			# # plt.ylabel('W/m2/sr/eV')
-			# # plt.ylim(bottom=1E-3,top=1e6)
-			# plt.semilogx()
-			# plt.semilogy()
+			plt.grid()
+			plt.xlabel('eV')
+			plt.xlim(left=1,right=100000)
+			plt.ylabel('W/m2/sr')
+			plt.ylim(bottom=1E-6)
+			# plt.ylabel('W/m2/sr/eV')
+			# plt.ylim(bottom=1E-3,top=1e6)
+			plt.semilogx()
+			plt.semilogy()
 			# plt.ylim(bottom=1E-6,top=1e5)
 			# plt.pause(0.01)
 		else:

@@ -1807,13 +1807,14 @@ if False:	# here I try to estimate thickness_over_diffusivity from an analytic f
 else:	# here I want to fit thickness_over_diffusivity from the peak time derivative alone
 	nuc_plate_emissivity = 1.0
 	reference_temperature_correction = -0.0
+	nuc_plate_emissivity_range = np.arange(0.5,1.65,0.1)
 	# aggregated_emissivity_range = np.array(np.linspace(3.5,1.5,6).tolist() + np.linspace(1.2,0.3,10).tolist())
 	from scipy.signal import savgol_filter
 
 	collect_collect_thickness_over_diffusivity_from_peak_match = []
 	collect_collect_real_thermaldiffusivity = []
 	collect_full_error=[]
-	for nuc_plate_emissivity in np.arange(0.5,1.65,0.1):
+	for nuc_plate_emissivity in nuc_plate_emissivity_range:
 
 
 		plt.figure()
@@ -2304,6 +2305,8 @@ else:	# here I want to fit thickness_over_diffusivity from the peak time derivat
 
 	thickness_over_diffusivity_per_NUC = []
 	thickness_over_diffusivity_per_NUC_std = []
+	thickness_per_NUC = []
+	thickness_per_NUC_std = []
 	thermaldiffusivity_per_NUC = []
 	thermaldiffusivity_per_NUC_std = []
 	emissivity_per_NUC = []
@@ -2311,10 +2314,11 @@ else:	# here I want to fit thickness_over_diffusivity from the peak time derivat
 	reference_temperature = []
 	reference_temperature_std = []
 	from scipy.interpolate import LinearNDInterpolator,CloughTocher2DInterpolator
-	for i_,nuc_plate_emissivity in enumerate(np.arange(0.5,1.65,0.1)):
+	for i_,nuc_plate_emissivity in enumerate(nuc_plate_emissivity_range):
 
 		full_error_interpolator = CloughTocher2DInterpolator(list(zip(collect_aggregated_emissivity*nuc_plate_emissivity,collect_reference_temperature)),collect_full_error[i_])
 		thickness_over_diffusivity_from_peak_match_interpolator = CloughTocher2DInterpolator(list(zip(collect_aggregated_emissivity*nuc_plate_emissivity,collect_reference_temperature)),collect_collect_thickness_over_diffusivity_from_peak_match[i_])
+		thickness_from_peak_match_interpolator = CloughTocher2DInterpolator(list(zip(collect_aggregated_emissivity*nuc_plate_emissivity,collect_reference_temperature)),collect_collect_thickness_over_diffusivity_from_peak_match[i_]*collect_collect_real_thermaldiffusivity[i_])
 		thermaldiffusivity_interpolator = CloughTocher2DInterpolator(list(zip(collect_aggregated_emissivity*nuc_plate_emissivity,collect_reference_temperature)),collect_collect_real_thermaldiffusivity[i_])
 		emissivity_ = np.linspace(min(collect_aggregated_emissivity*nuc_plate_emissivity),max(collect_aggregated_emissivity*nuc_plate_emissivity),num=100)
 		reference_temperature_ = np.linspace(min(collect_reference_temperature),max(collect_reference_temperature),num=100)
@@ -2343,6 +2347,8 @@ else:	# here I want to fit thickness_over_diffusivity from the peak time derivat
 
 		thickness_over_diffusivity_per_NUC.append(np.sum((thickness_over_diffusivity_from_peak_match_interpolator(emissivity,reference_temperature__)/full_error)[select])/np.sum(1/full_error[select]))
 		thickness_over_diffusivity_per_NUC_std.append(np.std((thickness_over_diffusivity_from_peak_match_interpolator(emissivity,reference_temperature__)/full_error)[select])/np.mean(1/full_error[select]))
+		thickness_per_NUC.append(np.sum((thickness_from_peak_match_interpolator(emissivity,reference_temperature__)/full_error)[select])/np.sum(1/full_error[select]))
+		thickness_per_NUC_std.append(np.std((thickness_from_peak_match_interpolator(emissivity,reference_temperature__)/full_error)[select])/np.mean(1/full_error[select]))
 		thermaldiffusivity_per_NUC.append(np.sum((thermaldiffusivity_interpolator(emissivity,reference_temperature__)/full_error)[select])/np.sum(1/full_error[select]))
 		thermaldiffusivity_per_NUC_std.append(np.std((thermaldiffusivity_interpolator(emissivity,reference_temperature__)/full_error)[select])/np.mean(1/full_error[select]))
 		emissivity_per_NUC.append(np.sum((emissivity/full_error)[select])/np.sum(1/full_error[select]))
@@ -2352,29 +2358,37 @@ else:	# here I want to fit thickness_over_diffusivity from the peak time derivat
 
 
 	plt.figure()
-	plt.errorbar(np.arange(0.5,1.65,0.1),thickness_over_diffusivity_per_NUC,yerr=thickness_over_diffusivity_per_NUC_std,label='thickness_over_diffusivity_per_NUC')
-	fit = np.polyfit(np.arange(0.5,1.65,0.1),thickness_over_diffusivity_per_NUC,2,w=1/np.array(thickness_over_diffusivity_per_NUC_std))
-	plt.plot(np.arange(0.5,1.65,0.1),np.polyval(fit,np.arange(0.5,1.65,0.1)),'--')
+	plt.errorbar(nuc_plate_emissivity_range,thickness_over_diffusivity_per_NUC,yerr=thickness_over_diffusivity_per_NUC_std,label='thickness_over_diffusivity_per_NUC')
+	fit = np.polyfit(nuc_plate_emissivity_range,thickness_over_diffusivity_per_NUC,2,w=1/np.array(thickness_over_diffusivity_per_NUC_std))
+	plt.plot(nuc_plate_emissivity_range,np.polyval(fit,nuc_plate_emissivity_range),'--')
 	plt.grid()
 	plt.xlabel('NUC emissivity')
 	plt.ylabel('thickness_over_diffusivity')
 	plt.title('nuc_plate_emissivity '+str(nuc_plate_emissivity) + '\nlaser power %.3gW' %(laser_to_analyse_power))
 	plt.figure()
-	plt.errorbar(np.arange(0.5,1.65,0.1),thermaldiffusivity_per_NUC,yerr=thermaldiffusivity_per_NUC_std,label='thermaldiffusivity_per_NUC')
+	plt.errorbar(nuc_plate_emissivity_range,thickness_per_NUC,yerr=thickness_per_NUC_std,label='thickness_per_NUC')
+	fit = np.polyfit(nuc_plate_emissivity_range,thickness_per_NUC,2,w=1/np.array(thickness_per_NUC_std))
+	plt.plot(nuc_plate_emissivity_range,np.polyval(fit,nuc_plate_emissivity_range),'--')
+	plt.grid()
+	plt.xlabel('NUC emissivity')
+	plt.ylabel('thickness')
+	plt.title('nuc_plate_emissivity '+str(nuc_plate_emissivity) + '\nlaser power %.3gW' %(laser_to_analyse_power))
+	plt.figure()
+	plt.errorbar(nuc_plate_emissivity_range,thermaldiffusivity_per_NUC,yerr=thermaldiffusivity_per_NUC_std,label='thermaldiffusivity_per_NUC')
 	plt.title('nuc_plate_emissivity '+str(nuc_plate_emissivity) + '\nlaser power %.3gW' %(laser_to_analyse_power))
 	plt.grid()
 	plt.xlabel('NUC emissivity')
 	plt.ylabel('thermaldiffusivity')
 	plt.figure()
-	plt.errorbar(np.arange(0.5,1.65,0.1),emissivity_per_NUC,yerr=emissivity_per_NUC_std,label='emissivity_per_NUC')
-	fit = np.polyfit(np.arange(0.5,1.65,0.1),emissivity_per_NUC,2,w=1/np.array(thermaldiffusivity_per_NUC_std))
-	plt.plot(np.arange(0.5,1.65,0.1),np.polyval(fit,np.arange(0.5,1.65,0.1)),'--')
+	plt.errorbar(nuc_plate_emissivity_range,emissivity_per_NUC,yerr=emissivity_per_NUC_std,label='emissivity_per_NUC')
+	fit = np.polyfit(nuc_plate_emissivity_range,emissivity_per_NUC,2,w=1/np.array(thermaldiffusivity_per_NUC_std))
+	plt.plot(nuc_plate_emissivity_range,np.polyval(fit,nuc_plate_emissivity_range),'--')
 	plt.grid()
 	plt.xlabel('NUC emissivity')
 	plt.ylabel('emissivity')
 	plt.title('nuc_plate_emissivity '+str(nuc_plate_emissivity) + '\nlaser power %.3gW' %(laser_to_analyse_power))
 	plt.figure()
-	plt.errorbar(np.arange(0.5,1.65,0.1),reference_temperature,yerr=reference_temperature_std,label='reference_temperature')
+	plt.errorbar(nuc_plate_emissivity_range,reference_temperature,yerr=reference_temperature_std,label='reference_temperature')
 	plt.title('nuc_plate_emissivity '+str(nuc_plate_emissivity) + '\nlaser power %.3gW' %(laser_to_analyse_power))
 	plt.grid()
 	plt.xlabel('NUC emissivity')
@@ -2438,7 +2452,7 @@ else:	# here I want to fit thickness_over_diffusivity from the peak time derivat
 
 		collect_large_error_fully_defocused = []
 		collect_full_error_fully_defocused = []
-		for i_nuc_plate_emissivity,nuc_plate_emissivity in enumerate(np.arange(0.5,1.65,0.1)):
+		for i_nuc_plate_emissivity,nuc_plate_emissivity in enumerate(nuc_plate_emissivity_range):
 			plt.figure()
 			collect_high_level_std = []
 			collect_high_level_std_small = []
@@ -2608,7 +2622,7 @@ else:	# here I want to fit thickness_over_diffusivity from the peak time derivat
 		reference_temperature_fully_defocused = []
 		reference_temperature_std_fully_defocused = []
 		from scipy.interpolate import LinearNDInterpolator,CloughTocher2DInterpolator
-		for i_,nuc_plate_emissivity in enumerate(np.arange(0.5,1.65,0.1)):
+		for i_,nuc_plate_emissivity in enumerate(nuc_plate_emissivity_range):
 
 			full_error_interpolator = CloughTocher2DInterpolator(list(zip(collect_aggregated_emissivity*nuc_plate_emissivity,collect_reference_temperature)),collect_full_error_fully_defocused[i_])
 			thickness_over_diffusivity_from_peak_match_interpolator = CloughTocher2DInterpolator(list(zip(collect_aggregated_emissivity*nuc_plate_emissivity,collect_reference_temperature)),collect_collect_thickness_over_diffusivity_from_peak_match[i_])
@@ -2648,31 +2662,31 @@ else:	# here I want to fit thickness_over_diffusivity from the peak time derivat
 
 
 		plt.figure()
-		plt.errorbar(np.arange(0.5,1.65,0.1),thickness_over_diffusivity_per_NUC_fully_defocused,yerr=thickness_over_diffusivity_per_NUC_std_fully_defocused,label='thickness_over_diffusivity_per_NUC_fully_defocused')
-		fit = np.polyfit(np.arange(0.5,1.65,0.1),thickness_over_diffusivity_per_NUC_fully_defocused,2,w=1/np.array(thickness_over_diffusivity_per_NUC_std_fully_defocused))
-		plt.plot(np.arange(0.5,1.65,0.1),np.polyval(fit,np.arange(0.5,1.65,0.1)),'k')
-		plt.errorbar(np.arange(0.5,1.65,0.1),thickness_over_diffusivity_per_NUC,yerr=thickness_over_diffusivity_per_NUC_std,label='thickness_over_diffusivity_per_NUC_fully_defocused',linestyle='--')
-		fit = np.polyfit(np.arange(0.5,1.65,0.1),thickness_over_diffusivity_per_NUC,2,w=1/np.array(thickness_over_diffusivity_per_NUC_std))
-		plt.plot(np.arange(0.5,1.65,0.1),np.polyval(fit,np.arange(0.5,1.65,0.1)),'--k')
+		plt.errorbar(nuc_plate_emissivity_range,thickness_over_diffusivity_per_NUC_fully_defocused,yerr=thickness_over_diffusivity_per_NUC_std_fully_defocused,label='thickness_over_diffusivity_per_NUC_fully_defocused')
+		fit = np.polyfit(nuc_plate_emissivity_range,thickness_over_diffusivity_per_NUC_fully_defocused,2,w=1/np.array(thickness_over_diffusivity_per_NUC_std_fully_defocused))
+		plt.plot(nuc_plate_emissivity_range,np.polyval(fit,nuc_plate_emissivity_range),'k')
+		plt.errorbar(nuc_plate_emissivity_range,thickness_over_diffusivity_per_NUC,yerr=thickness_over_diffusivity_per_NUC_std,label='thickness_over_diffusivity_per_NUC_fully_defocused',linestyle='--')
+		fit = np.polyfit(nuc_plate_emissivity_range,thickness_over_diffusivity_per_NUC,2,w=1/np.array(thickness_over_diffusivity_per_NUC_std))
+		plt.plot(nuc_plate_emissivity_range,np.polyval(fit,nuc_plate_emissivity_range),'--k')
 		plt.grid()
 		plt.xlabel('NUC emissivity')
 		plt.ylabel('thickness_over_diffusivity')
 		plt.title('nuc_plate_emissivity '+str(nuc_plate_emissivity) + '\nlaser power %.3gW' %(laser_to_analyse_power))
 		plt.figure()
-		plt.errorbar(np.arange(0.5,1.65,0.1),thermaldiffusivity_per_NUC_fully_defocused,yerr=thermaldiffusivity_per_NUC_std_fully_defocused,label='thermaldiffusivity_per_NUC_fully_defocused')
+		plt.errorbar(nuc_plate_emissivity_range,thermaldiffusivity_per_NUC_fully_defocused,yerr=thermaldiffusivity_per_NUC_std_fully_defocused,label='thermaldiffusivity_per_NUC_fully_defocused')
 		plt.title('nuc_plate_emissivity '+str(nuc_plate_emissivity) + '\nlaser power %.3gW' %(laser_to_analyse_power))
 		plt.figure()
-		plt.errorbar(np.arange(0.5,1.65,0.1),emissivity_per_NUC_fully_defocused,yerr=emissivity_per_NUC_std_fully_defocused,label='emissivity_per_NUC_fully_defocused')
-		fit = np.polyfit(np.arange(0.5,1.65,0.1),emissivity_per_NUC_fully_defocused,2,w=1/np.array(thermaldiffusivity_per_NUC_std_fully_defocused))
-		plt.plot(np.arange(0.5,1.65,0.1),np.polyval(fit,np.arange(0.5,1.65,0.1)),'--')
-		plt.errorbar(np.arange(0.5,1.65,0.1),emissivity_per_NUC,yerr=emissivity_per_NUC_std,linestyle='--')
-		fit = np.polyfit(np.arange(0.5,1.65,0.1),emissivity_per_NUC,2,w=1/np.array(emissivity_per_NUC_std))
-		plt.plot(np.arange(0.5,1.65,0.1),np.polyval(fit,np.arange(0.5,1.65,0.1)),'--k')
+		plt.errorbar(nuc_plate_emissivity_range,emissivity_per_NUC_fully_defocused,yerr=emissivity_per_NUC_std_fully_defocused,label='emissivity_per_NUC_fully_defocused')
+		fit = np.polyfit(nuc_plate_emissivity_range,emissivity_per_NUC_fully_defocused,2,w=1/np.array(thermaldiffusivity_per_NUC_std_fully_defocused))
+		plt.plot(nuc_plate_emissivity_range,np.polyval(fit,nuc_plate_emissivity_range),'--')
+		plt.errorbar(nuc_plate_emissivity_range,emissivity_per_NUC,yerr=emissivity_per_NUC_std,linestyle='--')
+		fit = np.polyfit(nuc_plate_emissivity_range,emissivity_per_NUC,2,w=1/np.array(emissivity_per_NUC_std))
+		plt.plot(nuc_plate_emissivity_range,np.polyval(fit,nuc_plate_emissivity_range),'--k')
 		plt.xlabel('NUC emissivity')
 		plt.ylabel('emissivity')
 		plt.title('nuc_plate_emissivity '+str(nuc_plate_emissivity) + '\nlaser power %.3gW' %(laser_to_analyse_power))
 		plt.figure()
-		plt.errorbar(np.arange(0.5,1.65,0.1),reference_temperature_fully_defocused,yerr=reference_temperature_std_fully_defocused,label='reference_temperature')
+		plt.errorbar(nuc_plate_emissivity_range,reference_temperature_fully_defocused,yerr=reference_temperature_std_fully_defocused,label='reference_temperature')
 		plt.title('nuc_plate_emissivity '+str(nuc_plate_emissivity) + '\nlaser power %.3gW' %(laser_to_analyse_power))
 	else:	# here i just want to use the found values beforehand to see it it is stuly ok
 

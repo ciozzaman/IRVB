@@ -327,6 +327,7 @@ params = [
 		{'name': 'Export down', 'type': 'float', 'value': 10, 'step': 1e-3, 'finite': False},
 		{'name': 'Include prelude', 'type': 'bool', 'value': True, 'tip': "This is a checkbox"},
 		{'name': 'Export size', 'type': 'float', 'value': 15, 'step': 1e-3, 'finite': False},
+		{'name': 'Color map', 'type': 'str', 'value': "rainbow", 'tip': 'try'},
 	]},
 	{'name': 'Overlays', 'type': 'group', 'children': [
 		{'name': 'Structure', 'type': 'bool', 'value': True, 'tip': "This is a checkbox"},
@@ -575,10 +576,10 @@ def export_video():
 	if flag_radial_profile:
 		extent = [inversion_R.min()-dr/2, inversion_R.max()+dr/2, inversion_Z.min()-dz/2, inversion_Z.max()+dz/2]
 		image_extent = [full_range_hor[limit_left], full_range_hor[limit_right], full_range_ver[limit_bottom], full_range_ver[limit_top]]
-		ani = coleval.movie_from_data_radial_profile(np.array([np.transpose(np.flip(data,axis=1)[start_time:end_time],(0,2,1))]), framerate,timesteps=time_array[start_time:end_time],integration=2,time_offset=time_array[start_time],extvmin=histogram_level_low_for_plot,extvmax=histogram_level_high_for_plot, extent = extent, image_extent=image_extent,xlabel='R [m]', ylabel='Z [m]',barlabel=barlabel, prelude='shot '  + w2.shotID + '\n'+str(param_ext['Set display','Binning'])+'\n'+'grid resolution %.3gcm\n' %(int(param_ext['Set display','Voxel res'])) ,overlay_structure=param_ext['Overlays','Structure'],include_EFIT=True,efit_reconstruction=efit_reconstruction,pulse_ID=w2.shotID,overlay_x_point=param_ext['Overlays','X-point'],overlay_mag_axis=param_ext['Overlays','Mag axis'],overlay_strike_points=param_ext['Overlays','Separatrix'],overlay_separatrix=param_ext['Overlays','Separatrix'],overlay_res_bolo=param_ext['Overlays','Core Resistive bol'] or param_ext['Overlays','Div Resistive bol'])#,extvmin=0,extvmax=4e4)
+		ani = coleval.movie_from_data_radial_profile(np.array([np.transpose(np.flip(data,axis=1)[start_time:end_time],(0,2,1))]), framerate,timesteps=time_array[start_time:end_time],integration=2,time_offset=time_array[start_time],extvmin=histogram_level_low_for_plot,extvmax=histogram_level_high_for_plot, extent = extent, image_extent=image_extent,xlabel='R [m]', ylabel='Z [m]',barlabel=barlabel, prelude='shot '  + w2.shotID + '\n'+str(param_ext['Set display','Binning'])+'\n'+'grid resolution %.3gcm\n' %(int(param_ext['Set display','Voxel res'])) ,overlay_structure=param_ext['Overlays','Structure'],include_EFIT=True,efit_reconstruction=efit_reconstruction,pulse_ID=w2.shotID,overlay_x_point=param_ext['Overlays','X-point'],overlay_mag_axis=param_ext['Overlays','Mag axis'],overlay_strike_points=param_ext['Overlays','Separatrix'],overlay_separatrix=param_ext['Overlays','Separatrix'],overlay_res_bolo=param_ext['Overlays','Core Resistive bol'] or param_ext['Overlays','Div Resistive bol'],cmap=param_ext['Set display', 'Color map'])#,extvmin=0,extvmax=4e4)
 	else:
 		image_extent = [full_range_hor[limit_left]-0.5, full_range_hor[limit_right]-1+0.5, full_range_ver[limit_bottom]-0.5, full_range_ver[limit_top]-1+0.5]
-		ani = coleval.movie_from_data(np.array([np.flip(np.transpose(np.flip(data,axis=1)[start_time:end_time],(0,2,1)),axis=2)]), framerate,image_extent=image_extent,timesteps=time_array[start_time:end_time],integration=2,time_offset=time_array[start_time],extvmin=histogram_level_low_for_plot,extvmax=histogram_level_high_for_plot,xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel=barlabel, prelude='shot ' + w2.shotID + '\n'+str(param_ext['Set display','Binning'])+'\n',overlay_structure=param_ext['Overlays','Structure'],include_EFIT=True,efit_reconstruction=efit_reconstruction,pulse_ID=w2.shotID,overlay_x_point=param_ext['Overlays','X-point'],overlay_mag_axis=param_ext['Overlays','Mag axis'],overlay_strike_points=param_ext['Overlays','Separatrix'],overlay_separatrix=param_ext['Overlays','Separatrix'],overlay_res_bolo=param_ext['Overlays','Core Resistive bol'] or param_ext['Overlays','Div Resistive bol'])
+		ani = coleval.movie_from_data(np.array([np.flip(np.transpose(np.flip(data,axis=1)[start_time:end_time],(0,2,1)),axis=2)]), framerate,image_extent=image_extent,timesteps=time_array[start_time:end_time],integration=2,time_offset=time_array[start_time],extvmin=histogram_level_low_for_plot,extvmax=histogram_level_high_for_plot,xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel=barlabel, prelude='shot ' + w2.shotID + '\n'+str(param_ext['Set display','Binning'])+'\n',overlay_structure=param_ext['Overlays','Structure'],include_EFIT=True,efit_reconstruction=efit_reconstruction,pulse_ID=w2.shotID,overlay_x_point=param_ext['Overlays','X-point'],overlay_mag_axis=param_ext['Overlays','Mag axis'],overlay_strike_points=param_ext['Overlays','Separatrix'],overlay_separatrix=param_ext['Overlays','Separatrix'],overlay_res_bolo=param_ext['Overlays','Core Resistive bol'] or param_ext['Overlays','Div Resistive bol'],cmap=param_ext['Set display', 'Color map'])
 	ani.save(param_ext1['File Path'] + '_export_' + str(next_export) + '.mp4', fps=5*framerate/383, writer='ffmpeg',codec='mpeg4')
 	plt.close('all')
 	print('\n'+'\n'+param_ext1['File Path'] + '_export_' + str(next_export) + '.mp4 generated'+'\n'+'\n')
@@ -645,7 +646,7 @@ def export_image():
 			prelude = ''
 		extent = [inversion_R.min()-dr/2, inversion_R.max()+dr/2, inversion_Z.min()-dz/2, inversion_Z.max()+dz/2]
 		image_extent = [full_range_hor[limit_left], full_range_hor[limit_right], full_range_ver[limit_bottom], full_range_ver[limit_top]]
-		fig,efit_reconstruction = coleval.image_from_data_radial_profile(np.array([np.transpose(np.flip([to_plot],axis=1),(0,2,1))]),form_factor_size=param_ext['Set display','Export size'],ref_time=param_ext['ROI', 'Time [ms]']*1e-3,extvmin=histogram_level_low_for_plot,extvmax=histogram_level_high_for_plot, extent = extent, image_extent=image_extent,xlabel='R [m]', ylabel='Z [m]',barlabel=barlabel, prelude=prelude ,overlay_structure=param_ext['Overlays','Structure'],include_EFIT=include_EFIT,efit_reconstruction=efit_reconstruction,pulse_ID=w2.shotID,overlay_x_point=param_ext['Overlays','X-point'],overlay_mag_axis=param_ext['Overlays','Mag axis'],overlay_strike_points=param_ext['Overlays','Separatrix'],overlay_separatrix=param_ext['Overlays','Separatrix'],overlay_res_bolo=param_ext['Overlays','Core Resistive bol'] or param_ext['Overlays','Div Resistive bol'],EFIT_output_requested=True)#,extvmin=0,extvmax=4e4)
+		fig,efit_reconstruction = coleval.image_from_data_radial_profile(np.array([np.transpose(np.flip([to_plot],axis=1),(0,2,1))]),form_factor_size=param_ext['Set display','Export size'],ref_time=param_ext['ROI', 'Time [ms]']*1e-3,extvmin=histogram_level_low_for_plot,extvmax=histogram_level_high_for_plot, extent = extent, image_extent=image_extent,xlabel='R [m]', ylabel='Z [m]',barlabel=barlabel, prelude=prelude ,overlay_structure=param_ext['Overlays','Structure'],include_EFIT=include_EFIT,efit_reconstruction=efit_reconstruction,pulse_ID=w2.shotID,overlay_x_point=param_ext['Overlays','X-point'],overlay_mag_axis=param_ext['Overlays','Mag axis'],overlay_strike_points=param_ext['Overlays','Separatrix'],overlay_separatrix=param_ext['Overlays','Separatrix'],overlay_res_bolo=param_ext['Overlays','Core Resistive bol'] or param_ext['Overlays','Div Resistive bol'],EFIT_output_requested=True,cmap=param_ext['Set display', 'Color map'])#,extvmin=0,extvmax=4e4)
 	else:
 		if param_ext['Set display','Include prelude']:
 			prelude = 'shot ' + w2.shotID + '\n'+str(param_ext['Set display','Binning'])+'\n'+'Time %.3gms\n' %(param_ext['ROI', 'Time [ms]'])
@@ -1573,43 +1574,67 @@ elif False:	# plots required for the paper/thesis, shot 45295
 
 elif False:	# section to find the orientation of IRVB in MU02/3/4
 
-	origin_HM04A = np.array([2.105,-0.372,-0.002])	# m
-	# direction_HM04A = np.array([-0.890,0.409,-0.204])	# m
-	target_HM04A = np.array([-1.524,1.295,-0.833])	# m
-	direction_HM04A = target_HM04A-origin_HM04A
-	fit_uncertainty_HM04A = 12.7	# pixels
+	if False:	# geometry calculated using the central column in calcam. This might be bad as the CC was demonstrated to be shifted down by 6mm
+		origin_HM04A = np.array([2.105,-0.372,-0.002])	# m
+		# direction_HM04A = np.array([-0.890,0.409,-0.204])	# m
+		target_HM04A = np.array([-1.524,1.295,-0.833])	# m
+		direction_HM04A = target_HM04A-origin_HM04A
+		fit_uncertainty_HM04A = 12.7	# pixels
 
-	origin_HM03D = np.array([2.166,0.370,-0.001])	# m
-	# direction_HM03D = np.array([-0.954,0.208,-0.214])	# m
-	target_HM03D = np.array([-1.605,1.193,-0.846])	# m
-	direction_HM03D = target_HM03D-origin_HM03D
-	fit_uncertainty_HM03D = 4.8	# pixels
+		origin_HM03D = np.array([2.166,0.370,-0.001])	# m
+		# direction_HM03D = np.array([-0.954,0.208,-0.214])	# m
+		target_HM03D = np.array([-1.605,1.193,-0.846])	# m
+		direction_HM03D = target_HM03D-origin_HM03D
+		fit_uncertainty_HM03D = 4.8	# pixels
 
-	origin_HM07C = np.array([-0.541,-2.118,0.200])	# m
-	# direction_HM07C = np.array([-0.149,0.950,-0.273])	# m
-	target_HM07C = np.array([-1.137,1.670,-0.889])	# m
-	direction_HM07C = target_HM07C-origin_HM07C
-	fit_uncertainty_HM07C = 4.7	# pixels
+		origin_HM07C = np.array([-0.541,-2.118,0.200])	# m
+		# direction_HM07C = np.array([-0.149,0.950,-0.273])	# m
+		target_HM07C = np.array([-1.137,1.670,-0.889])	# m
+		direction_HM07C = target_HM07C-origin_HM07C
+		fit_uncertainty_HM07C = 4.7	# pixels
 
-	origin_HM08A = np.array([-1.274,-1.150,0.001])	# m
-	# direction_HM08A = np.array([0.099,0.947,-0.306])	# m
-	target_HM08A = np.array([-0.972,1.748,-0.935])	# m
-	direction_HM08A = target_HM08A-origin_HM08A
-	fit_uncertainty_HM08A = 6.5	# pixels
+		origin_HM08A = np.array([-1.274,-1.150,0.001])	# m
+		# direction_HM08A = np.array([0.099,0.947,-0.306])	# m
+		target_HM08A = np.array([-0.972,1.748,-0.935])	# m
+		direction_HM08A = target_HM08A-origin_HM08A
+		fit_uncertainty_HM08A = 6.5	# pixels
 
-	origin_HM08B = np.array([-1.080,-1.325,0.061])	# m
-	# direction_HM08B = np.array([0.015,0.951,-0.308])	# m
-	target_HM08B = np.array([-1.031,1.679,-0.913])	# m
-	direction_HM08B = target_HM08B-origin_HM08B
-	fit_uncertainty_HM08B = 5.4	# pixels
+		origin_HM08B = np.array([-1.080,-1.325,0.061])	# m
+		# direction_HM08B = np.array([0.015,0.951,-0.308])	# m
+		target_HM08B = np.array([-1.031,1.679,-0.913])	# m
+		direction_HM08B = target_HM08B-origin_HM08B
+		fit_uncertainty_HM08B = 5.4	# pixels
 
-	ax = plt.figure().add_subplot(projection='3d')
-	ax.plot([origin_HM04A[0],origin_HM04A[0]+direction_HM04A[0]],[origin_HM04A[1],origin_HM04A[1]+direction_HM04A[1]],[origin_HM04A[2],origin_HM04A[2]+direction_HM04A[2]])
-	ax.plot([origin_HM03D[0],origin_HM03D[0]+direction_HM03D[0]],[origin_HM03D[1],origin_HM03D[1]+direction_HM03D[1]],[origin_HM03D[2],origin_HM03D[2]+direction_HM03D[2]])
-	ax.plot([origin_HM07C[0],origin_HM07C[0]+direction_HM07C[0]],[origin_HM07C[1],origin_HM07C[1]+direction_HM07C[1]],[origin_HM07C[2],origin_HM07C[2]+direction_HM07C[2]])
-	ax.plot([origin_HM08A[0],origin_HM08A[0]+direction_HM08A[0]],[origin_HM08A[1],origin_HM08A[1]+direction_HM08A[1]],[origin_HM08A[2],origin_HM08A[2]+direction_HM08A[2]])
-	ax.plot([origin_HM08B[0],origin_HM08B[0]+direction_HM08B[0]],[origin_HM08B[1],origin_HM08B[1]+direction_HM08B[1]],[origin_HM08B[2],origin_HM08B[2]+direction_HM08B[2]])
-	ax.plot(coleval.locate_pinhole()[0],coleval.locate_pinhole()[1],coleval.locate_pinhole()[2],'o')
+	else:	# this is calculated NOT using the central column
+		origin_HM04A = np.array([2.105,-0.372,-0.002])	# m
+		# direction_HM04A = np.array([-0.890,0.409,-0.204])	# m
+		target_HM04A = np.array([-1.524,1.295,-0.833])	# m
+		direction_HM04A = target_HM04A-origin_HM04A
+		fit_uncertainty_HM04A = 12.7	# pixels
+
+		origin_HM03D = np.array([2.172,0.365,-0.027])	# m
+		# direction_HM03D = np.array([-0.954,0.208,-0.214])	# m
+		target_HM03D = np.array([-1.604,1.194,-0.839])	# m
+		direction_HM03D = target_HM03D-origin_HM03D
+		fit_uncertainty_HM03D = 5.1	# pixels
+
+		origin_HM07C = np.array([-0.557,-2.112,0.190])	# m
+		# direction_HM07C = np.array([-0.149,0.950,-0.273])	# m
+		target_HM07C = np.array([-1.133,1.672,-0.888])	# m
+		direction_HM07C = target_HM07C-origin_HM07C
+		fit_uncertainty_HM07C = 5.4	# pixels
+
+		origin_HM08A = np.array([-1.283,-1.191,-0.008])	# m
+		# direction_HM08A = np.array([0.099,0.947,-0.306])	# m
+		target_HM08A = np.array([-0.972,1.721,-0.920])	# m
+		direction_HM08A = target_HM08A-origin_HM08A
+		fit_uncertainty_HM08A = 6.3	# pixels
+
+		origin_HM08B = np.array([-1.103,-1.369,0.047])	# m
+		# direction_HM08B = np.array([0.015,0.951,-0.308])	# m
+		target_HM08B = np.array([-1.024,1.741,-0.925])	# m
+		direction_HM08B = target_HM08B-origin_HM08B
+		fit_uncertainty_HM08B = 5.1	# pixels
 
 	# Define the lines in terms of their origin, direction, and uncertainty
 	lines = [
@@ -1643,13 +1668,21 @@ elif False:	# section to find the orientation of IRVB in MU02/3/4
 		return distance
 
 	bds = [[coleval.locate_pinhole()[0]-0.2,coleval.locate_pinhole()[1]-0.2,coleval.locate_pinhole()[2]-0.2],[coleval.locate_pinhole()[0]+0.2,coleval.locate_pinhole()[1]+0.2,coleval.locate_pinhole()[2]+0.2]]
-	found_point = curve_fit(calculate_error_lines,[0,0,0,0,0],[0,0,0,0,0],p0=coleval.locate_pinhole(),bounds=bds,ftol=1e-12)[0]
-	ax.plot(found_point[0],found_point[1],found_point[2],'+')
+	found_point = curve_fit(calculate_error_lines,[0,0,0,0,0],[0,0,0,0,0],p0=coleval.locate_pinhole(),bounds=bds,ftol=1e-12,xtol=1e-10)
+	found_point = found_point[0]
 	found_point-coleval.locate_pinhole()
+
+	ax = plt.figure().add_subplot(projection='3d')
+	ax.plot([origin_HM04A[0],origin_HM04A[0]+direction_HM04A[0]],[origin_HM04A[1],origin_HM04A[1]+direction_HM04A[1]],[origin_HM04A[2],origin_HM04A[2]+direction_HM04A[2]])
+	ax.plot([origin_HM03D[0],origin_HM03D[0]+direction_HM03D[0]],[origin_HM03D[1],origin_HM03D[1]+direction_HM03D[1]],[origin_HM03D[2],origin_HM03D[2]+direction_HM03D[2]])
+	ax.plot([origin_HM07C[0],origin_HM07C[0]+direction_HM07C[0]],[origin_HM07C[1],origin_HM07C[1]+direction_HM07C[1]],[origin_HM07C[2],origin_HM07C[2]+direction_HM07C[2]])
+	ax.plot([origin_HM08A[0],origin_HM08A[0]+direction_HM08A[0]],[origin_HM08A[1],origin_HM08A[1]+direction_HM08A[1]],[origin_HM08A[2],origin_HM08A[2]+direction_HM08A[2]])
+	ax.plot([origin_HM08B[0],origin_HM08B[0]+direction_HM08B[0]],[origin_HM08B[1],origin_HM08B[1]+direction_HM08B[1]],[origin_HM08B[2],origin_HM08B[2]+direction_HM08B[2]])
+	ax.plot(coleval.locate_pinhole()[0],coleval.locate_pinhole()[1],coleval.locate_pinhole()[2],'o')
+	ax.plot(found_point[0],found_point[1],found_point[2],'+')
 
 
 	flange_location = np.array([[-1451.46052984755,1544.4989953858,-795.127973818281],[-1445.66263688161,1550.31177880053,-789.148486275245],[-1430.18747663838,1565.87180245998,-630.295559614074],[-1434.78339642903,1561.26804243527,-622.483810832221],[-1527.59526499331,1468.2591265621,-587.351682983045],[-1534.30001951375,1461.53816453532,-591.061454533504],[-1568.1921106691,1427.51401088464,-768.590696880916],[-1563.91726826618,1431.79586049244,-776.760250709844],[-1451.46052984755,1544.4989953858,-795.127973818281],[-1451.46052984755,1544.4989953858,-795.1279738182813]])/1000
-	ax.plot(flange_location[:,0],flange_location[:,1],flange_location[:,2],'+')
 
 	def calculate_error_circle(x,point_0,point_1,point_2,dir_0,dir_1,dir_2,radius):
 		center = np.array([point_0,point_1,point_2])
@@ -1673,7 +1706,7 @@ elif False:	# section to find the orientation of IRVB in MU02/3/4
 
 	bds = [[-np.inf,-np.inf,-np.inf,-1,-1,-1,-np.inf],[np.inf,np.inf,np.inf,1,1,1,np.inf]]
 	gna = curve_fit(calculate_error_circle,[0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0],p0=(np.mean(flange_location,axis=0)[0],np.mean(flange_location,axis=0)[1],np.mean(flange_location,axis=0)[2],1,-1,0,0.1),maxfev=100000,bounds=bds,xtol=1e-15)[0]
-	gna = np.array([-1.50043085e+00,  1.49546247e+00, -6.99230699e-01,  9.99998644e-01,-9.99033623e-01, -1.96367575e-04,  1.18317306e-01])
+	# gna = np.array([-1.50043085e+00,  1.49546247e+00, -6.99230699e-01,  9.99998644e-01,-9.99033623e-01, -1.96367575e-04,  1.18317306e-01])
 
 	# how to plot a circle
 	center = cp.deepcopy(gna[:3])
@@ -1707,10 +1740,19 @@ elif False:	# section to find the orientation of IRVB in MU02/3/4
 	# Translate the circle to the specified center
 	circle_3d += np.array(center)[:, np.newaxis]
 
+	ax.plot(flange_location[:,0],flange_location[:,1],flange_location[:,2],'+')
 	ax.plot(circle_3d[0],circle_3d[1],circle_3d[2])
 	ax.plot([center[0],center[0]+direction[0]*2],[center[1],center[1]+direction[1]*2],[center[2],center[2]+direction[2]*2])
 
-	centre_of_IRVB_plate = np.array([-1.05649,1.05731,-0.69705])
+	if False:	# geometry calculated using the central column in calcam. This might be bad as the CC was demonstrated to be shifted down by 6mm
+		centre_of_IRVB_plate = np.array([-1.05649,1.05731,-0.69705])
+	else:	# this is calculated NOT using the central column
+		centre_of_IRVB_plate = np.array([-1.0556,1.057,-0.69693])
+
+	if True:	# I add 1/2mm to the left, to see if I can remove radiation from the central column
+		found_point += np.array([0.001,0.001,0])*1
+		centre_of_IRVB_plate += np.array([0.001,0.001,0])*1
+
 
 	stand_off_length = 0.06	# m
 	# Rf=1.54967	# m	radius of the centre of the foil
@@ -1735,6 +1777,8 @@ elif False:	# section to find the orientation of IRVB in MU02/3/4
 	structure_point_location_on_foil = coleval.return_structure_point_location_on_foil(plane_equation=plane_equation,centre_of_foil=centre_of_foil)
 	for i in range(len(structure_point_location_on_foil)):
 		ax.plot(np.array(structure_point_location_on_foil[i][:,0])*(np.shape(cv0)[1]-1)/foil_size[0],np.array(structure_point_location_on_foil[i][:,1])*(np.shape(cv0)[0]-1)/foil_size[1],'--b',alpha=structure_alpha)
+	plt.axis('equal')
+	plt.plot([0,cv0.shape[1],cv0.shape[1],0,0],[0,0,cv0.shape[0],cv0.shape[0],0],'k')
 
 
 

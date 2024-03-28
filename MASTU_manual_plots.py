@@ -24,12 +24,18 @@ try:
 	if pass_number==0:
 		full_saved_file_dict_FAST['first_pass'] = full_saved_file_dict_FAST['first_pass'].all()
 		inverted_dict = full_saved_file_dict_FAST['first_pass']['inverted_dict']
+		powernoback = full_saved_file_dict_FAST['first_pass']['FAST_powernoback']
+		time_binned = full_saved_file_dict_FAST['first_pass']['FAST_time_binned']
 	elif pass_number==1:
 		full_saved_file_dict_FAST['second_pass'] = full_saved_file_dict_FAST['second_pass'].all()
 		inverted_dict = full_saved_file_dict_FAST['second_pass']['inverted_dict']
+		powernoback = full_saved_file_dict_FAST['second_pass']['FAST_powernoback']
+		time_binned = full_saved_file_dict_FAST['second_pass']['FAST_time_binned']
 	else:
 		full_saved_file_dict_FAST['third_pass'] = full_saved_file_dict_FAST['third_pass'].all()
 		inverted_dict = full_saved_file_dict_FAST['third_pass']['inverted_dict']
+		powernoback = full_saved_file_dict_FAST['third_pass']['FAST_powernoback']
+		time_binned = full_saved_file_dict_FAST['third_pass']['FAST_time_binned']
 	grid_resolution = 2	# cm
 	time_full_binned_crop = inverted_dict[str(grid_resolution)]['time_full_binned_crop']
 	inverted_data = inverted_dict[str(grid_resolution)]['inverted_data']
@@ -85,6 +91,10 @@ try:
 
 	filename_root = inverted_dict[str(grid_resolution)]['filename_root']
 	filename_root_add = inverted_dict[str(grid_resolution)]['filename_root_add']
+	# fitted_foil_power = inverted_dict[str(grid_resolution)]['fitted_foil_power']
+	# fitted_foil_power_excluded = inverted_dict[str(grid_resolution)]['fitted_foil_power_excluded']
+	# foil_power = inverted_dict[str(grid_resolution)]['foil_power']
+	# full_foil_power = inverted_dict[str(grid_resolution)]['full_foil_power']
 
 	if True:	# added to deal with the fact that the peak radiation is extremely volatile, and hard to track consistently
 		local_inner_leg_mean_emissivity = np.array(local_inner_leg_mean_emissivity)
@@ -238,7 +248,7 @@ try:
 	full_saved_file_dict_FAST['multi_instrument']['SC'] = SC
 	full_saved_file_dict_FAST['multi_instrument']['SL'] = SL
 
-	plt.figure(figsize=(15, 10))
+	plt.figure(figsize=(30, 10))
 	# plt.errorbar(time_full_binned_crop,outer_leg_tot_rad_power_all/1e3,yerr=outer_leg_tot_rad_power_sigma_all/1e3,label='outer_leg\nwith x-point',capsize=5)
 	plt.errorbar(time_full_binned_crop,outer_leg_reliable_power_all/1e3,yerr=outer_leg_reliable_power_sigma_all/1e3,label='outer_leg\nno x-point\naccurate no sxd',capsize=5)
 	plt.errorbar(time_full_binned_crop,sxd_tot_rad_power_all/1e3,yerr=sxd_tot_rad_power_sigma_all/1e3,label='sxd',capsize=5)
@@ -257,6 +267,7 @@ try:
 	plt.errorbar(time_full_binned_crop,equivalent_res_bolo_view_all/1e3,yerr=equivalent_res_bolo_view_sigma_all/1e3,label='equivalent\nto res bolo',capsize=5,linestyle='--')
 	plt.errorbar(time_full_binned_crop,all_out_of_sxd_all/1e3,yerr=all_out_of_sxd_sigma_all/1e3,label='out sxd',capsize=5,linestyle='--')
 	plt.title('shot ' + laser_to_analyse[-9:-4]+' '+scenario+'\nradiated power in the lower half of the machine')
+	plt.ylim(bottom=0,top=median_filter(all_lower_volume_radiation_all,size=[max(1,len(all_lower_volume_radiation_all)//8)*2+1]).max()/1e3)	# arbitrary limit to see better if there is a disruption at the end of the shot
 	plt.legend(loc='best', fontsize='xx-small')
 	plt.xlabel('time [s]')
 	plt.ylabel('power [kW]')
