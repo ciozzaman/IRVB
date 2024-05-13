@@ -866,6 +866,49 @@ def function_a(index):
 				horizontal_coord,vertical_coord = np.meshgrid(horizontal_coord,vertical_coord)
 				# select = (((horizontal_coord-horizontal_loc)**2 + (vertical_coord-vertical_loc)**2)<=dr**2)[1:-1,1:-1]
 
+				if False:	# I add this for the plots in the paper
+					start_temp_rise = np.diff(np.max(np.mean(laser_temperature_minus_background_crop,axis=0),axis=(1,2))).argmax()+1-2
+					plt.figure(figsize=(10, 5))
+					# plt.plot(np.mean(laser_temperature_minus_background_crop,axis=0)[start_temp_rise][vertical_loc:,horizontal_loc])
+					# plt.plot(np.mean(laser_temperature_minus_background_crop,axis=0)[start_temp_rise][vertical_loc:0:-1,horizontal_loc])
+					# plt.plot(np.mean(laser_temperature_minus_background_crop,axis=0)[start_temp_rise][vertical_loc,horizontal_loc:])
+					# plt.plot(np.mean(laser_temperature_minus_background_crop,axis=0)[start_temp_rise][vertical_loc,horizontal_loc:0:-1])
+
+					for delta_time in [0,10,20,40,60,90,130,170,210]:
+						delta_time = round(delta_time/1000*laser_framerate)
+						temp = []
+						len_min = np.inf
+						temp.append(np.mean(laser_temperature_minus_background_crop,axis=0)[start_temp_rise+delta_time][vertical_loc:,horizontal_loc])
+						len_min = min(len_min,len(temp[-1]))
+						temp.append(np.mean(laser_temperature_minus_background_crop,axis=0)[start_temp_rise+delta_time][vertical_loc:0:-1,horizontal_loc])
+						len_min = min(len_min,len(temp[-1]))
+						temp.append(np.mean(laser_temperature_minus_background_crop,axis=0)[start_temp_rise+delta_time][vertical_loc,horizontal_loc:])
+						len_min = min(len_min,len(temp[-1]))
+						temp.append(np.mean(laser_temperature_minus_background_crop,axis=0)[start_temp_rise+delta_time][vertical_loc,horizontal_loc:0:-1])
+						len_min = min(len_min,len(temp[-1]))
+						temp[0] = temp[0][:len_min]
+						temp[1] = temp[1][:len_min]
+						temp[2] = temp[2][:len_min]
+						temp[3] = temp[3][:len_min]
+						temp = np.median(temp,axis=0)
+						plt.plot(np.arange(len_min)*dx*1000,temp,label='pulse %+.0fms' %((delta_time-1)/laser_framerate*1000))
+					plt.legend(loc='best', fontsize='small')
+					plt.grid()
+					plt.xlim(left=-0.1,right=8)
+					plt.ylim(bottom=-0.1,top=2)
+					plt.xlabel('distance from laser spot centre [mm]')
+					plt.ylabel('temperature increase [K]')
+					plt.axvline(x=0,color='k')
+					plt.axvline(x=9*dx*1000,color='y',linestyle='--')
+					plt.axvline(x=20*dx*1000,color='y',linestyle='--')
+					plt.title(preamble_4_prints+'Laser spot location in '+laser_to_analyse+'\n foil size '+str([foilhorizwpixel,foilvertwpixel])+'pixels, [%.3g,%.3g]mm\n laser located at [%.3g,%.3g]mm prelim radious %.3gmm\n' %(foilhorizwpixel*dx*1e3,foilvertwpixel*dx*1e3,horizontal_loc*dx*1e3,vertical_loc*dx*1e3,dr*dx*1e3))
+					plt.savefig(path_to_save_figures+laser_to_analyse[-6:] + path_to_save_figures2 + 'FIG_for_paper_1'+'.eps', bbox_inches='tight')
+
+
+
+
+
+
 				plt.figure(figsize=(20, 10))
 				temp = np.nanmean(laser_temperature_minus_background_crop,axis=(0,1,2))
 				if not (full_saved_file_dict['height']==max_ROI[0][1]+1 and full_saved_file_dict['width']==max_ROI[1][1]+1):
@@ -1082,6 +1125,34 @@ def function_a(index):
 				power_vs_space_sampling = power_vs_space_sampling_explorer()
 
 				dr = (power_vs_space_sampling['all_dr'])[nominal_values(power_vs_space_sampling['fitted_powers'][:,1][power_vs_space_sampling['all_dr']<=dr]).argmax()]
+
+				if False:	# other plots for the paper. i think i want to show that the area where the diffusion components cancels out grows in time
+					start_temp_rise = np.diff(np.max(np.mean(laser_temperature_minus_background_crop,axis=0),axis=(1,2))).argmax()+1-2-1
+					plt.figure(figsize=(10, 5))
+					# plt.plot(np.mean(laser_temperature_minus_background_crop,axis=0)[start_temp_rise][vertical_loc:,horizontal_loc])
+					# plt.plot(np.mean(laser_temperature_minus_background_crop,axis=0)[start_temp_rise][vertical_loc:0:-1,horizontal_loc])
+					# plt.plot(np.mean(laser_temperature_minus_background_crop,axis=0)[start_temp_rise][vertical_loc,horizontal_loc:])
+					# plt.plot(np.mean(laser_temperature_minus_background_crop,axis=0)[start_temp_rise][vertical_loc,horizontal_loc:0:-1])
+
+					for delta_time in [0,10,20,40,60,90,130,170,210]:
+						delta_time = round(delta_time/1000*laser_framerate)
+
+						temp = []
+						for spatial_range in np.arange(50):
+							temp.append(np.sum(temp_diffusion[start_temp_rise+delta_time,((vertical_coord[1:-1,1:-1]-vertical_loc)**2 + (horizontal_coord[1:-1,1:-1]-horizontal_loc)**2)**0.5<=spatial_range]))
+						plt.plot(np.arange(len(temp))*dx*1000,np.array(temp)*2.5/1000000*Ptthermalconductivity*(dx**2),label='pulse %+.0fms' %((delta_time-1)/laser_framerate*1000))
+					plt.legend(loc='best', fontsize='small')
+					plt.grid()
+					plt.xlim(left=-0.1,right=8)
+					# plt.ylim(bottom=-0.1,top=2)
+					plt.xlabel('Radius of the integration area [mm]')
+					plt.ylabel(r'integral of $P_{\Delta T}$ [W]')
+					plt.axvline(x=0,color='k')
+					plt.axvline(x=9*dx*1000,color='y',linestyle='--')
+					plt.axvline(x=20*dx*1000,color='y',linestyle='--')
+					plt.title(preamble_4_prints+'Laser spot location in '+laser_to_analyse+'\n foil size '+str([foilhorizwpixel,foilvertwpixel])+'pixels, [%.3g,%.3g]mm\n laser located at [%.3g,%.3g]mm prelim radious %.3gmm\n' %(foilhorizwpixel*dx*1e3,foilvertwpixel*dx*1e3,horizontal_loc*dx*1e3,vertical_loc*dx*1e3,dr*dx*1e3))
+					plt.savefig(path_to_save_figures+laser_to_analyse[-6:] + path_to_save_figures2 + 'FIG_for_paper_2'+'.eps', bbox_inches='tight')
+
 
 				if focus_status == 'focused':
 					dr_total_power_minimum = 9	# this is slightly larger thanthe size of the pinhole

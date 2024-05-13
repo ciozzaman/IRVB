@@ -216,10 +216,10 @@ if False or MU_campaign>0:	# section to use when specifying the days
 			logging.exception('with error: ' + str(e))
 			pass
 
-elif False:	# section to use when specifying the shots
+elif True:	# section to use when specifying the shots
 
 	# simpler way of starting works
-	# to_do = ['IRVB-MASTU_shot-45468.ptw','IRVB-MASTU_shot-45469.ptw','IRVB-MASTU_shot-45470.ptw','IRVB-MASTU_shot-45401.ptw','IRVB-MASTU_shot-45399.ptw','IRVB-MASTU_shot-45371.ptw']#,'IRVB-MASTU_shot-45473.ptw']
+	to_do = ['IRVB-MASTU_shot-45468.ptw','IRVB-MASTU_shot-45469.ptw','IRVB-MASTU_shot-45470.ptw','IRVB-MASTU_shot-45473.ptw','IRVB-MASTU_shot-45401.ptw','IRVB-MASTU_shot-45399.ptw','IRVB-MASTU_shot-45371.ptw']#,'IRVB-MASTU_shot-45473.ptw']
 	# to_do = ['IRVB-MASTU_shot-45371.ptw','IRVB-MASTU_shot-45372.ptw','IRVB-MASTU_shot-45380.ptw','IRVB-MASTU_shot-45390.ptw','IRVB-MASTU_shot-45391.ptw','IRVB-MASTU_shot-45398.ptw','IRVB-MASTU_shot-45400.ptw','IRVB-MASTU_shot-45439.ptw','IRVB-MASTU_shot-45443.ptw','IRVB-MASTU_shot-45444.ptw','IRVB-MASTU_shot-45450.ptw','IRVB-MASTU_shot-45456.ptw','IRVB-MASTU_shot-45459.ptw','IRVB-MASTU_shot-45461.ptw','IRVB-MASTU_shot-45462.ptw','IRVB-MASTU_shot-45463.ptw','IRVB-MASTU_shot-45464.ptw','IRVB-MASTU_shot-45465.ptw']
 	# to_do = ['IRVB-MASTU_shot-45046.ptw','IRVB-MASTU_shot-45047.ptw','IRVB-MASTU_shot-45048.ptw','IRVB-MASTU_shot-45056.ptw','IRVB-MASTU_shot-45057.ptw','IRVB-MASTU_shot-45058.ptw','IRVB-MASTU_shot-45059.ptw','IRVB-MASTU_shot-45060.ptw','IRVB-MASTU_shot-45062.ptw','IRVB-MASTU_shot-45063.ptw','IRVB-MASTU_shot-45066.ptw','IRVB-MASTU_shot-45071.ptw','IRVB-MASTU_shot-45081.ptw','IRVB-MASTU_shot-45143.ptw','IRVB-MASTU_shot-45239.ptw','IRVB-MASTU_shot-45241.ptw','IRVB-MASTU_shot-45243.ptw','IRVB-MASTU_shot-45244.ptw','IRVB-MASTU_shot-45245.ptw','IRVB-MASTU_shot-45246.ptw','IRVB-MASTU_shot-45353.ptw']	# SXD fuelled from high field side
 	# to_do = ['IRVB-MASTU_shot-47036.ptw','IRVB-MASTU_shot-47143.ptw','IRVB-MASTU_shot-46823.ptw']
@@ -236,7 +236,7 @@ elif False:	# section to use when specifying the shots
 	# shots for the science paper
 	# to_do = ['IRVB-MASTU_shot-45371.ptw']
 	# shots for the CD radiator location comparison shots
-	to_do = ['IRVB-MASTU_shot-45473.ptw','IRVB-MASTU_shot-45470.ptw','IRVB-MASTU_shot-45469.ptw','IRVB-MASTU_shot-45468.ptw','IRVB-MASTU_shot-45327.ptw','IRVB-MASTU_shot-45326.ptw','IRVB-MASTU_shot-45325.ptw','IRVB-MASTU_shot-45324.ptw','IRVB-MASTU_shot-45323.ptw','IRVB-MASTU_shot-45322.ptw','IRVB-MASTU_shot-45320.ptw','IRVB-MASTU_shot-45303.ptw','IRVB-MASTU_shot-45302.ptw','IRVB-MASTU_shot-45296.ptw','IRVB-MASTU_shot-45295.ptw','IRVB-MASTU_shot-45293.ptw','IRVB-MASTU_shot-45142.ptw','IRVB-MASTU_shot-45126.ptw','IRVB-MASTU_shot-45088.ptw','IRVB-MASTU_shot-45371.ptw']
+	# to_do = ['IRVB-MASTU_shot-45473.ptw','IRVB-MASTU_shot-45470.ptw','IRVB-MASTU_shot-45469.ptw','IRVB-MASTU_shot-45468.ptw','IRVB-MASTU_shot-45327.ptw','IRVB-MASTU_shot-45326.ptw','IRVB-MASTU_shot-45325.ptw','IRVB-MASTU_shot-45324.ptw','IRVB-MASTU_shot-45323.ptw','IRVB-MASTU_shot-45322.ptw','IRVB-MASTU_shot-45320.ptw','IRVB-MASTU_shot-45303.ptw','IRVB-MASTU_shot-45302.ptw','IRVB-MASTU_shot-45296.ptw','IRVB-MASTU_shot-45295.ptw','IRVB-MASTU_shot-45293.ptw','IRVB-MASTU_shot-45142.ptw','IRVB-MASTU_shot-45126.ptw','IRVB-MASTU_shot-45088.ptw','IRVB-MASTU_shot-45371.ptw']
 	# shots for the CD BEAMS shots for the cross comparison
 	# to_do = ['IRVB-MASTU_shot-45401.ptw','IRVB-MASTU_shot-45399.ptw','IRVB-MASTU_shot-45311.ptw','IRVB-MASTU_shot-45310.ptw','IRVB-MASTU_shot-45309.ptw','IRVB-MASTU_shot-45306.ptw','IRVB-MASTU_shot-45304.ptw','IRVB-MASTU_shot-45299.ptw','IRVB-MASTU_shot-45286.ptw','IRVB-MASTU_shot-45272.ptw','IRVB-MASTU_shot-45271.ptw','IRVB-MASTU_shot-45270.ptw','IRVB-MASTU_shot-45268.ptw','IRVB-MASTU_shot-45267.ptw','IRVB-MASTU_shot-45266.ptw','IRVB-MASTU_shot-45264.ptw','IRVB-MASTU_shot-45262.ptw','IRVB-MASTU_shot-45261.ptw','IRVB-MASTU_shot-45252.ptw','IRVB-MASTU_shot-45251.ptw','IRVB-MASTU_shot-45237.ptw','IRVB-MASTU_shot-45236.ptw','IRVB-MASTU_shot-45212.ptw','IRVB-MASTU_shot-45193.ptw','IRVB-MASTU_shot-45194.ptw','IRVB-MASTU_shot-45175.ptw','IRVB-MASTU_shot-45170.ptw','IRVB-MASTU_shot-45167.ptw','IRVB-MASTU_shot-45132.ptw','IRVB-MASTU_shot-45125.ptw','IRVB-MASTU_shot-45097.ptw','IRVB-MASTU_shot-45091.ptw','IRVB-MASTU_shot-45006.ptw','IRVB-MASTU_shot-44969.ptw','IRVB-MASTU_shot-44968.ptw','IRVB-MASTU_shot-44967.ptw','IRVB-MASTU_shot-44960.ptw']
 	# shots for David's paper
@@ -244,7 +244,7 @@ elif False:	# section to use when specifying the shots
 	# shots for Kevin's paper
 	# to_do = ['IRVB-MASTU_shot-46860.ptw','IRVB-MASTU_shot-47958.ptw','IRVB-MASTU_shot-46866.ptw','IRVB-MASTU_shot-47079.ptw','IRVB-MASTU_shot-46702.ptw']
 	# to_do = ['IRVB-MASTU_shot-49270.ptw','IRVB-MASTU_shot-49267.ptw','IRVB-MASTU_shot-49320.ptw','IRVB-MASTU_shot-49312.ptw']
-	to_do = ['IRVB-MASTU_shot-46860.ptw','IRVB-MASTU_shot-47958.ptw','IRVB-MASTU_shot-46705.ptw','IRVB-MASTU_shot-48330.ptw']
+	# to_do = ['IRVB-MASTU_shot-46860.ptw','IRVB-MASTU_shot-47958.ptw','IRVB-MASTU_shot-46705.ptw','IRVB-MASTU_shot-48330.ptw']
 	# Stuart THR01
 	# to_do = ['IRVB-MASTU_shot-49401.ptw']
 	# to_do = ['IRVB-MASTU_shot-49392.ptw','IRVB-MASTU_shot-49394.ptw','IRVB-MASTU_shot-49396.ptw','IRVB-MASTU_shot-49397.ptw','IRVB-MASTU_shot-49400.ptw','IRVB-MASTU_shot-49401.ptw','IRVB-MASTU_shot-49404.ptw','IRVB-MASTU_shot-49405.ptw']
@@ -264,10 +264,17 @@ elif False:	# section to use when specifying the shots
 	# # elongated divertor scans and repeats
 	# to_do = to_do + ['IRVB-MASTU_shot-47079.ptw','IRVB-MASTU_shot-47082.ptw','IRVB-MASTU_shot-47115.ptw','IRVB-MASTU_shot-47118.ptw','IRVB-MASTU_shot-47085.ptw']
 	# # conventional divertor scans and repeats
-	# to_do = to_do + ['IRVB-MASTU_shot-46762.ptw','IRVB-MASTU_shot-46864.ptw','IRVB-MASTU_shot-46866.ptw','IRVB-MASTU_shot-46867.ptw','IRVB-MASTU_shot-46868.ptw','IRVB-MASTU_shot-46891.ptw','IRVB-MASTU_shot-46903.ptw','IRVB-MASTU_shot-46702.ptw']
+	# to_do = to_do + ['IRVB-MASTU_shot-46762.ptw','IRVB-MASTU_shot-46769.ptw','IRVB-MASTU_shot-46864.ptw','IRVB-MASTU_shot-46866.ptw','IRVB-MASTU_shot-46867.ptw','IRVB-MASTU_shot-46868.ptw','IRVB-MASTU_shot-46891.ptw','IRVB-MASTU_shot-46903.ptw','IRVB-MASTU_shot-46905.ptw','IRVB-MASTU_shot-46702.ptw','IRVB-MASTU_shot-46889.ptw']
 	# # shape scans
 	# to_do = to_do + ['IRVB-MASTU_shot-46889.ptw','IRVB-MASTU_shot-46895.ptw','IRVB-MASTU_shot-46890.ptw']
 	# to_do = ['IRVB-MASTU_shot-49312.ptw','IRVB-MASTU_shot-49320.ptw']
+
+	# # MU03 shots for Kevin
+	# to_do = []
+	# conventional divertor scans and repeats L mode
+	# to_do = to_do + ['IRVB-MASTU_shot-47950.ptw','IRVB-MASTU_shot-47951.ptw','IRVB-MASTU_shot-47962.ptw','IRVB-MASTU_shot-48144.ptw','IRVB-MASTU_shot-48328.ptw','IRVB-MASTU_shot-48335.ptw','IRVB-MASTU_shot-48336.ptw','IRVB-MASTU_shot-49408.ptw','IRVB-MASTU_shot-49283.ptw']
+	# conventional divertor scans and repeats H mode
+	# to_do = to_do + ['IRVB-MASTU_shot-49392.ptw','IRVB-MASTU_shot-48561.ptw','IRVB-MASTU_shot-49139.ptw']
 
 	# shots for Ivan Paradela Perez
 	# to_do = to_do + ['IRVB-MASTU_shot-46864.ptw','IRVB-MASTU_shot-47079.ptw','IRVB-MASTU_shot-46860.ptw']
@@ -297,9 +304,22 @@ elif False:	# section to use when specifying the shots
 	# to_do = to_do + ['IRVB-MASTU_shot-48692.ptw','IRVB-MASTU_shot-46363.ptw','IRVB-MASTU_shot-49373.ptw','IRVB-MASTU_shot-49374.ptw','IRVB-MASTU_shot-48766.ptw','IRVB-MASTU_shot-49464.ptw','IRVB-MASTU_shot-49465.ptw','IRVB-MASTU_shot-49466.ptw','IRVB-MASTU_shot-49467.ptw']
 	# mu03 DIV-03 by Jack
 	# to_do = to_do + ['IRVB-MASTU_shot-49213.ptw','IRVB-MASTU_shot-48651.ptw','IRVB-MASTU_shot-49220.ptw','IRVB-MASTU_shot-49259.ptw','IRVB-MASTU_shot-49262.ptw','IRVB-MASTU_shot-49404.ptw','IRVB-MASTU_shot-49198.ptw']
+	# mu03 DIV-03 by Vlad Soukhanovskii
+	# to_do = to_do + ['IRVB-MASTU_shot-49463.ptw','IRVB-MASTU_shot-49464.ptw','IRVB-MASTU_shot-49465.ptw','IRVB-MASTU_shot-49466.ptw','IRVB-MASTU_shot-49467.ptw','IRVB-MASTU_shot-49468.ptw','IRVB-MASTU_shot-48690.ptw','IRVB-MASTU_shot-48692.ptw']
+
+
+	# data for psi2024 poster
+	to_do = []
+	# ohmic L-mode
+	# to_do = to_do + ['IRVB-MASTU_shot-47950.ptw','IRVB-MASTU_shot-47973.ptw','IRVB-MASTU_shot-48144.ptw','IRVB-MASTU_shot-48328.ptw','IRVB-MASTU_shot-48335.ptw']
+	# beam heated L-mode
+	# to_do = to_do + ['IRVB-MASTU_shot-46866.ptw','IRVB-MASTU_shot-46864.ptw','IRVB-MASTU_shot-46867.ptw','IRVB-MASTU_shot-46868.ptw','IRVB-MASTU_shot-46889.ptw','IRVB-MASTU_shot-46891.ptw','IRVB-MASTU_shot-46903.ptw','IRVB-MASTU_shot-48336.ptw','IRVB-MASTU_shot-49408.ptw','IRVB-MASTU_shot-49283.ptw']
+	# H-mode
+	to_do = to_do + ['IRVB-MASTU_shot-45401.ptw','IRVB-MASTU_shot-48596.ptw','IRVB-MASTU_shot-48597.ptw','IRVB-MASTU_shot-46977.ptw','IRVB-MASTU_shot-48599.ptw','IRVB-MASTU_shot-48561.ptw','IRVB-MASTU_shot-49139.ptw','IRVB-MASTU_shot-49392.ptw','IRVB-MASTU_shot-49396.ptw','IRVB-MASTU_shot-49400.ptw','IRVB-MASTU_shot-49401.ptw']
+	# mix
+	# to_do = to_do + ['IRVB-MASTU_shot-48690.ptw','IRVB-MASTU_shot-48692.ptw','IRVB-MASTU_shot-49463.ptw','IRVB-MASTU_shot-49464.ptw','IRVB-MASTU_shot-49465.ptw','IRVB-MASTU_shot-49466.ptw','IRVB-MASTU_shot-49467.ptw','IRVB-MASTU_shot-49468.ptw']
 
 	to_do = np.flip(to_do,axis=0)
-
 	if ext_sequencer!=None:
 		try:
 			to_do = [to_do[ext_sequencer]]
@@ -325,7 +345,7 @@ elif False:	# section to use when specifying the shots
 		laser_to_analyse=path+day+'/'+name
 
 		try:
-			if True:
+			if False:
 				exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_pulse_process2_BB.py").read())
 			else:
 				pass_number = 0
@@ -353,11 +373,13 @@ else:	# section to use when analysing only one shot
 	# i_day,day = 0,'2021-10-12'
 	# name='IRVB-MASTU_shot-47958.ptw'
 	# name='IRVB-MASTU_shot-46860.ptw'
+	name='IRVB-MASTU_shot-49283.ptw'
 	# name='IRVB-MASTU_shot-45371.ptw'
 	# name='IRVB-MASTU_shot-49312.ptw'
 	# name='IRVB-MASTU_shot-49213.ptw'
-	name='IRVB-MASTU_shot-49312.ptw'
+	# name='IRVB-MASTU_shot-49312.ptw'
 	# name='IRVB-MASTU_shot-49385.ptw'
+	# name='IRVB-MASTU_shot-49196.ptw'
 	# i_day,day = 0,'2021-10-22'
 	# name='IRVB-MASTU_shot-45225.ptw'
 	# i_day,day = 0,'2021-10-21'
@@ -386,7 +408,7 @@ else:	# section to use when analysing only one shot
 
 	laser_to_analyse=path+day+'/'+name
 
-	if True:
+	if False:
 		exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_pulse_process2_BB.py").read())
 	else:
 		pass_number = 0

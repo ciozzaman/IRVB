@@ -1304,6 +1304,79 @@ aggregated_emissivity_range = full_saved_file_dict[type_of_calibration]['emissiv
 reference_temperature_range = full_saved_file_dict[type_of_calibration]['reference_temperature_range']
 time_partial = full_saved_file_dict[type_of_calibration]['time_of_experiment']
 
+if False:	# these are only the plots for the paper
+
+	i_emissivity,aggregated_emissivity = list(enumerate(aggregated_emissivity_range))[8]
+	try:
+		full_saved_file_dict[type_of_calibration]['emissivity='+str(aggregated_emissivity)] = full_saved_file_dict[type_of_calibration]['emissivity='+str(aggregated_emissivity)].all()
+	except:
+		pass
+	nuc_plate_emissivity = 1.0
+	emissivity = aggregated_emissivity * nuc_plate_emissivity
+	i_reference_temperature,reference_temperature = list(enumerate(reference_temperature_range))[5]
+
+	try:
+		full_saved_file_dict[type_of_calibration]['emissivity='+str(aggregated_emissivity)]['T0='+str(reference_temperature)] = full_saved_file_dict[type_of_calibration]['emissivity='+str(aggregated_emissivity)]['T0='+str(reference_temperature)].all()
+	except:
+		pass
+
+	laser_temperature_minus_background_crop_max = full_saved_file_dict[type_of_calibration]['emissivity='+str(aggregated_emissivity)]['T0='+str(reference_temperature)]['laser_temperature_minus_background_crop_max']
+	framerate = 1/np.median(np.diff(time_partial))
+	frames_for_one_pulse = framerate/experimental_laser_frequency
+	partial_timevariation = full_saved_file_dict[type_of_calibration]['emissivity='+str(aggregated_emissivity)]['T0='+str(reference_temperature)]['partial_timevariation']
+	partial_timevariation_std = full_saved_file_dict[type_of_calibration]['emissivity='+str(aggregated_emissivity)]['T0='+str(reference_temperature)]['partial_timevariation_std']
+	partial_timevariation_small = full_saved_file_dict[type_of_calibration]['emissivity='+str(aggregated_emissivity)]['T0='+str(reference_temperature)]['partial_timevariation_small']
+	partial_timevariation_std_small = full_saved_file_dict[type_of_calibration]['emissivity='+str(aggregated_emissivity)]['T0='+str(reference_temperature)]['partial_timevariation_std_small']
+	partial_BBrad = full_saved_file_dict[type_of_calibration]['emissivity='+str(aggregated_emissivity)]['T0='+str(reference_temperature)]['partial_BBrad']	# this is already multiplied by 2
+	partial_BBrad_std = full_saved_file_dict[type_of_calibration]['emissivity='+str(aggregated_emissivity)]['T0='+str(reference_temperature)]['partial_BBrad_std']
+	partial_BBrad_small = full_saved_file_dict[type_of_calibration]['emissivity='+str(aggregated_emissivity)]['T0='+str(reference_temperature)]['partial_BBrad_small']
+	partial_BBrad_std_small = full_saved_file_dict[type_of_calibration]['emissivity='+str(aggregated_emissivity)]['T0='+str(reference_temperature)]['partial_BBrad_std_small']
+	partial_diffusion = full_saved_file_dict[type_of_calibration]['emissivity='+str(aggregated_emissivity)]['T0='+str(reference_temperature)]['partial_diffusion']
+	partial_diffusion_small = full_saved_file_dict[type_of_calibration]['emissivity='+str(aggregated_emissivity)]['T0='+str(reference_temperature)]['partial_diffusion_small']
+
+
+	diffusivity = 9.466307489300497e-06
+	thickness_over_diffusivity = 0.07502143143067985	# this is the real measurement I obtain
+	thickness = thickness_over_diffusivity*diffusivity	# m
+	emissivity = 0.6311559794933064
+
+
+	sigmaSB=5.6704e-08 #[W/(m2 K4)]
+	dx=0.09/240
+	timevariation = partial_timevariation * thicknesse-6/Ptthermaldiffusivity
+	timevariation_small = partial_timevariation_small * thicknesse-6/Ptthermaldiffusivity
+	BB = partial_BBrad *emissivity
+	BB_small = partial_BBrad_small *emissivity
+	diff = partial_diffusion * thickness_over_diffusivity * Ptthermaldiffusivity
+	diff_small = partial_diffusion_small * thickness_over_diffusivity * Ptthermaldiffusivity
+	timevariation_and_BB = timevariation + BB
+	timevariation_and_BB_small = timevariation_small + BB_small
+	timevariation_and_BB_and_diff = timevariation + BB + diff
+	BB_and_diff_small = BB_small + diff_small
+	BB_and_diff = BB + diff
+
+	# I would prefer not to, but I really need to do this, otherwise I can't see anything with the known noise
+	timevariation_filtered = coleval.butter_lowpass_filter(timevariation,15,383/2,3)
+	timevariation_small_filtered = coleval.butter_lowpass_filter(timevariation_small,15,383/2,3)
+
+
+	plt.figure(figsize=(10, 5))
+	start = time_partial[569-7]
+	end = time_partial[300+748-7]
+	plt.plot([0,start,start,end,end,10],[0,0,laser_to_analyse_power,laser_to_analyse_power,0,0],'--r')
+	a1, = plt.plot(time_partial,timevariation_small_filtered,label=r'$\delta T/\delta t$')
+	plt.plot(time_partial,timevariation_filtered,a1.get_color(),linestyle='--')
+	a3, = plt.plot(time_partial,diff_small,label=r'$\Delta T$')
+	plt.plot(time_partial,diff,a3.get_color(),linestyle='--')
+	a2, = plt.plot(time_partial,BB_small,label=r'$BB$')
+	plt.plot(time_partial,BB,a2.get_color(),linestyle='--')
+	plt.xlabel('time [s]')
+	plt.ylabel('Integrated power [W]')
+	plt.grid()
+	plt.xlim(left=2.5,right=7.5)
+	plt.legend(loc='best')
+	# plt.savefig(path_to_save_figures+laser_to_analyse[-6:] + path_to_save_figures2 + 'FIG_for_paper_2'+'.eps', bbox_inches='tight')
+	plt.savefig(path_where_to_save_everything + 'FIG_for_paper_3'  +'.eps', bbox_inches='tight')
 
 
 
@@ -2192,7 +2265,7 @@ else:	# here I want to fit thickness_over_diffusivity from the peak time derivat
 		plt.title('nuc_plate_emissivity '+str(nuc_plate_emissivity) + '\nlaser power %.3gW' %(laser_to_analyse_power)+'\n from peak fit')
 		plt.close()
 
-		select = collect_aggregated_emissivity*nuc_plate_emissivity<1.5
+		select = np.logical_and(collect_aggregated_emissivity*nuc_plate_emissivity<1.5,collect_aggregated_emissivity*nuc_plate_emissivity>0.2)
 
 		plt.figure()
 		# plt.scatter(collect_aggregated_emissivity,collect_reference_temperature,c=collect_peak_heating)
@@ -2208,18 +2281,19 @@ else:	# here I want to fit thickness_over_diffusivity from the peak time derivat
 		plt.title('nuc_plate_emissivity '+str(nuc_plate_emissivity) + '\nlaser power %.3gW' %(laser_to_analyse_power))
 		plt.close()
 
-		plt.figure()
+		plt.figure(figsize=(7, 6))
 		# plt.scatter(collect_aggregated_emissivity[select],collect_reference_temperature[select],c=collect_peak_heating)
-		plt.tricontourf(collect_aggregated_emissivity[select]*nuc_plate_emissivity,collect_reference_temperature[select],(collect_high_level_std_small+collect_low_level_std_small)[select],levels=20,cmap='rainbow')
+		plt.tricontourf(collect_aggregated_emissivity[select]*nuc_plate_emissivity,collect_reference_temperature[select],(collect_high_level_std_small+collect_low_level_std_small)[select],levels=15,cmap='rainbow')
 		plt.scatter(collect_aggregated_emissivity[select]*nuc_plate_emissivity,collect_reference_temperature[select],c=(collect_high_level_std_small+collect_low_level_std_small)[select],cmap='rainbow')
-		plt.colorbar().set_label('small_level_std_small')
-		plt.tricontour(collect_aggregated_emissivity[select]*nuc_plate_emissivity,collect_reference_temperature[select],(collect_high_level_std_small+collect_low_level_std_small)[select],levels=20,colors='k')
+		plt.colorbar().set_label('fit error [au]')
+		plt.tricontour(collect_aggregated_emissivity[select]*nuc_plate_emissivity,collect_reference_temperature[select],(collect_high_level_std_small+collect_low_level_std_small)[select],levels=15,colors='k')
 		plt.axhline(y=27,color='k')
 		plt.axvline(x=1,color='k')
-		plt.xlabel('emissivity')
+		plt.xlabel(r'$\varepsilon$ [au]')
 		# plt.xlim(right=1.5)
-		plt.ylabel('reference_temperature')
-		plt.title('nuc_plate_emissivity '+str(nuc_plate_emissivity) + '\nlaser power %.3gW' %(laser_to_analyse_power))
+		plt.ylabel(r'$T_0 [K]$')
+		plt.title('nuc_plate_emissivity '+str(nuc_plate_emissivity) + '\nlaser power %.3gW\n' %(laser_to_analyse_power))
+		# plt.savefig(path_where_to_save_everything + 'FIG_for_paper_4'  +'.eps')
 		plt.close()
 
 		plt.figure()
@@ -2256,32 +2330,34 @@ else:	# here I want to fit thickness_over_diffusivity from the peak time derivat
 		plt.title('nuc_plate_emissivity '+str(nuc_plate_emissivity) + '\nlaser power %.3gW' %(laser_to_analyse_power))
 		plt.close()
 
-		plt.figure()
+		plt.figure(figsize=(7, 6))
 		# plt.scatter(collect_aggregated_emissivity[select],collect_reference_temperature[select],c=collect_peak_heating)
-		plt.tricontourf(collect_aggregated_emissivity[select]*nuc_plate_emissivity,collect_reference_temperature[select],collect_thickness_over_diffusivity_from_peak_match[select],levels=14,cmap='rainbow')
-		plt.scatter(collect_aggregated_emissivity[select]*nuc_plate_emissivity,collect_reference_temperature[select],c=collect_thickness_over_diffusivity_from_peak_match[select],cmap='rainbow')
-		plt.colorbar().set_label('thickness_over_diffusivity')
-		plt.tricontour(collect_aggregated_emissivity[select]*nuc_plate_emissivity,collect_reference_temperature[select],collect_thickness_over_diffusivity_from_peak_match[select],levels=14,colors='k')
+		plt.tricontourf(collect_aggregated_emissivity[select]*nuc_plate_emissivity,collect_reference_temperature[select],collect_thickness_over_diffusivity_from_peak_match[select]*Ptthermalconductivity,levels=15,cmap='rainbow')
+		plt.scatter(collect_aggregated_emissivity[select]*nuc_plate_emissivity,collect_reference_temperature[select],c=collect_thickness_over_diffusivity_from_peak_match[select]*Ptthermalconductivity,cmap='rainbow')
+		plt.colorbar().set_label(r'$k t_f / \kappa$ $[w/m^2 s/K]$')
+		plt.tricontour(collect_aggregated_emissivity[select]*nuc_plate_emissivity,collect_reference_temperature[select],collect_thickness_over_diffusivity_from_peak_match[select]*Ptthermalconductivity,levels=15,colors='k')
 		plt.axhline(y=27,color='k')
 		plt.axvline(x=1,color='k')
-		plt.xlabel('emissivity')
+		plt.xlabel(r'$\varepsilon$ [au]')
 		# plt.xlim(right=1.5)
-		plt.ylabel('reference_temperature')
-		plt.title('nuc_plate_emissivity '+str(nuc_plate_emissivity) + '\nlaser power %.3gW' %(laser_to_analyse_power))
+		plt.ylabel(r'$T_0 [K]$')
+		plt.title('nuc_plate_emissivity '+str(nuc_plate_emissivity) + '\nlaser power %.3gW\n' %(laser_to_analyse_power))
+		# plt.savefig(path_where_to_save_everything + 'FIG_for_paper_5'  +'.eps')
 		plt.close()
 
-		plt.figure()
+		plt.figure(figsize=(7, 6))
 		# plt.scatter(collect_aggregated_emissivity[select],collect_reference_temperature[select],c=collect_peak_heating)
-		plt.tricontourf(collect_aggregated_emissivity[select]*nuc_plate_emissivity,collect_reference_temperature[select],collect_real_thermaldiffusivity[select],levels=14,cmap='rainbow')
-		plt.scatter(collect_aggregated_emissivity[select]*nuc_plate_emissivity,collect_reference_temperature[select],c=collect_real_thermaldiffusivity[select],cmap='rainbow')
-		plt.colorbar().set_label('real_thermaldiffusivity')
-		plt.tricontour(collect_aggregated_emissivity[select]*nuc_plate_emissivity,collect_reference_temperature[select],collect_real_thermaldiffusivity[select],levels=14,colors='k')
+		plt.tricontourf(collect_aggregated_emissivity[select]*nuc_plate_emissivity,collect_reference_temperature[select],collect_real_thermaldiffusivity[select]*collect_thickness_over_diffusivity_from_peak_match[select]*Ptthermalconductivity,levels=15,cmap='rainbow')
+		plt.scatter(collect_aggregated_emissivity[select]*nuc_plate_emissivity,collect_reference_temperature[select],c=collect_real_thermaldiffusivity[select]*collect_thickness_over_diffusivity_from_peak_match[select]*Ptthermalconductivity,cmap='rainbow')
+		plt.colorbar().set_label(r'$k t_f$ $[W/K]$')
+		plt.tricontour(collect_aggregated_emissivity[select]*nuc_plate_emissivity,collect_reference_temperature[select],collect_real_thermaldiffusivity[select]*collect_thickness_over_diffusivity_from_peak_match[select]*Ptthermalconductivity,levels=15,colors='k')
 		plt.axhline(y=27,color='k')
 		plt.axvline(x=1,color='k')
-		plt.xlabel('emissivity')
+		plt.xlabel(r'$\varepsilon$ [au]')
 		# plt.xlim(right=1.5)
-		plt.ylabel('reference_temperature')
-		plt.title('nuc_plate_emissivity '+str(nuc_plate_emissivity) + '\nlaser power %.3gW' %(laser_to_analyse_power))
+		plt.ylabel(r'$T_0 [K]$')
+		plt.title('nuc_plate_emissivity '+str(nuc_plate_emissivity) + '\nlaser power %.3gW\n' %(laser_to_analyse_power))
+		# plt.savefig(path_where_to_save_everything + 'FIG_for_paper_6'  +'.eps')
 		plt.close()
 
 		# plt.figure()
@@ -2305,8 +2381,12 @@ else:	# here I want to fit thickness_over_diffusivity from the peak time derivat
 
 	thickness_over_diffusivity_per_NUC = []
 	thickness_over_diffusivity_per_NUC_std = []
+	cond_thickness_over_diffusivity_per_NUC = []
+	cond_thickness_over_diffusivity_per_NUC_std = []
 	thickness_per_NUC = []
 	thickness_per_NUC_std = []
+	cond_thickness_per_NUC = []
+	cond_thickness_per_NUC_std = []
 	thermaldiffusivity_per_NUC = []
 	thermaldiffusivity_per_NUC_std = []
 	emissivity_per_NUC = []
@@ -2345,8 +2425,12 @@ else:	# here I want to fit thickness_over_diffusivity from the peak time derivat
 		# reference_temperature.append(np.mean((collect_reference_temperature)[collect_full_error[i_]<=(np.min(collect_full_error[i_])*2)]))
 		# reference_temperature_std.append(np.std((collect_reference_temperature)[collect_full_error[i_]<=(np.min(collect_full_error[i_])*2)]))
 
+		cond_thickness_over_diffusivity_per_NUC.append(np.sum((Ptthermalconductivity*thickness_over_diffusivity_from_peak_match_interpolator(emissivity,reference_temperature__)/full_error)[select])/np.sum(1/full_error[select]))
+		cond_thickness_over_diffusivity_per_NUC_std.append(np.std((Ptthermalconductivity*thickness_over_diffusivity_from_peak_match_interpolator(emissivity,reference_temperature__)/full_error)[select])/np.mean(1/full_error[select]))
 		thickness_over_diffusivity_per_NUC.append(np.sum((thickness_over_diffusivity_from_peak_match_interpolator(emissivity,reference_temperature__)/full_error)[select])/np.sum(1/full_error[select]))
 		thickness_over_diffusivity_per_NUC_std.append(np.std((thickness_over_diffusivity_from_peak_match_interpolator(emissivity,reference_temperature__)/full_error)[select])/np.mean(1/full_error[select]))
+		cond_thickness_per_NUC.append(np.sum((Ptthermalconductivity*thickness_from_peak_match_interpolator(emissivity,reference_temperature__)/full_error)[select])/np.sum(1/full_error[select]))
+		cond_thickness_per_NUC_std.append(np.std((Ptthermalconductivity*thickness_from_peak_match_interpolator(emissivity,reference_temperature__)/full_error)[select])/np.mean(1/full_error[select]))
 		thickness_per_NUC.append(np.sum((thickness_from_peak_match_interpolator(emissivity,reference_temperature__)/full_error)[select])/np.sum(1/full_error[select]))
 		thickness_per_NUC_std.append(np.std((thickness_from_peak_match_interpolator(emissivity,reference_temperature__)/full_error)[select])/np.mean(1/full_error[select]))
 		thermaldiffusivity_per_NUC.append(np.sum((thermaldiffusivity_interpolator(emissivity,reference_temperature__)/full_error)[select])/np.sum(1/full_error[select]))
@@ -2419,7 +2503,7 @@ else:	# here I want to fit thickness_over_diffusivity from the peak time derivat
 
 
 	# I waht to check with another experiment, to see if it works
-	index = 9
+	index = 4
 	laser_to_analyse = all_laser_to_analyse[index]
 	experimental_laser_frequency = all_laser_to_analyse_frequency[index]
 	experimental_laser_voltage = all_laser_to_analyse_voltage[index]
@@ -2692,6 +2776,7 @@ else:	# here I want to fit thickness_over_diffusivity from the peak time derivat
 
 		nuc_plate_emissivity=1	# this is because I don't know it, and the search does not help
 		reference_temperature_all = 24.1	# this is because I don't know it, and the search does not help, and also does not matter
+		reference_temperature_correction=0
 
 		diffusivity = 9.475792174791206e-06
 		thickness_over_diffusivity = 0.07522113087718789	# this is the real measurement I obtain
@@ -2717,7 +2802,7 @@ else:	# here I want to fit thickness_over_diffusivity from the peak time derivat
 
 		temp = np.abs(reference_temperature_range-reference_temperature_all)
 		temp2 = reference_temperature_range[temp<=np.sort(temp)[1]]
-		z = (reference_temperature-temp2[1])/(temp2[1]-temp2[0])
+		z = (reference_temperature_all-temp2[1])/(temp2[1]-temp2[0])
 		coeff_0_0 = -z
 		coeff_0_1 = 1+z
 
@@ -2846,5 +2931,44 @@ else:	# here I want to fit thickness_over_diffusivity from the peak time derivat
 		plt.ylabel('Power [W]')
 		plt.grid()
 		# plt.xlim(left=2.5,right=8.5)
+
+			# I would prefer not to, but I really need to do this, otherwise I can't see anything with the known noise
+			timevariation_filtered = coleval.butter_lowpass_filter(timevariation,15,383/2,3)
+			timevariation_small_filtered = coleval.butter_lowpass_filter(timevariation_small,15,383/2,3)
+			# timevariation_filtered = cp.deepcopy(timevariation)
+			# timevariation_small_filtered = cp.deepcopy(timevariation_small)
+
+
+			plt.figure(figsize=(10, 5))
+			start = time_partial[569-7]
+			end = time_partial[300+748-7]
+			a1, = plt.plot(time_partial,timevariation_small_filtered,label=r'$P_{\delta T/\delta t}$')
+			plt.plot(time_partial,timevariation_filtered,a1.get_color(),linestyle='--')
+			a3, = plt.plot(time_partial,diff_small,label=r'$P_{\Delta T}$')
+			plt.plot(time_partial,diff,a3.get_color(),linestyle='--')
+			a2, = plt.plot(time_partial,BB_small,label=r'$P_{BB}$')
+			plt.plot(time_partial,BB,a2.get_color(),linestyle='--')
+			a4, = plt.plot(time_partial,BB_small+timevariation_small_filtered+diff_small,label=r'$P_{foil}$')
+			plt.plot(time_partial,BB+timevariation_filtered+diff,a4.get_color(),linestyle='--')
+			reduced_framerate = 1/np.median(np.diff(time_partial))	# the /7 is the smoothing applied to the temperature derivaive
+			full_framerate = 2*reduced_framerate
+			pixels = 240*187
+			area = 0.09*0.07
+			noise = 10**0.5 * Ptthermalconductivity*thickness*0.03/((full_framerate*pixels)**0.5) * ( pixels**3 *reduced_framerate/ area**2 + pixels * reduced_framerate**3 / (5 *diffusivity**2) )**0.5 *(np.pi * 0.0033**2)/((np.pi * 0.0033**2/area*pixels)**0.5)
+			plt.plot([0,start,start,end,end,10],np.array([0,0,laser_to_analyse_power*emissivity,laser_to_analyse_power*emissivity,0,0])+noise,'-',color='gray')
+			plt.plot([0,start,start,end,end,10],np.array([0,0,laser_to_analyse_power*emissivity,laser_to_analyse_power*emissivity,0,0])-noise,'-',color='gray')
+			noise = 10**0.5 * Ptthermalconductivity*thickness*0.03/((full_framerate*pixels)**0.5) * ( pixels**3 *reduced_framerate/ area**2 + pixels * reduced_framerate**3 / (5 *diffusivity**2) )**0.5 *(np.pi * 0.0075**2)/((np.pi * 0.0075**2/area*pixels)**0.5)
+			plt.plot([0,start,start,end,end,10],np.array([0,0,laser_to_analyse_power*emissivity,laser_to_analyse_power*emissivity,0,0])+noise,'--',color='gray')
+			plt.plot([0,start,start,end,end,10],np.array([0,0,laser_to_analyse_power*emissivity,laser_to_analyse_power*emissivity,0,0])-noise,'--',color='gray')
+			plt.plot([0,start,start,end,end,10],[0,0,laser_to_analyse_power*emissivity,laser_to_analyse_power*emissivity,0,0],'--k',label=r'$\varepsilon P_{laser}$')
+
+			plt.xlabel('time [s]')
+			plt.ylabel('Integrated power [W]')
+			plt.grid()
+			plt.xlim(left=2.5,right=7.5)
+			plt.legend(loc='best')
+			# plt.savefig(path_to_save_figures+laser_to_analyse[-6:] + path_to_save_figures2 + 'FIG_for_paper_2'+'.eps', bbox_inches='tight')
+			plt.savefig(path_where_to_save_everything + 'FIG_for_paper_3'  +'.eps', bbox_inches='tight')
+
 
 #

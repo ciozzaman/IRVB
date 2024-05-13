@@ -459,9 +459,12 @@ stand_off_length = 0.06	# m	# >= MU02
 # stand_off_length = 0.045	# m	# = MU01
 # stand_off_length = 0.075	# m	# MU?
 
-# pinhole_offset = np.array([-0.0198,-0.0198])	# toroidal direction parallel to the place surface, z
+pinhole_radious = 0.02
+
+# MU01/2/3
+pinhole_offset = np.array([-0.0198,-0.0198])	# toroidal direction parallel to the place surface, z
 # FROM MU04
-pinhole_offset = np.array([0.0198,-0.0198])	# toroidal direction parallel to the place surface, z
+# pinhole_offset = np.array([0.0198,-0.0198])	# toroidal direction parallel to the place surface, z
 
 # pinhole_location = np.array([-1.04087,1.068856,-0.7198])	# x,y,z
 pinhole_location = coleval.locate_pinhole(pinhole_offset=pinhole_offset)	# x,y,z
@@ -476,25 +479,26 @@ pinhole_relative_location = np.array(foil_size)/2 -pinhole_offset #+ 0.0198
 
 cv0 = np.zeros((np.array(foil_size)*100*100).astype(int)).T
 
-
 structure_point_location_on_foil = coleval.return_structure_point_location_on_foil(plane_equation=plane_equation,centre_of_foil=centre_of_foil,pinhole_offset=pinhole_offset,foil_size=foil_size)
 fueling_point_location_on_foil = coleval.return_fueling_point_location_on_foil(plane_equation=plane_equation,pinhole_offset=pinhole_offset,centre_of_foil=centre_of_foil,foil_size=foil_size)
 
 structure_alpha = 1
 
-plt.figure(figsize=(7,7))
-for i in range(len(fueling_point_location_on_foil)):
-	# plt.plot(np.array(fueling_point_location_on_foil[i][:,0])*(np.shape(cv0)[1]-1)/foil_size[0],np.array(fueling_point_location_on_foil[i][:,1])*(np.shape(cv0)[0]-1)/foil_size[1],'+k',markersize=40,alpha=structure_alpha)
-	# plt.plot(np.array(fueling_point_location_on_foil[i][:,0])*(np.shape(cv0)[1]-1)/foil_size[0],np.array(fueling_point_location_on_foil[i][:,1])*(np.shape(cv0)[0]-1)/foil_size[1],'ok',markersize=5,alpha=structure_alpha)
-	plt.plot(np.array(fueling_point_location_on_foil[i][:,0]),np.array(fueling_point_location_on_foil[i][:,1]),'+k',markersize=40,alpha=structure_alpha)
-	plt.plot(np.array(fueling_point_location_on_foil[i][:,0]),np.array(fueling_point_location_on_foil[i][:,1]),'ok',markersize=5,alpha=structure_alpha)
+fig, ax = plt.subplots(figsize=(7,7))
+# plt.figure(figsize=(7,7))
+# for i in range(len(fueling_point_location_on_foil)):
+# 	# plt.plot(np.array(fueling_point_location_on_foil[i][:,0])*(np.shape(cv0)[1]-1)/foil_size[0],np.array(fueling_point_location_on_foil[i][:,1])*(np.shape(cv0)[0]-1)/foil_size[1],'+k',markersize=40,alpha=structure_alpha)
+# 	# plt.plot(np.array(fueling_point_location_on_foil[i][:,0])*(np.shape(cv0)[1]-1)/foil_size[0],np.array(fueling_point_location_on_foil[i][:,1])*(np.shape(cv0)[0]-1)/foil_size[1],'ok',markersize=5,alpha=structure_alpha)
+# 	plt.plot(np.array(fueling_point_location_on_foil[i][:,0]),np.array(fueling_point_location_on_foil[i][:,1]),'+k',markersize=40,alpha=structure_alpha)
+# 	plt.plot(np.array(fueling_point_location_on_foil[i][:,0]),np.array(fueling_point_location_on_foil[i][:,1]),'ok',markersize=5,alpha=structure_alpha)
 for i in range(len(structure_point_location_on_foil)):
 	# plt.plot(np.array(structure_point_location_on_foil[i][:,0])*(np.shape(cv0)[1]-1)/foil_size[0],np.array(structure_point_location_on_foil[i][:,1])*(np.shape(cv0)[0]-1)/foil_size[1],'--k',alpha=structure_alpha)
 	plt.plot(np.array(structure_point_location_on_foil[i][:,0]),np.array(structure_point_location_on_foil[i][:,1]),'--k',alpha=structure_alpha)
 plt.plot([0,foil_size[0],foil_size[0],0,0],[0,0,foil_size[1],foil_size[1],0],'k')
-plt.plot(foil_size[0]/2+np.linspace(-0.115/2,0.115/2,100),foil_size[1]/2+((0.115/2)**2-(np.linspace(-0.115/2,0.115/2,100))**2)**0.5,'k')
-plt.plot(foil_size[0]/2+np.linspace(-0.115/2,0.115/2,100),foil_size[1]/2-((0.115/2)**2-(np.linspace(-0.115/2,0.115/2,100))**2)**0.5,'k')
-plt.plot([foil_size[0]/2-0.07/2,foil_size[0]/2+0.07/2,foil_size[0]/2+0.07/2,foil_size[0]/2-0.07/2,foil_size[0]/2-0.07/2],[foil_size[1]/2-0.09/2,foil_size[1]/2-0.09/2,foil_size[1]/2+0.09/2,foil_size[1]/2+0.09/2,foil_size[1]/2-0.09/2],'k')
+plt.plot(foil_size[0]/2+np.linspace(-0.115/2,0.115/2,100),foil_size[1]/2+((0.115/2)**2-(np.linspace(-0.115/2,0.115/2,100))**2)**0.5,'k')	# max diameter circle
+plt.plot(foil_size[0]/2+np.linspace(-0.115/2,0.115/2,100),foil_size[1]/2-((0.115/2)**2-(np.linspace(-0.115/2,0.115/2,100))**2)**0.5,'k')	# max diameter circle
+# MU01/2/3 foil size
+# plt.plot([foil_size[0]/2-0.07/2,foil_size[0]/2+0.07/2,foil_size[0]/2+0.07/2,foil_size[0]/2-0.07/2,foil_size[0]/2-0.07/2],[foil_size[1]/2-0.09/2,foil_size[1]/2-0.09/2,foil_size[1]/2+0.09/2,foil_size[1]/2+0.09/2,foil_size[1]/2-0.09/2],'k')
 
 
 try:
@@ -573,9 +577,13 @@ for __i in range(len(plot4)):
 for __i in range(len(plot5)):
 	plot5[__i].set_data((all_time_separatrix[i_time][__i][:,0],all_time_separatrix[i_time][__i][:,1]))
 
-plt.gca().set_aspect('equal', adjustable='box')
+plt.gca().set_aspect('equal')
 plt.xlim(left=0,right=foil_size[0])
 plt.ylim(bottom=0,top=foil_size[1])
+
+labels = [str(np.round(val,2)) for val in np.arange(7)*0.02-foil_size[0]/2]
+ax.set_xticklabels(labels)
+ax.set_yticklabels(labels)
 
 
 ####

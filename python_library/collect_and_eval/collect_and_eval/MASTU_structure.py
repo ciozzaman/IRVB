@@ -42,7 +42,7 @@ for value in [33,93,153,213]:
 	stucture_r.append([0.305,0.270])
 	stucture_z.append([-0.853,-0.573])
 	stucture_t.append([value]*2)
-# tiles around the nose
+# tiles around the nose left of the central column
 # neighbouring points
 stucture_r.append([0.898]*8)
 stucture_z.append([-1.300]*8)
@@ -382,8 +382,8 @@ FULL_MASTU_CORE_GRID_POLYGON = np.array([
     (1.35, -2.06),
     (1.09, -2.06),
     (0.9, -1.87),
-    (0.36-0.18, -1.33-0.18),
-    (0.36-0.18*2, -1.33-0.18*2),
+    (0.36+0.18, -1.33-0.18),
+    (0.36+0.18*2, -1.33-0.18*2),
     (0.36, -1.33),
     (0.333, -1.303),
     (0.333, -1.1),

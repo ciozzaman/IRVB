@@ -37,6 +37,25 @@ try:
 		powernoback = full_saved_file_dict_FAST['third_pass']['FAST_powernoback']
 		time_binned = full_saved_file_dict_FAST['third_pass']['FAST_time_binned']
 	grid_resolution = 2	# cm
+	try:	# I do this first so I have all the memory I can
+		inverted_data_covariance_log = inverted_dict[str(grid_resolution)]['inverted_data_covariance_log']
+		covariance_out = np.exp(inverted_data_covariance_log.astype(np.float32)).astype(np.float32)
+		del inverted_data_covariance_log
+		inverted_data_covariance_is_positive_packed = inverted_dict[str(grid_resolution)]['inverted_data_covariance_is_positive_packed']
+		covariance_out_sing = np.unpackbits(inverted_data_covariance_is_positive_packed)[:np.prod(np.shape(covariance_out))].reshape(np.shape(covariance_out)).astype(int)
+		del inverted_data_covariance_is_positive_packed
+		covariance_out_sing *= 2
+		covariance_out_sing -= 1
+		covariance_out_sing = np.round(covariance_out_sing,2)	# just in case I generated some 0.9999999
+		covariance_out = covariance_out*covariance_out_sing.astype(np.float32)
+		del covariance_out_sing
+	except:
+		try:
+			inverted_data_covariance_scaling_factor = inverted_dict[str(grid_resolution)]['inverted_data_covariance_scaling_factor']
+			inverted_data_covariance_scaled = inverted_dict[str(grid_resolution)]['inverted_data_covariance_scaled']
+			covariance_out = (inverted_data_covariance_scaled.astype(np.float32).T * inverted_data_covariance_scaled.astype(np.float32).T).T
+		except:
+			covariance_out = inverted_dict[str(grid_resolution)]['inverted_data_covariance']
 	time_full_binned_crop = inverted_dict[str(grid_resolution)]['time_full_binned_crop']
 	inverted_data = inverted_dict[str(grid_resolution)]['inverted_data']
 	inverted_data_sigma = inverted_dict[str(grid_resolution)]['inverted_data_sigma']
@@ -52,7 +71,6 @@ try:
 	core_tot_rad_power_sigma_all = inverted_dict[str(grid_resolution)]['core_tot_rad_power_sigma_all']
 	sxd_tot_rad_power_sigma_all = inverted_dict[str(grid_resolution)]['sxd_tot_rad_power_sigma_all']
 	x_point_tot_rad_power_sigma_all = inverted_dict[str(grid_resolution)]['x_point_tot_rad_power_sigma_all']
-	covariance_out = inverted_dict[str(grid_resolution)]['inverted_data_covariance']
 	grid_data_masked_crop = inverted_dict[str(grid_resolution)]['grid_data_masked_crop']
 
 	local_inner_leg_mean_emissivity = inverted_dict[str(grid_resolution)]['local_inner_leg_mean_emissivity']
@@ -86,6 +104,14 @@ try:
 		full_saved_file_dict_FAST['multi_instrument']['line_integrated_density'] = core_density
 	except:
 		density_data_missing = True
+	try:	# last ditch effort to see if the data was saved already
+		greenwald_density = full_saved_file_dict_FAST['multi_instrument']['greenwald_density']
+		ne_bar = full_saved_file_dict_FAST['multi_instrument']['ne_bar']
+		core_density = full_saved_file_dict_FAST['multi_instrument']['line_integrated_density']
+		if len(ne_bar)==len(time_full_binned_crop):
+			density_data_missing = False
+	except:
+		pass
 	coleval.reset_connection(client)
 	del client
 
@@ -300,7 +326,7 @@ try:
 		elif valve['valve'][:4] in ['pfr_','lfsd','lfss']:
 			gas_div += valve['flux'][select]
 			gas_div_valves.append(valve['valve'])
-		elif valve['valve'][:4] == 'lfs_':
+		elif valve['valve'][:4] in ['lfs_','lfsv']:
 			gas_core += valve['flux'][select]
 			gas_core_valves.append(valve['valve'])
 			gas_outer += valve['flux'][select]
@@ -321,6 +347,8 @@ try:
 	# reading LP data
 	import pandas as pd
 	badLPs_V0 = np.array(pd.read_csv('/home/ffederic/work/analysis_scripts/scripts/from_Peter/30473_badLPs_V0.csv',index_col=0).index.tolist())
+	FF_LP_path = '/home/ffederic/work/irvb/from_pryan_LP'
+	path_alternate='/common/uda-scratch/pryan'
 	try:
 		try:
 			fdir = coleval.uda_transfer(shotnumber,'elp',extra_path='/0'+str(shotnumber)[:2])
@@ -342,7 +370,10 @@ try:
 				s10_lower_s = output_contour1['s'][0][0]
 				s10_lower_r = output_contour1['R'][0][0]
 				s10_lower_z = output_contour1['Z'][0][0]
-				output,Eich=compare_shots(filepath='/home/ffederic/work/irvb/from_pryan_LP'+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False)
+				try:
+					output,Eich=compare_shots(filepath=FF_LP_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False)
+				except:
+					output,Eich=compare_shots(filepath=path_alternate+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False)
 				s10_lower_jsat = []
 				s10_lower_jsat_sigma = []
 				s10_lower_jsat_r = []
@@ -373,7 +404,10 @@ try:
 				s4_lower_s = output_contour1['s'][0][0]
 				s4_lower_r = output_contour1['R'][0][0]
 				s4_lower_z = output_contour1['Z'][0][0]
-				output,Eich=compare_shots(filepath='/home/ffederic/work/irvb/from_pryan_LP'+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=4, quantity = 'jsat_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False)
+				try:
+					output,Eich=compare_shots(filepath=FF_LP_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=4, quantity = 'jsat_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False)
+				except:
+					output,Eich=compare_shots(filepath=path_alternate+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=4, quantity = 'jsat_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False)
 				s4_lower_jsat = []
 				s4_lower_jsat_sigma = []
 				s4_lower_jsat_r = []
@@ -405,7 +439,10 @@ try:
 				s4_upper_s = output_contour1['s'][0][0]
 				s4_upper_r = output_contour1['R'][0][0]
 				s4_upper_z = output_contour1['Z'][0][0]
-				output,Eich=compare_shots(filepath='/home/ffederic/work/irvb/from_pryan_LP'+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=4, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False)
+				try:
+					output,Eich=compare_shots(filepath=FF_LP_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=4, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False)
+				except:
+					output,Eich=compare_shots(filepath=path_alternate+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=4, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False)
 				s4_upper_jsat = []
 				s4_upper_jsat_sigma = []
 				s4_upper_jsat_r = []
@@ -436,7 +473,10 @@ try:
 				s10_upper_std_s = output_contour1['s'][0][0]
 				s10_upper_std_r = output_contour1['R'][0][0]
 				s10_upper_std_z = output_contour1['Z'][0][0]
-				output,Eich=compare_shots(filepath='/home/ffederic/work/irvb/from_pryan_LP'+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-4,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4'],time_combine=True,show=False)
+				try:
+					output,Eich=compare_shots(filepath=FF_LP_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-4,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4'],time_combine=True,show=False)
+				except:
+					output,Eich=compare_shots(filepath=path_alternate+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-4,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4'],time_combine=True,show=False)
 				s10_upper_std_jsat = []
 				s10_upper_std_jsat_sigma = []
 				s10_upper_std_jsat_r = []
@@ -467,7 +507,10 @@ try:
 				s10_upper_large_s = output_contour1['s'][0][0]
 				s10_upper_large_r = output_contour1['R'][0][0]
 				s10_upper_large_z = output_contour1['Z'][0][0]
-				output,Eich=compare_shots(filepath='/home/ffederic/work/irvb/from_pryan_LP'+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['T5'],time_combine=True,show=False)
+				try:
+					output,Eich=compare_shots(filepath=FF_LP_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['T5'],time_combine=True,show=False)
+				except:
+					output,Eich=compare_shots(filepath=path_alternate+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['T5'],time_combine=True,show=False)
 				s10_upper_large_jsat = []
 				s10_upper_large_jsat_sigma = []
 				s10_upper_large_jsat_r = []
@@ -1227,6 +1270,8 @@ try:
 		nu_labombard = []
 		nu_stangeby = []
 		nu_mean = []
+		tu_EFIT = []
+		nu_EFIT = []
 		for time in time_full_binned_crop:
 			try:
 				temp = divertor_geometry(shot=shotnumber,time=time)
@@ -1269,11 +1314,28 @@ try:
 				nu_labombard.append(interp_ne_Te(tu_labombard[-1]))
 				nu_stangeby.append(interp_ne_Te(tu_stangeby[-1]))
 				nu_mean.append(np.nanmean([nu_cowley[-1],nu_labombard[-1],nu_stangeby[-1]]))
+				# I want the upstream parameters according to EFIT
+				try:
+					i_efit_time = np.abs(efit_reconstruction.time-time).argmin()
+					mag_axis_z = efit_reconstruction.mag_axis_z[i_efit_time]
+					psidat = efit_reconstruction.psidat[i_efit_time]
+					psidat = psidat[np.abs(efit_reconstruction.z - mag_axis_z).argmin()]
+					R_ = efit_reconstruction.R
+					R_ = R_[psidat.argmax():psidat.argmin()]
+					psidat = psidat[psidat.argmax():psidat.argmin()]
+					R_separatrix_OMP = np.interp(efit_reconstruction.psi_bnd[i_efit_time],np.flip(psidat,axis=0),np.flip(R_,axis=0))
+					tu_EFIT.append(max(0,np.interp(R_separatrix_OMP,R_TS,Te)))
+					nu_EFIT.append(np.interp(R_separatrix_OMP,R_TS,ne))
+				except:
+					tu_EFIT.append(np.nan)
+					nu_EFIT.append(np.nan)
 			except:
 				nu_cowley.append(np.nan)
 				nu_labombard.append(np.nan)
 				nu_stangeby.append(np.nan)
 				nu_mean.append(np.nan)
+				tu_EFIT.append(np.nan)
+				nu_EFIT.append(np.nan)
 		full_saved_file_dict_FAST['multi_instrument']['tu_cowley'] = tu_cowley
 		full_saved_file_dict_FAST['multi_instrument']['tu_labombard'] = tu_labombard
 		full_saved_file_dict_FAST['multi_instrument']['tu_stangeby'] = tu_stangeby
@@ -1281,6 +1343,8 @@ try:
 		full_saved_file_dict_FAST['multi_instrument']['nu_labombard'] = nu_labombard
 		full_saved_file_dict_FAST['multi_instrument']['nu_stangeby'] = nu_stangeby
 		full_saved_file_dict_FAST['multi_instrument']['nu_mean'] = nu_mean
+		full_saved_file_dict_FAST['multi_instrument']['tu_EFIT'] = tu_EFIT
+		full_saved_file_dict_FAST['multi_instrument']['nu_EFIT'] = nu_EFIT
 		TS_reading_success = True
 	except Exception as e:
 		print('TS reading failed')
@@ -1536,7 +1600,7 @@ try:
 	ax[1,0].set_xlabel('time [s]')
 	plt.subplots_adjust(wspace=0, hspace=0)
 	# plt.pause(0.01)
-	plt.savefig(filename_root+filename_root_add+'_all_variables.png')
+	plt.savefig(filename_root+filename_root_add+'_all_variables.eps')
 	plt.close()
 
 	# plot of absolute quantities
@@ -1592,11 +1656,12 @@ try:
 		ax[0,0].axvline(x=time_active_MARFE,linestyle='-',color='k',label='MARFE active from bolo')
 	# ax[0,0].legend(loc='best', fontsize='xx-small')
 	if TS_reading_success:
-		ax[1,0].plot(time_full_binned_crop,nu_mean,'--',label='ne upstream LFS',color=color[-2])
-		ax[1,0].plot(time_full_binned_crop,nu_cowley,':',label='ne Cowley LFS',color=color[-3])
+		ax[1,0].plot(time_full_binned_crop,nu_mean,'--',label='ne,up mean',color=color[-2])
+		ax[1,0].plot(time_full_binned_crop,nu_cowley,':',label='ne,up Cowley',color=color[-3])
+		ax[1,0].plot(time_full_binned_crop,nu_EFIT,':',label='ne,up EFIT',color=color[-5])
 	if  not density_data_missing:
-		ax[1,0].plot(time_full_binned_crop,core_density,label='core_density',color=color[0])
-		ax[1,0].plot(time_full_binned_crop,ne_bar,label='ne_bar',color=color[-1])
+		ax[1,0].plot(time_full_binned_crop,core_density,label='core line int ne',color=color[0])
+		ax[1,0].plot(time_full_binned_crop,ne_bar,label='core line averaged ne',color=color[-1])
 		ax[1,0].plot(time_full_binned_crop,greenwald_density,'--',label='greenwald_density',color=color[-4])
 
 		ax1 = ax[1,0].twinx()  # instantiate a second axes that shares the same x-axis
@@ -1613,6 +1678,7 @@ try:
 	# ax[1,0].legend(loc='best', fontsize='xx-small')
 	ax[1,0].grid()
 	ax[1,0].set_ylabel('ne [#/m3]')
+	ax[1,0].semilogy()
 	ax[2,0].plot(time_full_binned_crop,dr_sep_in,'-',label='dr_sep_in (<-)',color=color[14])
 	ax[2,0].plot(time_full_binned_crop,dr_sep_out,'-',label='dr_sep_out (<-)',color=color[13])
 	# ax[2,0].plot(time_full_binned_crop,radius_inner_separatrix-0.2608,'-',label='inner gap',color=color[12])
@@ -1651,6 +1717,7 @@ try:
 	ax[3,0].set_ylabel('fueling [#mol/s]')
 	ax[3,0].legend(loc='best', fontsize='xx-small')
 
+	ax[4,0].errorbar(time_full_binned_crop,1e-6*equivalent_res_bolo_view_all*2,yerr=1e-6*equivalent_res_bolo_view_sigma_all*2,label='= res bolo',color=color[1])
 	try:
 		power_balance = calc_psol(shot=shotnumber,smooth_dt =0.015)	# in W
 		input_power = np.interp(time_full_binned_crop,power_balance['t'],power_balance['pohm'] + SW_BEAMPOWER + SS_BEAMPOWER-power_balance['pdw_dt'])
@@ -1681,7 +1748,6 @@ try:
 		ax[4,0].set_ylim(bottom=0)
 	ax[4,0].plot(time_full_binned_crop,1e-6*real_core_radiation_all*2,label='core_radiation',color=color[3])
 	ax[4,0].plot(time_full_binned_crop,1e-6*real_non_core_radiation_all*2,label='non_core_radiation',color=color[4])
-	ax[4,0].errorbar(time_full_binned_crop,1e-6*equivalent_res_bolo_view_all*2,yerr=1e-6*equivalent_res_bolo_view_sigma_all*2,label='= res bolo',color=color[1])
 	ax[4,0].grid()
 	ax[4,0].set_ylabel('power [MW]')
 	ax[4,0].legend(loc='upper left', fontsize='xx-small')
@@ -1857,6 +1923,7 @@ try:
 		ax[10,0].plot(time_full_binned_crop,tu_cowley,label='cowley')
 		ax[10,0].plot(time_full_binned_crop,tu_labombard,label='labombard')
 		ax[10,0].plot(time_full_binned_crop,tu_stangeby,label='stangeby')
+		ax[10,0].plot(time_full_binned_crop,tu_EFIT,label='EFIT')
 		ax[10,0].grid()
 		ax[10,0].legend(loc='best', fontsize='xx-small')
 
@@ -1876,7 +1943,7 @@ try:
 
 	# plt.subplots_adjust(wspace=0, hspace=0)
 	# plt.pause(0.01)
-	plt.savefig(filename_root+filename_root_add+'_all_variables_absolute.png')
+	plt.savefig(filename_root+filename_root_add+'_all_variables_absolute.eps')
 	plt.close()
 
 
