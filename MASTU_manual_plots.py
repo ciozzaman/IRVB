@@ -47,9 +47,11 @@ try:
 		covariance_out_sing *= 2
 		covariance_out_sing -= 1
 		covariance_out_sing = np.round(covariance_out_sing,2)	# just in case I generated some 0.9999999
-		covariance_out = covariance_out*covariance_out_sing.astype(np.float32)
+		covariance_out = (covariance_out*covariance_out_sing).astype(np.float32)
 		del covariance_out_sing
-	except:
+	except Exception as e:
+		print('inverted_data_covariance_log reading failed because of '+e)
+		logging.exception('with error: ' + str(e))
 		try:
 			inverted_data_covariance_scaling_factor = inverted_dict[str(grid_resolution)]['inverted_data_covariance_scaling_factor']
 			inverted_data_covariance_scaled = inverted_dict[str(grid_resolution)]['inverted_data_covariance_scaled']
@@ -60,6 +62,7 @@ try:
 	inverted_data = inverted_dict[str(grid_resolution)]['inverted_data']
 	inverted_data_sigma = inverted_dict[str(grid_resolution)]['inverted_data_sigma']
 	binning_type = inverted_dict[str(grid_resolution)]['binning_type']
+	shotnumber = int(laser_to_analyse[-9:-4])
 
 	outer_leg_tot_rad_power_all = inverted_dict[str(grid_resolution)]['outer_leg_tot_rad_power_all']
 	inner_leg_tot_rad_power_all = inverted_dict[str(grid_resolution)]['inner_leg_tot_rad_power_all']
@@ -88,7 +91,6 @@ try:
 	efit_reconstruction = coleval.mclass(EFIT_path_default+'/epm0'+laser_to_analyse[-9:-4]+'.nc',pulse_ID=laser_to_analyse[-9:-4])
 	inversion_R = inverted_dict[str(grid_resolution)]['geometry']['R']
 	inversion_Z = inverted_dict[str(grid_resolution)]['geometry']['Z']
-	shotnumber = int(laser_to_analyse[-9:-4])
 
 	client=pyuda.Client()
 	try:
@@ -349,7 +351,28 @@ try:
 	badLPs_V0 = np.array(pd.read_csv('/home/ffederic/work/analysis_scripts/scripts/from_Peter/30473_badLPs_V0.csv',index_col=0).index.tolist())
 	FF_LP_path = '/home/ffederic/work/irvb/from_pryan_LP'
 	path_alternate='/common/uda-scratch/pryan'
+	import subprocess
+	import tempfile
+	# 2024/007/02 I have to modify this code, as it works only with python 3.7, and not 3.9.
+	# I tried to find a reasonable way to do it, but I couldn't really find it, so I simply skip this entirely if I'm in Python3.9
+	# Note: the code seems to run well also in Python 3.7
+	from mastu_exhaust_analysis.eich_gui import prepare_data_for_Eich_fit_fn_time,Eich_fit_fn_time
+	from mastu_exhaust_analysis.flux_expansion import calc_fpol
+	fpol=calc_fpol(shotnumber,max_s=20e-2,number_steps=30)
+	lambda_q_compression = (fpol['fpol_lower']/np.sin(fpol['poloidal_angle_lower']))[:,0]
+	lambda_q_compression_lower_interp = interp1d(fpol['time'],lambda_q_compression,fill_value="extrapolate",bounds_error=False)
+	lambda_q_compression = (fpol['fpol_upper']/np.sin(fpol['poloidal_angle_upper']))[:,0]
+	lambda_q_compression_upper_interp = interp1d(fpol['time'],lambda_q_compression,fill_value="extrapolate",bounds_error=False)
 	try:
+		# I don't think is necessary, in reality.
+		# lp_data.contour_plot does not work in Python 3.9, but compare_shots works fine
+		# Eich_fit_fn_time works only in python 3.7 because of the function iminuit.Struct
+		if sys.version_info.major==3 and sys.version_info.minor==7:
+			lambda_q_determination = True
+		else:
+			print('LPs can be real properly only with Pithon 3.7, and it was not used here, so this step is skipped')
+			lambda_q_determination = False
+			# sblu=sgne	# I want an error to occour, as LPs can be real properly only with Pithon 3.7
 		try:
 			fdir = coleval.uda_transfer(shotnumber,'elp',extra_path='/0'+str(shotnumber)[:2])
 			lp_data,output_contour1 = coleval.read_LP_data(shotnumber,path = os.path.split(fdir)[0])
@@ -371,9 +394,9 @@ try:
 				s10_lower_r = output_contour1['R'][0][0]
 				s10_lower_z = output_contour1['Z'][0][0]
 				try:
-					output,Eich=compare_shots(filepath=FF_LP_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False)
+					output,Eich=compare_shots(filepath=FF_LP_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
 				except:
-					output,Eich=compare_shots(filepath=path_alternate+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False)
+					output,Eich=compare_shots(filepath=path_alternate+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
 				s10_lower_jsat = []
 				s10_lower_jsat_sigma = []
 				s10_lower_jsat_r = []
@@ -383,18 +406,52 @@ try:
 					s10_lower_jsat_sigma.append(output[i]['y_error'][0][0])
 					s10_lower_jsat_r.append(output[i]['R'][0][0])	# here there are only standard probes
 					s10_lower_jsat_s.append(output[i]['s'][0][0])
+				if lambda_q_determination:	# section to calculate OMP lambda_q
+					try:
+						output,Eich=compare_shots(filepath=FF_LP_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=10, quantity = 'q_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
+					except:
+						output,Eich=compare_shots(filepath=path_alternate+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=10, quantity = 'q_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
+					x_all_finite,y_all_finite,y_err_all_finite,time_all_finite = prepare_data_for_Eich_fit_fn_time(output)
+					fit_store,start_limits_store=Eich_fit_fn_time(x_all_finite,y_all_finite,y_err_all_finite,time_all_finite)
+
+					lambda_q_compression = lambda_q_compression_lower_interp(time_all_finite)
+					lambda_q_10_lower = fit_store['lambda_q']/lambda_q_compression
+					lambda_q_10_lower = lambda_q_10_lower[fit_store['acceptable_fit'].astype(bool)]
+					lambda_q_10_lower_sigma = fit_store['lambda_q_err']/lambda_q_compression
+					lambda_q_10_lower_sigma = lambda_q_10_lower_sigma[fit_store['acceptable_fit'].astype(bool)]
+					time_all_finite = time_all_finite[fit_store['acceptable_fit'].astype(bool)]
+					lambda_q_10_lower = [lambda_q_10_lower[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
+					lambda_q_10_lower_sigma = [lambda_q_10_lower_sigma[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
+					if False:
+						# plt.figure()
+						# for i in range(len(Eich)):
+						# 	try:
+						# 		i = i*3
+						# 		gna, = plt.plot(Eich[i]['R'][0][0][0],Eich[i]['y'][0][0][0],'--',label=r'$\lambda_q =$ %.3gmm, time=%.3gms' %(Eich[i]['lambda_q'][0][0][0]*1000,np.nanmean(Eich[i]['time'][0][0][0])*1000))
+						# 		# plt.plot(output[i]['R'][0][0],output[i]['y'][0][0],'--',color=gna.get_color())
+						# 		plt.errorbar(output[i]['R'][0][0],output[i]['y'][0][0],yerr=output[i]['y_error'][0][0],color=gna.get_color())
+						# 	except:
+						# 		pass
+						# plt.legend()
+						from mastu_exhaust_analysis.eich_gui import prepare_data_for_Eich_fit_fn_time,Eich_fit_fn_time,Eich_fit_GUI
+						fit_store_edit, start_limits_store_edit=Eich_fit_GUI(time_all_finite,x_all_finite,y_all_finite,y_err_all_finite,fit_store,start_limits_store)
 			except:
-				s10_lower_good_probes = np.zeros((len(trange))).astype(bool)
-				s10_lower_s = np.zeros((len(trange)))
-				s10_lower_r = np.zeros((len(trange)))
+				s10_lower_good_probes = np.zeros((10)).astype(bool)
+				s10_lower_s = np.zeros((10))
+				s10_lower_r = np.zeros((10))
 				s10_lower_jsat = np.zeros((len(trange),10))
 				s10_lower_jsat_sigma = np.zeros((len(trange),10))
 				s10_lower_jsat_r = np.zeros((len(trange),10))
 				s10_lower_jsat_s = np.zeros((len(trange),10))
+				lambda_q_10_lower = np.ones((len(trange)))*np.nan
+				lambda_q_10_lower_sigma = np.ones((len(trange)))*np.nan
 			plt.close('all')
 
 			try:
-				output_contour1=lp_data.contour_plot(trange=[0,1.5],bad_probes=None,divertor='lower', sectors=4, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],show=False)
+				output_contour1=lp_data.contour_plot(trange=[0,1.5],bad_probes=None,divertor='lower', sectors=4, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],show=False)#,log_plot_data=True)
+				# output_contour1=lp_data.plot_tile_profile(trange=[0,1.5],bad_probes=None,divertor='lower', sectors=4, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],show=True)
+				# output,Eich=compare_shots(filepath='/common/uda-scratch/pryan/',shot=48561,bin_x_step=1e-3,bad_probes=None,trange=[0.5,0.55],divertor='lower', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False)
+
 				temp = output_contour1['y'][0][0]
 				temp[np.isnan(temp)] = 0
 				for i_,probe_name in enumerate(output_contour1['probe_name'][0][0]):
@@ -405,9 +462,9 @@ try:
 				s4_lower_r = output_contour1['R'][0][0]
 				s4_lower_z = output_contour1['Z'][0][0]
 				try:
-					output,Eich=compare_shots(filepath=FF_LP_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=4, quantity = 'jsat_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False)
+					output,Eich=compare_shots(filepath=FF_LP_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=4, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
 				except:
-					output,Eich=compare_shots(filepath=path_alternate+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=4, quantity = 'jsat_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False)
+					output,Eich=compare_shots(filepath=path_alternate+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=4, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
 				s4_lower_jsat = []
 				s4_lower_jsat_sigma = []
 				s4_lower_jsat_r = []
@@ -417,15 +474,33 @@ try:
 					s4_lower_jsat_sigma.append(output[i]['y_error'][0][0])	# here there are only small probes
 					s4_lower_jsat_r.append(output[i]['R'][0][0])	# here there are only small probes
 					s4_lower_jsat_s.append(output[i]['s'][0][0])
+				if lambda_q_determination:	# section to calculate OMP lambda_q
+					try:
+						output,Eich=compare_shots(filepath=FF_LP_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=4, quantity = 'q_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
+					except:
+						output,Eich=compare_shots(filepath=path_alternate+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=4, quantity = 'q_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
+					x_all_finite,y_all_finite,y_err_all_finite,time_all_finite = prepare_data_for_Eich_fit_fn_time(output)
+					fit_store,start_limits_store=Eich_fit_fn_time(x_all_finite,y_all_finite,y_err_all_finite,time_all_finite)
+
+					lambda_q_compression = lambda_q_compression_lower_interp(time_all_finite)
+					lambda_q_4_lower = fit_store['lambda_q']/lambda_q_compression
+					lambda_q_4_lower = lambda_q_4_lower[fit_store['acceptable_fit'].astype(bool)]
+					lambda_q_4_lower_sigma = fit_store['lambda_q_err']/lambda_q_compression
+					lambda_q_4_lower_sigma = lambda_q_4_lower_sigma[fit_store['acceptable_fit'].astype(bool)]
+					time_all_finite = time_all_finite[fit_store['acceptable_fit'].astype(bool)]
+					lambda_q_4_lower = [lambda_q_4_lower[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
+					lambda_q_4_lower_sigma = [lambda_q_4_lower_sigma[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
 			except:
-				s4_lower_good_probes = np.zeros((len(trange))).astype(bool)
-				s4_lower_s = np.zeros((len(trange)))
-				s4_lower_r = np.zeros((len(trange)))
-				s4_lower_z = np.zeros((len(trange)))
+				s4_lower_good_probes = np.zeros((10)).astype(bool)
+				s4_lower_s = np.zeros((10))
+				s4_lower_r = np.zeros((10))
+				s4_lower_z = np.zeros((10))
 				s4_lower_jsat = np.zeros((len(trange),10))
 				s4_lower_jsat_sigma = np.zeros((len(trange),10))
 				s4_lower_jsat_r = np.zeros((len(trange),10))
 				s4_lower_jsat_s = np.zeros((len(trange),10))
+				lambda_q_4_lower = np.ones((len(trange)))*np.nan
+				lambda_q_4_lower_sigma = np.ones((len(trange)))*np.nan
 			plt.close('all')
 
 			try:
@@ -440,9 +515,9 @@ try:
 				s4_upper_r = output_contour1['R'][0][0]
 				s4_upper_z = output_contour1['Z'][0][0]
 				try:
-					output,Eich=compare_shots(filepath=FF_LP_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=4, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False)
+					output,Eich=compare_shots(filepath=FF_LP_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=4, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
 				except:
-					output,Eich=compare_shots(filepath=path_alternate+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=4, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False)
+					output,Eich=compare_shots(filepath=path_alternate+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=4, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
 				s4_upper_jsat = []
 				s4_upper_jsat_sigma = []
 				s4_upper_jsat_r = []
@@ -452,14 +527,32 @@ try:
 					s4_upper_jsat_sigma.append(output[i]['y_error'][0][0])	# here there are only standard probes
 					s4_upper_jsat_r.append(output[i]['R'][0][0])	# here there are only standard probes
 					s4_upper_jsat_s.append(output[i]['s'][0][0])
+				if lambda_q_determination:	# section to calculate OMP lambda_q
+					try:
+						output,Eich=compare_shots(filepath=FF_LP_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=4, quantity = 'q_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
+					except:
+						output,Eich=compare_shots(filepath=path_alternate+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=4, quantity = 'q_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
+					x_all_finite,y_all_finite,y_err_all_finite,time_all_finite = prepare_data_for_Eich_fit_fn_time(output)
+					fit_store,start_limits_store=Eich_fit_fn_time(x_all_finite,y_all_finite,y_err_all_finite,time_all_finite)
+
+					lambda_q_compression = lambda_q_compression_upper_interp(time_all_finite)
+					lambda_q_4_upper = fit_store['lambda_q']/lambda_q_compression
+					lambda_q_4_upper = lambda_q_4_upper[fit_store['acceptable_fit'].astype(bool)]
+					lambda_q_4_upper_sigma = fit_store['lambda_q_err']/lambda_q_compression
+					lambda_q_4_upper_sigma = lambda_q_4_upper_sigma[fit_store['acceptable_fit'].astype(bool)]
+					time_all_finite = time_all_finite[fit_store['acceptable_fit'].astype(bool)]
+					lambda_q_4_upper = [lambda_q_4_upper[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
+					lambda_q_4_upper_sigma = [lambda_q_4_upper_sigma[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
 			except:
-				s4_upper_good_probes = np.zeros((len(trange))).astype(bool)
-				s4_upper_s = np.zeros((len(trange)))
-				s4_upper_r = np.zeros((len(trange)))
+				s4_upper_good_probes = np.zeros((10)).astype(bool)
+				s4_upper_s = np.zeros((10))
+				s4_upper_r = np.zeros((10))
 				s4_upper_jsat = np.zeros((len(trange),10))
 				s4_upper_jsat_sigma = np.zeros((len(trange),10))
 				s4_upper_jsat_r = np.zeros((len(trange),10))
 				s4_upper_jsat_s = np.zeros((len(trange),10))
+				lambda_q_4_upper = np.ones((len(trange)))*np.nan
+				lambda_q_4_upper_sigma = np.ones((len(trange)))*np.nan
 			plt.close('all')
 
 			try:
@@ -474,9 +567,9 @@ try:
 				s10_upper_std_r = output_contour1['R'][0][0]
 				s10_upper_std_z = output_contour1['Z'][0][0]
 				try:
-					output,Eich=compare_shots(filepath=FF_LP_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-4,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4'],time_combine=True,show=False)
+					output,Eich=compare_shots(filepath=FF_LP_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-4,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4'],time_combine=True,show=False,Eich_fit=False)
 				except:
-					output,Eich=compare_shots(filepath=path_alternate+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-4,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4'],time_combine=True,show=False)
+					output,Eich=compare_shots(filepath=path_alternate+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-4,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4'],time_combine=True,show=False,Eich_fit=False)
 				s10_upper_std_jsat = []
 				s10_upper_std_jsat_sigma = []
 				s10_upper_std_jsat_r = []
@@ -486,14 +579,32 @@ try:
 					s10_upper_std_jsat_sigma.append(output[i]['y_error'][0][0])	# here there are only standard probes
 					s10_upper_std_jsat_r.append(output[i]['R'][0][0])	# here there are only standard probes
 					s10_upper_std_jsat_s.append(output[i]['s'][0][0])
+				if lambda_q_determination:	# section to calculate OMP lambda_q
+					try:
+						output,Eich=compare_shots(filepath=FF_LP_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'q_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4'],time_combine=True,show=False,Eich_fit=False)
+					except:
+						output,Eich=compare_shots(filepath=path_alternate+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'q_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4'],time_combine=True,show=False,Eich_fit=False)
+					x_all_finite,y_all_finite,y_err_all_finite,time_all_finite = prepare_data_for_Eich_fit_fn_time(output)
+					fit_store,start_limits_store=Eich_fit_fn_time(x_all_finite,y_all_finite,y_err_all_finite,time_all_finite)
+
+					lambda_q_compression = lambda_q_compression_upper_interp(time_all_finite)
+					lambda_q_10_upper = fit_store['lambda_q']/lambda_q_compression
+					lambda_q_10_upper = lambda_q_10_upper[fit_store['acceptable_fit'].astype(bool)]
+					lambda_q_10_upper_sigma = fit_store['lambda_q_err']/lambda_q_compression
+					lambda_q_10_upper_sigma = lambda_q_10_upper_sigma[fit_store['acceptable_fit'].astype(bool)]
+					time_all_finite = time_all_finite[fit_store['acceptable_fit'].astype(bool)]
+					lambda_q_10_upper = [lambda_q_10_upper[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
+					lambda_q_10_upper_sigma = [lambda_q_10_upper_sigma[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
 			except:
-				s10_upper_std_good_probes = np.zeros((len(trange))).astype(bool)
-				s10_upper_std_s = np.zeros((len(trange)))
-				s10_upper_std_r =np.zeros((len(trange)))
+				s10_upper_std_good_probes = np.zeros((10)).astype(bool)
+				s10_upper_std_s = np.zeros((10))
+				s10_upper_std_r =np.zeros((10))
 				s10_upper_std_jsat = np.zeros((len(trange),10))
 				s10_upper_std_jsat_sigma = np.zeros((len(trange),10))
 				s10_upper_std_jsat_r = np.zeros((len(trange),10))
 				s10_upper_std_jsat_s = np.zeros((len(trange),10))
+				lambda_q_10_upper = np.ones((len(trange)))*np.nan
+				lambda_q_10_upper_sigma = np.ones((len(trange)))*np.nan
 			plt.close('all')
 
 			try:
@@ -508,9 +619,9 @@ try:
 				s10_upper_large_r = output_contour1['R'][0][0]
 				s10_upper_large_z = output_contour1['Z'][0][0]
 				try:
-					output,Eich=compare_shots(filepath=FF_LP_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['T5'],time_combine=True,show=False)
+					output,Eich=compare_shots(filepath=FF_LP_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['T5'],time_combine=True,show=False,Eich_fit=False)
 				except:
-					output,Eich=compare_shots(filepath=path_alternate+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['T5'],time_combine=True,show=False)
+					output,Eich=compare_shots(filepath=path_alternate+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['T5'],time_combine=True,show=False,Eich_fit=False)
 				s10_upper_large_jsat = []
 				s10_upper_large_jsat_sigma = []
 				s10_upper_large_jsat_r = []
@@ -521,9 +632,9 @@ try:
 					s10_upper_large_jsat_r.append(output[i]['R'][0][0])	# here there are only standard probes
 					s10_upper_large_jsat_s.append(output[i]['s'][0][0])
 			except:
-				s10_upper_large_good_probes = np.zeros((len(trange))).astype(bool)
-				s10_upper_large_s = np.zeros((len(trange)))
-				s10_upper_large_r = np.zeros((len(trange)))
+				s10_upper_large_good_probes = np.zeros((10)).astype(bool)
+				s10_upper_large_s = np.zeros((10))
+				s10_upper_large_r = np.zeros((10))
 				s10_upper_large_jsat = np.zeros((len(trange),10))
 				s10_upper_large_jsat_sigma = np.zeros((len(trange),10))
 				s10_upper_large_jsat_r = np.zeros((len(trange),10))
@@ -1115,9 +1226,20 @@ try:
 		full_saved_file_dict_FAST['multi_instrument']['jsat_upper_inner_large_max'] = jsat_upper_inner_large_max
 		jsat_upper_outer_large_max = np.array(jsat_upper_outer_large_max)
 		full_saved_file_dict_FAST['multi_instrument']['jsat_upper_outer_large_max'] = jsat_upper_outer_large_max
+		if lambda_q_determination:
+			full_saved_file_dict_FAST['multi_instrument']['lambda_q_10_lower'] = np.array(lambda_q_10_lower)
+			full_saved_file_dict_FAST['multi_instrument']['lambda_q_10_lower_sigma'] = np.array(lambda_q_10_lower_sigma)
+			full_saved_file_dict_FAST['multi_instrument']['lambda_q_4_lower'] = np.array(lambda_q_4_lower)
+			full_saved_file_dict_FAST['multi_instrument']['lambda_q_4_lower_sigma'] = np.array(lambda_q_4_lower_sigma)
+			full_saved_file_dict_FAST['multi_instrument']['lambda_q_4_upper'] = np.array(lambda_q_4_upper)
+			full_saved_file_dict_FAST['multi_instrument']['lambda_q_4_upper_sigma'] = np.array(lambda_q_4_upper_sigma)
+			full_saved_file_dict_FAST['multi_instrument']['lambda_q_10_upper'] = np.array(lambda_q_10_upper)
+			full_saved_file_dict_FAST['multi_instrument']['lambda_q_10_upper_sigma'] = np.array(lambda_q_10_upper_sigma)
 		print('marker LP done')
-	except:
+	except Exception as e:
+		logging.exception('with error: ' + str(e))
 		jsat_read = False
+		lambda_q_determination = False
 		print('LP skipped')
 
 	from mastu_exhaust_analysis.read_efit import read_epm
@@ -1263,6 +1385,8 @@ try:
 		from mastu_exhaust_analysis import divertor_geometry
 		from mastu_exhaust_analysis import Thomson
 		TS_data = Thomson(shot=laser_to_analyse[-9:-4])
+		# TS_data.ne = median_filter(TS_data.ne,size=[3,1])
+		# TS_data.Te = median_filter(TS_data.Te,size=[3,1])
 		tu_cowley = []
 		tu_labombard = []
 		tu_stangeby = []
@@ -1272,6 +1396,10 @@ try:
 		nu_mean = []
 		tu_EFIT = []
 		nu_EFIT = []
+		tu_EFIT_smoothing = []
+		nu_EFIT_smoothing = []
+		TS_time_smoothing = 0.05	# s
+		TS_time_smoothing_min = np.mean(np.diff(time_full_binned_crop))
 		for time in time_full_binned_crop:
 			try:
 				temp = divertor_geometry(shot=shotnumber,time=time)
@@ -1284,32 +1412,86 @@ try:
 				tu_stangeby.append(np.nan)
 			try:
 				try:
-					temp = np.abs(TS_data.time.data-time).argmin()
+					# temp = np.abs(TS_data.time.data-time).argmin()
+					temp = np.abs(TS_data.time.data-time)<=TS_time_smoothing/2
 					ne = TS_data.ne.data[temp]
 					R_TS = TS_data.R.data[temp]
 					Te = TS_data.Te.data[temp]
 				except:
-					temp = np.abs(TS_data.time-time).argmin()
+					# temp = np.abs(TS_data.time-time).argmin()
+					temp = np.abs(TS_data.time-time)<=TS_time_smoothing/2
 					ne = TS_data.ne[temp]
 					R_TS = TS_data.R[temp]
 					Te = TS_data.Te[temp]
-				ne = ne[np.isfinite(Te)]
-				R_TS = R_TS[np.isfinite(Te)]
-				Te = Te[np.isfinite(Te)]
-				temp = Te[:-10].argmax()
-				ne = ne[temp:]
-				R_TS = R_TS[temp:]
-				Te = Te[temp:]
-				Te = scipy.signal.savgol_filter(Te, 7, 3)
-				ne = scipy.signal.savgol_filter(ne, 7, 3)
+				ne_smoothing = np.nanmedian(ne,axis=0)
+				R_TS_smoothing = np.nanmedian(R_TS,axis=0)
+				Te_smoothing = np.nanmedian(Te,axis=0)
+				ne_smoothing = ne_smoothing[np.isfinite(Te_smoothing)]
+				R_TS_smoothing = R_TS_smoothing[np.isfinite(Te_smoothing)]
+				Te_smoothing = Te_smoothing[np.isfinite(Te_smoothing)]
+				temp = Te_smoothing[:-10].argmax()
+				ne_smoothing = ne_smoothing[temp:]
+				R_TS_smoothing = R_TS_smoothing[temp:]
+				Te_smoothing = Te_smoothing[temp:]
+				Te_smoothing = scipy.signal.savgol_filter(Te_smoothing, 7, 3)
+				ne_smoothing = scipy.signal.savgol_filter(ne_smoothing, 7, 3)
 				# ineffective. filtered twice for only decreasing signal
-				ne = ne[1:][np.diff(Te)<=0]
-				R_TS = R_TS[1:][np.diff(Te)<=0]
-				Te = Te[1:][np.diff(Te)<=0]
-				ne = ne[1:][np.diff(Te)<=0]
-				R_TS = R_TS[1:][np.diff(Te)<=0]
-				Te = Te[1:][np.diff(Te)<=0]
-				interp_ne_Te = interp1d(Te[Te.argmax():],ne[Te.argmax():],fill_value='extrapolate')
+				ne_smoothing = ne_smoothing[1:][np.diff(Te_smoothing)<=0]
+				R_TS_smoothing = R_TS_smoothing[1:][np.diff(Te_smoothing)<=0]
+				Te_smoothing = Te_smoothing[1:][np.diff(Te_smoothing)<=0]
+				ne_smoothing = ne_smoothing[1:][np.diff(Te_smoothing)<=0]
+				R_TS_smoothing = R_TS_smoothing[1:][np.diff(Te_smoothing)<=0]
+				Te_smoothing = Te_smoothing[1:][np.diff(Te_smoothing)<=0]
+				interp_ne_Te = interp1d(Te_smoothing[Te_smoothing.argmax():],ne_smoothing[Te_smoothing.argmax():],fill_value='extrapolate')
+
+				try:
+					try:
+						temp = np.abs(TS_data.time.data-time)<=TS_time_smoothing_min/2
+						if np.sum(temp)>0:
+							ne = TS_data.ne.data[temp]
+							R_TS = TS_data.R.data[temp]
+							Te = TS_data.Te.data[temp]
+						else:
+							temp = np.abs(TS_data.time.data-time).argmin()
+							ne = [TS_data.ne.data[temp]]
+							R_TS = [TS_data.R.data[temp]]
+							Te = [TS_data.Te.data[temp]]
+					except:
+						temp = np.abs(TS_data.time-time)<=TS_time_smoothing_min/2
+						if np.sum(temp)>0:
+							ne = TS_data.ne[temp]
+							R_TS = TS_data.R[temp]
+							Te = TS_data.Te[temp]
+						else:
+							temp = np.abs(TS_data.time-time).argmin()
+							ne = [TS_data.ne[temp]]
+							R_TS = [TS_data.R[temp]]
+							Te = [TS_data.Te[temp]]
+					ne = np.nanmedian(ne,axis=0)
+					R_TS = np.nanmedian(R_TS,axis=0)
+					Te = np.nanmedian(Te,axis=0)
+					ne = ne[np.isfinite(Te)]
+					R_TS = R_TS[np.isfinite(Te)]
+					Te = Te[np.isfinite(Te)]
+					temp = Te[:-10].argmax()
+					ne = ne[temp:]
+					R_TS = R_TS[temp:]
+					Te = Te[temp:]
+					Te = scipy.signal.savgol_filter(Te, 7, 3)
+					ne = scipy.signal.savgol_filter(ne, 7, 3)
+					# ineffective. filtered twice for only decreasing signal
+					ne = ne[1:][np.diff(Te)<=0]
+					R_TS = R_TS[1:][np.diff(Te)<=0]
+					Te = Te[1:][np.diff(Te)<=0]
+					ne = ne[1:][np.diff(Te)<=0]
+					R_TS = R_TS[1:][np.diff(Te)<=0]
+					Te = Te[1:][np.diff(Te)<=0]
+				except:
+					ne = [np.nan,np.nan]
+					R_TS = [np.nan,np.nan]
+					Te = [np.nan,np.nan]
+
+				# interp_ne_Te = interp1d(Te[Te.argmax():],ne[Te.argmax():],fill_value='extrapolate')
 				nu_cowley.append(interp_ne_Te(tu_cowley[-1]))
 				nu_labombard.append(interp_ne_Te(tu_labombard[-1]))
 				nu_stangeby.append(interp_ne_Te(tu_stangeby[-1]))
@@ -1324,9 +1506,13 @@ try:
 					R_ = R_[psidat.argmax():psidat.argmin()]
 					psidat = psidat[psidat.argmax():psidat.argmin()]
 					R_separatrix_OMP = np.interp(efit_reconstruction.psi_bnd[i_efit_time],np.flip(psidat,axis=0),np.flip(R_,axis=0))
-					tu_EFIT.append(max(0,np.interp(R_separatrix_OMP,R_TS,Te)))
+					tu_EFIT_smoothing.append(max(0,np.interp(R_separatrix_OMP,R_TS_smoothing,Te_smoothing)))
+					nu_EFIT_smoothing.append(np.interp(R_separatrix_OMP,R_TS_smoothing,ne_smoothing))
+					tu_EFIT.append(np.interp(R_separatrix_OMP,R_TS,Te))
 					nu_EFIT.append(np.interp(R_separatrix_OMP,R_TS,ne))
 				except:
+					tu_EFIT_smoothing.append(np.nan)
+					nu_EFIT_smoothing.append(np.nan)
 					tu_EFIT.append(np.nan)
 					nu_EFIT.append(np.nan)
 			except:
@@ -1334,8 +1520,21 @@ try:
 				nu_labombard.append(np.nan)
 				nu_stangeby.append(np.nan)
 				nu_mean.append(np.nan)
+				tu_EFIT_smoothing.append(np.nan)
+				nu_EFIT_smoothing.append(np.nan)
 				tu_EFIT.append(np.nan)
 				nu_EFIT.append(np.nan)
+		tu_cowley = np.array(tu_cowley)
+		tu_labombard = np.array(tu_labombard)
+		tu_stangeby = np.array(tu_stangeby)
+		nu_cowley = np.array(nu_cowley)
+		nu_labombard = np.array(nu_labombard)
+		nu_stangeby = np.array(nu_stangeby)
+		nu_mean = np.array(nu_mean)
+		tu_EFIT = np.array(tu_EFIT)
+		nu_EFIT = np.array(nu_EFIT)
+		tu_EFIT_smoothing = np.array(tu_EFIT_smoothing)
+		nu_EFIT_smoothing = np.array(nu_EFIT_smoothing)
 		full_saved_file_dict_FAST['multi_instrument']['tu_cowley'] = tu_cowley
 		full_saved_file_dict_FAST['multi_instrument']['tu_labombard'] = tu_labombard
 		full_saved_file_dict_FAST['multi_instrument']['tu_stangeby'] = tu_stangeby
@@ -1345,6 +1544,18 @@ try:
 		full_saved_file_dict_FAST['multi_instrument']['nu_mean'] = nu_mean
 		full_saved_file_dict_FAST['multi_instrument']['tu_EFIT'] = tu_EFIT
 		full_saved_file_dict_FAST['multi_instrument']['nu_EFIT'] = nu_EFIT
+		full_saved_file_dict_FAST['multi_instrument']['tu_EFIT_smoothing'] = tu_EFIT_smoothing
+		full_saved_file_dict_FAST['multi_instrument']['nu_EFIT_smoothing'] = nu_EFIT_smoothing
+		pu_cowley = nu_cowley*tu_cowley*11604*1.380649E-23
+		full_saved_file_dict_FAST['multi_instrument']['pu_cowley'] = pu_cowley
+		pu_labombard = nu_labombard*tu_labombard*11604*1.380649E-23
+		full_saved_file_dict_FAST['multi_instrument']['pu_labombard'] = pu_labombard
+		pu_stangeby = nu_stangeby*tu_stangeby*11604*1.380649E-23
+		full_saved_file_dict_FAST['multi_instrument']['pu_stangeby'] = pu_stangeby
+		pu_EFIT_smoothing = nu_EFIT_smoothing*tu_EFIT_smoothing*11604*1.380649E-23
+		full_saved_file_dict_FAST['multi_instrument']['pu_EFIT'] = pu_EFIT_smoothing
+		pu_EFIT = nu_EFIT*tu_EFIT*11604*1.380649E-23
+		full_saved_file_dict_FAST['multi_instrument']['pu_EFIT'] = pu_EFIT
 		TS_reading_success = True
 	except Exception as e:
 		print('TS reading failed')
@@ -1655,11 +1866,12 @@ try:
 	if time_active_MARFE!=None:
 		ax[0,0].axvline(x=time_active_MARFE,linestyle='-',color='k',label='MARFE active from bolo')
 	# ax[0,0].legend(loc='best', fontsize='xx-small')
-	if TS_reading_success:
+	if False:	# moved together with Tu
 		ax[1,0].plot(time_full_binned_crop,nu_mean,'--',label='ne,up mean',color=color[-2])
 		ax[1,0].plot(time_full_binned_crop,nu_cowley,':',label='ne,up Cowley',color=color[-3])
-		ax[1,0].plot(time_full_binned_crop,nu_EFIT,':',label='ne,up EFIT',color=color[-5])
-	if  not density_data_missing:
+		ax[1,0].plot(time_full_binned_crop,nu_EFIT,'+',label='ne,up EFIT',color=color[-5])
+		ax[1,0].plot(time_full_binned_crop,nu_EFIT_smoothing,'-',label='ne,up EFIT smooth',color=color[-5])
+	if not density_data_missing:
 		ax[1,0].plot(time_full_binned_crop,core_density,label='core line int ne',color=color[0])
 		ax[1,0].plot(time_full_binned_crop,ne_bar,label='core line averaged ne',color=color[-1])
 		ax[1,0].plot(time_full_binned_crop,greenwald_density,'--',label='greenwald_density',color=color[-4])
@@ -1678,17 +1890,26 @@ try:
 	# ax[1,0].legend(loc='best', fontsize='xx-small')
 	ax[1,0].grid()
 	ax[1,0].set_ylabel('ne [#/m3]')
-	ax[1,0].semilogy()
+	# ax[1,0].semilogy()
 	ax[2,0].plot(time_full_binned_crop,dr_sep_in,'-',label='dr_sep_in (<-)',color=color[14])
 	ax[2,0].plot(time_full_binned_crop,dr_sep_out,'-',label='dr_sep_out (<-)',color=color[13])
 	# ax[2,0].plot(time_full_binned_crop,radius_inner_separatrix-0.2608,'-',label='inner gap',color=color[12])
 	ax[2,0].grid()
 	ax[2,0].set_ylabel('dr sep [m]')
+	if lambda_q_determination:
+		ax[2,0].errorbar(time_full_binned_crop,lambda_q_4_lower,yerr=lambda_q_4_lower_sigma,label=r'$\lambda_q$'+'_4_lower (<-)')
+		ax[2,0].errorbar(time_full_binned_crop,lambda_q_10_lower,yerr=lambda_q_10_lower_sigma,label=r'$\lambda_q$'+'_10_lower (<-)')
+		ax[2,0].errorbar(time_full_binned_crop,lambda_q_4_upper,yerr=lambda_q_4_upper_sigma,label=r'$\lambda_q$'+'_4_upper (<-)')
+		ax[2,0].errorbar(time_full_binned_crop,lambda_q_10_upper,yerr=lambda_q_10_upper_sigma,label=r'$\lambda_q$'+'_10_upper (<-)')
+		temp = ([ median_filter(dr_sep_in,size=[int(max(1,0.1/(np.diff(time_full_binned_crop).mean())))]) ,median_filter(dr_sep_out,size=[int(max(1,0.1/(np.diff(time_full_binned_crop).mean())))]) ,
+		median_filter(lambda_q_10_lower,size=[int(max(1,0.1/(np.diff(time_full_binned_crop).mean())))]) , median_filter(lambda_q_4_lower,size=[int(max(1,0.1/(np.diff(time_full_binned_crop).mean())))]) ,
+		median_filter(lambda_q_4_upper,size=[int(max(1,0.1/(np.diff(time_full_binned_crop).mean())))]) , median_filter(lambda_q_10_upper,size=[int(max(1,0.1/(np.diff(time_full_binned_crop).mean())))]) ])
+		ax[2,0].set_ylim(bottom =  np.nanmin(temp), top = np.nanmax(temp))
 
 	ax2 = ax[2,0].twinx()  # instantiate a second axes that shares the same x-axis
 	# ax2.spines["right"].set_position(("axes", 1.1125))
 	ax2.spines["right"].set_visible(True)
-	a2a, = ax2.plot(time_full_binned_crop,vert_displacement,label='vertical displacement (->)',color='r')
+	a2a, = ax2.plot(time_full_binned_crop,vert_displacement,label='vert\ndisplacement (->)',color='r')
 	a2b, = ax2.plot(time_full_binned_crop,radius_inner_separatrix-0.2608,'-',label='inner gap (->)',color=color[12])
 	ax2.set_ylabel('vert disp, gap [m]', color='r')  # we already handled the x-label with ax1
 	# ax2.tick_params(axis='y', labelcolor=a2a.get_color())
@@ -1868,7 +2089,7 @@ try:
 		a7d, = ax7.plot(time_full_binned_crop,energy_confinement_time/energy_confinement_time_LST,'--',color=color[5])
 	ax7.set_ylabel('--=relative time [au]', color='r')  # we already handled the x-label with ax1
 	# ax7.tick_params(axis='y', labelcolor=a7a.get_color())
-	ax7.set_ylim(bottom=0)
+	ax7.set_ylim(bottom=0, top=1.2)
 	handles, labels = ax[7,0].get_legend_handles_labels()
 	# handles.append(a7a)
 	# handles.append(a7b)
@@ -1898,34 +2119,64 @@ try:
 	# 	ax[9,0].set_xlabel('time [s]')
 	# else:
 	# 	ax[8,0].set_xlabel('time [s]')
+
+	ax8 = ax[8,0].twinx()  # instantiate a second axes that shares the same x-axis
+	# ax7.spines["right"].set_position(("axes", 1.1125))
+	ax8.spines["right"].set_visible(True)
 	if time_start_MARFE != None:
-		ax[9,0].plot(time_res_bolo,CH27_26,'r')
-		ax[9,0].plot(time_res_bolo,fit_bolo[0]+fit_bolo[1]*np.maximum(0,time_res_bolo-fit_bolo[2]),'--')
-		ax[9,0].axvline(x=time_start_MARFE,linestyle='--',color='b')
-		ax[9,0].set_ylim(bottom=0.5,top=max(3,CH27_26.max()))
-		ax[9,0].set_xlabel('time [s]')
-		ax[9,0].set_ylabel('Brigtness\nCH27/CH26 [au]')
+		ax8.plot(time_res_bolo,CH27_26,'r')
+		ax8.plot(time_res_bolo,fit_bolo[0]+fit_bolo[1]*np.maximum(0,time_res_bolo-fit_bolo[2]),'--')
+		ax8.axvline(x=time_start_MARFE,linestyle='--',color='b')
+		ax8.set_ylim(bottom=0.5,top=max(3,CH27_26.max()))
+		# ax8.set_xlabel('time [s]')
+		ax8.set_ylabel('Brigtness\nCH27/CH26 [au]', color='r')
 	elif time_active_MARFE == None:
-		ax[8,0].set_xlabel('time [s]')
+		# ax8.set_xlabel('time [s]')
+		pass
 	if time_active_MARFE != None:
-		# ax9 = ax[9,0].twinx()  # instantiate a second axes that shares the same x-axis
+		# ax9 = ax8.twinx()  # instantiate a second axes that shares the same x-axis
 		# ax9.spines["right"].set_visible(True)
-		ax[9,0].set_ylabel('Brigtness\nCH27/CH26 [au]')
-		ax[9,0].axvline(x=time_active_MARFE,linestyle='--',color='g')
-		ax[9,0].axhline(y=3,linestyle='--',color='r')
-		ax[9,0].set_xlabel('time [s]')
+		ax8.set_ylabel('Brigtness\nCH27/CH26 [au]', color='r')
+		ax8.axvline(x=time_active_MARFE,linestyle='--',color='g')
+		ax8.axhline(y=3,linestyle='--',color='r')
+		# ax8.set_xlabel('time [s]')
 	elif time_start_MARFE == None:
-		ax[8,0].set_xlabel('time [s]')
-	ax[9,0].grid()
+		# ax8.set_xlabel('time [s]')
+		pass
+	ax8.grid()
+
+	ax[9,0].set_ylabel('estimated pu [Pa]')
+	if TS_reading_success:
+		ax[9,0].plot(time_full_binned_crop,pu_cowley,label='cowley')
+		ax[9,0].plot(time_full_binned_crop,pu_labombard,label='labombard')
+		ax[9,0].plot(time_full_binned_crop,pu_stangeby,label='stangeby')
+		temp, = ax[9,0].plot(time_full_binned_crop,pu_EFIT,'+',label='EFIT')
+		ax[9,0].plot(time_full_binned_crop,pu_EFIT_smoothing,color=temp.get_color(),label='EFIT smooth')
+		ax[9,0].grid()
+		ax[9,0].legend(loc='best', fontsize='xx-small')
+		ax[9,0].set_ylim(bottom=0,top=np.nanmax([pu_cowley,pu_labombard,pu_stangeby])*1.1)
+		# ax[9,0].set_ylim(bottom=0,top=np.nanmax([pu_EFIT])*1.1)
+
 
 	ax[10,0].set_ylabel('estimated Tu [eV]')
+	ax10 = ax[10,0].twinx()  # instantiate a second axes that shares the same x-axis
+	ax10.spines["right"].set_visible(True)
+	ax10.set_ylabel('estimated nu '+r'$[10^{19}\frac{\#}{m^3}]$'+' (--)')
 	if TS_reading_success:
-		ax[10,0].plot(time_full_binned_crop,tu_cowley,label='cowley')
-		ax[10,0].plot(time_full_binned_crop,tu_labombard,label='labombard')
-		ax[10,0].plot(time_full_binned_crop,tu_stangeby,label='stangeby')
-		ax[10,0].plot(time_full_binned_crop,tu_EFIT,label='EFIT')
+		temp, = ax[10,0].plot(time_full_binned_crop,tu_cowley,label='cowley')
+		ax10.plot(time_full_binned_crop,nu_cowley*1e-19,'--',color=temp.get_color())
+		temp, = ax[10,0].plot(time_full_binned_crop,tu_labombard,label='labombard')
+		ax10.plot(time_full_binned_crop,nu_labombard*1e-19,'--',color=temp.get_color())
+		temp, = ax[10,0].plot(time_full_binned_crop,tu_stangeby,label='stangeby')
+		ax10.plot(time_full_binned_crop,nu_stangeby*1e-19,'--',color=temp.get_color())
+		temp, = ax[10,0].plot(time_full_binned_crop,tu_EFIT,'+',label='tu EFIT')
+		ax[10,0].plot(time_full_binned_crop,tu_EFIT_smoothing,color=temp.get_color(),label='EFIT smooth')
+		ax10.plot(time_full_binned_crop,nu_EFIT*1e-19,marker='o',fillstyle='none',color=temp.get_color())
+		ax10.plot(time_full_binned_crop,nu_EFIT_smoothing*1e-19,'--',color=temp.get_color())
 		ax[10,0].grid()
 		ax[10,0].legend(loc='best', fontsize='xx-small')
+		ax[10,0].set_ylim(bottom=0,top=np.nanmax([tu_cowley,tu_labombard,tu_stangeby])*1.1)
+		ax10.set_ylim(bottom=0,top=np.nanmax([nu_cowley,nu_labombard,nu_stangeby])*1.1*1e-19)
 
 
 

@@ -379,6 +379,23 @@ files66 = ['/home/ffederic/work/irvb/flatfield/Feb24_2022/flat_field-000'+value 
 full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files66':files66}))
 
 
+# 20/06/2024 Temperature calibration done with the new BB source capable of filling the full FOV and the old FLIR SC7500 camera. distance camera/BB source as per the current geometry with the 60mm stand-off
+# integration time 1ms, freme rate 383Hz, view port damaged after the vacuum break after MU01, but with the coating facing the camera, heating ramp with new HGH BB source.
+temperature70 = np.arange(40,-6,-1)
+files70 = ['01','04','05','08','09','12','13','16','17','20','21','24','25','28','29','32','33','36','37','40','41','44','45','48','49','52','53','56','57','60','61','64','65','68','69','72','73','76','77','80','81','84','85','88','89','92']
+files70 = ['/home/ffederic/work/irvb/flatfield/Jun20_2024/flat_field_00'+value for value in files70]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files70':files70}))
+
+# 20/06/2024 Temperature calibration done with the new BB source capable of filling the full FOV and the old FLIR SC7500 camera. distance camera/BB source as per the current geometry with the 60mm stand-off
+# integration time 2ms, freme rate 383Hz, view port damaged after the vacuum break after MU01, but with the coating facing the camera, heating ramp with new HGH BB source.
+temperature71 = np.arange(40,-6,-1)
+files71 = ['02','03','06','07','10','11','14','15','18','19','22','23','26','27','30','31','34','35','38','39','42','43','46','47','50','51','54','55','58','59','62','63','66','67','70','71','74','75','78','79','82','83','86','87','90','91']
+files71 = ['/home/ffederic/work/irvb/flatfield/Jun20_2024/flat_field_00'+value for value in files70]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files71':files71}))
+
+
+
+
 
 ##  FILES RELATIVE TO THE LASER MEASUREMENTS
 
@@ -1321,15 +1338,16 @@ full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'vacuum10':vacuum10}
 
 # Data given me by Glenn Wurden regarding the "calibration" of his coated windows
 
+# Sapphire disk in air 2micron Gold
 vacuumG01=['/home/ffederic/work/irvb/laser/Glen_Wurden_HTPD2024/Calibration from Glenn/test92']
 vacuumframerateG01=[50]
 vacuuminttimeG01=[1]
 full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'vacuumG01':vacuumG01}))
 
-power_interpolatorG01 = interp1d([0,0.,0.5,10],[0,0,0.017,0.017])	# I'm fairly confident
+power_interpolatorG01 = interp1d([0,0.,0.5,10],[0,0,0.017,0.017])
 laserG01=['/home/ffederic/work/irvb/laser/Glen_Wurden_HTPD2024/Calibration from Glenn/Rec-0092']
 voltlaserG01=[1]
-freqlaserG01=[1]
+freqlaserG01=[0.007788]
 dutylaserG01=[0.5]
 full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'laserG01':laserG01}))
 laserROIG01 = [ 'ff' ] * len(laserG01)
@@ -1344,7 +1362,10 @@ collection_of_records['laserG01']['power_interpolator'] = [power_interpolatorG01
 collection_of_records['laserG01']['focus_status'] = ['focused'] * len(laserG01)
 collection_of_records['laserG01']['foil_position_dict'] = [dict([('angle',0),('foilcenter',[162,133]),('foilhorizwpixel',240)])] * len(laserG01)
 collection_of_records['laserG01']['scan_type'] = 'power&freq'	# other: 'freq&duty' 'power&freq' 'freq'
+collection_of_records['laserG01']['absorber_material'] = 'Au'	# name of the element from periodic table
 
+
+# Sapphire disk in vacuum 2micron Gold
 vacuumG02=['/home/ffederic/work/irvb/laser/Glen_Wurden_HTPD2024/Calibration from Glenn/test94']
 vacuumframerateG02=[50]
 vacuuminttimeG02=[1]
@@ -1353,7 +1374,7 @@ full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'vacuumG02':vacuumG0
 power_interpolatorG02 = interp1d([0,0.,0.5,10],[0,0,0.010,0.010])
 laserG02=['/home/ffederic/work/irvb/laser/Glen_Wurden_HTPD2024/Calibration from Glenn/Rec-0094']
 voltlaserG02=[1]
-freqlaserG02=[1]
+freqlaserG02=[0.05]
 dutylaserG02=[0.5]
 full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'laserG02':laserG02}))
 laserROIG02 = [ 'ff' ] * len(laserG02)
@@ -1368,7 +1389,10 @@ collection_of_records['laserG02']['power_interpolator'] = [power_interpolatorG02
 collection_of_records['laserG02']['focus_status'] = ['focused'] * len(laserG02)
 collection_of_records['laserG02']['foil_position_dict'] = [dict([('angle',0),('foilcenter',[162,133]),('foilhorizwpixel',240)])] * len(laserG02)
 collection_of_records['laserG02']['scan_type'] = 'power&freq'	# other: 'freq&duty' 'power&freq' 'freq'
+collection_of_records['laserG02']['absorber_material'] = 'Au'	# name of the element from periodic table
 
+
+# 5micron no sapphire gold foil in vacuum
 vacuumG03=['/home/ffederic/work/irvb/laser/Glen_Wurden_HTPD2024/Calibration from Glenn/test120']
 vacuumframerateG03=[50]
 vacuuminttimeG03=[1]
@@ -1377,7 +1401,7 @@ full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'vacuumG03':vacuumG0
 power_interpolatorG03 = interp1d([0,0.,0.5,10],[0,0,0.010,0.010])
 laserG03=['/home/ffederic/work/irvb/laser/Glen_Wurden_HTPD2024/Calibration from Glenn/Rec-0120']
 voltlaserG03=[1]
-freqlaserG03=[1]
+freqlaserG03=[0.02]
 dutylaserG03=[0.5]
 full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'laserG03':laserG03}))
 laserROIG03 = [ 'ff' ] * len(laserG03)
@@ -1392,6 +1416,7 @@ collection_of_records['laserG03']['power_interpolator'] = [power_interpolatorG03
 collection_of_records['laserG03']['focus_status'] = ['focused'] * len(laserG03)
 collection_of_records['laserG03']['foil_position_dict'] = [dict([('angle',0),('foilcenter',[162,133]),('foilhorizwpixel',240)])] * len(laserG03)
 collection_of_records['laserG03']['scan_type'] = 'power&freq'	# other: 'freq&duty' 'power&freq' 'freq'
+collection_of_records['laserG03']['absorber_material'] = 'Au'	# name of the element from periodic table
 
 
 
@@ -1432,7 +1457,10 @@ Tadensity = 16650 #[kg/m3]
 Hfdensity = 13310 #[kg/m3]
 Aldensity = 2702 #[kg/m3]
 Zrdensity = 6510 #[kg/m3]
+Authermalconductivity=317 #[W/(m·K)]
+Auspecificheat=129 #[J/(kg K)]
 Audensity = 19320 #[kg/m3]
+Authermaldiffusivity=Authermalconductivity/(Auspecificheat*Audensity)    #m2/s
 Irdensity = 21040 #[kg/m3]
 
 sigmaSB=5.6704e-08 #[W/(m2 K4)]

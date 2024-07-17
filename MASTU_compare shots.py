@@ -21,7 +21,7 @@ logging.basicConfig(level=logging.ERROR)
 # added to reat the .ptw
 os.chdir('/home/ffederic/work/Collaboratory/test/experimental_data/functions')
 print(os.path.abspath(os.getcwd()))
-import pyradi.ryptw as ryptw
+# import pyradi.ryptw as ryptw
 
 # just to import _MASTU_CORE_GRID_POLYGON
 calculate_tangency_angle_for_poloidal_section=coleval.calculate_tangency_angle_for_poloidal_section
@@ -129,19 +129,28 @@ if False:	# plot for the papers
 		except:
 			pass
 
-	# to_do = ['46866','46769','46702']	# CD plot for PSI 2024
-	to_do = ['45468','45469','45470','45473']	# CD plot for thesis
-	to_do.extend(['47950','47973','48144','48328'])	# CD MU01/02/03
-	# to_do = ['47950','47973','48144','48328','48335']	# CD MU02/03
-	# to_do = ['47950','47973','48144','48328']#,'48335']	# CD MU02/03
-	# to_do = ['46866','46864','46867','46868','46889','46891'\
-	# ,'46903','48336','49408','49283']	# beam heated L-modes MU02/03
-	to_do = ['46866','46867','46868','46891','48336']	# beam heated L-modes MU02/03
-	to_do = ['46977']	# beam heated H-modes MU02/03
-	to_do = ['48599','49396','49400','49401']	# beam heated H-modes MU02/03 nitrogen
-	to_do = ['49392']	# beam heated H-modes MU02/03
-	to_do = ['48561','49139','48597']	# beam heated H-modes MU02/03
-	to_do = ['48561','49139','48597','48599','46977','49392']	# beam heated H-modes all together
+
+	if True:
+		# to_do = ['46866','46769','46702']	# CD plot for PSI 2024
+		to_do = ['45468','45469','45470','45473']	# CD plot for thesis
+	if True:
+		to_do.extend(['47950','47973','48144'])#,'48328'])	# CD MU01/02/03
+		# to_do = ['47950','47973','48144','48328','48335']	# CD MU02/03
+		type = 'ohmicLmode'
+	if False:
+		to_do = ['47950','47973','48144','48328']#,'48335']	# CD MU02/03
+		# to_do = ['46866','46864','46867','46868','46889','46891'\
+		# ,'46903','48336','49408','49283']	# beam heated L-modes MU02/03
+		# to_do = ['46864','46866','46867','46868','46891','48336']	# beam heated L-modes MU02/03
+	if False:
+		to_do = ['46866','46867','46868','46891','48336']	# beam heated L-modes MU02/03
+		type = 'beamLmode'
+	if False:
+		to_do = ['46977']	# beam heated H-modes MU02/03
+		to_do = ['48599','49396','49400','49401']	# beam heated H-modes MU02/03 nitrogen
+		to_do = ['49392']	# beam heated H-modes MU02/03
+		to_do = ['48561','49139','48597']	# beam heated H-modes MU02/03
+		to_do = ['48561','49139','48597','48599','46977','49392']	# beam heated H-modes all together
 
 
 	fig, ax = plt.subplots( 2,3,figsize=(22, 25), squeeze=False,sharex=True)
@@ -150,7 +159,8 @@ if False:	# plot for the papers
 	fig2, ax2 = plt.subplots( 2,3,figsize=(22, 25), squeeze=False,sharex=True)
 	fig3, ax3 = plt.subplots( 2,3,figsize=(22, 25), squeeze=False,sharex=True)
 	fig4, ax4 = plt.subplots( 2,3,figsize=(22, 25), squeeze=False,sharex=True)
-	fig5, ax5 = plt.subplots( 2,3,figsize=(20, 10), squeeze=False,sharex=True)
+	# fig5, ax5 = plt.subplots( 2,3,figsize=(20, 10), squeeze=False,sharex=True)
+	fig5, ax5 = plt.subplots( 2,4,figsize=(27, 10), squeeze=False,sharex=True)
 	shot_list = get_data(path+'shot_list2.ods')
 	n_shot_added = 0
 	for name in np.sort(to_do):
@@ -191,6 +201,7 @@ if False:	# plot for the papers
 			# nu_cowley = np.array(full_saved_file_dict_FAST['multi_instrument']['nu_cowley'])*1e-19
 			# nu_cowley = np.array(full_saved_file_dict_FAST['multi_instrument']['nu_labombard'])*1e-19
 			nu_cowley = np.array(_dict['multi_instrument']['nu_stangeby'])*1e-19
+			dr_sep_out = _dict['multi_instrument']['dr_sep_out']
 
 			greenwald_density = _dict['multi_instrument']['greenwald_density']
 			ne_bar = _dict['multi_instrument']['ne_bar']
@@ -206,12 +217,23 @@ if False:	# plot for the papers
 			t_end = -4
 			if int(name[-9:-4]) == 45468:
 				t_end = np.abs(time_full_binned_crop-0.82).argmin() - len(time_full_binned_crop)
+				fulcher_band_detachment = np.nan # from DMS, when it starts to decrease at the target location. in this shot this never happens
+				fulcher_band_detachment_current = np.nan
 			if int(name[-9:-4]) == 45469:
 				t_end = np.abs(time_full_binned_crop-0.75).argmin() - len(time_full_binned_crop)
+				fulcher_band_detachment = 0.500 # from DMS, when it starts to decrease at the target location
+				fulcher_band_detachment_current = 0.6E19
 			if int(name[-9:-4]) == 45470:
 				t_end = np.abs(time_full_binned_crop-0.75).argmin() - len(time_full_binned_crop)
+				fulcher_band_detachment = 0.703 # from DMS, when it starts to decrease at the target location
+				fulcher_band_detachment_current = 0.6E19
 			if int(name[-9:-4]) == 45473:
 				t_end = np.abs(time_full_binned_crop-0.75).argmin() - len(time_full_binned_crop)
+				fulcher_band_detachment = 0.711 # from DMS, when it starts to decrease at the target location
+				fulcher_band_detachment_current = 0.55E19
+			if int(name[-9:-4]) == 46864:
+				t_min = 0.4
+				t_end = np.abs(time_full_binned_crop-0.72).argmin() - len(time_full_binned_crop)
 			if int(name[-9:-4]) == 46866:
 				t_min = 0.4
 				t_end = np.abs(time_full_binned_crop-0.8).argmin() - len(time_full_binned_crop)
@@ -223,12 +245,20 @@ if False:	# plot for the papers
 			if int(name[-9:-4]) == 47950:
 				t_min = 0.4
 				t_end = np.abs(time_full_binned_crop-0.75).argmin() - len(time_full_binned_crop)
+				fulcher_band_detachment = 0.560 # from DMS, when it starts to decrease at the target location
+				fulcher_band_detachment_current = 1E19
+				fulcher_band_detachment_pressure = 27	# Pa
 			if int(name[-9:-4]) == 47973:
 				t_min = 0.4
 				t_end = np.abs(time_full_binned_crop-0.7).argmin() - len(time_full_binned_crop)
+				fulcher_band_detachment = np.nan
+				fulcher_band_detachment_current = np.nan
 			if int(name[-9:-4]) == 48144:
 				t_min = 0.5
 				t_end = np.abs(time_full_binned_crop-0.7).argmin() - len(time_full_binned_crop)
+				fulcher_band_detachment = 0.615 # from DMS, when it starts to decrease at the target location
+				fulcher_band_detachment_current = 1E19
+				fulcher_band_detachment_pressure = 25	# Pa
 			if int(name[-9:-4]) == 48328:
 				t_min = 0.4
 				t_end = np.abs(time_full_binned_crop-0.7).argmin() - len(time_full_binned_crop)
@@ -238,21 +268,35 @@ if False:	# plot for the papers
 			if int(name[-9:-4]) == 48336:
 				t_min = 0.4
 				t_end = np.abs(time_full_binned_crop-0.82).argmin() - len(time_full_binned_crop)
+				fulcher_band_detachment = 0.787 # DMS not available, when MWI Fulcher starts to decrease at the target location and passes through gain ~3
+				fulcher_band_detachment_current = 1.35E19
+				fulcher_band_detachment_pressure = 30	# Pa
 			if int(name[-9:-4]) == 46866:
 				t_min = 0.4
 				t_end = np.abs(time_full_binned_crop-0.8).argmin() - len(time_full_binned_crop)
+				fulcher_band_detachment = 0.619 # from DMS, when it starts to decrease at the target location
+				fulcher_band_detachment_current = 1.E19
+				fulcher_band_detachment_pressure = 40	# Pa
 			if int(name[-9:-4]) == 46864:
 				t_min = 0.4
 				t_end = np.abs(time_full_binned_crop-0.7).argmin() - len(time_full_binned_crop)
 			if int(name[-9:-4]) == 46867:
 				t_min = 0.4
 				t_end = np.abs(time_full_binned_crop-0.75).argmin() - len(time_full_binned_crop)
+				fulcher_band_detachment = 0.570 # from DMS, when it starts to decrease at the target location
+				fulcher_band_detachment_current = 0.9E19
+				fulcher_band_detachment_pressure = 40	# Pa
 			if int(name[-9:-4]) == 46868:
 				t_min = 0.4
 				t_end = np.abs(time_full_binned_crop-0.75).argmin() - len(time_full_binned_crop)
+				fulcher_band_detachment = 0.684 # DMS not available, when MWI Fulcher starts to decrease at the target location and passes through gain ~3
+				fulcher_band_detachment_current = 1.1E19
+				fulcher_band_detachment_pressure = 35	# Pa
 			if int(name[-9:-4]) == 46891:
 				t_min = 0.4
 				t_end = np.abs(time_full_binned_crop-0.8).argmin() - len(time_full_binned_crop)
+				fulcher_band_detachment = np.nan
+				fulcher_band_detachment_current = np.nan
 			if int(name[-9:-4]) == 49408:
 				t_min = 0.4
 				t_end = np.abs(time_full_binned_crop-0.8).argmin() - len(time_full_binned_crop)
@@ -344,9 +388,11 @@ if False:	# plot for the papers
 			energy_confinement_time_LST = _dict['multi_instrument']['energy_confinement_time_LST']
 			psiN_peak_inner_all = _dict['multi_instrument']['psiN_peak_inner_all']
 			core_density = _dict['multi_instrument']['line_integrated_density']
-			nu_EFIT = np.array(_dict['multi_instrument']['nu_EFIT'])
-			# nu_EFIT is noisy, I smooth it a litte bit
-			nu_EFIT = median_filter(nu_EFIT,size=int(0.05//(np.diff(time_full_binned_crop).mean())))
+			# nu_EFIT = np.array(_dict['multi_instrument']['nu_EFIT'])
+			# # nu_EFIT is noisy, I smooth it a litte bit
+			# nu_EFIT = median_filter(nu_EFIT,size=int(0.05//(np.diff(time_full_binned_crop).mean())))
+			# nu_EFIT is noisy, I used the smoothed version
+			nu_EFIT = np.array(_dict['multi_instrument']['nu_EFIT_smoothing'])/1E19
 			try:
 				jsat_lower_outer_mid_integrated = _dict['multi_instrument']['jsat_lower_outer_mid_integrated']
 				jsat_upper_outer_mid_integrated = _dict['multi_instrument']['jsat_upper_outer_mid_integrated']
@@ -366,8 +412,18 @@ if False:	# plot for the papers
 			except:
 				pass
 			try:
-				ax5[0,0].errorbar(nu_EFIT[time_full_binned_crop>t_min][:t_end],(jsat_lower_outer_mid_integrated)[time_full_binned_crop>t_min][:t_end],yerr=(jsat_lower_outer_mid_integrated_sigma)[time_full_binned_crop>t_min][:t_end],fmt='+',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5,capsize=5)
-				ax5[1,0].errorbar(nu_EFIT[time_full_binned_crop>t_min][:t_end],(jsat_upper_outer_mid_integrated)[time_full_binned_crop>t_min][:t_end],yerr=(jsat_upper_outer_mid_integrated_sigma)[time_full_binned_crop>t_min][:t_end],fmt='+',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5,capsize=5)
+				ax5[1,0].errorbar(nu_EFIT[time_full_binned_crop>t_min][:t_end],(jsat_lower_outer_mid_integrated)[time_full_binned_crop>t_min][:t_end],yerr=(jsat_lower_outer_mid_integrated_sigma)[time_full_binned_crop>t_min][:t_end],fmt='+',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5,capsize=5)
+				ax5[0,0].errorbar(nu_EFIT[time_full_binned_crop>t_min][:t_end],(jsat_upper_outer_mid_integrated)[time_full_binned_crop>t_min][:t_end],yerr=(jsat_upper_outer_mid_integrated_sigma)[time_full_binned_crop>t_min][:t_end],fmt='+',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5,capsize=5)
+			except:
+				pass
+
+			try:
+				ax5[0,3].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(energy_confinement_time)[time_full_binned_crop>t_min][:t_end]*1000,'+',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
+			except:
+				pass
+
+			try:
+				ax5[1,3].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],dr_sep_out[time_full_binned_crop>t_min][:t_end]*1000,'+',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
 			except:
 				pass
 
@@ -649,31 +705,75 @@ if False:	# plot for the papers
 	ax1a[1,0].set_ylabel('lower outer target\n'+r'particle flux [$10^{22}\#/s$]')
 	ax1a[1,1].set_ylabel(r'${\hat{L}}_{peak}$ outer separatrix')
 
-	ax5[0,0].set_ylabel('lower outer target\n'+r'particle flux [$10^{22}\#/s$]')
-	ax5[1,0].set_ylabel('upper outer target\n'+r'particle flux [$10^{22}\#/s$]')
+	ax5[1,0].set_ylabel('lower outer target\n'+r'particle flux [$10^{22}\#/s$]')
+	ax5[0,0].set_ylabel('upper outer target\n'+r'particle flux [$10^{22}\#/s$]')
 	ax5[0,1].set_ylabel(r'${\hat{L}}_{peak}$ inner separatrix')
 	ax5[1,1].set_ylabel(r'${\hat{L}}_{peak}$ outer separatrix')
-	ax5[0,2].set_ylabel('inner separatrix 50% front\nL poloidal/L poloidal x-point')
-	ax5[1,2].set_ylabel('outer leg  50% front\nL poloidal/L poloidal x-point')
+	ax5[0,2].set_ylabel(r'${\hat{L}}_{50\%}$ inner separatrix')#('inner sep 50% '+r'$L_{pol}/L_{pol \; X-point}$')
+	ax5[1,2].set_ylabel(r'${\hat{L}}_{50\%}$ outer separatrix')#('outer sep 50% '+r'$L_{pol}/L_{pol \; X-point}$')
+	ax5[0,3].set_ylabel('energy confinement time [ms]')
+	ax5[1,3].set_ylabel(r'$dr_{sep}$ [mm]')
 	ax5[0,0].grid()
 	ax5[0,1].grid()
 	ax5[0,2].grid()
 	ax5[1,0].grid()
 	ax5[1,1].grid()
 	ax5[1,2].grid()
+	ax5[0,3].grid()
+	ax5[1,3].grid()
 	ax5[0,1].axhline(y=1,linestyle='--',color='k')
+	ax5[0,1].axhline(y=0,linestyle='--',color='k')
 	ax5[1,1].axhline(y=1,linestyle='--',color='k')
+	ax5[1,1].axhline(y=0,linestyle='--',color='k')
 	ax5[0,2].axhline(y=1,linestyle='--',color='k')
+	ax5[0,2].axhline(y=0,linestyle='--',color='k')
 	ax5[1,2].axhline(y=1,linestyle='--',color='k')
-	ax5[1,1].set_ylim(bottom=-0.1)
-	ax5[1,2].set_ylim(bottom=-0.1)
-	ax5[0,1].set_ylim(bottom=-0.1)
-	ax5[0,2].set_ylim(bottom=-0.1)
-	ax5[1,1].set_xlabel(r'$n_{e,up}$'+' EFIT '+r'[#/$m^3$]')
+	ax5[1,2].axhline(y=0,linestyle='--',color='k')
+	ax5[0,1].set_ylim(bottom=-0.1,top=5)
+	ax5[0,2].set_ylim(bottom=-0.1,top=5)
+	ax5[1,1].set_ylim(bottom=-0.1,top=1.5)
+	ax5[1,2].set_ylim(bottom=-0.1,top=1.5)
+	ax5[1,1].set_xlabel(r'$n_{e,up}$'+' EFIT '+r'[$10^{19}$ #/$m^3$]')
 
+	if type == 'ohmicLmode':
+		ax5[0,0].axvline(x=0.5,color='gray',linestyle='--')
+		ax5[0,1].axvline(x=0.5,color='gray',linestyle='--')
+		ax5[0,2].axvline(x=0.5,color='gray',linestyle='--')
+		ax5[1,0].axvline(x=0.5,color='gray',linestyle='--')
+		ax5[1,1].axvline(x=0.5,color='gray',linestyle='--')
+		ax5[1,2].axvline(x=0.5,color='gray',linestyle='--')
+		ax5[0,3].axvline(x=0.5,color='gray',linestyle='--')
+		ax5[1,3].axvline(x=0.5,color='gray',linestyle='--')
+
+		ax5[0,0].axvline(x=0.95,color='gray',linestyle='--')
+		ax5[0,1].axvline(x=0.95,color='gray',linestyle='--')
+		ax5[0,2].axvline(x=0.95,color='gray',linestyle='--')
+		ax5[1,0].axvline(x=0.95,color='gray',linestyle='--')
+		ax5[1,1].axvline(x=0.95,color='gray',linestyle='--')
+		ax5[1,2].axvline(x=0.95,color='gray',linestyle='--')
+		ax5[0,3].axvline(x=0.95,color='gray',linestyle='--')
+		ax5[1,3].axvline(x=0.95,color='gray',linestyle='--')
+		fig5.savefig('/home/ffederic/work/irvb/0__outputs/PSI2024_proceeding_ohmic.png')
+
+	if type == 'beamLmode':
+		ax5[0,0].axvline(x=1,color='gray',linestyle='--')
+		ax5[0,1].axvline(x=1,color='gray',linestyle='--')
+		ax5[0,2].axvline(x=1,color='gray',linestyle='--')
+		ax5[1,0].axvline(x=1,color='gray',linestyle='--')
+		ax5[1,1].axvline(x=1,color='gray',linestyle='--')
+		ax5[1,2].axvline(x=1,color='gray',linestyle='--')
+		ax5[0,3].axvline(x=1,color='gray',linestyle='--')
+		ax5[1,3].axvline(x=1,color='gray',linestyle='--')
+		fig5.savefig('/home/ffederic/work/irvb/0__outputs/PSI2024_proceeding_beam_heated.png')
+
+
+
+	# fig5.savefig('/home/ffederic/work/irvb/0__outputs/PSI2024_CD_OH_MU01_compare.png')
 	# fig5.savefig('/home/ffederic/work/irvb/0__outputs/PSI2024_CD_OH_compare.png')
-	# fig5.savefig('/home/ffederic/work/irvb/0__outputs/PSI2024_CD_beam_compare.png')
-	fig5.savefig('/home/ffederic/work/irvb/0__outputs/PSI2024_H-mode_compare.png')
+	fig5.savefig('/home/ffederic/work/irvb/0__outputs/PSI2024_proceeding_beam_heated.png')
+	fig5.savefig('/home/ffederic/work/irvb/0__outputs/PSI2024_proceeding_ohmic.png')
+	# fig5.savefig('/home/ffederic/work/irvb/0__outputs/PSI2024_H-mode_compare.png')
+	# fig5.savefig('/home/ffederic/work/irvb/0__outputs/PSI2024_H-mode_compare2.png')
 	plt.close('all')
 
 
@@ -698,10 +798,11 @@ else:
 
 
 
-	# name = 'IRVB-MASTU_shot-45473.ptw'
+	name = 'IRVB-MASTU_shot-45473.ptw'
+	name = 'IRVB-MASTU_shot-47950.ptw'
 	# name = 'IRVB-MASTU_shot-44879.ptw'
 	# name = 'IRVB-MASTU_shot-45401.ptw'
-	name = 'IRVB-MASTU_shot-45371.ptw'
+	# name = 'IRVB-MASTU_shot-45371.ptw'
 	i_day,day = 0,coleval.retrive_shot_date_and_time(name[-9:-4])[0]
 	laser_to_analyse=path+day+'/'+name
 
@@ -709,7 +810,7 @@ else:
 	full_saved_file_dict_FAST.allow_pickle=True
 	full_saved_file_dict_FAST = dict(full_saved_file_dict_FAST)
 	full_saved_file_dict_FAST['multi_instrument'] = full_saved_file_dict_FAST['multi_instrument'].all()
-	pass_number = 0
+	pass_number = 1
 	if pass_number==0:
 		full_saved_file_dict_FAST['first_pass'] = full_saved_file_dict_FAST['first_pass'].all()
 		inverted_dict = full_saved_file_dict_FAST['first_pass']['inverted_dict']
@@ -753,6 +854,8 @@ else:
 	jsat_upper_outer_mid_max = full_saved_file_dict_FAST['multi_instrument']['jsat_upper_outer_mid_max']
 	scenario = full_saved_file_dict_FAST['multi_instrument']['scenario']
 	experiment = full_saved_file_dict_FAST['multi_instrument']['experiment']
+	nu_EFIT = np.array(full_saved_file_dict_FAST['multi_instrument']['nu_EFIT_smoothing'])/1E19
+	tu_EFIT = np.array(full_saved_file_dict_FAST['multi_instrument']['tu_EFIT_smoothing'])
 
 	BEAMPOWER_time = full_saved_file_dict_FAST['multi_instrument']['BEAMPOWER_time']
 	SW_BEAMPOWER = full_saved_file_dict_FAST['multi_instrument']['SW_BEAMPOWER']
@@ -798,6 +901,7 @@ else:
 	equivalent_res_bolo_view_sigma = (inner_SOL_sigma_all**2+real_core_radiation_sigma_all**2+outer_SOL_sigma_all**2)**0.5
 	approx_divertor = inner_SOL_leg_all+outer_SOL_leg_all
 	approx_divertor_sigma = inner_SOL_leg_sigma_all+outer_SOL_leg_sigma_all
+	MWI_equivalent_all = inverted_dict[str(grid_resolution)]['MWI_equivalent_all']
 
 	peak_emissivity_inner = []
 	peak_emissivity_outer = []
@@ -939,12 +1043,17 @@ if False:	# explore the change i profile, abandoned
 		ax[1,0].set_xlabel('L poloidal/ L poloidal x-point [au]')
 
 		plt.figure()
-		plt.plot(time_full_binned_crop,ne_bar/greenwald_density,'k')
-		for i_time,time in enumerate([0.417,0.48,0.542,0.605,0.699,0.73]):
+		# plt.plot(time_full_binned_crop,ne_bar/greenwald_density,'k')
+		# plt.ylabel('greenwald fraction [au]')
+		plt.plot(time_full_binned_crop*1000,nu_EFIT,'k')
+		plt.ylabel(r'$n_{e,up}$'+' EFIT '+r'[$10^{19}$ #/$m^3$]')
+		for i_time,time in enumerate([0.436,0.582,0.734]):#	47950
+		# for i_time,time in enumerate([0.388,0.508,0.571,0.649,0.796]):	# 45473
+		# for i_time,time in enumerate([0.417,0.48,0.542,0.605,0.699,0.73]):
 		# for i_time,time in enumerate([0.351,0.680,0.826]):
-			plt.axvline(x=time,linestyle='--',color=color[i_time],linewidth=2.0)
-		plt.xlabel('time [s]')
-		plt.ylabel('greenwald fraction [au]')
+			plt.axvline(x=time*1000,linestyle='--',color=color[i_time],linewidth=2.0)
+		plt.ylim(top=1.6,bottom=0.1)
+		plt.xlabel('time [ms]')
 		plt.grid()
 		plt.pause(0.01)
 elif False:
@@ -1379,21 +1488,23 @@ elif False:	# same but time is the axis
 	ax4 = ax.twinx()  # instantiate a second axes that shares the same x-axis
 	ax4.spines["right"].set_visible(True)
 	ax4.set_ylabel('Power [MW]')  # we already handled the x-label with ax1
-	a1 = ax4.errorbar((time_full_binned_crop)[select_time],2*1e-6*sxd_tot_rad_power_all[select_time],yerr=2*1e-6*sxd_tot_rad_power_sigma_all[select_time],capsize=5,linestyle='-',label=r'$\rightarrow$ SXD IRVB',color=color[4])
-	a2 = ax4.errorbar((time_full_binned_crop)[select_time],1e-6*(outer_SOL_leg_all-sxd_tot_rad_power_all)[select_time]*2,yerr=1e-6*((sxd_tot_rad_power_sigma_all**2 + outer_SOL_leg_sigma_all**2)**0.5)[select_time]*2,capsize=5,linestyle='-',label=r'$\rightarrow$ outer leg'+'\n+SOL -SXD IRVB',color=color[8])
+	# a1 = ax4.errorbar((time_full_binned_crop)[select_time],1e-6*sxd_tot_rad_power_all[select_time],yerr=2*1e-6*sxd_tot_rad_power_sigma_all[select_time],capsize=5,linestyle='-',label=r'$\rightarrow$ SXD IRVB',color=color[4])
+	# a2 = ax4.errorbar((time_full_binned_crop)[select_time],1e-6*(outer_SOL_leg_all-sxd_tot_rad_power_all)[select_time]*2,yerr=1e-6*((sxd_tot_rad_power_sigma_all**2 + outer_SOL_leg_sigma_all**2)**0.5)[select_time]*2,capsize=5,linestyle='-',label=r'$\rightarrow$ outer leg'+'\n+SOL -SXD IRVB',color=color[8])
+	a1 = (ax4.plot((time_full_binned_crop)[select_time],1e-6*MWI_equivalent_all[select_time],linestyle='-',label=r'$\rightarrow$ MWI like IRVB',color=color[4]))[0]
+	a2 = (ax4.plot((time_full_binned_crop)[select_time],1e-6*(outer_SOL_leg_all-MWI_equivalent_all)[select_time]*2,linestyle='-',label=r'$\rightarrow$ outer leg'+'\n+SOL - MWI like IRVB',color=color[8]))[0]
 	ax4.set_ylim(bottom=0)
 	ax4.tick_params(axis='y')
 	ax.set_xlim(left=0.3-0.005,right=0.8+0.005)
-	ax.set_ylim(bottom=0,top=1.22)
+	ax.set_ylim(bottom=0,top=2.1)
 	ax.grid()
 	handles, labels = ax.get_legend_handles_labels()
 	handles.append(a1)
 	labels.append(a1.get_label())
 	handles.append(a2)
 	labels.append(a2.get_label())
-	ax.legend(handles=handles, labels=labels, loc='lower center', fontsize='x-small')
+	ax.legend(handles=handles, labels=labels, loc='upper left', fontsize='xx-small')
 	# plt.pause(0.01)
-	plt.savefig('/home/ffederic/work/irvb/0__outputs/'+os.path.split(laser_to_analyse[:-4])[1]+'_pass'+str(pass_number)+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_all_variables_absolute_small5.png')
+	plt.savefig('/home/ffederic/work/irvb/0__outputs/'+os.path.split(laser_to_analyse[:-4])[1]+'_pass'+str(pass_number)+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_all_variables_absolute_small6.png')
 	plt.close()
 
 	import h5py

@@ -320,7 +320,7 @@ params = [
 		{'name': 'Pause', 'type': 'action'},
 		{'name': 'Export video', 'type': 'action'},
 		{'name': 'Export image', 'type': 'action'},
-		{'name': 'Image format', 'type': 'list', 'values': {'eps': 'eps', 'png': 'png'}, 'value': 1},
+		{'name': 'Image format', 'type': 'list', 'values': {'eps': 'eps', 'png': 'png', 'svg': 'svg'}, 'value': 1},
 		{'name': 'Export left', 'type': 'float', 'value': 10, 'step': 1e-3, 'finite': False},
 		{'name': 'Export right', 'type': 'float', 'value': 10, 'step': 1e-3, 'finite': False},
 		{'name': 'Export up', 'type': 'float', 'value': 10, 'step': 1e-3, 'finite': False},
@@ -654,6 +654,50 @@ def export_image():
 			prelude = ''
 		image_extent = [full_range_hor[limit_left]-0.5, full_range_hor[limit_right]-1+0.5, full_range_ver[limit_bottom]-0.5, full_range_ver[limit_top]-1+0.5]
 		fig,efit_reconstruction = coleval.image_from_data(np.array([np.flip(np.transpose(np.flip([to_plot],axis=1),(0,2,1)),axis=2)]),form_factor_size=param_ext['Set display','Export size'],image_extent=image_extent,ref_time=param_ext['ROI', 'Time [ms]']*1e-3,extvmin=histogram_level_low_for_plot,extvmax=histogram_level_high_for_plot,xlabel='horizontal coord [pixels]', ylabel='vertical coord [pixels]',barlabel=barlabel, prelude=prelude,overlay_structure=param_ext['Overlays','Structure'],include_EFIT=include_EFIT,efit_reconstruction=efit_reconstruction,pulse_ID=w2.shotID,overlay_x_point=param_ext['Overlays','X-point'],overlay_mag_axis=param_ext['Overlays','Mag axis'],overlay_strike_points=param_ext['Overlays','Separatrix'],overlay_separatrix=param_ext['Overlays','Separatrix'],EFIT_output_requested=True,generic_overlays=extra_overlays,overlay_res_bolo=param_ext['Overlays','Core Resistive bol'] or param_ext['Overlays','Div Resistive bol'])
+
+	if False:	# I'm trying to make it such that when the .svg file is visualised it does not retirn an interpolated image, but a pixelated one.
+		from io import StringIO
+		imgdata = StringIO()
+		fig.savefig(imgdata, format="svg")
+		imgdata.seek(0)
+		svg_string = imgdata.getvalue()
+		import base64
+		b64 = base64.b64encode(svg_string.encode("utf-8")).decode("utf-8")
+		css = f'<p style="image-rendering:pixelated;">'
+		html = f'{css}<img src="data:image/svg+xml;base64,{b64}"/>'
+	if False:
+		plt.savefig(param_ext1['File Path'] + '_export_' + str(next_export) + '.'+param_ext['Set display','Image format'])#, bbox_inches='tight')
+
+		import xml.etree.ElementTree as ET
+
+		file_path = param_ext1['File Path'] + '_export_' + str(next_export-1) + '.'+param_ext['Set display','Image format']
+		# Read the SVG file content
+		tree = ET.parse(file_path)
+		root = tree.getroot()
+
+		# Define the CSS to be inserted
+		style_element = ET.Element('style', type="text/css")
+		# style_element.text = """<![CDATA[ image { image-rendering: pixelated; } ]]> """
+		style_element.text = """
+		<![CDATA[
+		  image {
+		    image-rendering: -moz-crisp-edges;
+		    image-rendering: -o-crisp-edges;
+		    image-rendering: -webkit-optimize-contrast;
+		    image-rendering: pixelated;
+		    image-rendering: optimize-contrast;
+		  }
+		]]>
+		"""
+
+		root.insert(0, style_element)
+
+		# Write the modified content back to the SVG file
+		tree.write(param_ext1['File Path'] + '_export_' + str(next_export) + '.'+param_ext['Set display','Image format'])
+
+		# result: none of this really works. the image data is not interpolated, but this is visualised differently depending on the viewer.
+		# when opened on inkskape, for example, it is shown not interpolated.
+
 	plt.savefig(param_ext1['File Path'] + '_export_' + str(next_export) + '.'+param_ext['Set display','Image format'])#, bbox_inches='tight')
 	plt.close('all')
 	print('\n'+'\n'+param_ext1['File Path'] + '_export_' + str(next_export) + '.'+param_ext['Set display','Image format']+'\n'+'\n')
@@ -1668,7 +1712,7 @@ elif False:	# section to find the orientation of IRVB in MU02/3/4
 		return distance
 
 	bds = [[coleval.locate_pinhole()[0]-0.2,coleval.locate_pinhole()[1]-0.2,coleval.locate_pinhole()[2]-0.2],[coleval.locate_pinhole()[0]+0.2,coleval.locate_pinhole()[1]+0.2,coleval.locate_pinhole()[2]+0.2]]
-	found_point = curve_fit(calculate_error_lines,[0,0,0,0,0],[0,0,0,0,0],p0=coleval.locate_pinhole(),bounds=bds,ftol=1e-12,xtol=1e-10)
+	found_point = curve_fit(calculate_error_lines,[0,0,0,0,0],[0,0,0,0,0],p0=coleval.locate_pinhole(),bounds=bds,ftol=1e-12,xtol=1e-10,maxfev=1e4)
 	found_point = found_point[0]
 	found_point-coleval.locate_pinhole()
 

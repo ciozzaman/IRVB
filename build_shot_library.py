@@ -33,6 +33,7 @@ fuelling_location_list = [string.replace('fuelling ',fuelling_prefix) for string
 
 
 if True:
+	shot_list = get_data(path+'shot_list2.ods')
 	for i in range(1,len(shot_list['Sheet1'])):
 		shot = int(np.array(shot_list['Sheet1'][i])[np.array(shot_list['Sheet1'][0]) == 'shot number'])
 		# if shot<48900:
@@ -64,6 +65,7 @@ if True:
 	print('done')
 
 
+	shot_list = get_data(path+'shot_list2.ods')
 	beams_prefix = '/XNB/'
 	beams_affix = '/BEAMPOWER'
 	for i in range(2,len(shot_list['Sheet1'])):

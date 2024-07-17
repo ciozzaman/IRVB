@@ -932,7 +932,7 @@ elif True:
 			os.makedirs(pathparam)
 		coleval.build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5.1,wavelength_bottom=1.5)
 
-	if True:	# NUC plate original scans with window inttime=2.0	# ms
+	if False:	# NUC plate original scans with window inttime=2.0	# ms
 		description = 'NUC plate original scans with window inttime=2.0 # ms'
 		fileshot=np.concatenate([files17[5:],files15[5:]])
 		temperaturehot=np.concatenate([temperature17[5:],temperature15[5:]])
@@ -951,6 +951,30 @@ elif True:
 		n=3
 		# pathparam='/home/ffederic/work/irvb/2022-12-07_multiple_search_for_parameters/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
 		pathparam='/home/ffederic/work/irvb/2023-09-22_multiple_search_for_parameters/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
+		if not os.path.exists(pathparam):
+			os.makedirs(pathparam)
+		coleval.build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5.1,wavelength_bottom=1.5)
+
+
+	if True:	# HGH BB source with damaged window, geometry as per MU02 inttime=1.0	# ms
+		description = 'HGH BB source with damaged window, geometry as per MU02 inttime=1.0	# ms'
+		fileshot = np.concatenate([files70[:-5]])
+		temperaturehot = np.concatenate([temperature70[:-5]])
+		filescold = []
+		temperaturecold = []
+		temperature_window = temperaturehot.tolist()+temperaturecold
+		files_window = fileshot.tolist()+filescold
+		inttime=1.0	# ms
+		framerate=383	# Hz
+		fileshot = []
+		temperaturehot = []
+		filescold = []
+		temperaturecold = []
+		temperature_no_window = temperaturehot+temperaturecold
+		files_no_window = fileshot+filescold
+		n=3
+		# pathparam='/home/ffederic/work/irvb/2022-12-07_multiple_search_for_parameters/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
+		pathparam='/home/ffederic/work/irvb/2024-06-20_multiple_search_for_parameters/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
 		if not os.path.exists(pathparam):
 			os.makedirs(pathparam)
 		coleval.build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5.1,wavelength_bottom=1.5)
@@ -999,8 +1023,8 @@ elif True:
 			plt.title('proportional window component BB curve fit NUC\n'+description)
 		else:
 			plt.title('proportional window component BB curve fit BB source\n'+description)
-		to_plot = median_filter(params2[1,:,:,0]*params2[0,:,:,2],[3,3])
-		plt.imshow(to_plot,vmin=to_plot[30:170,30:170].min(),vmax=to_plot[30:170,30:170].max())
+		to_plot = median_filter(params2[1,:,:,0]*params2[0,:,:,2],[20,20])
+		plt.imshow(to_plot,'rainbow',vmin=to_plot[30:170,30:170].min(),vmax=to_plot[30:170,30:170].max())
 		plt.colorbar().set_label('a1*a3 [counts/photons]')
 		plt.pause(0.01)
 
@@ -1047,7 +1071,7 @@ elif True:
 			plt.title('offset full BB curve fit NUC\n'+description)
 		else:
 			plt.title('offset full BB curve fit BB source\n'+description)
-		plt.imshow(median_filter(params2[0,:,:,1]+params2[0,:,:,3],[3,3]))
+		plt.imshow(median_filter(params2[0,:,:,1]+params2[0,:,:,3],[1,1]),'rainbow')
 		plt.colorbar()
 		plt.pause(0.01)
 

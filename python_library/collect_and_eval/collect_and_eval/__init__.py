@@ -5326,24 +5326,25 @@ def ats_to_dict(full_path,digital_level_bytes=4,header_marker = '49494d536d'):	#
 			header_length = next_header_marker_position-data_length
 		header_ = hexdata[present_header_marker_position+length_header_marker:present_header_marker_position+length_header_marker+header_length]
 		# print(header[134:136])
-		FLIR_frame_header_decomposition_failed = False
+		# FLIR_frame_header_decomposition_failed = False
 		try:
-			if not FLIR_frame_header_decomposition_failed:
-				header = FLIR_frame_header_decomposition(header_)
+			if FLIR_frame_header_decomposition_failed:
+				sbla=ssdas  # I want it to skip this section
+			header = FLIR_frame_header_decomposition(header_)
 
-				if len(time_of_measurement)<=1:	# the spacing between separators seems constant, and take very long, so I do it once
-					# value = hexdata[last:].find(header_marker)
-					IntegrationTime = header('IntegrationTime')
-					FrameRate = header('FrameRate')
-					ExternalTrigger = header('ExternalTrigger')
-					NUCpresetUsed = header('NUCpresetUsed')
+			if len(time_of_measurement)<=1:	# the spacing between separators seems constant, and take very long, so I do it once
+				# value = hexdata[last:].find(header_marker)
+				IntegrationTime = header('IntegrationTime')
+				FrameRate = header('FrameRate')
+				ExternalTrigger = header('ExternalTrigger')
+				NUCpresetUsed = header('NUCpresetUsed')
 
-				digitizer_ID.append(header('PageIndex'))
-				time_of_measurement.append(header('time'))	# time in microseconds from camera startup
-				frame_counter.append(header('frame_counter'))
-				DetectorTemp.append(header('DetectorTemp'))
-				SensorTemp_0.append(header('SensorTemp_0'))
-				SensorTemp_3.append(header('SensorTemp_3'))
+			digitizer_ID.append(header('PageIndex'))
+			time_of_measurement.append(header('time'))	# time in microseconds from camera startup
+			frame_counter.append(header('frame_counter'))
+			DetectorTemp.append(header('DetectorTemp'))
+			SensorTemp_0.append(header('SensorTemp_0'))
+			SensorTemp_3.append(header('SensorTemp_3'))
 
 
 		except:
@@ -5519,7 +5520,7 @@ def ptw_to_dict(full_path,max_time_s = np.inf):
 			data.append(np.flip(frame,axis=0).astype(int))
 		digitizer_ID_fake.append(frame_header.h_framepointer%2)	# I couldn't find this so as a proxy, given the digitisers are always alternated, I only use if the frame is even or odd
 		time_of_measurement.append(temp*1e6)	# I leave if as a true timestamp, t=0 is 1970
-		frame_counter.append(None)	# I couldn't fine this in the header
+		frame_counter.append(frame_header.h_framepointer)	# this is not the same as the other file, as this is a local counter within this record, not commong among all records
 		DetectorTemp.append(frame_header.h_detectorTemp)
 		SensorTemp_0.append(frame_header.h_detectorTemp)	# this data is missing so I use the more similar again
 		SensorTemp_3.append(frame_header.h_sensorTemp4)
@@ -5895,10 +5896,10 @@ def build_poly_coeff_multi_digitizer(temperature,files,inttime,pathparam,n):
 	sin_fun = lambda x,A,f,p : A*np.sin(x*f*2*np.pi+p)
 	meancounttot=[]
 	meancountstdtot=[]
-	all_SensorTemp_0 = []
-	all_DetectorTemp = []
-	all_frame_counter = []
-	all_time_of_measurement = []
+	# all_SensorTemp_0 = []
+	# all_DetectorTemp = []
+	# all_frame_counter = []
+	# all_time_of_measurement = []
 	for i_file,file in enumerate(files):
 		full_saved_file_dict=read_IR_file(file)
 		data_per_digitizer,uniques_digitizer_ID = separate_data_with_digitizer(full_saved_file_dict)
@@ -5931,10 +5932,10 @@ def build_poly_coeff_multi_digitizer(temperature,files,inttime,pathparam,n):
 				else:
 					b.append((data_per_digitizer[i].T-baseline).T)
 			meancountstdtot.append([np.std(x,axis=0) for x in b])
-		all_SensorTemp_0.append(np.mean(full_saved_file_dict['SensorTemp_0']))
-		all_DetectorTemp.append(np.mean(full_saved_file_dict['DetectorTemp']))
-		all_time_of_measurement.append(np.mean(full_saved_file_dict['time_of_measurement']))
-		all_frame_counter.append(np.mean(full_saved_file_dict['frame_counter']))
+		# all_SensorTemp_0.append(np.mean(full_saved_file_dict['SensorTemp_0']))
+		# all_DetectorTemp.append(np.mean(full_saved_file_dict['DetectorTemp']))
+		# all_time_of_measurement.append(np.mean(full_saved_file_dict['time_of_measurement']))
+		# all_frame_counter.append(np.mean(full_saved_file_dict['frame_counter']))
 
 	meancounttot=np.array(meancounttot)
 	meancountstdtot=np.array(meancountstdtot)
@@ -6012,6 +6013,7 @@ def build_poly_coeff_multi_digitizer(temperature,files,inttime,pathparam,n):
 
 def build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5.1,wavelength_bottom=1.5):
 	# modified 2018-10-08 to build the coefficient only for 1 degree of polinomial
+	# modified 2024-07-11 do accommodate also the case in which only the window data is provided, so I can use and optimize this process for all cases
 	import collections
 	if len(temperature_window)>0:
 		while np.shape(temperature_window[0])!=():
@@ -6025,20 +6027,28 @@ def build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window
 			files_no_window=np.concatenate(files_no_window)
 	temperature_no_window = np.array(temperature_no_window)
 	files_no_window = np.array(files_no_window)
+
+	no_window_data_present = len(files_no_window)>0
+	window_data_present = len(files_window)>0
+
 	sin_fun = lambda x,A,f,p : A*np.sin(x*f*2*np.pi+p)
 	meancounttot=[]
 	meancountstdtot=[]
 	dead_pixels_markerstot = [[],[]]
-	all_SensorTemp_0 = []
-	all_DetectorTemp = []
-	all_frame_counter = []
-	all_time_of_measurement = []
+	# all_SensorTemp_0 = []
+	# all_DetectorTemp = []
+	# all_frame_counter = []
+	# all_time_of_measurement = []
 	for i_file,file in enumerate(files_window):
 		full_saved_file_dict=read_IR_file(file)
 		data_per_digitizer,uniques_digitizer_ID = separate_data_with_digitizer(full_saved_file_dict)
 		try:
-			dead_pixels_markerstot[0].append(full_saved_file_dict['dead_pixels_markers'][0])
-			dead_pixels_markerstot[1].append(full_saved_file_dict['dead_pixels_markers'][1])
+			try:
+				dead_pixels_markerstot[0].append(full_saved_file_dict['dead_pixels_markers'][0])
+				dead_pixels_markerstot[1].append(full_saved_file_dict['dead_pixels_markers'][1])
+			except:
+				dead_pixels_markerstot[0].append(full_saved_file_dict['dead_pixels_markers_0'])
+				dead_pixels_markerstot[1].append(full_saved_file_dict['dead_pixels_markers_1'])
 		except:
 			pass
 		if i_file==0:
@@ -6060,11 +6070,13 @@ def build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window
 				if framerate>300:	# the oscillation will be present only at high frequency
 					bds = [[0,20,-4*np.pi],[np.inf,40,4*np.pi]]
 					guess = [1,29,max(-4*np.pi,min(4*np.pi,-np.pi*np.trapz((a[i]-baseline)[time_axis<1/29/2])*2/np.trapz(np.abs(a[i]-baseline)[time_axis<1/29])))]
-					fit = curve_fit(sin_fun, time_axis,a[i]-baseline, p0=guess, bounds = bds, maxfev=100000000)
+					fit = curve_fit(sin_fun, time_axis[:10],(a[i]-baseline)[:10], p0=guess, bounds = bds, maxfev=100000000,ftol=1e-15)
+					fit = curve_fit(sin_fun, time_axis,(a[i]-baseline), p0=fit[0], bounds = bds, maxfev=100000000,ftol=1e-15)
 					# plt.figure()
 					# plt.plot(time_axis,a[i]-baseline)
 					# plt.plot(time_axis,sin_fun(time_axis,*fit[0]))
 					# plt.plot(time_axis,sin_fun(time_axis,*guess),'--')
+					# plt.plot(time_axis,a[i]-baseline-sin_fun(time_axis,*fit[0]),':')
 					# plt.pause(0.001)
 					# sin_fun2 = lambda x,A : A*np.sin(x*fit[0][1]*2*np.pi+fit[0][2])
 					# guess=[0]
@@ -6075,25 +6087,29 @@ def build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window
 				else:
 					b.append((data_per_digitizer[i].T-baseline).T)
 			meancountstdtot.append([np.std(x,axis=0) for x in b])
-		all_SensorTemp_0.append(np.mean(full_saved_file_dict['SensorTemp_0']))
-		all_DetectorTemp.append(np.mean(full_saved_file_dict['DetectorTemp']))
-		all_time_of_measurement.append(np.mean(full_saved_file_dict['time_of_measurement']))
-		all_frame_counter.append(np.mean(full_saved_file_dict['frame_counter']))
+		# all_SensorTemp_0.append(np.mean(full_saved_file_dict['SensorTemp_0']))
+		# all_DetectorTemp.append(np.mean(full_saved_file_dict['DetectorTemp']))
+		# all_time_of_measurement.append(np.mean(full_saved_file_dict['time_of_measurement']))
+		# all_frame_counter.append(np.mean(full_saved_file_dict['frame_counter']))
 	meancounttot=np.array(meancounttot)
 	meancountstdtot=np.array(meancountstdtot)
 
 	meancounttot_no_window=[]
 	meancountstdtot_no_window=[]
-	all_SensorTemp_0 = []
-	all_DetectorTemp = []
-	all_frame_counter = []
-	all_time_of_measurement = []
+	# all_SensorTemp_0 = []
+	# all_DetectorTemp = []
+	# all_frame_counter = []
+	# all_time_of_measurement = []
 	for i_file,file in enumerate(files_no_window):
 		full_saved_file_dict=read_IR_file(file)
 		data_per_digitizer,uniques_digitizer_ID = separate_data_with_digitizer(full_saved_file_dict)
 		try:
-			dead_pixels_markerstot[0].append(full_saved_file_dict['dead_pixels_markers'][0])
-			dead_pixels_markerstot[1].append(full_saved_file_dict['dead_pixels_markers'][1])
+			try:
+				dead_pixels_markerstot[0].append(full_saved_file_dict['dead_pixels_markers'][0])
+				dead_pixels_markerstot[1].append(full_saved_file_dict['dead_pixels_markers'][1])
+			except:
+				dead_pixels_markerstot[0].append(full_saved_file_dict['dead_pixels_markers_0'])
+				dead_pixels_markerstot[1].append(full_saved_file_dict['dead_pixels_markers_1'])
 		except:
 			pass
 		if i_file==0:
@@ -6125,10 +6141,10 @@ def build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window
 				else:
 					b.append((data_per_digitizer[i].T-baseline).T)
 			meancountstdtot_no_window.append([np.std(x,axis=0) for x in b])
-		all_SensorTemp_0.append(np.mean(full_saved_file_dict['SensorTemp_0']))
-		all_DetectorTemp.append(np.mean(full_saved_file_dict['DetectorTemp']))
-		all_time_of_measurement.append(np.mean(full_saved_file_dict['time_of_measurement']))
-		all_frame_counter.append(np.mean(full_saved_file_dict['frame_counter']))
+		# all_SensorTemp_0.append(np.mean(full_saved_file_dict['SensorTemp_0']))
+		# all_DetectorTemp.append(np.mean(full_saved_file_dict['DetectorTemp']))
+		# all_time_of_measurement.append(np.mean(full_saved_file_dict['time_of_measurement']))
+		# all_frame_counter.append(np.mean(full_saved_file_dict['frame_counter']))
 	meancounttot_no_window=np.array(meancounttot_no_window)
 	meancountstdtot_no_window=np.array(meancountstdtot_no_window)
 
@@ -6220,7 +6236,7 @@ def build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window
 			return out
 		return int
 
-	def BB_rad2(lambda_cam_x=lambda_cam_x,emissivity=1):
+	def BB_rad_window_OR_no_window(lambda_cam_x=lambda_cam_x,emissivity=1):
 		def int(T_,a1,a2):
 			# lambda_cam_x = np.linspace(1.5,5.1,10)*1e-6	# m, Range of FLIR SC7500
 			# lambda_cam = np.array([lambda_cam_x.tolist()]*len(T_)).T
@@ -6253,14 +6269,16 @@ def build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window
 	# also I cannot guarantee that digitizer 1 will stay digitiser 1 for a different temperature
 	# I find the dead pixels here and the coeffs are smoothed over ALL of them
 	flag = np.sum([find_dead_pixels([[data]],treshold_for_bad_low_std=-1,treshold_for_bad_difference=100*inttime/2) for data in meancounttot[-1]],axis=0)
-	meancounttot = [replace_dead_pixels([meancounttot[:,i]],flag)[0] for i in range(np.shape(meancounttot)[1])]
-	meancountstdtot = [replace_dead_pixels([meancountstdtot[:,i]],flag)[0] for i in range(np.shape(meancountstdtot)[1])]
-	meancounttot_no_window = [replace_dead_pixels([meancounttot_no_window[:,i]],flag)[0] for i in range(np.shape(meancounttot_no_window)[1])]
-	meancountstdtot_no_window = [replace_dead_pixels([meancountstdtot_no_window[:,i]],flag)[0] for i in range(np.shape(meancountstdtot_no_window)[1])]
-	meancounttot = np.transpose(meancounttot,(1,0,2,3))
-	meancountstdtot = np.transpose(meancountstdtot,(1,0,2,3))
-	meancounttot_no_window = np.transpose(meancounttot_no_window,(1,0,2,3))
-	meancountstdtot_no_window = np.transpose(meancountstdtot_no_window,(1,0,2,3))
+	if window_data_present:
+		meancounttot = [replace_dead_pixels([meancounttot[:,i]],flag)[0] for i in range(np.shape(meancounttot)[1])]
+		meancountstdtot = [replace_dead_pixels([meancountstdtot[:,i]],flag)[0] for i in range(np.shape(meancountstdtot)[1])]
+		meancounttot = np.transpose(meancounttot,(1,0,2,3))
+		meancountstdtot = np.transpose(meancountstdtot,(1,0,2,3))
+	if no_window_data_present:
+		meancounttot_no_window = [replace_dead_pixels([meancounttot_no_window[:,i]],flag)[0] for i in range(np.shape(meancounttot_no_window)[1])]
+		meancountstdtot_no_window = [replace_dead_pixels([meancountstdtot_no_window[:,i]],flag)[0] for i in range(np.shape(meancountstdtot_no_window)[1])]
+		meancounttot_no_window = np.transpose(meancounttot_no_window,(1,0,2,3))
+		meancountstdtot_no_window = np.transpose(meancountstdtot_no_window,(1,0,2,3))
 
 	number_of_window = len(temperature_window)
 	bds = [[0,-np.inf,0,-np.inf],[np.inf,np.inf,1,np.inf]]
@@ -6270,7 +6288,7 @@ def build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window
 	for j in range(shapex):
 		for k in range(shapey):
 			for i_z,z in enumerate(digitizer_ID):
-				if number_of_window>0:
+				if window_data_present:
 					x=np.array(meancounttot[:,z==digitizer_ID,j,k]).flatten()
 					x_=x__all[:,z==digitizer_ID,j,k].flatten()
 					xerr=np.array(meancountstdtot[:,z==digitizer_ID,j,k]).flatten()
@@ -6279,26 +6297,35 @@ def build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window
 					temp1=np.polyfit(x,temperature_window,n-1)	# this correction alone decrease the errors by 2 error by 2 orders of magnitude
 					yerr=(np.polyval(temp1,x+xerr)-np.polyval(temp1,x-xerr))/2
 					temp1,temp2=np.polyfit(x,temperature_window,n-1,w=1/yerr,cov='unscaled')
+
+					x__window=np.array(meancounttot[:,z==digitizer_ID,j,k]).flatten()
+					xerr__window=np.array(meancountstdtot[:,z==digitizer_ID,j,k]).flatten()
+					fit2 = curve_fit(BB_rad_window_OR_no_window(),np.array(temperature_window),x__window,sigma=xerr__window,absolute_sigma=True,p0=[1e-19,1000],bounds=bds1,x_scale=[1e-20,1])
+				if no_window_data_present:
+					x__no_window=np.array(meancounttot_no_window[:,z==digitizer_ID,j,k]).flatten()
+					xerr__no_window=np.array(meancountstdtot_no_window[:,z==digitizer_ID,j,k]).flatten()
+					fit1 = curve_fit(BB_rad_window_OR_no_window(),np.array(temperature_no_window),x__no_window,sigma=xerr__no_window,absolute_sigma=True,p0=[1e-19,1000],bounds=bds1,x_scale=[1e-20,1])
+				if window_data_present and no_window_data_present:
 					# fit = curve_fit(deg_2_poly,x,temperature_window,sigma=yerr,absolute_sigma=True,p0=[1,1,1])	# equivalent to np.polyfit, just to check that both return the same uncertainty
 					fit = curve_fit(BB_rad(number_of_window),np.array(temperature),x_,sigma=xerr_,absolute_sigma=True,p0=[1e-19,1000,1,100],bounds=bds,x_scale=[1e-20,1,1,1])
 					# the following is much slower
 					# x_optimal, y_opt, opt_info = scipy.optimize.fmin_l_bfgs_b(BB_rad_prob_and_gradient(np.array(temperature_window)+273,x), x0=[1e4,100], iprint=0, factr=1e2, pgtol=1e-6, maxiter=5000)#,m=1000, maxls=1000, pgtol=1e-10, factr=1e0)#,approx_grad = True)
 					# fit = make_standatd_fit_output(BB_rad_prob_and_gradient(np.array(temperature_window)+273,x,grads=False),x_optimal)
-					x__window=np.array(meancounttot[:,z==digitizer_ID,j,k]).flatten()
-					xerr__window=np.array(meancountstdtot[:,z==digitizer_ID,j,k]).flatten()
-					fit2 = curve_fit(BB_rad2(),np.array(temperature_window),x__window,sigma=xerr__window,absolute_sigma=True,p0=[1e-19,1000],bounds=bds1,x_scale=[1e-20,1])
-				x__no_window=np.array(meancounttot_no_window[:,z==digitizer_ID,j,k]).flatten()
-				xerr__no_window=np.array(meancountstdtot_no_window[:,z==digitizer_ID,j,k]).flatten()
-				fit1 = curve_fit(BB_rad2(),np.array(temperature_no_window),x__no_window,sigma=xerr__no_window,absolute_sigma=True,p0=[1e-19,1000],bounds=bds1,x_scale=[1e-20,1])
+				elif window_data_present:
+					fit = [[1,0,*fit2[0]] , np.zeros((4,4))]
+					fit[1][2:,2:] = fit2[1]
+				elif no_window_data_present:
+					fit = [[*fit1[0],1,0] , np.zeros((4,4))]
+					fit[1][:2,:2] = fit1[1]
 				if False:	# plot for paper
 					plt.figure(figsize=(10, 7))
 					plt.errorbar(x,temperature_window,yerr=np.zeros_like(temperature_window),xerr=xerr,fmt='+',color='b',label='view port')
 					# plt.errorbar(x_[number_of_window:],temperature_no_window,yerr=np.zeros_like(temperature_no_window),xerr=xerr_[number_of_window:],fmt='+',color='r',label='no view port')
 					plt.plot(np.sort(x),np.polyval(temp1,np.sort(x)),'-b',label='polynomial fit n='+str(n-1)+', '+r'$R^2=%.5g$' %(rsquared(temperature_window,np.polyval(temp1,x))))
-					plt.plot(BB_rad2()(np.sort(temperature_window),*fit2[0]),np.sort(temperature_window),'-.b',label='BB window'+', '+r'$R^2=%.5g$' %(rsquared(x__window,BB_rad2()(temperature_window,*fit2[0]))))
-					plt.plot(BB_rad2()(np.sort(temperature_window),*[fit[0][0]*fit[0][2],fit[0][1]+fit[0][3]]),np.sort(temperature_window),'--y',label='BB fit window+no window, '+r'$R^2=%.5g$' %(rsquared(x_,BB_rad(number_of_window)(temperature,*fit[0]))) + '\n'+r'$C_1=%.3g, C_2=%.3g, C_3=%.3g, C_4=%.3g$' %(fit[0][0],fit[0][1],fit[0][2],fit[0][3]))
-					# plt.plot(BB_rad2()(np.sort(temperature_no_window),*fit1[0]),np.sort(temperature_no_window),'-.r',label='BB no window')
-					# plt.plot(BB_rad2()(np.sort(temperature_no_window),*fit[0][:2]),np.sort(temperature_no_window),'--y')
+					plt.plot(BB_rad_window_OR_no_window()(np.sort(temperature_window),*fit2[0]),np.sort(temperature_window),'-.b',label='BB window'+', '+r'$R^2=%.5g$' %(rsquared(x__window,BB_rad_window_OR_no_window()(temperature_window,*fit2[0]))))
+					plt.plot(BB_rad_window_OR_no_window()(np.sort(temperature_window),*[fit[0][0]*fit[0][2],fit[0][1]+fit[0][3]]),np.sort(temperature_window),'--y',label='BB fit window+no window, '+r'$R^2=%.5g$' %(rsquared(x_,BB_rad(number_of_window)(temperature,*fit[0]))) + '\n'+r'$C_1=%.3g, C_2=%.3g, C_3=%.3g, C_4=%.3g$' %(fit[0][0],fit[0][1],fit[0][2],fit[0][3]))
+					# plt.plot(BB_rad_window_OR_no_window()(np.sort(temperature_no_window),*fit1[0]),np.sort(temperature_no_window),'-.r',label='BB no window')
+					# plt.plot(BB_rad_window_OR_no_window()(np.sort(temperature_no_window),*fit[0][:2]),np.sort(temperature_no_window),'--y')
 					plt.grid()
 					plt.legend(loc='upper left', fontsize='small')
 					plt.ylabel('temperature [°C]')
@@ -6311,7 +6338,7 @@ def build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window
 					plt.grid()
 					color='r'
 					p1 = plt.errorbar(x,temperature_window,yerr=np.zeros_like(temperature_window),xerr=xerr,fmt='+',color=color)
-					plt.plot(BB_rad2()(np.sort(temperature_window),*fit2[0]),np.sort(temperature_window),'--',color=p1.lines[0].get_color(),label='fit '+str((z,j,k))+' \n'+r'$a_1=%.3g\pm%.3g$''\n'r'$a_2=%.3g\pm%.3g$''\n'r'$R^2=%.5g$' %(fit2[0][0],fit2[1][0,0]**0.5,fit2[0][1],fit2[1][1,1]**0.5,rsquared(x__window,BB_rad2()(temperature_window,*fit2[0]))))
+					plt.plot(BB_rad_window_OR_no_window()(np.sort(temperature_window),*fit2[0]),np.sort(temperature_window),'--',color=p1.lines[0].get_color(),label='fit '+str((z,j,k))+' \n'+r'$a_1=%.3g\pm%.3g$''\n'r'$a_2=%.3g\pm%.3g$''\n'r'$R^2=%.5g$' %(fit2[0][0],fit2[1][0,0]**0.5,fit2[0][1],fit2[1][1,1]**0.5,rsquared(x__window,BB_rad_window_OR_no_window()(temperature_window,*fit2[0]))))
 					plt.legend(loc='upper left', fontsize='small')
 					plt.ylabel('temperature [°C]')
 					plt.xlabel('counts [au]')
@@ -6330,7 +6357,7 @@ def build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window
 					temp = temp1[-1] + temp1[-2] * counts + temp1[-3] * (counts**2)
 					counts_std = estimate_counts_std(counts)
 					temperature_std = (temp2[2,2] + (counts_std**2)*(temp1[1]**2) + (counts**2+counts_std**2)*temp2[1,1] + (counts_std**2)*(4*counts**2+3*counts_std**2)*(temp1[0]**2) + (counts**4+6*(counts**2)*(counts_std**2)+3*counts_std**4)*temp2[0,0] + 2*counts*temp2[2,1] + 2*(counts**2+counts_std**2)*temp2[2,0] + 2*(counts**3+counts*(counts_std**2))*temp2[1,0])**0.5
-				if number_of_window>0:
+				if window_data_present:
 					coeff[i_z,j,k,:]=temp1
 					errcoeff[i_z,j,k,:]=temp2
 					coeff2[i_z,j,k,:]=fit[0]
@@ -6339,10 +6366,11 @@ def build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window
 					errcoeff4[i_z,j,k,:]=fit2[1]
 					score[i_z,j,k]=rsquared(temperature_window,np.polyval(temp1,x))
 					score2[i_z,j,k]=rsquared(x_,BB_rad(number_of_window)(np.array(temperature),*fit[0]))
-					score4[i_z,j,k]=rsquared(x__window,BB_rad2()(temperature_window,*fit2[0]))
-				coeff3[i_z,j,k,:]=fit1[0]
-				errcoeff3[i_z,j,k,:]=fit1[1]
-				score3[i_z,j,k]=rsquared(x__no_window,BB_rad2()(temperature_no_window,*fit1[0]))
+					score4[i_z,j,k]=rsquared(x__window,BB_rad_window_OR_no_window()(temperature_window,*fit2[0]))
+				if no_window_data_present:
+					coeff3[i_z,j,k,:]=fit1[0]
+					errcoeff3[i_z,j,k,:]=fit1[1]
+					score3[i_z,j,k]=rsquared(x__no_window,BB_rad_window_OR_no_window()(temperature_no_window,*fit1[0]))
 	output_dict = dict([('coeff',coeff),('errcoeff',errcoeff),('score',score),('coeff2',coeff2),('errcoeff2',errcoeff2),('score2',score2),('coeff3',coeff3),('errcoeff3',errcoeff3),('score3',score3),('coeff4',coeff4),('errcoeff4',errcoeff4),('score4',score4)])
 	output_dict['all_dead_pixels_markers'] = dict([('all_dead_pixels_markers',dead_pixels_markerstot)])
 	output_dict['common_dead_pixels_markers'] = dict([('common_dead_pixels_markers',common_dead_pixels_markers)])
@@ -10003,6 +10031,19 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 		sensitivities_reshaped = sensitivities.reshape((pixel_v,pixel_h,len(grid_laplacian)))
 		sensitivities_reshaped = np.transpose(sensitivities_reshaped , (1,0,2))	# W/m^2 /(W/m^3/str) of emitter
 
+		if False:	# I want to visualize the grid
+			sensitivities_reshaped[sensitivities_reshaped==0] = np.nan
+			sensitivities_reshaped *= (0.07/187)**2 / (4*np.pi)
+			plt.figure()
+			plt.scatter(np.mean(grid_data,axis=1)[:,0],np.mean(grid_data,axis=1)[:,1],c=np.nansum(sensitivities_reshaped,axis=(0,1)),s=2,marker='s',cmap='rainbow',norm=LogNorm(vmin=np.nanmax(np.nansum(sensitivities_reshaped,axis=(0,1)))/1e4))
+			# plt.plot(_MASTU_CORE_GRID_POLYGON[:, 0], _MASTU_CORE_GRID_POLYGON[:, 1], 'k')
+			plt.plot(FULL_MASTU_CORE_GRID_POLYGON[:, 0], FULL_MASTU_CORE_GRID_POLYGON[:, 1], 'k')
+			plt.colorbar()
+			ax = plt.gca()
+			ax.set_aspect('equal', adjustable='box')
+			plt.savefig('/home/ffederic/work/irvb/0__outputs/'+os.path.split(path_sensitivity)[-1]+'.eps')
+
+
 		if grid_resolution==8:
 			# temp=1e-3
 			temp=1e-7
@@ -12839,7 +12880,7 @@ def image_from_data_radial_profile(data,xlabel=(),ylabel=(),barlabel=(),cmap='ra
 	masked_array = np.ma.array (cv0, mask=np.isnan(cv0))
 	# exec('cmap=cm.' + cmap)
 	# cmap=cm.rainbow
-	cmap=eval('cm.'+'hot')
+	cmap=eval('cm.'+cmap)
 	cmap.set_bad('white',1.)
 	im = ax.imshow(masked_array,cmap=cmap, origin='lower', interpolation='none', extent = extent)# [0,np.shape(data)[0]-1,0,np.shape(data)[1]-1]) # Here make an AxesImage rather than contour
 	ax.set_ylim(top=image_extent[3],bottom=image_extent[2])
@@ -13000,7 +13041,7 @@ def estimate_counts_std(counts,int_time=2,framerate=383):
 	else:
 		print(str(framerate)+'Hz framerate does not have std coefficients assotiated with it, this should be checked')
 		a=b	# a and b are not defined so this will cause an error to occour
-	counts_temp_std = np.polyval(counts_std_fit,counts)*counts
+	counts_temp_std = np.polyval(counts_std_fit,counts).astype(np.float32)*counts
 	return counts_temp_std
 
 ##############################################################################################################################################################################################################
@@ -13870,8 +13911,10 @@ def baricentre_outer_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 			L_poloidal_peak = L_poloidal_from_point_to_target(r_coord_smooth_origial,z_coord_smooth_origial,emissivity_peak,efit_data,i_efit_time)
 			L_poloidal_x_point = L_poloidal_from_point_to_target(r_coord_smooth_origial,z_coord_smooth_origial,[efit_reconstruction.lower_xpoint_r[i_efit_time],efit_reconstruction.lower_xpoint_z[i_efit_time]],efit_data,i_efit_time)
 
+			# selecting the outer leg
 			selected[inversion_R<efit_reconstruction.lower_xpoint_r[i_efit_time]] = False
 			selected[:,inversion_Z>efit_reconstruction.lower_xpoint_z[i_efit_time]] = False
+			# excluding the x-point
 			selected[((np.meshgrid(inversion_Z,inversion_R)[0]-efit_reconstruction.lower_xpoint_z[i_efit_time])**2 + (np.meshgrid(inversion_Z,inversion_R)[1]-efit_reconstruction.lower_xpoint_r[i_efit_time])**2)**0.5<x_point_region_radious] = False
 			selected_sigma[voxels_centre[:,0]<efit_reconstruction.lower_xpoint_r[i_efit_time]] = False
 			selected_sigma[voxels_centre[:,1]>efit_reconstruction.lower_xpoint_z[i_efit_time]] = False
@@ -13898,6 +13941,7 @@ def baricentre_outer_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 			leg_reliable_power_sigma = np.nansum((covariance_out[i_t][:len(grid_data_masked_crop),:len(grid_data_masked_crop)]*temp_select).T*temp_select)**0.5
 			# leg_reliable_power_sigma = np.nansum(((temp_sigma.T*inversion_R).T*selected*2*np.pi*(grid_resolution**2))**2)**0.5
 
+			# selecting only the x-point
 			selected = np.zeros_like(inverted_data[0]).astype(bool)
 			selected[((np.meshgrid(inversion_Z,inversion_R)[0]-efit_reconstruction.lower_xpoint_z[i_efit_time])**2 + (np.meshgrid(inversion_Z,inversion_R)[1]-efit_reconstruction.lower_xpoint_r[i_efit_time])**2)**0.5<=x_point_region_radious] = True
 			x_point_power = np.nansum((temp.T*inversion_R).T*selected*2*np.pi*(grid_resolution**2))
@@ -13906,6 +13950,7 @@ def baricentre_outer_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 			temp_select = selected_sigma*2*np.pi*(grid_resolution**2)*(voxels_centre[:,0])
 			x_point_power_sigma = np.nansum((covariance_out[i_t][:len(grid_data_masked_crop),:len(grid_data_masked_crop)]*temp_select).T*temp_select)**0.5
 
+			# selecting the part of the leg that is inside the region of power unreliability
 			selected = np.zeros_like(inverted_data[0]).astype(bool)
 			selected[z_<MU01_sxd_region_delimiter(r_)] = True	# delimiter as used in the thesis
 			sxd_tot_rad_power = np.nansum((temp.T*inversion_R).T*selected*2*np.pi*(grid_resolution**2))
@@ -14326,8 +14371,10 @@ def baricentre_inner_separatrix_radiation(inverted_data,inverted_data_sigma,inve
 			L_poloidal_peak = L_poloidal_from_point_to_target(r_coord_smooth_origial,z_coord_smooth_origial,emissivity_peak,efit_data,i_efit_time)
 			L_poloidal_x_point = L_poloidal_from_point_to_target(r_coord_smooth_origial,z_coord_smooth_origial,[efit_reconstruction.lower_xpoint_r[i_efit_time],efit_reconstruction.lower_xpoint_z[i_efit_time]],efit_data,i_efit_time)
 
+			# selecting only the inner leg
 			selected[inversion_R>efit_reconstruction.lower_xpoint_r[i_efit_time]] = False
 			selected[:,inversion_Z>efit_reconstruction.lower_xpoint_z[i_efit_time]] = False
+			# excluding the x-point
 			selected[((np.meshgrid(inversion_Z,inversion_R)[0]-efit_reconstruction.lower_xpoint_z[i_efit_time])**2 + (np.meshgrid(inversion_Z,inversion_R)[1]-efit_reconstruction.lower_xpoint_r[i_efit_time])**2)**0.5<x_point_region_radious] = False
 			selected_sigma[voxels_centre[:,0]>efit_reconstruction.lower_xpoint_r[i_efit_time]] = False
 			selected_sigma[voxels_centre[:,1]>efit_reconstruction.lower_xpoint_z[i_efit_time]] = False
@@ -15992,7 +16039,7 @@ def savez_protocol4(file, *args, **kwds):
 
 	zipf.close()
 
-def find_reliable_peaks_and_throughs(signal,time,freq_signal,duty_signal,treshold_for_slow_signal=2.1):
+def find_reliable_peaks_and_throughs(signal,time,freq_signal,duty_signal,treshold_for_slow_signal=2.1, scrap_edge_peaks=True):
 	from scipy.signal import find_peaks, peak_prominences as get_proms
 	from scipy.ndimage import generic_filter
 	from scipy.signal import savgol_filter
@@ -16010,7 +16057,10 @@ def find_reliable_peaks_and_throughs(signal,time,freq_signal,duty_signal,treshol
 	framerate = 1/np.median(np.diff(time))
 	frames_for_one_pulse = framerate/freq_signal
 	signal_filtered = generic_filter(signal,np.mean,size=[max(1,int(frames_for_one_pulse*duty_signal)-2)])
-	temp = max(1,np.round((len(signal_filtered)-len(signal_filtered)//frames_for_one_pulse*frames_for_one_pulse)/2).astype(int))
+	if scrap_edge_peaks:
+		temp = max(1,np.round((len(signal_filtered)-len(signal_filtered)//frames_for_one_pulse*frames_for_one_pulse)/2).astype(int))
+	else:
+		temp=1
 	signal_filtered = signal_filtered[temp:-temp]
 	peaks_loc = find_peaks(signal_filtered,distance=frames_for_one_pulse*0.95)[0]
 	peaks_loc = peaks_loc[np.logical_and(peaks_loc>5,peaks_loc<len(signal_filtered)-6)]
@@ -16082,10 +16132,11 @@ def find_reliable_peaks_and_throughs(signal,time,freq_signal,duty_signal,treshol
 	# if len(end_loc)>=3:
 	# 	end_loc = end_loc[np.logical_and(end_loc>end_loc.min(),end_loc<end_loc.max())]
 
-	peaks_loc = peaks_loc[peaks_loc>start_loc.min()]
-	throughs_loc = throughs_loc[throughs_loc<start_loc.max()]
-	start_loc = start_loc[start_loc<end_loc.max()]
-	end_loc = end_loc[end_loc>start_loc.min()]
+	if scrap_edge_peaks:
+		peaks_loc = peaks_loc[peaks_loc>start_loc.min()]
+		throughs_loc = throughs_loc[throughs_loc<start_loc.max()]
+		start_loc = start_loc[start_loc<end_loc.max()]
+		end_loc = end_loc[end_loc>start_loc.min()]
 
 	temp = []
 	for value in start_loc:

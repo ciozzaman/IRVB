@@ -47,7 +47,7 @@ logging.basicConfig(level=logging.ERROR)
 # added to reat the .ptw
 os.chdir('/home/ffederic/work/Collaboratory/test/experimental_data/functions')
 print(os.path.abspath(os.getcwd()))
-import pyradi.ryptw as ryptw
+# import pyradi.ryptw as ryptw
 
 # degree of polynomial of choice
 n=3
@@ -219,7 +219,7 @@ if False or MU_campaign>0:	# section to use when specifying the days
 elif True:	# section to use when specifying the shots
 
 	# simpler way of starting works
-	to_do = ['IRVB-MASTU_shot-45468.ptw','IRVB-MASTU_shot-45469.ptw','IRVB-MASTU_shot-45470.ptw','IRVB-MASTU_shot-45473.ptw','IRVB-MASTU_shot-45401.ptw','IRVB-MASTU_shot-45399.ptw','IRVB-MASTU_shot-45371.ptw']#,'IRVB-MASTU_shot-45473.ptw']
+	# to_do = ['IRVB-MASTU_shot-45468.ptw','IRVB-MASTU_shot-45469.ptw','IRVB-MASTU_shot-45470.ptw','IRVB-MASTU_shot-45473.ptw','IRVB-MASTU_shot-45401.ptw','IRVB-MASTU_shot-45399.ptw','IRVB-MASTU_shot-45371.ptw']#,'IRVB-MASTU_shot-45473.ptw']
 	# to_do = ['IRVB-MASTU_shot-45371.ptw','IRVB-MASTU_shot-45372.ptw','IRVB-MASTU_shot-45380.ptw','IRVB-MASTU_shot-45390.ptw','IRVB-MASTU_shot-45391.ptw','IRVB-MASTU_shot-45398.ptw','IRVB-MASTU_shot-45400.ptw','IRVB-MASTU_shot-45439.ptw','IRVB-MASTU_shot-45443.ptw','IRVB-MASTU_shot-45444.ptw','IRVB-MASTU_shot-45450.ptw','IRVB-MASTU_shot-45456.ptw','IRVB-MASTU_shot-45459.ptw','IRVB-MASTU_shot-45461.ptw','IRVB-MASTU_shot-45462.ptw','IRVB-MASTU_shot-45463.ptw','IRVB-MASTU_shot-45464.ptw','IRVB-MASTU_shot-45465.ptw']
 	# to_do = ['IRVB-MASTU_shot-45046.ptw','IRVB-MASTU_shot-45047.ptw','IRVB-MASTU_shot-45048.ptw','IRVB-MASTU_shot-45056.ptw','IRVB-MASTU_shot-45057.ptw','IRVB-MASTU_shot-45058.ptw','IRVB-MASTU_shot-45059.ptw','IRVB-MASTU_shot-45060.ptw','IRVB-MASTU_shot-45062.ptw','IRVB-MASTU_shot-45063.ptw','IRVB-MASTU_shot-45066.ptw','IRVB-MASTU_shot-45071.ptw','IRVB-MASTU_shot-45081.ptw','IRVB-MASTU_shot-45143.ptw','IRVB-MASTU_shot-45239.ptw','IRVB-MASTU_shot-45241.ptw','IRVB-MASTU_shot-45243.ptw','IRVB-MASTU_shot-45244.ptw','IRVB-MASTU_shot-45245.ptw','IRVB-MASTU_shot-45246.ptw','IRVB-MASTU_shot-45353.ptw']	# SXD fuelled from high field side
 	# to_do = ['IRVB-MASTU_shot-47036.ptw','IRVB-MASTU_shot-47143.ptw','IRVB-MASTU_shot-46823.ptw']
@@ -309,15 +309,28 @@ elif True:	# section to use when specifying the shots
 
 
 	# data for psi2024 poster
-	to_do = []
+	# to_do = []
 	# ohmic L-mode
+	# to_do = to_do + ['IRVB-MASTU_shot-45468.ptw','IRVB-MASTU_shot-45469.ptw','IRVB-MASTU_shot-45470.ptw','IRVB-MASTU_shot-45473.ptw']
 	# to_do = to_do + ['IRVB-MASTU_shot-47950.ptw','IRVB-MASTU_shot-47973.ptw','IRVB-MASTU_shot-48144.ptw','IRVB-MASTU_shot-48328.ptw','IRVB-MASTU_shot-48335.ptw']
 	# beam heated L-mode
 	# to_do = to_do + ['IRVB-MASTU_shot-46866.ptw','IRVB-MASTU_shot-46864.ptw','IRVB-MASTU_shot-46867.ptw','IRVB-MASTU_shot-46868.ptw','IRVB-MASTU_shot-46889.ptw','IRVB-MASTU_shot-46891.ptw','IRVB-MASTU_shot-46903.ptw','IRVB-MASTU_shot-48336.ptw','IRVB-MASTU_shot-49408.ptw','IRVB-MASTU_shot-49283.ptw']
 	# H-mode
-	to_do = to_do + ['IRVB-MASTU_shot-45401.ptw','IRVB-MASTU_shot-48596.ptw','IRVB-MASTU_shot-48597.ptw','IRVB-MASTU_shot-46977.ptw','IRVB-MASTU_shot-48599.ptw','IRVB-MASTU_shot-48561.ptw','IRVB-MASTU_shot-49139.ptw','IRVB-MASTU_shot-49392.ptw','IRVB-MASTU_shot-49396.ptw','IRVB-MASTU_shot-49400.ptw','IRVB-MASTU_shot-49401.ptw']
+	# to_do = to_do + ['IRVB-MASTU_shot-45401.ptw','IRVB-MASTU_shot-48596.ptw','IRVB-MASTU_shot-48597.ptw','IRVB-MASTU_shot-46977.ptw','IRVB-MASTU_shot-48599.ptw','IRVB-MASTU_shot-48561.ptw','IRVB-MASTU_shot-49139.ptw','IRVB-MASTU_shot-49392.ptw','IRVB-MASTU_shot-49396.ptw','IRVB-MASTU_shot-49400.ptw','IRVB-MASTU_shot-49401.ptw']
 	# mix
 	# to_do = to_do + ['IRVB-MASTU_shot-48690.ptw','IRVB-MASTU_shot-48692.ptw','IRVB-MASTU_shot-49463.ptw','IRVB-MASTU_shot-49464.ptw','IRVB-MASTU_shot-49465.ptw','IRVB-MASTU_shot-49466.ptw','IRVB-MASTU_shot-49467.ptw','IRVB-MASTU_shot-49468.ptw']
+
+	# data for Yasmin Adnrew
+	# to_do = []
+	# to_do = to_do + ['IRVB-MASTU_shot-46631.ptw','IRVB-MASTU_shot-47012.ptw','IRVB-MASTU_shot-47078.ptw','IRVB-MASTU_shot-47094.ptw','IRVB-MASTU_shot-47889.ptw','IRVB-MASTU_shot-47909.ptw','IRVB-MASTU_shot-47916.ptw',
+	# 'IRVB-MASTU_shot-47918.ptw','IRVB-MASTU_shot-48004.ptw','IRVB-MASTU_shot-48172.ptw','IRVB-MASTU_shot-48174.ptw','IRVB-MASTU_shot-48175.ptw','IRVB-MASTU_shot-48176.ptw','IRVB-MASTU_shot-48177.ptw',
+	# 'IRVB-MASTU_shot-49091.ptw','IRVB-MASTU_shot-49094.ptw','IRVB-MASTU_shot-49095.ptw']
+
+	# data for Bob Kool nature 2024 paper
+	to_do = []
+	to_do = to_do + ['IRVB-MASTU_shot-47080.ptw','IRVB-MASTU_shot-47083.ptw','IRVB-MASTU_shot-47086.ptw','IRVB-MASTU_shot-47116.ptw','IRVB-MASTU_shot-47118.ptw','IRVB-MASTU_shot-47119.ptw','IRVB-MASTU_shot-49303.ptw',
+	'IRVB-MASTU_shot-48001.ptw','IRVB-MASTU_shot-47998.ptw','IRVB-MASTU_shot-49297.ptw','IRVB-MASTU_shot-49298.ptw']
+
 
 	to_do = np.flip(to_do,axis=0)
 	if ext_sequencer!=None:
@@ -345,7 +358,7 @@ elif True:	# section to use when specifying the shots
 		laser_to_analyse=path+day+'/'+name
 
 		try:
-			if False:
+			if True:
 				exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_pulse_process2_BB.py").read())
 			else:
 				pass_number = 0
@@ -373,7 +386,7 @@ else:	# section to use when analysing only one shot
 	# i_day,day = 0,'2021-10-12'
 	# name='IRVB-MASTU_shot-47958.ptw'
 	# name='IRVB-MASTU_shot-46860.ptw'
-	name='IRVB-MASTU_shot-49283.ptw'
+	name='IRVB-MASTU_shot-45473.ptw'
 	# name='IRVB-MASTU_shot-45371.ptw'
 	# name='IRVB-MASTU_shot-49312.ptw'
 	# name='IRVB-MASTU_shot-49213.ptw'
@@ -387,7 +400,7 @@ else:	# section to use when analysing only one shot
 	# name='IRVB-MASTU_shot-48324.ptw'
 	# name = 'IRVB-MASTU_shot-48636.ptw'
 	# name = 'IRVB-MASTU_shot-48692.ptw'
-	# name = 'IRVB-MASTU_shot-48159.ptw'
+	name = 'IRVB-MASTU_shot-46895.ptw'
 
 	path = '/home/ffederic/work/irvb/MAST-U/'
 	# shot_list = get_data(path+'shot_list2.ods')
@@ -408,7 +421,7 @@ else:	# section to use when analysing only one shot
 
 	laser_to_analyse=path+day+'/'+name
 
-	if False:
+	if True:
 		exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_pulse_process2_BB.py").read())
 	else:
 		pass_number = 0

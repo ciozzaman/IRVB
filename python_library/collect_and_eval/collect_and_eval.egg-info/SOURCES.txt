@@ -225,6 +225,7 @@ warnings
 .ipynb_checkpoints/From Jack Lovell, script to read SOLPS-checkpoint.ipynb
 .ipynb_checkpoints/Untitled-checkpoint.ipynb
 collect_and_eval/MASTU_structure.py
+collect_and_eval/Python3.7__init__.py
 collect_and_eval/__init__.py
 collect_and_eval/efitData.py
 collect_and_eval/efitUtils.py
