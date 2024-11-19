@@ -931,6 +931,8 @@ elif True:
 		if not os.path.exists(pathparam):
 			os.makedirs(pathparam)
 		coleval.build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5.1,wavelength_bottom=1.5)
+	else:
+		pass
 
 	if False:	# NUC plate original scans with window inttime=2.0	# ms
 		description = 'NUC plate original scans with window inttime=2.0 # ms'
@@ -954,9 +956,11 @@ elif True:
 		if not os.path.exists(pathparam):
 			os.makedirs(pathparam)
 		coleval.build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5.1,wavelength_bottom=1.5)
+	else:
+		pass
 
 
-	if True:	# HGH BB source with damaged window, geometry as per MU02 inttime=1.0	# ms
+	if True:	# HGH BB source with damaged window, SC7500 camera, geometry as per MU02 inttime=1.0	# ms
 		description = 'HGH BB source with damaged window, geometry as per MU02 inttime=1.0	# ms'
 		fileshot = np.concatenate([files70[:-5]])
 		temperaturehot = np.concatenate([temperature70[:-5]])
@@ -978,6 +982,58 @@ elif True:
 		if not os.path.exists(pathparam):
 			os.makedirs(pathparam)
 		coleval.build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5.1,wavelength_bottom=1.5)
+	else:
+		pass
+
+
+	if True:	# HGH BB source with damaged window, X6980 camera, geometry as per MU02 inttime=1.0	# ms
+		# first I need to split the files in the individual integration time/frequency combos
+
+		ID_all = np.arange(59,134+1)
+		ID_all = np.arange(101,134+1)
+		for ID in ID_all:
+
+			file = '/home/ffederic/work/irvb/flatfield/Oct28_2024/Untitled-'+str(ID)+'.ats'
+			print('starting'+file)
+
+			full_saved_file_dict = coleval.ats_to_dict(file)
+			np.savez_compressed(file[:-4],**full_saved_file_dict)
+			laser_dict = np.load(file[:-4]+'.npz')
+			laser_dict.allow_pickle=True
+			full_saved_file_dict = dict(laser_dict)
+			try:
+				settings_table = dict(full_saved_file_dict['settings_table'].all())
+			except:
+				continue
+			for Preset in settings_table.keys():
+				laser_dict = np.load(file[:-4]+'.npz')
+				laser_dict.allow_pickle=True
+				full_saved_file_dict = dict(laser_dict)
+
+				full_saved_file_dict['data'] = full_saved_file_dict['data'][full_saved_file_dict['Preset']==int(Preset)]
+				full_saved_file_dict['digitizer_ID'] = full_saved_file_dict['digitizer_ID'][full_saved_file_dict['Preset']==int(Preset)]
+				full_saved_file_dict['time_of_measurement'] = full_saved_file_dict['time_of_measurement'][full_saved_file_dict['Preset']==int(Preset)]
+				full_saved_file_dict['SensorTemp_0'] = full_saved_file_dict['SensorTemp_0'][full_saved_file_dict['Preset']==int(Preset)]
+				full_saved_file_dict['SensorTemp_3'] = full_saved_file_dict['SensorTemp_3'][full_saved_file_dict['Preset']==int(Preset)]
+				full_saved_file_dict['DetectorTemp'] = full_saved_file_dict['DetectorTemp'][full_saved_file_dict['Preset']==int(Preset)]
+				full_saved_file_dict['frame_counter'] = full_saved_file_dict['frame_counter'][full_saved_file_dict['Preset']==int(Preset)]
+
+				data_per_digitizer,uniques_digitizer_ID = coleval.separate_data_with_digitizer(full_saved_file_dict)
+				full_saved_file_dict['data_time_avg_counts'] = np.array([(np.mean(data,axis=0)) for data in data_per_digitizer])
+				full_saved_file_dict['data_time_avg_counts_std'] = np.array([(np.std(data,axis=0)) for data in data_per_digitizer])
+				full_saved_file_dict['data_time_space_avg_counts'] = np.array([(np.mean(data,axis=(0,1,2))) for data in data_per_digitizer])
+				full_saved_file_dict['data_time_space_avg_counts_std'] = np.array([(np.std(data,axis=(0,1,2))) for data in data_per_digitizer])
+
+				full_saved_file_dict['Preset'] = full_saved_file_dict['Preset'][full_saved_file_dict['Preset']==int(Preset)]
+
+				full_saved_file_dict['IntegrationTime'] = settings_table[Preset]['IntegrationTime']
+				full_saved_file_dict['FrameRate'] = settings_table[Preset]['FrameRate']
+
+				np.savez_compressed(file[:-4]+'_int'+str(full_saved_file_dict['IntegrationTime'])+'_fr'+str(np.round(settings_table[str(Preset)]['FrameRate'])),**full_saved_file_dict)
+			os.remove(file[:-4]+'.npz')
+
+
+
 
 
 
@@ -1023,7 +1079,7 @@ elif True:
 			plt.title('proportional window component BB curve fit NUC\n'+description)
 		else:
 			plt.title('proportional window component BB curve fit BB source\n'+description)
-		to_plot = median_filter(params2[1,:,:,0]*params2[0,:,:,2],[20,20])
+		to_plot = median_filter(params2[1,:,:,0]*params2[0,:,:,2],[5,5])
 		plt.imshow(to_plot,'rainbow',vmin=to_plot[30:170,30:170].min(),vmax=to_plot[30:170,30:170].max())
 		plt.colorbar().set_label('a1*a3 [counts/photons]')
 		plt.pause(0.01)

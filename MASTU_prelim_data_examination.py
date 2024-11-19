@@ -267,7 +267,7 @@ elif True:	# section to use when specifying the shots
 	# to_do = to_do + ['IRVB-MASTU_shot-46762.ptw','IRVB-MASTU_shot-46769.ptw','IRVB-MASTU_shot-46864.ptw','IRVB-MASTU_shot-46866.ptw','IRVB-MASTU_shot-46867.ptw','IRVB-MASTU_shot-46868.ptw','IRVB-MASTU_shot-46891.ptw','IRVB-MASTU_shot-46903.ptw','IRVB-MASTU_shot-46905.ptw','IRVB-MASTU_shot-46702.ptw','IRVB-MASTU_shot-46889.ptw']
 	# # shape scans
 	# to_do = to_do + ['IRVB-MASTU_shot-46889.ptw','IRVB-MASTU_shot-46895.ptw','IRVB-MASTU_shot-46890.ptw']
-	# to_do = ['IRVB-MASTU_shot-49312.ptw','IRVB-MASTU_shot-49320.ptw']
+	# to_do = to_do + ['IRVB-MASTU_shot-49312.ptw','IRVB-MASTU_shot-49320.ptw']
 
 	# # MU03 shots for Kevin
 	# to_do = []
@@ -300,17 +300,17 @@ elif True:	# section to use when specifying the shots
 	# to_do = ['IRVB-MASTU_shot-49463.ptw','IRVB-MASTU_shot-49464.ptw','IRVB-MASTU_shot-49465.ptw','IRVB-MASTU_shot-49466.ptw','IRVB-MASTU_shot-49467.ptw','IRVB-MASTU_shot-49468.ptw']
 
 	# to_do = []
-	# mu03 DIV-02 by Jack
-	# to_do = to_do + ['IRVB-MASTU_shot-48692.ptw','IRVB-MASTU_shot-46363.ptw','IRVB-MASTU_shot-49373.ptw','IRVB-MASTU_shot-49374.ptw','IRVB-MASTU_shot-48766.ptw','IRVB-MASTU_shot-49464.ptw','IRVB-MASTU_shot-49465.ptw','IRVB-MASTU_shot-49466.ptw','IRVB-MASTU_shot-49467.ptw']
-	# mu03 DIV-03 by Jack
-	# to_do = to_do + ['IRVB-MASTU_shot-49213.ptw','IRVB-MASTU_shot-48651.ptw','IRVB-MASTU_shot-49220.ptw','IRVB-MASTU_shot-49259.ptw','IRVB-MASTU_shot-49262.ptw','IRVB-MASTU_shot-49404.ptw','IRVB-MASTU_shot-49198.ptw']
-	# mu03 DIV-03 by Vlad Soukhanovskii
+	# # mu03 DIV-02 by Jack
+	# # to_do = to_do + ['IRVB-MASTU_shot-48692.ptw','IRVB-MASTU_shot-46363.ptw','IRVB-MASTU_shot-49373.ptw','IRVB-MASTU_shot-49374.ptw','IRVB-MASTU_shot-48766.ptw','IRVB-MASTU_shot-49464.ptw','IRVB-MASTU_shot-49465.ptw','IRVB-MASTU_shot-49466.ptw','IRVB-MASTU_shot-49467.ptw']
+	# # mu03 DIV-03 by Jack
+	# # to_do = to_do + ['IRVB-MASTU_shot-49213.ptw','IRVB-MASTU_shot-48651.ptw','IRVB-MASTU_shot-49220.ptw','IRVB-MASTU_shot-49259.ptw','IRVB-MASTU_shot-49262.ptw','IRVB-MASTU_shot-49404.ptw','IRVB-MASTU_shot-49198.ptw']
+	# # mu03 DIV-03 by Vlad Soukhanovskii
 	# to_do = to_do + ['IRVB-MASTU_shot-49463.ptw','IRVB-MASTU_shot-49464.ptw','IRVB-MASTU_shot-49465.ptw','IRVB-MASTU_shot-49466.ptw','IRVB-MASTU_shot-49467.ptw','IRVB-MASTU_shot-49468.ptw','IRVB-MASTU_shot-48690.ptw','IRVB-MASTU_shot-48692.ptw']
 
 
 	# data for psi2024 poster
 	# to_do = []
-	# ohmic L-mode
+	# # ohmic L-mode
 	# to_do = to_do + ['IRVB-MASTU_shot-45468.ptw','IRVB-MASTU_shot-45469.ptw','IRVB-MASTU_shot-45470.ptw','IRVB-MASTU_shot-45473.ptw']
 	# to_do = to_do + ['IRVB-MASTU_shot-47950.ptw','IRVB-MASTU_shot-47973.ptw','IRVB-MASTU_shot-48144.ptw','IRVB-MASTU_shot-48328.ptw','IRVB-MASTU_shot-48335.ptw']
 	# beam heated L-mode
@@ -320,19 +320,20 @@ elif True:	# section to use when specifying the shots
 	# mix
 	# to_do = to_do + ['IRVB-MASTU_shot-48690.ptw','IRVB-MASTU_shot-48692.ptw','IRVB-MASTU_shot-49463.ptw','IRVB-MASTU_shot-49464.ptw','IRVB-MASTU_shot-49465.ptw','IRVB-MASTU_shot-49466.ptw','IRVB-MASTU_shot-49467.ptw','IRVB-MASTU_shot-49468.ptw']
 
-	# data for Yasmin Adnrew
-	# to_do = []
-	# to_do = to_do + ['IRVB-MASTU_shot-46631.ptw','IRVB-MASTU_shot-47012.ptw','IRVB-MASTU_shot-47078.ptw','IRVB-MASTU_shot-47094.ptw','IRVB-MASTU_shot-47889.ptw','IRVB-MASTU_shot-47909.ptw','IRVB-MASTU_shot-47916.ptw',
-	# 'IRVB-MASTU_shot-47918.ptw','IRVB-MASTU_shot-48004.ptw','IRVB-MASTU_shot-48172.ptw','IRVB-MASTU_shot-48174.ptw','IRVB-MASTU_shot-48175.ptw','IRVB-MASTU_shot-48176.ptw','IRVB-MASTU_shot-48177.ptw',
-	# 'IRVB-MASTU_shot-49091.ptw','IRVB-MASTU_shot-49094.ptw','IRVB-MASTU_shot-49095.ptw']
+	# # data for Yasmin Adnrew (female) about LH transition
+	to_do = []
+	# # # to_do = to_do + ['IRVB-MASTU_shot-46631.ptw','IRVB-MASTU_shot-47012.ptw','IRVB-MASTU_shot-47078.ptw','IRVB-MASTU_shot-47094.ptw','IRVB-MASTU_shot-47889.ptw','IRVB-MASTU_shot-47909.ptw','IRVB-MASTU_shot-47916.ptw',
+	# # # 'IRVB-MASTU_shot-47918.ptw','IRVB-MASTU_shot-48004.ptw','IRVB-MASTU_shot-48172.ptw','IRVB-MASTU_shot-48174.ptw','IRVB-MASTU_shot-48175.ptw','IRVB-MASTU_shot-48176.ptw','IRVB-MASTU_shot-48177.ptw',
+	# # # 'IRVB-MASTU_shot-49091.ptw','IRVB-MASTU_shot-49094.ptw','IRVB-MASTU_shot-49095.ptw']
+	to_do = to_do + ['IRVB-MASTU_shot-48004.ptw']
 
 	# data for Bob Kool nature 2024 paper
-	to_do = []
-	to_do = to_do + ['IRVB-MASTU_shot-47080.ptw','IRVB-MASTU_shot-47083.ptw','IRVB-MASTU_shot-47086.ptw','IRVB-MASTU_shot-47116.ptw','IRVB-MASTU_shot-47118.ptw','IRVB-MASTU_shot-47119.ptw','IRVB-MASTU_shot-49303.ptw',
-	'IRVB-MASTU_shot-48001.ptw','IRVB-MASTU_shot-47998.ptw','IRVB-MASTU_shot-49297.ptw','IRVB-MASTU_shot-49298.ptw']
+	# to_do = []
+	# to_do = to_do + ['IRVB-MASTU_shot-47080.ptw','IRVB-MASTU_shot-47083.ptw','IRVB-MASTU_shot-47086.ptw','IRVB-MASTU_shot-47116.ptw','IRVB-MASTU_shot-47118.ptw','IRVB-MASTU_shot-47119.ptw','IRVB-MASTU_shot-49303.ptw',
+	# 'IRVB-MASTU_shot-48001.ptw','IRVB-MASTU_shot-47998.ptw','IRVB-MASTU_shot-49297.ptw','IRVB-MASTU_shot-49298.ptw']
 
 
-	to_do = np.flip(to_do,axis=0)
+	# to_do = np.flip(to_do,axis=0)
 	if ext_sequencer!=None:
 		try:
 			to_do = [to_do[ext_sequencer]]
@@ -399,8 +400,37 @@ else:	# section to use when analysing only one shot
 	# name='IRVB-MASTU_shot-46895.ptw'
 	# name='IRVB-MASTU_shot-48324.ptw'
 	# name = 'IRVB-MASTU_shot-48636.ptw'
-	# name = 'IRVB-MASTU_shot-48692.ptw'
-	name = 'IRVB-MASTU_shot-46895.ptw'
+	name = 'IRVB-MASTU_shot-48004.ptw'
+	name = 'IRVB-MASTU_shot-49445.ptw'	# large VDE: peak fast camera brightness 686ms; peak /XIM/DA/HL02/SXD 689.7ms; peak /XIM/DA/HE05/ISP/L and start decrease /XBM/CORE/F15/AMP 689.5ms; IRVB 3185 ms from recording start -2.5 = 685ms
+	name = 'IRVB-MASTU_shot-49372.ptw'	# large VDE: peak fast camera brightness 623ms; peak /XIM/DA/HL02/SXD 624.9ms; peak /XIM/DA/HE05/ISP/L and start decrease /XBM/CORE/F15/AMP 625.1ms; IRVB 3103 ms from recording start -2.5 = 601ms
+	name = 'IRVB-MASTU_shot-49148.ptw'	# large VDE: peak fast camera brightness 656ms; peak /XIM/DA/HL02/SXD 649.1ms; peak /XIM/DA/HE05/ISP/L and start decrease /XBM/CORE/F15/AMP 658.3ms; IRVB 3130 ms from recording start -2.5 = 630ms
+	name = 'IRVB-MASTU_shot-48046.ptw'	# large VDE: peak fast camera brightness MISSING; peak /XIM/DA/HL02/SXD 792.5ms; peak /XIM/DA/HE05/ISP/L and start decrease /XBM/CORE/F15/AMP 780.1ms; IRVB 3261 ms from recording start -2.5 = 761ms
+	name = 'IRVB-MASTU_shot-48078.ptw'	# large VDE: peak fast camera brightness 370ms; peak /XIM/DA/HL02/SXD 372ms; peak /XIM/DA/HE05/ISP/L and start decrease /XBM/CORE/F15/AMP 372ms; IRVB 2867 ms from recording start -2.5 = 367ms
+	name = 'IRVB-MASTU_shot-48146.ptw'	# large VDE: peak fast camera brightness 826ms; peak /XIM/DA/HL02/SXD 821.3ms; peak /XIM/DA/HE05/ISP/L and start decrease /XBM/CORE/F15/AMP 827.8ms; IRVB 3308 ms from recording start -2.5 = 808ms
+	name = 'IRVB-MASTU_shot-47893.ptw'	# large VDE: peak fast camera brightness 775ms; peak /XIM/DA/HL02/SXD 777ms; peak /XIM/DA/HE05/ISP/L and start decrease /XBM/CORE/F15/AMP 776ms; IRVB 3258 ms from recording start -2.5 = 758ms
+	# name = 'IRVB-MASTU_shot-47579.ptw'	# large VDE: peak fast camera brightness UNCERTAIN; peak /XIM/DA/HL02/SXD 645.9ms; peak /XIM/DA/HE05/ISP/L and start decrease /XBM/CORE/F15/AMP 647.7ms; IRVB MISSING
+	# name = 'IRVB-MASTU_shot-46941.ptw'	# large VDE: peak fast camera brightness 308ms; peak /XIM/DA/HL02/SXD 310.5ms; peak /XIM/DA/HE05/ISP/L and start decrease /XBM/CORE/F15/AMP 310ms; 	NOTE framerate 50Hz, so starting point very wrong
+	name = 'IRVB-MASTU_shot-46448.ptw'	# large VDE: peak fast camera brightness 787ms; peak /XIM/DA/HL02/SXD 777.7ms; peak /XIM/DA/HE05/ISP/L and start decrease /XBM/CORE/F15/AMP 788.1ms; IRVB MISSING
+	name = 'IRVB-MASTU_shot-46256.ptw'	# large VDE: peak fast camera brightness 554ms, secondary at 371; peak /XIM/DA/HL02/SXD 554ms, secondary at 372; peak /XIM/DA/HE05/ISP/L and start decrease /XBM/CORE/F15/AMP 557.3ms, secondary at 372; IRVB 3036 ms, secondary 2855 ms from recording start -2.5 = 536 ms, secondary 355 ms
+	name = 'IRVB-MASTU_shot-46856.ptw'	# large VDE: peak fast camera brightness 182ms; peak /XIM/DA/HL02/SXD 184.8ms; peak /XIM/DA/HE05/ISP/L and start decrease /XBM/CORE/F15/AMP 184.8ms; IRVB 2681 ms from recording start -2.5 = 181ms
+	name = 'IRVB-MASTU_shot-46897.ptw'	# large VDE: peak fast camera brightness MISSING; peak /XIM/DA/HL02/SXD 568ms; peak /XIM/DA/HE05/ISP/L and start decrease /XBM/CORE/F15/AMP 568ms; IRVB 3063 ms from recording start -2.5 = 563ms
+	name = 'IRVB-MASTU_shot-46919.ptw'	# large VDE: peak fast camera brightness 244ms; peak /XIM/DA/HL02/SXD 232ms; peak /XIM/DA/HE05/ISP/L and start decrease /XBM/CORE/F15/AMP 247ms; IRVB MISSING
+	name = 'IRVB-MASTU_shot-47040.ptw'	# large VDE: peak fast camera brightness 244ms; peak /XIM/DA/HL02/SXD 232ms; peak /XIM/DA/HE05/ISP/L and start decrease /XBM/CORE/F15/AMP 247ms; IRVB 2741 ms from recording start -2.5 = 241ms
+	name = 'IRVB-MASTU_shot-47041.ptw'	# large VDE: peak fast camera brightness 228ms; peak /XIM/DA/HL02/SXD 230.6ms; peak /XIM/DA/HE05/ISP/L and start decrease /XBM/CORE/F15/AMP 229.9ms; IRVB 2734 ms from recording start -2.5 = 234ms
+	name = 'IRVB-MASTU_shot-45396.ptw'	# large VDE: peak /XIM/DA/HL02/SXD 467.1ms; peak /XIM/DA/HE05/ISP/L and start decrease /XBM/CORE/F15/AMP 466.5ms; IRVB 2958 ms from recording start -2.5 = 458ms
+	name = 'IRVB-MASTU_shot-45347.ptw'	# large VDE: peak fast camera brightness MISSING; large VDE: peak /XIM/DA/HL02/SXD 696.1ms; peak /XIM/DA/HE05/ISP/L and start decrease /XBM/CORE/F15/AMP 695.2ms; IRVB 3167 ms from recording start -2.5 = 667ms
+	name = 'IRVB-MASTU_shot-45325.ptw'	# large VDE: peak fast camera brightness MISSING; large VDE: peak /XIM/DA/HL02/SXD 604ms; peak /XIM/DA/HE05/ISP/L and start decrease /XBM/CORE/F15/AMP 601.4ms; IRVB 3078 ms from recording start -2.5 = 578ms
+	name = 'IRVB-MASTU_shot-45313.ptw'	# large VDE: peak fast camera brightness MISSING; large VDE: peak /XIM/DA/HL02/SXD 625.3ms; peak /XIM/DA/HE05/ISP/L and start decrease /XBM/CORE/F15/AMP 625.3ms; IRVB 3078 ms from recording start -2.5 = 578ms
+	name = 'IRVB-MASTU_shot-45306.ptw'	# large VDE: peak fast camera brightness MISSING; large VDE: peak /XIM/DA/HL02/SXD 1019ms; peak /XIM/DA/HE05/ISP/L and start decrease /XBM/CORE/F15/AMP 1018ms; IRVB 3523 ms from recording start -2.5 = 1023ms
+	name = 'IRVB-MASTU_shot-45291.ptw'	# large VDE: peak fast camera brightness MISSING; large VDE: peak /XIM/DA/HL02/SXD 404ms; peak /XIM/DA/HE05/ISP/L and start decrease /XBM/CORE/F15/AMP 403ms; IRVB 2875 ms from recording start -2.5 = 375ms
+	name = 'IRVB-MASTU_shot-45290.ptw'	# large VDE: peak fast camera brightness MISSING; large VDE: peak /XIM/DA/HL02/SXD 690.5ms; peak /XIM/DA/HE05/ISP/L and start decrease /XBM/CORE/F15/AMP 690.5ms; IRVB 3170 ms from recording start -2.5 = 670ms
+	name = 'IRVB-MASTU_shot-45287.ptw'	# large VDE: peak fast camera brightness MISSING; large VDE: peak /XIM/DA/HL02/SXD 574ms; peak /XIM/DA/HE05/ISP/L and start decrease /XBM/CORE/F15/AMP 574ms; IRVB 3060 ms from recording start -2.5 = 560ms
+	name = 'IRVB-MASTU_shot-44904.ptw'	# large VDE: peak fast camera brightness MISSING; large VDE: peak /XIM/DA/HL02/SXD 833ms; peak /XIM/DA/HE05/ISP/L and start decrease /XBM/CORE/F15/AMP 833ms; IRVB 3313 ms from recording start -2.5 = 813ms
+	name = 'IRVB-MASTU_shot-44804.ptw'	# large VDE: peak fast camera brightness MISSING; large VDE: peak /XIM/DA/HL02/SXD 417.9ms; peak /XIM/DA/HE05/ISP/L and start decrease /XBM/CORE/F15/AMP 417.3ms; IRVB 2922 ms from recording start -2.5 = 422ms
+	# name = 'IRVB-MASTU_shot-45463.ptw'	# large VDE: peak /XIM/DA/HL02/SXD 711.3ms; peak /XIM/DA/HE05/ISP/L and start decrease /XBM/CORE/F15/AMP 710.9ms; IRVB 3019 ms from recording start -2.5 = 519ms	NOTE framerate 50Hz, so starting point very wrong
+	# name = 'IRVB-MASTU_shot-47953.ptw'
+	# name = 'IRVB-MASTU_shot-45225.ptw'
+	name = 'IRVB-MASTU_shot-50623.ptw'
 
 	path = '/home/ffederic/work/irvb/MAST-U/'
 	# shot_list = get_data(path+'shot_list2.ods')

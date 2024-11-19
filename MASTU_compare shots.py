@@ -729,10 +729,10 @@ if False:	# plot for the papers
 	ax5[0,2].axhline(y=0,linestyle='--',color='k')
 	ax5[1,2].axhline(y=1,linestyle='--',color='k')
 	ax5[1,2].axhline(y=0,linestyle='--',color='k')
-	ax5[0,1].set_ylim(bottom=-0.1,top=5)
-	ax5[0,2].set_ylim(bottom=-0.1,top=5)
-	ax5[1,1].set_ylim(bottom=-0.1,top=1.5)
-	ax5[1,2].set_ylim(bottom=-0.1,top=1.5)
+	ax5[0,1].set_ylim(bottom=-0.1,top=2)
+	ax5[0,2].set_ylim(bottom=-0.1,top=2)
+	ax5[1,1].set_ylim(bottom=-0.1,top=2)
+	ax5[1,2].set_ylim(bottom=-0.1,top=2)
 	ax5[1,1].set_xlabel(r'$n_{e,up}$'+' EFIT '+r'[$10^{19}$ #/$m^3$]')
 
 	if type == 'ohmicLmode':

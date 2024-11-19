@@ -38,17 +38,45 @@ try:
 		time_binned = full_saved_file_dict_FAST['third_pass']['FAST_time_binned']
 	grid_resolution = 2	# cm
 	try:	# I do this first so I have all the memory I can
-		inverted_data_covariance_log = inverted_dict[str(grid_resolution)]['inverted_data_covariance_log']
-		covariance_out = np.exp(inverted_data_covariance_log.astype(np.float32)).astype(np.float32)
-		del inverted_data_covariance_log
-		inverted_data_covariance_is_positive_packed = inverted_dict[str(grid_resolution)]['inverted_data_covariance_is_positive_packed']
-		covariance_out_sing = np.unpackbits(inverted_data_covariance_is_positive_packed)[:np.prod(np.shape(covariance_out))].reshape(np.shape(covariance_out)).astype(int)
-		del inverted_data_covariance_is_positive_packed
-		covariance_out_sing *= 2
-		covariance_out_sing -= 1
-		covariance_out_sing = np.round(covariance_out_sing,2)	# just in case I generated some 0.9999999
-		covariance_out = (covariance_out*covariance_out_sing).astype(np.float32)
-		del covariance_out_sing
+		try:
+			inverted_data_covariance_log = inverted_dict[str(grid_resolution)]['inverted_data_covariance_log']
+			covariance_out = np.exp(inverted_data_covariance_log.astype(np.float32)).astype(np.float32)
+			del inverted_data_covariance_log
+			inverted_data_covariance_is_positive_packed = inverted_dict[str(grid_resolution)]['inverted_data_covariance_is_positive_packed']
+			covariance_out_sing = np.unpackbits(inverted_data_covariance_is_positive_packed)[:np.prod(np.shape(covariance_out))].reshape(np.shape(covariance_out)).astype(int)
+			del inverted_data_covariance_is_positive_packed
+			covariance_out_sing *= 2
+			covariance_out_sing -= 1
+			covariance_out_sing = np.round(covariance_out_sing,2)	# just in case I generated some 0.9999999
+			# covariance_out = (covariance_out*covariance_out_sing).astype(np.float32)
+			covariance_out *= covariance_out_sing	# this should be more memory efficient
+			del covariance_out_sing
+		except:	# this is the new method (24/09/2024) sugested by Kevin, where the covariance matrix is in a reparate file
+			full_saved_file_dict_FAST_covariance = np.load(laser_to_analyse[:-4]+'_FAST_covariance'+'.npz')
+			full_saved_file_dict_FAST_covariance.allow_pickle=True
+			full_saved_file_dict_FAST_covariance = dict(full_saved_file_dict_FAST_covariance)
+
+			full_saved_file_dict_FAST_covariance = full_saved_file_dict_FAST_covariance.all()
+			if pass_number==0:
+				covariance_dict = full_saved_file_dict_FAST_covariance['first_pass']
+			elif pass_number==1:
+				covariance_dict = full_saved_file_dict_FAST_covariance['second_pass']
+			else:
+				covariance_dict = full_saved_file_dict_FAST_covariance['third_pass']
+
+			inverted_data_covariance_log = covariance_dict['inverted_data_covariance_log']
+			covariance_out = np.exp(inverted_data_covariance_log.astype(np.float32)).astype(np.float32)
+			del inverted_data_covariance_log
+			inverted_data_covariance_is_positive_packed = covariance_dict['inverted_data_covariance_is_positive_packed']
+			covariance_out_sing = np.unpackbits(inverted_data_covariance_is_positive_packed)[:np.prod(np.shape(covariance_out))].reshape(np.shape(covariance_out)).astype(int)
+			del inverted_data_covariance_is_positive_packed
+			covariance_out_sing *= 2
+			covariance_out_sing -= 1
+			covariance_out_sing = np.round(covariance_out_sing,2)	# just in case I generated some 0.9999999
+			# covariance_out = (covariance_out*covariance_out_sing).astype(np.float32)
+			covariance_out *= covariance_out_sing	# this should be more memory efficient
+			del covariance_out_sing
+
 	except Exception as e:
 		print('inverted_data_covariance_log reading failed because of '+e)
 		logging.exception('with error: ' + str(e))
@@ -151,7 +179,7 @@ try:
 		inverted_dict[str(grid_resolution)]['movement_local_inner_leg_mean_emissivity'] = movement_local_inner_leg_mean_emissivity
 		inverted_dict[str(grid_resolution)]['movement_local_outer_leg_mean_emissivity'] = movement_local_outer_leg_mean_emissivity
 
-	outer_local_mean_emis_all,outer_local_power_all,outer_local_L_poloidal_all,outer_leg_length_interval_all,outer_leg_length_all,outer_data_length,outer_leg_resolution,outer_emissivity_baricentre_all,outer_emissivity_peak_all,outer_L_poloidal_baricentre_all,outer_L_poloidal_peak_all,outer_L_poloidal_peak_only_leg_all,outer_L_poloidal_baricentre_only_leg_all,trash,dr_sep_in,dr_sep_out,outer_L_poloidal_x_point_all,outer_L_poloidal_midplane_all,outer_leg_reliable_power_all,outer_leg_reliable_power_sigma_all,DMS_equivalent_all,DMS_equivalent_sigma_all,MWI_equivalent_all,MWI_equivalent_sigma_all,x_point_tot_rad_power_all,x_point_tot_rad_power_sigma_all,sxd_tot_rad_power_all,sxd_tot_rad_power_sigma_all,outer_half_peak_L_pol_all,outer_half_peak_divertor_L_pol_all = coleval.baricentre_outer_separatrix_radiation(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,covariance_out,grid_data_masked_crop,x_point_region_radious=x_point_region_radious)
+	outer_local_mean_emis_all,outer_local_power_all,outer_local_L_poloidal_all,outer_leg_length_interval_all,outer_leg_length_all,outer_data_length,outer_leg_resolution,outer_emissivity_baricentre_all,outer_emissivity_peak_all,outer_L_poloidal_baricentre_all,outer_L_poloidal_peak_all,outer_L_poloidal_peak_only_leg_all,outer_L_poloidal_baricentre_only_leg_all,trash,dr_sep_in,dr_sep_out,outer_L_poloidal_x_point_all,outer_L_poloidal_midplane_all,outer_leg_reliable_power_all,outer_leg_reliable_power_sigma_all,DMS_equivalent_all,DMS_equivalent_sigma_all,MWI_equivalent_all,MWI_equivalent_sigma_all,x_point_tot_rad_power_all,x_point_tot_rad_power_sigma_all,sxd_tot_rad_power_all,sxd_tot_rad_power_sigma_all,outer_half_peak_L_pol_all,outer_half_peak_divertor_L_pol_all,outer_sideways_leg_resolution = coleval.baricentre_outer_separatrix_radiation(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,covariance_out,grid_data_masked_crop,x_point_region_radious=x_point_region_radious)
 	inverted_dict[str(grid_resolution)]['outer_local_mean_emis_all'] = outer_local_mean_emis_all
 	inverted_dict[str(grid_resolution)]['outer_local_power_all'] = outer_local_power_all
 	inverted_dict[str(grid_resolution)]['outer_local_L_poloidal_all'] = outer_local_L_poloidal_all
@@ -180,7 +208,8 @@ try:
 	inverted_dict[str(grid_resolution)]['MWI_equivalent_sigma_all'] = MWI_equivalent_sigma_all
 	inverted_dict[str(grid_resolution)]['outer_half_peak_L_pol_all'] = outer_half_peak_L_pol_all
 	inverted_dict[str(grid_resolution)]['outer_half_peak_divertor_L_pol_all'] = outer_half_peak_divertor_L_pol_all
-	inner_local_mean_emis_all,inner_local_power_all,inner_local_L_poloidal_all,inner_leg_length_interval_all,inner_leg_length_all,inner_data_length,inner_leg_resolution,inner_emissivity_baricentre_all,inner_emissivity_peak_all,inner_L_poloidal_baricentre_all,inner_L_poloidal_peak_all,inner_L_poloidal_peak_only_leg_all,inner_L_poloidal_baricentre_only_leg_all,inner_L_poloidal_midplane_all,inner_leg_reliable_power_all,inner_leg_reliable_power_sigma_all,trash,dr_sep_in,dr_sep_out,inner_L_poloidal_x_point_all,inner_half_peak_L_pol_all,inner_half_peak_divertor_L_pol_all = coleval.baricentre_inner_separatrix_radiation(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,covariance_out,grid_data_masked_crop,x_point_region_radious=x_point_region_radious)
+	inverted_dict[str(grid_resolution)]['outer_sideways_leg_resolution'] = outer_sideways_leg_resolution
+	inner_local_mean_emis_all,inner_local_power_all,inner_local_L_poloidal_all,inner_leg_length_interval_all,inner_leg_length_all,inner_data_length,inner_leg_resolution,inner_emissivity_baricentre_all,inner_emissivity_peak_all,inner_L_poloidal_baricentre_all,inner_L_poloidal_peak_all,inner_L_poloidal_peak_only_leg_all,inner_L_poloidal_baricentre_only_leg_all,inner_L_poloidal_midplane_all,inner_leg_reliable_power_all,inner_leg_reliable_power_sigma_all,trash,dr_sep_in,dr_sep_out,inner_L_poloidal_x_point_all,inner_half_peak_L_pol_all,inner_half_peak_divertor_L_pol_all,inner_sideways_leg_resolution = coleval.baricentre_inner_separatrix_radiation(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,covariance_out,grid_data_masked_crop,x_point_region_radious=x_point_region_radious)
 	inverted_dict[str(grid_resolution)]['inner_local_mean_emis_all'] = inner_local_mean_emis_all
 	inverted_dict[str(grid_resolution)]['inner_local_power_all'] = inner_local_power_all
 	inverted_dict[str(grid_resolution)]['inner_local_L_poloidal_all'] = inner_local_L_poloidal_all
@@ -199,20 +228,24 @@ try:
 	inverted_dict[str(grid_resolution)]['inner_leg_reliable_power_sigma_all'] = inner_leg_reliable_power_sigma_all
 	inverted_dict[str(grid_resolution)]['inner_half_peak_L_pol_all'] = inner_half_peak_L_pol_all
 	inverted_dict[str(grid_resolution)]['inner_half_peak_divertor_L_pol_all'] = inner_half_peak_divertor_L_pol_all
+	inverted_dict[str(grid_resolution)]['inner_sideways_leg_resolution'] = inner_sideways_leg_resolution
 	full_saved_file_dict_FAST['multi_instrument']['time_full_binned_crop'] = time_full_binned_crop
 	# full_saved_file_dict_FAST['multi_instrument']['greenwald_density'] = greenwald_density
 	full_saved_file_dict_FAST['multi_instrument']['dr_sep_in'] = dr_sep_in
 	full_saved_file_dict_FAST['multi_instrument']['dr_sep_out'] = dr_sep_out
 	inverted_dict[str(grid_resolution)]['inner_L_poloidal_x_point_all'] = inner_L_poloidal_x_point_all
 
-	real_core_radiation_all,real_core_radiation_sigma_all,real_non_core_radiation_all,real_non_core_radiation_sigma_all,out_VV_radiation_all,out_VV_radiation_sigma_all = coleval.inside_vs_outside_separatrix_radiation(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,covariance_out,grid_data_masked_crop,x_point_region_radious=x_point_region_radious)
+	real_core_radiation_all,real_core_radiation_sigma_all,real_non_core_radiation_all,real_non_core_radiation_sigma_all,out_VV_radiation_all,out_VV_radiation_sigma_all,real_inner_core_radiation_all,real_inner_core_radiation_sigma_all,real_outer_core_radiation_all,real_outer_core_radiation_sigma_all = coleval.inside_vs_outside_separatrix_radiation(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,covariance_out,grid_data_masked_crop,x_point_region_radious=x_point_region_radious)
 	inverted_dict[str(grid_resolution)]['real_core_radiation_all'] = real_core_radiation_all
 	inverted_dict[str(grid_resolution)]['real_core_radiation_sigma_all'] = real_core_radiation_sigma_all
 	inverted_dict[str(grid_resolution)]['real_non_core_radiation_all'] = real_non_core_radiation_all
 	inverted_dict[str(grid_resolution)]['real_non_core_radiation_sigma_all'] = real_non_core_radiation_sigma_all
 	inverted_dict[str(grid_resolution)]['out_VV_radiation_all'] = out_VV_radiation_all
 	inverted_dict[str(grid_resolution)]['out_VV_radiation_sigma_all'] = out_VV_radiation_sigma_all
-	inverted_dict[str(grid_resolution)]['out_VV_radiation_sigma_all'] = out_VV_radiation_sigma_all
+	inverted_dict[str(grid_resolution)]['real_inner_core_radiation_all'] = real_inner_core_radiation_all
+	inverted_dict[str(grid_resolution)]['real_inner_core_radiation_sigma_all'] = real_inner_core_radiation_sigma_all
+	inverted_dict[str(grid_resolution)]['real_outer_core_radiation_all'] = real_outer_core_radiation_all
+	inverted_dict[str(grid_resolution)]['real_outer_core_radiation_sigma_all'] = real_outer_core_radiation_sigma_all
 	all_lower_volume_radiation_all = inverted_data[:,:,inversion_Z<0]
 	all_lower_volume_radiation_all = np.nansum(np.nansum(all_lower_volume_radiation_all,axis=-1)*inversion_R*(np.mean(np.diff(inversion_R))**2)*2*np.pi,axis=1)
 	all_lower_volume_radiation_sigma_all = ((np.mean(grid_data_masked_crop,axis=1)[:,1]<=0)*2*np.pi*np.mean(grid_data_masked_crop,axis=1)[:,0]*(np.mean(np.diff(inversion_R))**2)).astype(np.float32)
@@ -233,9 +266,9 @@ try:
 	inner_SOL_leg_all,inner_SOL_leg_sigma_all,outer_SOL_leg_all,outer_SOL_leg_sigma_all,outer_SOL_all,outer_SOL_sigma_all,inner_SOL_all,inner_SOL_sigma_all = coleval.symplified_out_core_regions(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,covariance_out,grid_data_masked_crop,x_point_region_radious=x_point_region_radious)
 	inverted_dict[str(grid_resolution)]['inner_SOL_leg_all'] = inner_SOL_leg_all
 	inverted_dict[str(grid_resolution)]['inner_SOL_leg_sigma_all'] = inner_SOL_leg_sigma_all
-	inverted_dict[str(grid_resolution)]['inner_SOL_all'] = inner_SOL_all
+	inverted_dict[str(grid_resolution)]['inner_SOL_all'] = inner_SOL_all	#  (including part of X-point region)
 	inverted_dict[str(grid_resolution)]['inner_SOL_sigma_all'] = inner_SOL_sigma_all
-	inverted_dict[str(grid_resolution)]['outer_SOL_leg_all'] = outer_SOL_leg_all
+	inverted_dict[str(grid_resolution)]['outer_SOL_leg_all'] = outer_SOL_leg_all	#  (including part of X-point region)
 	inverted_dict[str(grid_resolution)]['outer_SOL_leg_sigma_all'] = outer_SOL_leg_sigma_all
 	inverted_dict[str(grid_resolution)]['outer_SOL_all'] = outer_SOL_all
 	inverted_dict[str(grid_resolution)]['outer_SOL_sigma_all'] = outer_SOL_sigma_all
@@ -277,23 +310,26 @@ try:
 	full_saved_file_dict_FAST['multi_instrument']['SL'] = SL
 
 	plt.figure(figsize=(30, 10))
-	# plt.errorbar(time_full_binned_crop,outer_leg_tot_rad_power_all/1e3,yerr=outer_leg_tot_rad_power_sigma_all/1e3,label='outer_leg\nwith x-point',capsize=5)
-	plt.errorbar(time_full_binned_crop,outer_leg_reliable_power_all/1e3,yerr=outer_leg_reliable_power_sigma_all/1e3,label='outer_leg\nno x-point\naccurate no sxd',capsize=5)
-	plt.errorbar(time_full_binned_crop,sxd_tot_rad_power_all/1e3,yerr=sxd_tot_rad_power_sigma_all/1e3,label='sxd',capsize=5)
-	plt.errorbar(time_full_binned_crop,inner_leg_reliable_power_all/1e3,yerr=inner_leg_reliable_power_sigma_all/1e3,label='inner_leg\nno x-point\naccurate',capsize=5)
-	plt.errorbar(time_full_binned_crop,real_core_radiation_all/1e3,yerr=real_core_radiation_sigma_all/1e3,label='core\naccurate\nno x-point',capsize=5)
-	plt.errorbar(time_full_binned_crop,x_point_tot_rad_power_all/1e3,yerr=x_point_tot_rad_power_sigma_all/1e3,label='x_point (dist<%.3gm)' %(x_point_region_radious),capsize=5)
-	plt.errorbar(time_full_binned_crop,all_separatrix_radiation_all/1e3,yerr=all_separatrix_radiation_sigma_all/1e3,label='tot\nwithin separatrix',capsize=5)
-	plt.errorbar(time_full_binned_crop,all_lower_volume_radiation_all/1e3,yerr=all_lower_volume_radiation_sigma_all/1e3,label='tot',capsize=5)
-	plt.errorbar(time_full_binned_crop,inner_SOL_leg_all/1e3,yerr=inner_SOL_leg_sigma_all/1e3,label='inner SOL\n+leg',capsize=5)
-	plt.errorbar(time_full_binned_crop,DMS_equivalent_all/1e3,yerr=DMS_equivalent_sigma_all/1e3,label='DMS equivalent\nLOS19 V2',capsize=5,linestyle='--')
+	# plt.errorbar(time_full_binned_crop,outer_leg_tot_rad_power_all/1e3,yerr=outer_leg_tot_rad_power_sigma_all/1e3,label='outer_leg\nwith x-point',capsize=5,elinewidth=1)
+	plt.errorbar(time_full_binned_crop,outer_leg_reliable_power_all/1e3,yerr=outer_leg_reliable_power_sigma_all/1e3,label='outer_leg\nno x-point\n+/-'+str(outer_sideways_leg_resolution)+'m from sep\nno sxd',capsize=5,elinewidth=1)
+	plt.errorbar(time_full_binned_crop,sxd_tot_rad_power_all/1e3,yerr=sxd_tot_rad_power_sigma_all/1e3,label='sxd',capsize=5,elinewidth=1)
+	plt.errorbar(time_full_binned_crop,inner_leg_reliable_power_all/1e3,yerr=inner_leg_reliable_power_sigma_all/1e3,label='inner_leg\nno x-point\n+/-'+str(inner_sideways_leg_resolution)+'m from sep',capsize=5,elinewidth=1)
+	plt.errorbar(time_full_binned_crop,real_core_radiation_all/1e3,yerr=real_core_radiation_sigma_all/1e3,label='core\naccurate\nno x-point',capsize=5,elinewidth=1)
+	plt.errorbar(time_full_binned_crop,x_point_tot_rad_power_all/1e3,yerr=x_point_tot_rad_power_sigma_all/1e3,label='x_point (dist<%.3gm)' %(x_point_region_radious),capsize=5,elinewidth=1)
+	plt.errorbar(time_full_binned_crop,all_separatrix_radiation_all/1e3,yerr=all_separatrix_radiation_sigma_all/1e3,label='tot\nwithin separatrix',capsize=5,elinewidth=1)
+	plt.errorbar(time_full_binned_crop,all_lower_volume_radiation_all/1e3,yerr=all_lower_volume_radiation_sigma_all/1e3,label='tot',capsize=5,elinewidth=1)
+	plt.errorbar(time_full_binned_crop,inner_SOL_leg_all/1e3,yerr=inner_SOL_leg_sigma_all/1e3,label='inner SOL\n+inner div',capsize=5,elinewidth=1)
+	plt.errorbar(time_full_binned_crop,DMS_equivalent_all/1e3,yerr=DMS_equivalent_sigma_all/1e3,label='DMS equivalent\nLOS19 V2',capsize=5,elinewidth=1,linestyle='--')
 	plt.errorbar(time_full_binned_crop,MWI_equivalent_all/1e3,yerr=MWI_equivalent_sigma_all/1e3,label='MWI equivalent',capsize=5,linestyle=':')
-	plt.errorbar(time_full_binned_crop,inner_SOL_all/1e3,yerr=inner_SOL_sigma_all/1e3,label='inner SOL',capsize=5,linestyle='--')
-	plt.errorbar(time_full_binned_crop,outer_SOL_leg_all/1e3,yerr=outer_SOL_leg_sigma_all/1e3,label='outer SOL\n+leg\n+sxd',capsize=5,linestyle='--')
-	plt.errorbar(time_full_binned_crop,outer_SOL_all/1e3,yerr=outer_SOL_sigma_all/1e3,label='outer SOL',capsize=5,linestyle='--')
-	plt.errorbar(time_full_binned_crop,out_VV_radiation_all/1e3,yerr=out_VV_radiation_sigma_all/1e3,label='tot\nout VV',capsize=5,linestyle='--')
-	plt.errorbar(time_full_binned_crop,equivalent_res_bolo_view_all/1e3,yerr=equivalent_res_bolo_view_sigma_all/1e3,label='equivalent\nto res bolo',capsize=5,linestyle='--')
-	plt.errorbar(time_full_binned_crop,all_out_of_sxd_all/1e3,yerr=all_out_of_sxd_sigma_all/1e3,label='out sxd',capsize=5,linestyle='--')
+	plt.errorbar(time_full_binned_crop,inner_SOL_all/1e3,yerr=inner_SOL_sigma_all/1e3,label='inner SOL',capsize=5,elinewidth=1,linestyle='--')
+	plt.errorbar(time_full_binned_crop,outer_SOL_leg_all/1e3,yerr=outer_SOL_leg_sigma_all/1e3,label='outer SOL\n+outer div\n+sxd',capsize=5,elinewidth=1,linestyle='--')
+	plt.errorbar(time_full_binned_crop,outer_SOL_all/1e3,yerr=outer_SOL_sigma_all/1e3,label='outer SOL',capsize=5,elinewidth=1,linestyle='--')
+	plt.errorbar(time_full_binned_crop,out_VV_radiation_all/1e3,yerr=out_VV_radiation_sigma_all/1e3,label='tot\nout VV',capsize=5,elinewidth=1,linestyle='--')
+	plt.errorbar(time_full_binned_crop,equivalent_res_bolo_view_all/1e3,yerr=equivalent_res_bolo_view_sigma_all/1e3,label='equivalent\nto res bolo',capsize=5,elinewidth=1,linestyle='--')
+	plt.errorbar(time_full_binned_crop,all_out_of_sxd_all/1e3,yerr=all_out_of_sxd_sigma_all/1e3,label='out sxd',capsize=5,elinewidth=1,linestyle='--')
+	plt.errorbar(time_full_binned_crop,divertor_tot_rad_power_all/1e3,yerr=divertor_tot_rad_power_sigma_all/1e3,label='whole divertor\nwith X-point',capsize=5,elinewidth=1,linestyle='--')
+	plt.errorbar(time_full_binned_crop,real_inner_core_radiation_all/1e3,yerr=real_inner_core_radiation_sigma_all/1e3,label='core\naccurate\nno x-point\ninner',capsize=5,elinewidth=1,linestyle='--')
+	plt.errorbar(time_full_binned_crop,real_outer_core_radiation_all/1e3,yerr=real_outer_core_radiation_sigma_all/1e3,label='core\naccurate\nno x-point\nouter',capsize=5,elinewidth=1,linestyle='-')
 	plt.title('shot ' + laser_to_analyse[-9:-4]+' '+scenario+'\nradiated power in the lower half of the machine')
 	plt.ylim(bottom=0,top=median_filter(all_lower_volume_radiation_all,size=[max(1,len(all_lower_volume_radiation_all)//8)*2+1]).max()/1e3)	# arbitrary limit to see better if there is a disruption at the end of the shot
 	plt.legend(loc='best', fontsize='xx-small')
@@ -351,6 +387,7 @@ try:
 	badLPs_V0 = np.array(pd.read_csv('/home/ffederic/work/analysis_scripts/scripts/from_Peter/30473_badLPs_V0.csv',index_col=0).index.tolist())
 	FF_LP_path = '/home/ffederic/work/irvb/from_pryan_LP'
 	path_alternate='/common/uda-scratch/pryan'
+
 	import subprocess
 	import tempfile
 	# 2024/007/02 I have to modify this code, as it works only with python 3.7, and not 3.9.
@@ -363,6 +400,33 @@ try:
 	lambda_q_compression_lower_interp = interp1d(fpol['time'],lambda_q_compression,fill_value="extrapolate",bounds_error=False)
 	lambda_q_compression = (fpol['fpol_upper']/np.sin(fpol['poloidal_angle_upper']))[:,0]
 	lambda_q_compression_upper_interp = interp1d(fpol['time'],lambda_q_compression,fill_value="extrapolate",bounds_error=False)
+
+	if os.path.exists(path_alternate + '/' + 'elp0' + str(shotnumber) + '.nc') or os.path.exists(path_alternate + '/' + 'alp0' + str(shotnumber) + '.nc'):
+		LP_file_path = cp.deepcopy(path_alternate)
+		print('LP file found in '+LP_file_path)
+	elif os.path.exists(FF_LP_path + '/' + 'elp0' + str(shotnumber) + '.nc') or os.path.exists(FF_LP_path + '/' + 'alp0' + str(shotnumber) + '.nc'):
+		LP_file_path = cp.deepcopy(FF_LP_path)
+		print('LP file found in '+LP_file_path)
+	else:
+		newest_file = None
+		newest_time = None
+		for root, dirs, files in os.walk(path_alternate):
+			# Skip the root folder
+			if root == path_alternate:
+				continue
+			if 'elp0' + str(shotnumber) + '.nc' in files:
+				full_path = os.path.join(root, 'elp0' + str(shotnumber) + '.nc')
+				file_time = os.path.getmtime(full_path)
+				if newest_time is None or file_time > newest_time:
+					newest_time = file_time
+					newest_file = full_path
+		if newest_file:
+			LP_file_path = os.path.dirname(newest_file)
+			print('file not found in \n'+path_alternate+  '\n' + FF_LP_path + '\nbut the newest file was found in\n'+LP_file_path)
+		else:
+			print('file not found, LP analysis will fail')
+			LP_file_path = cp.deepcopy(FF_LP_path)
+
 	try:
 		# I don't think is necessary, in reality.
 		# lp_data.contour_plot does not work in Python 3.9, but compare_shots works fine
@@ -378,7 +442,7 @@ try:
 			lp_data,output_contour1 = coleval.read_LP_data(shotnumber,path = os.path.split(fdir)[0])
 			os.remove(fdir)
 		except:
-			lp_data,output_contour1 = coleval.read_LP_data(shotnumber)
+			lp_data,output_contour1 = coleval.read_LP_data(shotnumber,path=LP_file_path)
 		if True:	# use ot Peter Ryan function to combine data within time slice and to filter when strike point is on a dead channel
 			temp = np.logical_and(time_full_binned_crop>output_contour1['time'][0][0].min(),time_full_binned_crop<output_contour1['time'][0][0].max())
 			trange = tuple(map(list, np.array([time_full_binned_crop[temp] - np.mean(np.diff(time_full_binned_crop))/2,time_full_binned_crop[temp] + np.mean(np.diff(time_full_binned_crop))/2]).T))
@@ -393,10 +457,7 @@ try:
 				s10_lower_s = output_contour1['s'][0][0]
 				s10_lower_r = output_contour1['R'][0][0]
 				s10_lower_z = output_contour1['Z'][0][0]
-				try:
-					output,Eich=compare_shots(filepath=FF_LP_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
-				except:
-					output,Eich=compare_shots(filepath=path_alternate+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
+				output,Eich=compare_shots(filepath=LP_file_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=10, quantity = 'jsat_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
 				s10_lower_jsat = []
 				s10_lower_jsat_sigma = []
 				s10_lower_jsat_r = []
@@ -407,10 +468,7 @@ try:
 					s10_lower_jsat_r.append(output[i]['R'][0][0])	# here there are only standard probes
 					s10_lower_jsat_s.append(output[i]['s'][0][0])
 				if lambda_q_determination:	# section to calculate OMP lambda_q
-					try:
-						output,Eich=compare_shots(filepath=FF_LP_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=10, quantity = 'q_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
-					except:
-						output,Eich=compare_shots(filepath=path_alternate+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=10, quantity = 'q_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
+					output,Eich=compare_shots(filepath=LP_file_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=10, quantity = 'q_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
 					x_all_finite,y_all_finite,y_err_all_finite,time_all_finite = prepare_data_for_Eich_fit_fn_time(output)
 					fit_store,start_limits_store=Eich_fit_fn_time(x_all_finite,y_all_finite,y_err_all_finite,time_all_finite)
 
@@ -461,10 +519,7 @@ try:
 				s4_lower_s = output_contour1['s'][0][0]
 				s4_lower_r = output_contour1['R'][0][0]
 				s4_lower_z = output_contour1['Z'][0][0]
-				try:
-					output,Eich=compare_shots(filepath=FF_LP_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=4, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
-				except:
-					output,Eich=compare_shots(filepath=path_alternate+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=4, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
+				output,Eich=compare_shots(filepath=LP_file_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=4, quantity = 'jsat_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
 				s4_lower_jsat = []
 				s4_lower_jsat_sigma = []
 				s4_lower_jsat_r = []
@@ -475,10 +530,7 @@ try:
 					s4_lower_jsat_r.append(output[i]['R'][0][0])	# here there are only small probes
 					s4_lower_jsat_s.append(output[i]['s'][0][0])
 				if lambda_q_determination:	# section to calculate OMP lambda_q
-					try:
-						output,Eich=compare_shots(filepath=FF_LP_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=4, quantity = 'q_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
-					except:
-						output,Eich=compare_shots(filepath=path_alternate+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=4, quantity = 'q_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
+					output,Eich=compare_shots(filepath=LP_file_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=4, quantity = 'q_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
 					x_all_finite,y_all_finite,y_err_all_finite,time_all_finite = prepare_data_for_Eich_fit_fn_time(output)
 					fit_store,start_limits_store=Eich_fit_fn_time(x_all_finite,y_all_finite,y_err_all_finite,time_all_finite)
 
@@ -514,10 +566,7 @@ try:
 				s4_upper_s = output_contour1['s'][0][0]
 				s4_upper_r = output_contour1['R'][0][0]
 				s4_upper_z = output_contour1['Z'][0][0]
-				try:
-					output,Eich=compare_shots(filepath=FF_LP_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=4, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
-				except:
-					output,Eich=compare_shots(filepath=path_alternate+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=4, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
+				output,Eich=compare_shots(filepath=LP_file_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=4, quantity = 'jsat_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
 				s4_upper_jsat = []
 				s4_upper_jsat_sigma = []
 				s4_upper_jsat_r = []
@@ -528,10 +577,7 @@ try:
 					s4_upper_jsat_r.append(output[i]['R'][0][0])	# here there are only standard probes
 					s4_upper_jsat_s.append(output[i]['s'][0][0])
 				if lambda_q_determination:	# section to calculate OMP lambda_q
-					try:
-						output,Eich=compare_shots(filepath=FF_LP_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=4, quantity = 'q_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
-					except:
-						output,Eich=compare_shots(filepath=path_alternate+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=4, quantity = 'q_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
+					output,Eich=compare_shots(filepath=LP_file_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=4, quantity = 'q_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
 					x_all_finite,y_all_finite,y_err_all_finite,time_all_finite = prepare_data_for_Eich_fit_fn_time(output)
 					fit_store,start_limits_store=Eich_fit_fn_time(x_all_finite,y_all_finite,y_err_all_finite,time_all_finite)
 
@@ -566,10 +612,7 @@ try:
 				s10_upper_std_s = output_contour1['s'][0][0]
 				s10_upper_std_r = output_contour1['R'][0][0]
 				s10_upper_std_z = output_contour1['Z'][0][0]
-				try:
-					output,Eich=compare_shots(filepath=FF_LP_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-4,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4'],time_combine=True,show=False,Eich_fit=False)
-				except:
-					output,Eich=compare_shots(filepath=path_alternate+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-4,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4'],time_combine=True,show=False,Eich_fit=False)
+				output,Eich=compare_shots(filepath=LP_file_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-4,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4'],time_combine=True,show=False,Eich_fit=False)
 				s10_upper_std_jsat = []
 				s10_upper_std_jsat_sigma = []
 				s10_upper_std_jsat_r = []
@@ -580,10 +623,7 @@ try:
 					s10_upper_std_jsat_r.append(output[i]['R'][0][0])	# here there are only standard probes
 					s10_upper_std_jsat_s.append(output[i]['s'][0][0])
 				if lambda_q_determination:	# section to calculate OMP lambda_q
-					try:
-						output,Eich=compare_shots(filepath=FF_LP_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'q_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4'],time_combine=True,show=False,Eich_fit=False)
-					except:
-						output,Eich=compare_shots(filepath=path_alternate+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'q_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4'],time_combine=True,show=False,Eich_fit=False)
+					output,Eich=compare_shots(filepath=LP_file_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'q_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4'],time_combine=True,show=False,Eich_fit=False)
 					x_all_finite,y_all_finite,y_err_all_finite,time_all_finite = prepare_data_for_Eich_fit_fn_time(output)
 					fit_store,start_limits_store=Eich_fit_fn_time(x_all_finite,y_all_finite,y_err_all_finite,time_all_finite)
 
@@ -618,10 +658,7 @@ try:
 				s10_upper_large_s = output_contour1['s'][0][0]
 				s10_upper_large_r = output_contour1['R'][0][0]
 				s10_upper_large_z = output_contour1['Z'][0][0]
-				try:
-					output,Eich=compare_shots(filepath=FF_LP_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['T5'],time_combine=True,show=False,Eich_fit=False)
-				except:
-					output,Eich=compare_shots(filepath=path_alternate+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['T5'],time_combine=True,show=False,Eich_fit=False)
+				output,Eich=compare_shots(filepath=LP_file_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='s',tiles=['T5'],time_combine=True,show=False,Eich_fit=False)
 				s10_upper_large_jsat = []
 				s10_upper_large_jsat_sigma = []
 				s10_upper_large_jsat_r = []
@@ -1594,10 +1631,81 @@ try:
 			return np.array(prominence)
 
 		client=pyuda.Client()
+		try:
+			gna26 = client.get('/xbm/core/F26/AMP', laser_to_analyse[-9:-4])
+			gna27 = client.get('/xbm/core/F27/AMP', laser_to_analyse[-9:-4])
+			try:
+				smoothing=1000
+				grad26 = scipy.signal.savgol_filter(gna26.data,smoothing//4,5)
+				grad26 = scipy.signal.savgol_filter(grad26,smoothing//4,3)
+				grad26 = scipy.signal.savgol_filter(grad26,smoothing//2,3)
+				grad27 = scipy.signal.savgol_filter(gna27.data,smoothing//4,5)
+				grad27 = scipy.signal.savgol_filter(grad27,smoothing//4,3)
+				grad27 = scipy.signal.savgol_filter(grad27,smoothing//2,3)
+
+				smooth26=scipy.signal.savgol_filter(np.gradient(grad26,gna26.time.data),smoothing//2,5)
+				smooth26=scipy.signal.savgol_filter(smooth26,smoothing//2,2)
+				smooth27=scipy.signal.savgol_filter(np.gradient(grad27,gna27.time.data),smoothing//2,5)
+				smooth27=scipy.signal.savgol_filter(smooth27,smoothing//2,2)
+
+				new_MARFE_marker = (smooth27-smooth26)/(smooth26[np.logical_and(gna26.time.data>0,gna26.time.data<time_full_binned_crop.max()-0.1)].min())	# -0.1 because when there is a final disrupotion there is a sudden final spike down, and I want to avoid it
+
+				if False:
+					# gna = client.get('/xbm/core/F28/AMP', laser_to_analyse[-9:-4]).data.T
+					# time_res_bolo = client.get('/xbm/core/F28', laser_to_analyse[-9:-4]).data
+					gna26 = client.get('/xbm/core/F26/AMP', laser_to_analyse[-9:-4])
+					gna27 = client.get('/xbm/core/F27/AMP', laser_to_analyse[-9:-4])
+					smoothing=1000
+					grad26 = scipy.signal.savgol_filter(gna26.data,smoothing//4,5)
+					grad26 = scipy.signal.savgol_filter(grad26,smoothing//4,3)
+					grad26 = scipy.signal.savgol_filter(grad26,smoothing//2,3)
+					grad27 = scipy.signal.savgol_filter(gna27.data,smoothing//4,5)
+					grad27 = scipy.signal.savgol_filter(grad27,smoothing//4,3)
+					grad27 = scipy.signal.savgol_filter(grad27,smoothing//2,3)
+					plt.figure()
+					a = plt.plot(gna26.time.data,gna26.data)
+					plt.plot(gna26.time.data,grad26,'--',color='k')
+					a = plt.plot(gna27.time.data,gna27.data)
+					plt.plot(gna27.time.data,grad27,'--',color='k')
+					plt.xlim(left=0,right=1)
+					plt.grid()
+
+					# smooth26 = smooth26 - smooth26[np.logical_and(gna26.time.data>0,gna26.time.data<2)].max()
+					# smooth27 = smooth27 - smooth27[np.logical_and(gna27.time.data>0,gna27.time.data<2)].max()
+					plt.figure()
+					plt.plot(gna26.time.data,np.gradient(grad26,gna26.time.data))
+					plt.plot(gna26.time.data,smooth26,'--k')
+					plt.plot(gna27.time.data,np.gradient(grad27,gna27.time.data))
+					plt.plot(gna27.time.data,smooth27,'--k')
+					# plt.plot(gna27.time.data,smooth27/smooth26)
+					# plt.plot(gna27.time.data,median_filter(smooth27/smooth26,size=smoothing//3))
+					# plt.ylim(bottom=-5,top=10)
+					plt.xlim(left=0,right=1)
+					plt.grid()
+
+
+					plt.figure()
+					plt.plot(gna27.time.data,smooth27/smooth26)
+					plt.plot(gna27.time.data,median_filter(smooth27/smooth26,size=smoothing//3))
+					plt.plot(gna27.time.data,(smooth27-smooth26)/(smooth26[np.logical_and(gna26.time.data>0,gna26.time.data<time_full_binned_crop.max()-0.1)].min()))
+					plt.ylim(bottom=-5,top=10)
+					plt.xlim(left=0,right=1)
+					plt.grid()
+			except:
+				new_MARFE_marker = np.zeros_like(gna26.time.data)
+			new_MARFE_marker_time = gna26.time.data
+		except:
+			new_MARFE_marker = np.zeros_like(time_full_binned_crop)
+			new_MARFE_marker_time = time_full_binned_crop
+			pass
+		full_saved_file_dict_FAST['multi_instrument']['new_MARFE_marker'] = new_MARFE_marker
+		full_saved_file_dict_FAST['multi_instrument']['new_MARFE_marker_time'] = new_MARFE_marker_time
+
 		brightness_res_bolo = client.get('/abm/core/brightness', laser_to_analyse[-9:-4]).data.T
 		good_res_bolo = client.get('/abm/core/good', laser_to_analyse[-9:-4]).data
 		time_res_bolo = client.get('/abm/core/time', laser_to_analyse[-9:-4]).data
 		channel_res_bolo = client.get('/abm/core/channel', laser_to_analyse[-9:-4]).data
+
 		coleval.reset_connection(client)
 		del client
 		# select only usefull time
@@ -1901,9 +2009,9 @@ try:
 		ax[2,0].errorbar(time_full_binned_crop,lambda_q_10_lower,yerr=lambda_q_10_lower_sigma,label=r'$\lambda_q$'+'_10_lower (<-)')
 		ax[2,0].errorbar(time_full_binned_crop,lambda_q_4_upper,yerr=lambda_q_4_upper_sigma,label=r'$\lambda_q$'+'_4_upper (<-)')
 		ax[2,0].errorbar(time_full_binned_crop,lambda_q_10_upper,yerr=lambda_q_10_upper_sigma,label=r'$\lambda_q$'+'_10_upper (<-)')
-		temp = ([ median_filter(dr_sep_in,size=[int(max(1,0.1/(np.diff(time_full_binned_crop).mean())))]) ,median_filter(dr_sep_out,size=[int(max(1,0.1/(np.diff(time_full_binned_crop).mean())))]) ,
-		median_filter(lambda_q_10_lower,size=[int(max(1,0.1/(np.diff(time_full_binned_crop).mean())))]) , median_filter(lambda_q_4_lower,size=[int(max(1,0.1/(np.diff(time_full_binned_crop).mean())))]) ,
-		median_filter(lambda_q_4_upper,size=[int(max(1,0.1/(np.diff(time_full_binned_crop).mean())))]) , median_filter(lambda_q_10_upper,size=[int(max(1,0.1/(np.diff(time_full_binned_crop).mean())))]) ])
+		temp = ([ median_filter(dr_sep_in,size=[int(max(1,0.1/(np.diff(time_full_binned_crop).mean())))],mode='constant',cval=0) ,median_filter(dr_sep_out,size=[int(max(1,0.1/(np.diff(time_full_binned_crop).mean())))],mode='constant',cval=0) ,
+		median_filter(lambda_q_10_lower,size=[int(max(1,0.1/(np.diff(time_full_binned_crop).mean())))],mode='constant',cval=0) , median_filter(lambda_q_4_lower,size=[int(max(1,0.1/(np.diff(time_full_binned_crop).mean())))],mode='constant',cval=0) ,
+		median_filter(lambda_q_4_upper,size=[int(max(1,0.1/(np.diff(time_full_binned_crop).mean())))],mode='constant',cval=0) , median_filter(lambda_q_10_upper,size=[int(max(1,0.1/(np.diff(time_full_binned_crop).mean())))],mode='constant',cval=0) ])
 		ax[2,0].set_ylim(bottom =  np.nanmin(temp), top = np.nanmax(temp))
 
 	ax2 = ax[2,0].twinx()  # instantiate a second axes that shares the same x-axis
@@ -2143,6 +2251,7 @@ try:
 	elif time_start_MARFE == None:
 		# ax8.set_xlabel('time [s]')
 		pass
+	ax8.plot(new_MARFE_marker_time,new_MARFE_marker,'--y')
 	ax8.grid()
 
 	ax[9,0].set_ylabel('estimated pu [Pa]')
@@ -2158,10 +2267,10 @@ try:
 		# ax[9,0].set_ylim(bottom=0,top=np.nanmax([pu_EFIT])*1.1)
 
 
-	ax[10,0].set_ylabel('estimated Tu [eV]')
+	ax[10,0].set_ylabel('estimated Tu [eV]'+' (-,+)')
 	ax10 = ax[10,0].twinx()  # instantiate a second axes that shares the same x-axis
 	ax10.spines["right"].set_visible(True)
-	ax10.set_ylabel('estimated nu '+r'$[10^{19}\frac{\#}{m^3}]$'+' (--)')
+	ax10.set_ylabel('estimated nu '+r'$[10^{19}\frac{\#}{m^3}]$'+' (- -,o)')
 	if TS_reading_success:
 		temp, = ax[10,0].plot(time_full_binned_crop,tu_cowley,label='cowley')
 		ax10.plot(time_full_binned_crop,nu_cowley*1e-19,'--',color=temp.get_color())
