@@ -37,7 +37,8 @@ print('Number of cores available: '+str(number_cpu_available))
 
 
 if False:	# main purpose, show image contrast with wavelength
-	function_of_reflection = lambda x: np.logical_or(x<4,x>5)
+	function_of_reflection = lambda x: np.logical_or(x<4,x>5)	# reflections are prevented onlt in the window of 4 to 5nm
+	quantuum_efficiency = lambda x: 0.3*(x<3) + 0.9*np.logical_and(x>3,x<5) + 0.5*np.logical_and(x>5,x<14) + 0.3*(x>14)	# super approximate variation in quantuum efficiency. see the FLIR documentation if you want something better
 
 	fig, ax = plt.subplots(3,1,figsize=(5, 10),sharex=True)
 	ax[0].grid()
@@ -58,10 +59,11 @@ if False:	# main purpose, show image contrast with wavelength
 	ax[1].axvline(x=4,linestyle='--',color='k')
 	ax[2].axhline(y=300/5,linestyle='--',color='k')
 	ax[2].grid()
-	min_temp = 20
-	delta_wave = 3.5
+	reflection_temperature = 20
+	min_temp = 30
+	delta_wave = 3	# I consider a sensor of that measures the wavelengths from start to start+delta_wave
 	delta_t = 1
-	ref_int_time = 0.002
+	ref_int_time = 0.001
 	int_time = 0.001
 	f_number_old = 3
 	f_number_new = 3
@@ -75,8 +77,15 @@ if False:	# main purpose, show image contrast with wavelength
 	wave_range = np.arange(1,14,0.5)
 	for start in wave_range:
 		x = np.arange(start,start+delta_wave,0.0001)*1e-6
-		x0=((f_number_old/f_number_new)**2)*1*int_time*(1*9.74e-05*3/0.002*3.42E-14 * np.trapz(function_of_reflection(x)*2*3.14* 299792458 /(x**4 * (exp(6.62607015E-34*299792458/(x*1.380649E-23*(273+min_temp)))-1)),x=x) + 3.42E-14 * np.trapz(2*3.14* 299792458 /(x**4 * (exp(6.62607015E-34*299792458/(x*1.380649E-23*(273+min_temp)))-1)),x=x))
-		x1=((f_number_old/f_number_new)**2)*1*int_time*(1*9.74e-05*3/0.002*3.42E-14 * np.trapz(function_of_reflection(x)*2*3.14* 299792458 /(x**4 * (exp(6.62607015E-34*299792458/(x*1.380649E-23*(273+min_temp)))-1)),x=x) + 3.42E-14 * np.trapz(2*3.14* 299792458 /(x**4 * (exp(6.62607015E-34*299792458/(x*1.380649E-23*(273+min_temp+delta_t)))-1)),x=x))
+		# counts at the low temperature
+		x0=((f_number_old/f_number_new)**2)*1*int_time*(
+		1*9.74e-05*3/0.002*3.42E-14 * np.trapz(quantuum_efficiency(x)*function_of_reflection(x)* 	# component from reflections
+		2*3.14* 299792458 /(x**4 * (exp(6.62607015E-34*299792458/(x*1.380649E-23*(273+reflection_temperature)))-1)),x=x)	# this has to be some photons/wavelength correlation, you can check wikipedia for this
+		 + 3.42E-14 * np.trapz(quantuum_efficiency(x)*2*3.14* 299792458 /(x**4 * (exp(6.62607015E-34*299792458/(x*1.380649E-23*(273+min_temp)))-1)),x=x))	# 3.42E-14 is the proportionality coefficient from the temperature calibration
+		 # counts at the high temperature
+		x1=((f_number_old/f_number_new)**2)*1*int_time*(
+		1*9.74e-05*3/0.002*3.42E-14 * np.trapz(quantuum_efficiency(x)*function_of_reflection(x)*2*3.14* 299792458 /(x**4 * (exp(6.62607015E-34*299792458/(x*1.380649E-23*(273+reflection_temperature)))-1)),x=x) 	# component from reflections
+		+ 3.42E-14 * np.trapz(quantuum_efficiency(x)*2*3.14* 299792458 /(x**4 * (exp(6.62607015E-34*299792458/(x*1.380649E-23*(273+min_temp+delta_t)))-1)),x=x))	# 3.42E-14 is the proportionality coefficient from the temperature calibration
 		# x0=1*int_time*(1*1430/0.002 + 3.42E-14 * np.trapz(2*3.14* 299792458 /(x**4 * (exp(6.62607015E-34*299792458/(x*1.380649E-23*(273+min_temp)))-1)),x=x))
 		# x1=1*int_time*(1*1430/0.002 + 3.42E-14 * np.trapz(2*3.14* 299792458 /(x**4 * (exp(6.62607015E-34*299792458/(x*1.380649E-23*(273+min_temp+delta_t)))-1)),x=x))
 		# x0 += 1500
@@ -85,7 +94,7 @@ if False:	# main purpose, show image contrast with wavelength
 		# print((x1-x0)/x0 * 100)
 		noise = 2#(max(coleval.estimate_counts_std(x0),5)**2+max(coleval.estimate_counts_std(x1),5)**2)**0.5	# noise with no binning
 		noise /= ((min(1/int_time,new_freq)/old_freq)**0.5)
-		noise /= ((new_res_max/old_res_max))
+		noise /= ((new_res_max/old_res_max))	# I assume the additional pixels available scale proportionally in both dimensions, so i have (1/x**2)**0.5 = 1/x reduction of noise, with x=new res / old res
 		temp.append((x1-x0)/x0 * 100)
 		temp1.append(x1)
 		temp2.append((x1-x0)*11000/(max(x0,11000))/noise)

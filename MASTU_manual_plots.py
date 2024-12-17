@@ -56,13 +56,21 @@ try:
 			full_saved_file_dict_FAST_covariance.allow_pickle=True
 			full_saved_file_dict_FAST_covariance = dict(full_saved_file_dict_FAST_covariance)
 
-			full_saved_file_dict_FAST_covariance = full_saved_file_dict_FAST_covariance.all()
+			try:
+				full_saved_file_dict_FAST_covariance = full_saved_file_dict_FAST_covariance.all()
+			except:
+				pass
 			if pass_number==0:
 				covariance_dict = full_saved_file_dict_FAST_covariance['first_pass']
 			elif pass_number==1:
 				covariance_dict = full_saved_file_dict_FAST_covariance['second_pass']
 			else:
 				covariance_dict = full_saved_file_dict_FAST_covariance['third_pass']
+
+			try:
+				covariance_dict = covariance_dict.all()
+			except:
+				pass
 
 			inverted_data_covariance_log = covariance_dict['inverted_data_covariance_log']
 			covariance_out = np.exp(inverted_data_covariance_log.astype(np.float32)).astype(np.float32)
@@ -263,7 +271,7 @@ try:
 	inverted_dict[str(grid_resolution)]['divertor_tot_rad_power_all'] = divertor_tot_rad_power_all
 	inverted_dict[str(grid_resolution)]['divertor_tot_rad_power_sigma_all'] = divertor_tot_rad_power_sigma_all
 
-	inner_SOL_leg_all,inner_SOL_leg_sigma_all,outer_SOL_leg_all,outer_SOL_leg_sigma_all,outer_SOL_all,outer_SOL_sigma_all,inner_SOL_all,inner_SOL_sigma_all = coleval.symplified_out_core_regions(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,covariance_out,grid_data_masked_crop,x_point_region_radious=x_point_region_radious)
+	inner_SOL_leg_all,inner_SOL_leg_sigma_all,outer_SOL_leg_all,outer_SOL_leg_sigma_all,outer_SOL_all,outer_SOL_sigma_all,inner_SOL_all,inner_SOL_sigma_all,psiN_min_lower_baffle_all,psiN_min_lower_target_all,psiN_min_central_column_all,psiN_min_upper_target_all,psiN_min_upper_baffle_all = coleval.symplified_out_core_regions(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,covariance_out,grid_data_masked_crop,x_point_region_radious=x_point_region_radious)
 	inverted_dict[str(grid_resolution)]['inner_SOL_leg_all'] = inner_SOL_leg_all
 	inverted_dict[str(grid_resolution)]['inner_SOL_leg_sigma_all'] = inner_SOL_leg_sigma_all
 	inverted_dict[str(grid_resolution)]['inner_SOL_all'] = inner_SOL_all	#  (including part of X-point region)
@@ -272,6 +280,12 @@ try:
 	inverted_dict[str(grid_resolution)]['outer_SOL_leg_sigma_all'] = outer_SOL_leg_sigma_all
 	inverted_dict[str(grid_resolution)]['outer_SOL_all'] = outer_SOL_all
 	inverted_dict[str(grid_resolution)]['outer_SOL_sigma_all'] = outer_SOL_sigma_all
+	# 2024/11/25 I want the minimum psiN to see hot much the plasma goes close to the surface
+	inverted_dict[str(grid_resolution)]['psiN_min_lower_baffle_all'] = psiN_min_lower_baffle_all
+	inverted_dict[str(grid_resolution)]['psiN_min_lower_target_all'] = psiN_min_lower_target_all
+	inverted_dict[str(grid_resolution)]['psiN_min_central_column_all'] = psiN_min_central_column_all
+	inverted_dict[str(grid_resolution)]['psiN_min_upper_target_all'] = psiN_min_upper_target_all
+	inverted_dict[str(grid_resolution)]['psiN_min_upper_baffle_all'] = psiN_min_upper_baffle_all
 
 	equivalent_res_bolo_view_all,equivalent_res_bolo_view_sigma_all,all_out_of_sxd_all,all_out_of_sxd_sigma_all = coleval.equivalent_res_bolo_view(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,covariance_out,grid_data_masked_crop)
 	inverted_dict[str(grid_resolution)]['equivalent_res_bolo_view_all'] = equivalent_res_bolo_view_all
@@ -1692,7 +1706,7 @@ try:
 					plt.xlim(left=0,right=1)
 					plt.grid()
 			except:
-				new_MARFE_marker = np.zeros_like(gna26.time.data)
+				new_MARFE_marker = np.ones_like(gna26.time.data)
 			new_MARFE_marker_time = gna26.time.data
 		except:
 			new_MARFE_marker = np.zeros_like(time_full_binned_crop)
@@ -1923,7 +1937,7 @@ try:
 	plt.close()
 
 	# plot of absolute quantities
-	fig, ax = plt.subplots( 11,1,figsize=(12, 40), squeeze=False,sharex=False)
+	fig, ax = plt.subplots( 12,1,figsize=(12, 50), squeeze=False,sharex=False)
 	if pass_number ==0:
 		fig.suptitle('shot '+str(shotnumber)+', '+scenario+' , '+experiment+'\nfirst pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
 	elif pass_number ==1:
@@ -2235,11 +2249,12 @@ try:
 		ax8.plot(time_res_bolo,CH27_26,'r')
 		ax8.plot(time_res_bolo,fit_bolo[0]+fit_bolo[1]*np.maximum(0,time_res_bolo-fit_bolo[2]),'--')
 		ax8.axvline(x=time_start_MARFE,linestyle='--',color='b')
-		ax8.set_ylim(bottom=0.5,top=max(3,CH27_26.max()))
+		ax8.set_ylim(bottom=min(0.5,new_MARFE_marker[np.logical_and(new_MARFE_marker_time<time_full_binned_crop.max(),new_MARFE_marker_time>time_full_binned_crop.min())].min()),top=np.max([3,CH27_26.max(),new_MARFE_marker[np.logical_and(new_MARFE_marker_time<time_full_binned_crop.max(),new_MARFE_marker_time>time_full_binned_crop.min())].max()]))
 		# ax8.set_xlabel('time [s]')
 		ax8.set_ylabel('Brigtness\nCH27/CH26 [au]', color='r')
 	elif time_active_MARFE == None:
 		# ax8.set_xlabel('time [s]')
+		ax8.set_ylim(bottom=new_MARFE_marker[np.logical_and(new_MARFE_marker_time<time_full_binned_crop.max(),new_MARFE_marker_time>time_full_binned_crop.min())].min(),top=np.max([3,new_MARFE_marker[np.logical_and(new_MARFE_marker_time<time_full_binned_crop.max(),new_MARFE_marker_time>time_full_binned_crop.min())].max()]))
 		pass
 	if time_active_MARFE != None:
 		# ax9 = ax8.twinx()  # instantiate a second axes that shares the same x-axis
@@ -2251,7 +2266,7 @@ try:
 	elif time_start_MARFE == None:
 		# ax8.set_xlabel('time [s]')
 		pass
-	ax8.plot(new_MARFE_marker_time,new_MARFE_marker,'--y')
+	ax8.plot(new_MARFE_marker_time,new_MARFE_marker,'--r')
 	ax8.grid()
 
 	ax[9,0].set_ylabel('estimated pu [Pa]')
@@ -2287,7 +2302,17 @@ try:
 		ax[10,0].set_ylim(bottom=0,top=np.nanmax([tu_cowley,tu_labombard,tu_stangeby])*1.1)
 		ax10.set_ylim(bottom=0,top=np.nanmax([nu_cowley,nu_labombard,nu_stangeby])*1.1*1e-19)
 
-
+	ax[11,0].axhline(y=1,color='k',linestyle='--')
+	ax[11,0].axhline(y=1.15,color='k',linestyle='--',label=r'$\psi_{N}=1.15$')
+	ax[11,0].plot(time_full_binned_crop,psiN_peak_inner_all,label=r'$IN\psi_{N\;peak}$')
+	ax[11,0].plot(time_full_binned_crop,psiN_min_lower_baffle_all,label=r'$\psi_{N\;lower\;baffle}$')
+	ax[11,0].plot(time_full_binned_crop,psiN_min_upper_baffle_all,'--',label=r'$\psi_{N\;upper\;baffle}$')
+	ax[11,0].plot(time_full_binned_crop,psiN_min_lower_target_all,label=r'$\psi_{N\;lower\;target}$')
+	ax[11,0].plot(time_full_binned_crop,psiN_min_upper_target_all,'--',label=r'$\psi_{N\;upper\;target}$')
+	ax[11,0].plot(time_full_binned_crop,psiN_min_central_column_all,label=r'$\psi_{N\;central\;column}$')
+	ax[11,0].grid()
+	ax[11,0].legend(loc='best', fontsize='xx-small')
+	ax[11,0].set_ylim(bottom=0.9,top=1.3)
 
 	ax[0,0].set_xlim(left=time_full_binned_crop.min(),right=time_full_binned_crop.max())
 	ax[1,0].set_xlim(left=time_full_binned_crop.min(),right=time_full_binned_crop.max())
@@ -2300,6 +2325,7 @@ try:
 	ax[8,0].set_xlim(left=time_full_binned_crop.min(),right=time_full_binned_crop.max())
 	ax[9,0].set_xlim(left=time_full_binned_crop.min(),right=time_full_binned_crop.max())
 	ax[10,0].set_xlim(left=time_full_binned_crop.min(),right=time_full_binned_crop.max())
+	ax[11,0].set_xlim(left=time_full_binned_crop.min(),right=time_full_binned_crop.max())
 
 	# plt.subplots_adjust(wspace=0, hspace=0)
 	# plt.pause(0.01)

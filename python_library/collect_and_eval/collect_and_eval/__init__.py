@@ -5809,7 +5809,7 @@ def ptw_to_dict(full_path,max_time_s = np.inf):
 		digitizer_ID,discarded_frames = generate_digitizer_ID_from_dead_pixels_markers(data,dark_bad_pixels_marker)
 		digitizer_ID_order_type = 'less dead pixels digitizer zero'
 	else:
-		dark_bad_pixels_marker = None
+		dark_bad_pixels_marker = []
 		digitizer_ID = digitizer_ID_fake
 		discarded_frames = []
 		digitizer_ID_order_type = 'no ordering possible because low framerate'
@@ -7953,7 +7953,7 @@ def get_rotation_crop_parameters(testrot,foil_position_dict,laser_to_analyse,pla
 	# plt.clim(vmax=27.1,vmin=26.8)
 	# plt.clim(vmin=np.nanmin(testrot[testrot>0]), vmax=np.nanmax(testrot))
 	plt.colorbar().set_label('counts [au]')
-	plt.plot(foilx-1,foily-1,'k--',alpha=0.5)
+	plt.plot(foilx-1,foily-1,'k',alpha=0.5,dashes=[6, 6])
 	plt.plot(foilcenter[0],foilcenter[1],'k+',markersize=30)
 	plt.savefig(laser_to_analyse[:-4]+'_foil_fit.eps')#, bbox_inches='tight')
 	plt.close('all')
@@ -7969,21 +7969,22 @@ def get_rotation_crop_parameters(testrot,foil_position_dict,laser_to_analyse,pla
 	# plt.clim(vmax=27.1,vmin=26.8)
 	# plt.clim(vmin=np.nanmin(testrot[testrot>0]), vmax=np.nanmax(testrot))
 	plt.colorbar().set_label('counts [au]')
-	plt.plot(foilx-1,foily-1,'k--',alpha=0.5)
+	plt.plot(foilx-1,foily-1,'k',alpha=0.5,dashes=[6, 6])
 	plt.plot(foilcenter[0],foilcenter[1],'k+',markersize=30)
 	plt.savefig(laser_to_analyse[:-4]+'_foil_fit_sobel.eps')#, bbox_inches='tight')
 	plt.close('all')
 
 	plt.figure(figsize=(20, 10))
 	plt.rcParams.update({'font.size': 20})
-	temp = np.max(plasma_data_array[:,:,:200],axis=(-1,-2)).argmax()
-	plt.title('Foil search in '+laser_to_analyse+'\nFoil center '+str(foilcenter)+', foil rot '+str(foilrotdeg)+'deg, foil size '+str([foilhorizwpixel,foilvertwpixel])+'pixel\nhottest frame at %.4gsec' %(plasma_data_array_time[temp]))
-	plt.imshow(plasma_data_array[temp],'rainbow',origin='lower',vmax=np.max(plasma_data_array[:,:,:200],axis=(-1,-2))[temp])
+	temp = np.max(plasma_data_array[np.logical_and(plasma_data_array_time>plasma_data_array_time.min()+0.3,plasma_data_array_time<plasma_data_array_time.max()-0.3),:,:200],axis=(-1,-2)).argmax()+(np.abs(plasma_data_array_time-(plasma_data_array_time.min()+0.3))).argmin()	# the plasma_data_array_time.min()+0.3 is there because I want to avoid that temp-20 is negative
+	temp2 = np.nanmax(plasma_data_array[temp-int(0.1/np.mean(np.diff(plasma_data_array_time))):temp+int(0.1/np.mean(np.diff(plasma_data_array_time)))],axis=0)
+	plt.title('Foil search in '+laser_to_analyse+'\nFoil center '+str(foilcenter)+', foil rot '+str(foilrotdeg)+'deg, foil size '+str([foilhorizwpixel,foilvertwpixel])+'pixel\nhottest frame at %.4gsec +/-100ms' %(plasma_data_array_time[temp]))
+	plt.imshow(temp2,'rainbow',origin='lower',vmin=0,vmax=np.max(temp2[:,:200])/2)
 	plt.ylabel('Horizontal axis [pixles]')
 	plt.xlabel('Vertical axis [pixles]')
-	plt.clim(vmax=np.max(plasma_data_array[:,:,:200],axis=(-1,-2))[temp])
+	plt.clim(vmin=0,vmax=np.max(temp2[:,:200])/2)
 	plt.colorbar().set_label('deviation from running average [au]')
-	plt.plot(foilx-1,foily-1,'r')
+	plt.plot(foilx-1,foily-1,'r',dashes=[6, 6])
 	plt.plot(foilcenter[0],foilcenter[1],'k+',markersize=30)
 	plt.savefig(laser_to_analyse[:-4]+'_foil_fit_plasma.eps')#, bbox_inches='tight')
 	plt.close('all')
@@ -8020,7 +8021,7 @@ def get_rotation_crop_parameters(testrot,foil_position_dict,laser_to_analyse,pla
 	out_of_ROI_mask[a>np.mean(a)]=np.nan
 
 	if True:
-		height,width = 256,320
+		height,width = np.shape(testrot)
 		max_ROI = [[0,height-1],[0,width-1]]
 		testrotback_crop = rotate_and_crop_3D([testrot],foilrotdeg,max_ROI,height,width,out_of_ROI_mask,foildw-10,foilup+10,foillx-10,foilrx+10)[0]
 		# temp = np.max(plasma_data_array[:,:,:200],axis=(-1,-2)).argmax()
@@ -8029,9 +8030,40 @@ def get_rotation_crop_parameters(testrot,foil_position_dict,laser_to_analyse,pla
 		plt.rcParams.update({'font.size': 20})
 		plt.title('Foil search in '+laser_to_analyse+'\nFoil center '+str(foilcenter)+', foil rot '+str(foilrotdeg)+'deg, foil size '+str([foilhorizwpixel,foilvertwpixel])+'pixel\nreal foil fit')
 		plt.imshow(testrotback_crop,'rainbow',origin='lower')
-		plt.plot([10-0.5,testrotback_crop.shape[1]-10-0.5,testrotback_crop.shape[1]-10-0.5,10-0.5,10-0.5],[10-0.5,10-0.5,testrotback_crop.shape[0]-10-0.5,testrotback_crop.shape[0]-10-0.5,10-0.5],'--k')
+		plt.ylabel('Horizontal axis [pixles]')
+		plt.xlabel('Vertical axis [pixles]')
+		plt.plot([10-0.5,testrotback_crop.shape[1]-10-0.5,testrotback_crop.shape[1]-10-0.5,10-0.5,10-0.5],[10-0.5,10-0.5,testrotback_crop.shape[0]-10-0.5,testrotback_crop.shape[0]-10-0.5,10-0.5],'k',dashes=[6, 6])
 		plt.colorbar().set_label('counts [au]')
 		plt.savefig(laser_to_analyse[:-4]+'_foil_fit_2.eps')#, bbox_inches='tight')
+		plt.close('all')
+
+		plt.figure(figsize=(20, 10))
+		plt.rcParams.update({'font.size': 20})
+		temp = np.max(plasma_data_array[np.logical_and(plasma_data_array_time>plasma_data_array_time.min()+0.3,plasma_data_array_time<plasma_data_array_time.max()-0.3),:,:200],axis=(-1,-2)).argmax()+(np.abs(plasma_data_array_time-(plasma_data_array_time.min()+0.3))).argmin()	# the plasma_data_array_time.min()+0.3 is there because I want to avoid that temp-20 is negative
+		temp2 = np.nanmax(plasma_data_array[temp-int(0.1/np.mean(np.diff(plasma_data_array_time))):temp+int(0.1/np.mean(np.diff(plasma_data_array_time)))],axis=0)
+		testrotback_crop = rotate_and_crop_3D([temp2],foilrotdeg,max_ROI,height,width,out_of_ROI_mask,foildw-10,foilup+10,foillx-10,foilrx+10)[0]
+		plt.title('Foil search in '+laser_to_analyse+'\nFoil center '+str(foilcenter)+', foil rot '+str(foilrotdeg)+'deg, foil size '+str([foilhorizwpixel,foilvertwpixel])+'pixel\nhottest frame at %.4gsec +/-100ms' %(plasma_data_array_time[temp]))
+		plt.imshow(testrotback_crop,'rainbow',origin='lower',vmin=0,vmax=np.max(temp2[:,:200])/2)
+		plt.clim(vmin=0,vmax=np.max(temp2[:,:200])/2)
+		plt.ylabel('Horizontal axis [pixles]')
+		plt.xlabel('Vertical axis [pixles]')
+		plt.plot([10-0.5,testrotback_crop.shape[1]-10-0.5,testrotback_crop.shape[1]-10-0.5,10-0.5,10-0.5],[10-0.5,10-0.5,testrotback_crop.shape[0]-10-0.5,testrotback_crop.shape[0]-10-0.5,10-0.5],'k',dashes=[6, 6])
+		plt.colorbar().set_label('deviation from running average [au]')
+		plt.savefig(laser_to_analyse[:-4]+'_foil_fit_plasma_2.eps')#, bbox_inches='tight')
+		plt.close('all')
+
+		plt.figure(figsize=(20, 10))
+		plt.rcParams.update({'font.size': 20})
+		temp = np.max(plasma_data_array[np.logical_and(plasma_data_array_time>plasma_data_array_time.min()+0.3,plasma_data_array_time<plasma_data_array_time.max()-0.3),:,:200],axis=(-1,-2)).argmax()+(np.abs(plasma_data_array_time-(plasma_data_array_time.min()+0.3))).argmin()	# the plasma_data_array_time.min()+0.3 is there because I want to avoid that temp-20 is negative
+		temp2 = np.nanmax(plasma_data_array[temp-int(0.1/np.mean(np.diff(plasma_data_array_time))):temp+int(0.1/np.mean(np.diff(plasma_data_array_time)))],axis=0)
+		testrotback_crop = rotate_and_crop_3D([temp2],foilrotdeg,max_ROI,height,width,out_of_ROI_mask,foildw,foilup,foillx,foilrx)[0]
+		plt.title('Foil search in '+laser_to_analyse+'\nFoil center '+str(foilcenter)+', foil rot '+str(foilrotdeg)+'deg, foil size '+str([foilhorizwpixel,foilvertwpixel])+'pixel\nhottest frame at %.4gsec +/-100ms' %(plasma_data_array_time[temp]))
+		plt.imshow(testrotback_crop,'rainbow',origin='lower',vmin=0,vmax=np.max(temp2[:,:200])/2)
+		plt.clim(vmin=0,vmax=np.max(temp2[:,:200])/2)
+		plt.ylabel('Horizontal axis [pixles]')
+		plt.xlabel('Vertical axis [pixles]')
+		plt.colorbar().set_label('deviation from running average [au]')
+		plt.savefig(laser_to_analyse[:-4]+'_foil_fit_plasma_3.eps')#, bbox_inches='tight')
 		plt.close('all')
 
 	return foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx
@@ -10787,6 +10819,7 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 		regolarisation_coeff_upper_limit = 0.1
 		regolarisation_coeff_lower_limit = 4e-4 #2e-4
 		if laser_framerate<60:
+			regolarisation_coeff /= 2	# 2024/11/29 now it seems too smooth at 50Hz
 			regolarisation_coeff_upper_limit = 0.2
 			regolarisation_coeff_lower_limit = 8e-4
 
@@ -10919,7 +10952,7 @@ def MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digit
 
 			if (override_second_pass and pass_number==1) or (override_third_pass and pass_number==2) or pass_number==0:
 				# x_optimal_all,recompose_voxel_emissivity_all,y_opt_all,opt_info_all,voxels_centre,recompose_voxel_emissivity_excluded_all = loop_fit_over_regularisation(prob_and_gradient,regolarisation_coeff_range,guess,grid_data_masked_crop,powernoback,sigma_powernoback,sigma_emissivity,x_optimal_all_guess=x_optimal_all_guess,factr=1e10,excluded_cells = selected_edge_cells_for_laplacian)
-				x_optimal_all,recompose_voxel_emissivity_all,y_opt_all,opt_info_all,voxels_centre,recompose_voxel_emissivity_excluded_all,likelihood_logging_all,derivate_logging_all = loop_fit_over_regularisation(prob_and_gradient,regolarisation_coeff_range,guess,grid_data_masked_crop,powernoback,sigma_powernoback,sigma_emissivity,excluded_cells = selected_edge_cells_for_laplacian,fix_pinhole_emis_zero=fix_pinhole_emis_zero,pgtol=pgtol,factr=factr,maxiter=maxiter,iprint=2,m=10)#,factr=1e8)#,iprint=2,pgtol=5e-5)
+				x_optimal_all,recompose_voxel_emissivity_all,y_opt_all,opt_info_all,voxels_centre,recompose_voxel_emissivity_excluded_all,likelihood_logging_all,derivate_logging_all = loop_fit_over_regularisation(prob_and_gradient,regolarisation_coeff_range,guess,grid_data_masked_crop,powernoback,sigma_powernoback,sigma_emissivity,excluded_cells = selected_edge_cells_for_laplacian,fix_pinhole_emis_zero=fix_pinhole_emis_zero,pgtol=pgtol,factr=factr,maxiter=maxiter,iprint=0,m=10)#,factr=1e8)#,iprint=2,pgtol=5e-5)
 
 				# if first_guess == []:
 				x_optimal_all_guess = cp.deepcopy(x_optimal_all)	# W/m^3/str of emitter
@@ -13592,7 +13625,8 @@ def check_beams_on(shot_id,timefirst=0.2,time_last=False,path='/home/ffederic/wo
 	beams_on_flag = False
 
 	try:
-		shot_list = get_data(path)
+		# shot_list = get_data(path)
+		shot_list = load_shot_list(path)
 		temp1 = (np.array(shot_list['Sheet1'][0])=='shot number').argmax()
 		shot_found = False
 		for i in range(1,len(shot_list['Sheet1'])):
@@ -13977,7 +14011,8 @@ def retrive_shot_scenario(shot,path='/home/ffederic/work/irvb/MAST-U/'+'shot_lis
 
 	scenario = ''
 	try:
-		shot_list = get_data(path)
+		# shot_list = get_data(path)
+		shot_list = load_shot_list(path)
 		temp1 = (np.array(shot_list['Sheet1'][0])=='shot number').argmax()
 		for i in range(1,len(shot_list['Sheet1'])):
 			if shot_list['Sheet1'][i][temp1] == int(shot):
@@ -13995,7 +14030,8 @@ def retrive_shot_date_and_time(shot,path='/home/ffederic/work/irvb/MAST-U/'+'sho
 	from datetime import datetime
 	from pyexcel_ods import save_data,get_data
 
-	shot_list = get_data(path)
+	# shot_list = get_data(path)
+	shot_list = load_shot_list(path)
 	temp1 = (np.array(shot_list['Sheet1'][0])=='shot number').argmax()
 	all_shots = np.array([shot_list['Sheet1'][i][3] for i in range(len(shot_list['Sheet1'])) if (len(shot_list['Sheet1'][i])>0 and shot_list['Sheet1'][i][3]!='')][1:])
 	try:
@@ -14045,7 +14081,8 @@ def retrive_shot_date_and_time(shot,path='/home/ffederic/work/irvb/MAST-U/'+'sho
 def retrive_aborted(shot,path='/home/ffederic/work/irvb/MAST-U/'+'shot_list2.ods'):
 	from pyexcel_ods import save_data,get_data
 
-	shot_list = get_data(path)
+	# shot_list = get_data(path)
+	shot_list = load_shot_list(path)
 	temp1 = (np.array(shot_list['Sheet1'][0])=='shot number').argmax()
 	all_shots = np.array([shot_list['Sheet1'][i][3] for i in range(len(shot_list['Sheet1'])) if (len(shot_list['Sheet1'][i])>0 and shot_list['Sheet1'][i][3]!='')][1:])
 	try:
@@ -14103,11 +14140,30 @@ def retrive_vessel_average_temp_archve(shot):
 
 	return temperature
 
+def load_shot_list(path):
+	from pyexcel_ods import get_data
+	import time as tm
+
+	path_read = False
+	counter = 0
+	while (not path_read) and counter<30:	# 30 times x 20 seconds =10 minutes
+		counter += 1
+		try:
+			shot_list = get_data(path)
+			path_read = True
+			print(path+ ' read at attempt '+str(counter))
+		except:
+			tm.sleep(20)
+			pass
+	return shot_list
+
+
 def retrive_shot_foil_mask_type(shot,path='/home/ffederic/work/irvb/MAST-U/'+'shot_list2.ods'):
 	from datetime import datetime
 	from pyexcel_ods import save_data,get_data
 
-	shot_list = get_data(path)
+	# shot_list = get_data(path)
+	shot_list = load_shot_list(path)
 	temp1 = (np.array(shot_list['Sheet1'][0])=='shot number').argmax()
 	all_shots = np.array([shot_list['Sheet1'][i][3] for i in range(len(shot_list['Sheet1'])) if (len(shot_list['Sheet1'][i])>0 and shot_list['Sheet1'][i][3]!='')][1:])
 	try:
@@ -15162,7 +15218,7 @@ def inside_vs_outside_separatrix_radiation(inverted_data,inverted_data_sigma,inv
 			# 				selected[i_r,i_z] = True
 			# 				continue
 			temp = cp.deepcopy(inverted_data[i_t])
-			temp[:,inversion_Z>efit_reconstruction.mag_axis_z[i_efit_time]] = 0
+			temp[:,inversion_Z>efit_reconstruction.mag_axis_z[i_efit_time]] = 0	# exclude the upper part of the machine, so I can do the lower times 2
 			temp1 = covariance_out[i_t][:len(grid_data_masked_crop),:len(grid_data_masked_crop)]
 			temp1[voxels_centre[:,1]>efit_reconstruction.mag_axis_z[i_efit_time]]=0
 			temp1[:,voxels_centre[:,1]>efit_reconstruction.mag_axis_z[i_efit_time]]=0
@@ -15177,7 +15233,7 @@ def inside_vs_outside_separatrix_radiation(inverted_data,inverted_data_sigma,inv
 			# real_core_radiation_sigma_all.append(np.nansum((selected*temp_sigma*2*np.pi*b*(grid_resolution**2))**2)**0.5)
 			real_core_radiation_sigma_all.append(np.nansum((temp1*temp_select).T*temp_select)**0.5)
 
-			# inner side of the core
+			# inner side of the core without x-point
 			delimiter = return_inner_outer_leg_delimiter(efit_reconstruction,i_efit_time)
 			selected_temp = cp.deepcopy(selected)
 			selected_temp[r_>=delimiter(z_)] = False
@@ -15186,7 +15242,7 @@ def inside_vs_outside_separatrix_radiation(inverted_data,inverted_data_sigma,inv
 			selected_sigma_temp[voxels_centre[:,0]>=delimiter(voxels_centre[:,1])] = False
 			temp_select = selected_sigma_temp*2*np.pi*(grid_resolution**2)*(voxels_centre[:,0])
 			real_inner_core_radiation_sigma_all.append(np.nansum((temp1*temp_select).T*temp_select)**0.5)
-			# outer side of the core
+			# outer side of the core without x-point
 			selected_temp = cp.deepcopy(selected)
 			selected_temp[r_<delimiter(z_)] = False
 			real_outer_core_radiation_all.append(np.nansum(selected_temp*temp*2*np.pi*b*(grid_resolution**2)))
@@ -15241,6 +15297,7 @@ def symplified_out_core_regions(inverted_data,inverted_data_sigma,inversion_R,in
 	import mastu_exhaust_analysis.fluxsurface_tracer as ft
 	from mastu_exhaust_analysis.read_efit import read_epm
 	from scipy.interpolate import interp1d,interp2d
+	from scipy.interpolate import RegularGridInterpolator
 
 	all_time_sep_r,all_time_sep_z,r_fine,z_fine = efit_reconstruction_to_separatrix_on_foil(efit_reconstruction)	# the separatrix are ordered as left_of_up_xpoints,right_of_up_xpoints,left_of_low_xpoints,right_of_low_xpoints
 	all_time_strike_points_location = return_all_time_strike_points_location_radial(efit_reconstruction,all_time_sep_r,all_time_sep_z,r_fine,z_fine)
@@ -15268,6 +15325,11 @@ def symplified_out_core_regions(inverted_data,inverted_data_sigma,inversion_R,in
 	outer_SOL_leg_sigma_all = []
 	outer_SOL_all = []
 	outer_SOL_sigma_all = []
+	psiN_min_lower_baffle_all = []
+	psiN_min_lower_target_all = []
+	psiN_min_central_column_all = []
+	psiN_min_upper_target_all = []
+	psiN_min_upper_baffle_all = []
 
 	polygon = Polygon(FULL_MASTU_CORE_GRID_POLYGON)
 	selected_VV = select_cells_inside_polygon(polygon,[inversion_R,inversion_Z])
@@ -15275,11 +15337,17 @@ def symplified_out_core_regions(inverted_data,inverted_data_sigma,inversion_R,in
 
 	for i_t in range(len(time_full_binned_crop)):
 		print('starting t=%.4gms' %(time_full_binned_crop[i_t]*1e3))
+		i_efit_time = np.abs(efit_reconstruction.time-time_full_binned_crop[i_t]).argmin()
+		# 2024/11/25 I want the minimum psiN to see hot much the plasma goes close to the surface
+		psi_interpolator = RegularGridInterpolator((efit_reconstruction.R,efit_reconstruction.Z),efit_data['psiN'][i_efit_time].T)
+		psiN_min_lower_baffle_all.append(np.nanmin(psi_interpolator(FULL_MASTU_CORE_GRID_POLYGON_lower_baffle)))
+		psiN_min_lower_target_all.append(np.nanmin(psi_interpolator(FULL_MASTU_CORE_GRID_POLYGON_lower_target)))
+		psiN_min_central_column_all.append(np.nanmin(psi_interpolator(FULL_MASTU_CORE_GRID_POLYGON_central_column)))
+		psiN_min_upper_target_all.append(np.nanmin(psi_interpolator(FULL_MASTU_CORE_GRID_POLYGON_upper_target)))
+		psiN_min_upper_baffle_all.append(np.nanmin(psi_interpolator(FULL_MASTU_CORE_GRID_POLYGON_upper_baffle)))
 		try:
-			i_efit_time = np.abs(efit_reconstruction.time-time_full_binned_crop[i_t]).argmin()
 			if True:	# method relying on selecting psiN<1 to select the core
-				gna = efit_data['psiN'][i_efit_time]
-				psi_interpolator = interp2d(efit_reconstruction.R,efit_reconstruction.Z,gna)
+				psi_interpolator = interp2d(efit_reconstruction.R,efit_reconstruction.Z,efit_data['psiN'][i_efit_time])
 				psiN = psi_interpolator(inversion_R,inversion_Z)
 				selected = psiN<=1
 				selected[inversion_Z<efit_data['lower_xpoint_z'][i_efit_time]]=False
@@ -15416,7 +15484,7 @@ def symplified_out_core_regions(inverted_data,inverted_data_sigma,inversion_R,in
 	outer_SOL_all = np.array(outer_SOL_all)
 	outer_SOL_sigma_all = np.array(outer_SOL_sigma_all)
 
-	return inner_SOL_leg_all,inner_SOL_leg_sigma_all,outer_SOL_leg_all,outer_SOL_leg_sigma_all,outer_SOL_all,outer_SOL_sigma_all,inner_SOL_all,inner_SOL_sigma_all
+	return inner_SOL_leg_all,inner_SOL_leg_sigma_all,outer_SOL_leg_all,outer_SOL_leg_sigma_all,outer_SOL_all,outer_SOL_sigma_all,inner_SOL_all,inner_SOL_sigma_all,psiN_min_lower_baffle_all,psiN_min_lower_target_all,psiN_min_central_column_all,psiN_min_upper_target_all,psiN_min_upper_baffle_all
 
 
 def equivalent_res_bolo_view(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,covariance_out,grid_data_masked_crop):

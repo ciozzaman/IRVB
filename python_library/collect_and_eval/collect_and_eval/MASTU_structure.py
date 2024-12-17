@@ -424,3 +424,49 @@ FULL_MASTU_CORE_GRID_POLYGON = np.array([
 	(1.468,	0.495),	# ELM coil, added 2021-10-19
 	(1.49, 0.0)
 ])
+
+FULL_MASTU_CORE_GRID_POLYGON_lower_baffle = FULL_MASTU_CORE_GRID_POLYGON[:20]
+FULL_MASTU_CORE_GRID_POLYGON_lower_target = FULL_MASTU_CORE_GRID_POLYGON[20-1:32]
+FULL_MASTU_CORE_GRID_POLYGON_central_column = FULL_MASTU_CORE_GRID_POLYGON[32-1:36]
+FULL_MASTU_CORE_GRID_POLYGON_upper_target = FULL_MASTU_CORE_GRID_POLYGON[36-1:48]
+FULL_MASTU_CORE_GRID_POLYGON_upper_baffle = FULL_MASTU_CORE_GRID_POLYGON[48-1:]
+
+
+# 2024/11/25 from chatty
+def interpolate_points(coords, max_distance):
+    """
+    Interpolates points so that no two consecutive points are farther than max_distance.
+
+    Args:
+        coords (list of list): List of spatial coordinates [[x1, y1], [x2, y2], ...].
+        max_distance (float): Maximum allowed distance between consecutive points.
+
+    Returns:
+        list of list: New list of coordinates with interpolated points added.
+    """
+    new_coords = [coords[0]]  # Start with the first point
+
+    for i in range(1, len(coords)):
+        # Calculate the distance between the current and previous point
+        p1 = np.array(coords[i - 1])
+        p2 = np.array(coords[i])
+        distance = np.linalg.norm(p2 - p1)
+
+        # If the distance is below the threshold, just add the point
+        if distance <= max_distance:
+            new_coords.append(coords[i])
+        else:
+            # Interpolate additional points
+            num_points = int(np.ceil(distance / max_distance))
+            for j in range(1, num_points + 1):
+                new_point = p1 + (p2 - p1) * (j / num_points)
+                new_coords.append(new_point.tolist())
+
+    return np.array(new_coords)
+
+
+FULL_MASTU_CORE_GRID_POLYGON_lower_baffle = interpolate_points(FULL_MASTU_CORE_GRID_POLYGON_lower_baffle,0.05)
+FULL_MASTU_CORE_GRID_POLYGON_lower_target = interpolate_points(FULL_MASTU_CORE_GRID_POLYGON_lower_target,0.05)
+FULL_MASTU_CORE_GRID_POLYGON_central_column = interpolate_points(FULL_MASTU_CORE_GRID_POLYGON_central_column,0.05)
+FULL_MASTU_CORE_GRID_POLYGON_upper_target = interpolate_points(FULL_MASTU_CORE_GRID_POLYGON_upper_target,0.05)
+FULL_MASTU_CORE_GRID_POLYGON_upper_baffle = interpolate_points(FULL_MASTU_CORE_GRID_POLYGON_upper_baffle,0.05)

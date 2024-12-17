@@ -179,7 +179,7 @@ try:
 		reference2 = np.mean(laser_counts[i][:,select_space2],axis=-1)
 		reference3 = np.mean(laser_counts[i][:,select_space3],axis=-1)
 		reference4 = np.mean(laser_counts[i][:,select_space4],axis=-1)
-		if np.abs(reference[-1]-reference[10])>50:	# it was 30
+		if np.abs(reference[-1]-reference[10])>80:	# it was 30	# 2024-12-02 it was 50
 			external_clock_marker = True
 		laser_counts_corrected.append(laser_counts[i].astype(np.float64))
 		max_counts_for_plot = max(max_counts_for_plot,np.max(np.mean(laser_counts[i][10:],axis=(-1,-2))))
@@ -390,25 +390,25 @@ try:
 	if not frame_time_rigidly_determined:
 		# start_time_of_pulse = np.mean(real_start_time_of_pulse)
 		start_time_of_pulse = (real_start_time_of_pulse[0]/np.abs(real_start_time_of_pulse_uncertainty[0])+real_start_time_of_pulse[1]/np.abs(real_start_time_of_pulse_uncertainty[1]))/(1/np.abs(real_start_time_of_pulse_uncertainty[0])+1/np.abs(real_start_time_of_pulse_uncertainty[1]))
-		additional_correction_from_disruptions = -0*1e-3
+		additional_correction_from_disruptions = -10*1e-3
 		time_uncertainty_down = 10*1e-3
 		time_uncertainty_up = 15*1e-3
 		if int(laser_to_analyse[-9:-4])<45514:	# MU01
-			additional_correction_from_disruptions = -10*1e-3
+			additional_correction_from_disruptions = -10.3*1e-3
 			time_uncertainty_down = 15*1e-3
 			time_uncertainty_up = 30*1e-3
 		elif int(laser_to_analyse[-9:-4])<47175:	# MU02
-			additional_correction_from_disruptions = -14.5*1e-3
+			additional_correction_from_disruptions = -9.9*1e-3
 			time_uncertainty_down = 10*1e-3
 			time_uncertainty_up = 15*1e-3
 		elif int(laser_to_analyse[-9:-4])<49476:	# MU03
-			additional_correction_from_disruptions = -12.5*1e-3
+			additional_correction_from_disruptions = -11*1e-3
 			time_uncertainty_down = 10*1e-3
 			time_uncertainty_up = 15*1e-3
 	else:
-			additional_correction_from_disruptions = 01e-3
-			time_uncertainty_down = 1*1e-3
-			time_uncertainty_up = 1*1e-3
+		additional_correction_from_disruptions = 0*1e-3
+		time_uncertainty_down = 1*1e-3
+		time_uncertainty_up = 1*1e-3
 	plt.axvline(x=start_time_of_pulse,color='k')
 	plt.axvline(x=start_time_of_pulse+additional_correction_from_disruptions,color='k',linestyle='--')
 	plt.xlim(left=start_time_of_pulse-2*add_time,right=start_time_of_pulse+2*add_time)
@@ -529,7 +529,9 @@ try:
 	BB_proportional,BB_proportional_std,constant_offset,constant_offset_std,photon_dict = coleval.calc_BB_coefficients_multi_digitizer(params_BB,errparams_BB,laser_digitizer_ID,temp_ref_counts,temp_ref_counts_std,ref_temperature=ref_temperature,ref_temperature_std=ref_temperature_std,wavewlength_top=5.1,wavelength_bottom=1.5,inttime=laser_int_time/1000)
 	photon_flux_over_temperature_interpolator = photon_dict['photon_flux_over_temperature_interpolator']
 
-	if int(laser_to_analyse[-9:-4]) > 47174:	# MU03
+	if int(laser_to_analyse[-9:-4]) > 50714:	# MU04
+		foil_position_dict = dict([('angle',1),('foilcenter',[152,143]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',246)])	# identified ~2023-08 after checking what is the actual result of the rotation
+	elif int(laser_to_analyse[-9:-4]) > 47174:	# MU03
 		foil_position_dict = dict([('angle',1),('foilcenter',[155,137]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',246)])	# identified ~2023-08 after checking what is the actual result of the rotation
 	elif int(laser_to_analyse[-9:-4]) > 45517:	# MU02
 		foil_position_dict = dict([('angle',1),('foilcenter',[159,137]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',246)])	# identified ~2023-08 after checking what is the actual result of the rotation
