@@ -60,7 +60,7 @@ if False:	# main purpose, show image contrast with wavelength
 	ax[2].axhline(y=300/5,linestyle='--',color='k')
 	ax[2].grid()
 	reflection_temperature = 20
-	min_temp = 30
+	min_temp = 40
 	delta_wave = 3	# I consider a sensor of that measures the wavelengths from start to start+delta_wave
 	delta_t = 1
 	ref_int_time = 0.001
@@ -95,14 +95,17 @@ if False:	# main purpose, show image contrast with wavelength
 		noise = 2#(max(coleval.estimate_counts_std(x0),5)**2+max(coleval.estimate_counts_std(x1),5)**2)**0.5	# noise with no binning
 		noise /= ((min(1/int_time,new_freq)/old_freq)**0.5)
 		noise /= ((new_res_max/old_res_max))	# I assume the additional pixels available scale proportionally in both dimensions, so i have (1/x**2)**0.5 = 1/x reduction of noise, with x=new res / old res
-		temp.append((x1-x0)/x0 * 100)
-		temp1.append(x1)
-		temp2.append((x1-x0)*11000/(max(x0,11000))/noise)
+		temp.append((x1-x0)/x0 * 100)	# this must be the % of counts increase, basically the contrast
+		temp1.append(x1)	# these are the max counts. it has to be lower than the max allowed by the number of bits, usually 14, therefore 2**14=16384. if that is too high the integration time has to decrease accordingly
+		temp2.append((x1-x0)*11000/(max(x0,11000))/noise)	# this is the contrast divided by the noise, with the noise reduced based on increased spatial and temporal resolution. this is scaled to 11000 counts. this is to account that the int time has to be reduced if x0> some value to avoid saturation. here it is scaled so that x0<11000
 	ax[0].plot(wave_range,temp,label='min_t=%.3g, d_w=%.3g, d_t=%.3g, int=%.3g' %(min_temp,delta_wave,delta_t,int_time))
 	ax[1].plot(wave_range,temp1,label='min_t=%.3g, d_w=%.3g, d_t=%.3g, int=%.3g' %(min_temp,delta_wave,delta_t,int_time))
 	ax[2].plot(wave_range,temp2,label='min_t=%.3g, d_w=%.3g, d_t=%.3g, int=%.3g' %(min_temp,delta_wave,delta_t,int_time))
 	ax[1].set_ylim(bottom=1000,top=30000)
 	ax[2].set_ylim(bottom=10)
+	ax[0].set_ylabel('contrast %')
+	ax[1].set_ylabel('counts max')
+	ax[2].set_ylabel('contrast / noise scaled')
 
 	ax[0].legend(loc='best', fontsize='xx-small')
 else:
