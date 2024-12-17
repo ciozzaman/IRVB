@@ -106,6 +106,7 @@ if False:	# main purpose, show image contrast with wavelength
 	ax[0].set_ylabel('contrast %')
 	ax[1].set_ylabel('counts max')
 	ax[2].set_ylabel('contrast / noise scaled')
+	ax[2].set_xlabel('start of the wavelength range [nm]')
 
 	ax[0].legend(loc='best', fontsize='xx-small')
 else:
