@@ -31,7 +31,8 @@ else:	# automatic collection of parameters
 	# cases_to_include = ['laser17','laser18','laser19','laser20','laser21','laser22','laser23','laser24','laser25','laser26','laser27','laser28','laser29','laser30','laser31','laser32','laser33','laser34','laser35','laser36','laser37','laser38','laser39','laser41','laser42','laser43','laser44','laser45','laser46','laser47']
 	# cases_to_include = ['laser34','laser35','laser36','laser37','laser38','laser39']
 	# cases_to_include = ['laser19','laser22','laser30','laser33']
-	cases_to_include = ['laser22','laser33']
+	# cases_to_include = ['laser22','laser33']
+	cases_to_include = ['laserG12','laserG13']
 	all_case_ID = []
 	all_path_reference_frames = []
 	all_laser_to_analyse = []
@@ -60,8 +61,8 @@ parameters_available = f[0]
 parameters_available_int_time = []
 parameters_available_framerate = []
 for path in parameters_available:
-	parameters_available_int_time.append(np.float(path[:path.find('ms')]))
-	parameters_available_framerate.append(np.float(path[path.find('ms')+2:path.find('Hz')]))
+	parameters_available_int_time.append(float(path[:path.find('ms')]))
+	parameters_available_framerate.append(float(path[path.find('ms')+2:path.find('Hz')]))
 parameters_available_int_time = np.array(parameters_available_int_time)
 parameters_available_framerate = np.array(parameters_available_framerate)
 
@@ -79,7 +80,7 @@ parameters_available_framerate = np.array(parameters_available_framerate)
 # background_counts_std = [(np.load(file+'.npz')['data_time_avg_counts_std']) for file in path_reference_frames if np.logical_and(np.abs(np.load(file+'.npz')['FrameRate']-framerate)<framerate/100,np.abs(np.load(file+'.npz')['IntegrationTime']/1000-int_time)<int_time/100)]
 
 
-for i_laser_to_analyse,laser_to_analyse in enumerate([all_laser_to_analyse[0]]):
+for i_laser_to_analyse,laser_to_analyse in enumerate(all_laser_to_analyse):
 	print('STARTING '+laser_to_analyse)
 
 	try:
@@ -98,6 +99,14 @@ for i_laser_to_analyse,laser_to_analyse in enumerate([all_laser_to_analyse[0]]):
 	# laser_dict = np.load(laser_to_analyse+'.npz')
 	# laser_counts, laser_digitizer_ID = coleval.separate_data_with_digitizer(laser_dict)
 	laser_counts = laser_dict['data']
+	if True:
+		gna = median_filter(laser_counts,size=[5,3,3])
+		peak_location = (np.mean(gna,axis=(1,2))).argmax()	# time with highes signal
+		peak_location = np.unravel_index(gna[peak_location].argmax(),np.shape(gna[0]))	# location with highest signal
+		index = (np.mean(gna[:,max(0,peak_location[0]-10):peak_location[0]+10,max(0,peak_location[1]-10):peak_location[1]+10],axis=(1,2))).argmin()
+		gna = gna-gna[index]
+		print(np.nanmax(gna))
+		continue
 	try:
 		laser_counts += laser_dict['data_median']
 	except:

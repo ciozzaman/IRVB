@@ -8,6 +8,7 @@ def temp_function(full_saved_file_dict_FAST):
 		except:
 			full_saved_file_dict_FAST['multi_instrument'] = dict([])
 		grid_resolution = 2	# cm
+
 		try:	# I do this first so I have all the memory I can
 			try:
 				inverted_data_covariance_log = inverted_dict[str(grid_resolution)]['inverted_data_covariance_log']
@@ -300,13 +301,39 @@ def temp_function(full_saved_file_dict_FAST):
 		plt.errorbar(time_full_binned_crop,real_inner_core_radiation_all/1e3,yerr=real_inner_core_radiation_sigma_all/1e3,label='core\naccurate\nno x-point\ninner',capsize=5,elinewidth=1,linestyle='--')
 		plt.errorbar(time_full_binned_crop,real_outer_core_radiation_all/1e3,yerr=real_outer_core_radiation_sigma_all/1e3,label='core\naccurate\nno x-point\nouter',capsize=5,elinewidth=1,linestyle='--')
 		plt.title('shot ' + laser_to_analyse[-9:-4]+' '+scenario+'\nradiated power in the lower half of the machine')
-		plt.ylim(bottom=0,top=median_filter(all_lower_volume_radiation_all,size=[max(1,len(all_lower_volume_radiation_all)//8)*2+1]).max()/1e3)	# arbitrary limit to see better if there is a disruption at the end of the shot
+		plt.ylim(bottom=0,top=median_filter(all_lower_volume_radiation_all,size=[max(1,len(all_lower_volume_radiation_all)//8)*2+1],mode='constant',cval=0).max()/1e3)	# arbitrary limit to see better if there is a disruption at the end of the shot
 		plt.legend(loc='best', fontsize='xx-small')
 		plt.xlabel('time [s]')
 		plt.ylabel('power [kW]')
 		plt.grid()
 		plt.savefig(filename_root+filename_root_add+'_FAST_tot_rad_power.eps')
 		plt.close()
+
+		local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution = coleval.track_outer_leg_radiation(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction)
+		try:
+			peak_location,midpoint_location = coleval.plot_leg_radiation_tracking(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution,filename_root,filename_root_add,laser_to_analyse,scenario,which_leg='outer')
+		except Exception as e:
+			logging.exception('with error: ' + str(e))
+			print('failed to print\n'+'/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_outer_leg_radiation_tracking.eps')
+		inverted_dict[str(grid_resolution)]['local_outer_leg_power'] = local_power_all
+		inverted_dict[str(grid_resolution)]['local_outer_leg_mean_emissivity'] = local_mean_emis_all
+		inverted_dict[str(grid_resolution)]['leg_outer_length_all'] = leg_length_all
+		inverted_dict[str(grid_resolution)]['leg_outer_length_interval_all'] = leg_length_interval_all
+		inverted_dict[str(grid_resolution)]['leg_outer_peak_location'] = peak_location
+		inverted_dict[str(grid_resolution)]['leg_outer_midpoint_location'] = midpoint_location
+
+		local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution = coleval.track_inner_leg_radiation(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction)
+		try:
+			peak_location,midpoint_location = coleval.plot_leg_radiation_tracking(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution,filename_root,filename_root_add,laser_to_analyse,scenario,which_leg='inner')
+		except Exception as e:
+			logging.exception('with error: ' + str(e))
+			print('failed to print\n'+'/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_inner_leg_radiation_tracking.eps')
+		inverted_dict[str(grid_resolution)]['local_inner_leg_power'] = local_power_all
+		inverted_dict[str(grid_resolution)]['local_inner_leg_mean_emissivity'] = local_mean_emis_all
+		inverted_dict[str(grid_resolution)]['leg_inner_length_all'] = leg_length_all
+		inverted_dict[str(grid_resolution)]['leg_inner_length_interval_all'] = leg_length_interval_all
+		inverted_dict[str(grid_resolution)]['leg_inner_peak_location'] = peak_location
+		inverted_dict[str(grid_resolution)]['leg_inner_midpoint_location'] = midpoint_location
 
 		gas = get_gas_info(shotnumber)
 		gas_core = 0.
@@ -361,7 +388,7 @@ def temp_function(full_saved_file_dict_FAST):
 		import subprocess
 		import tempfile
 		from scipy.interpolate import interp1d
-		# 2024/007/02 I have to modify this code, as it works only with python 3.7, and not 3.9.
+		# 2024/07/02 I have to modify this code, as it works only with python 3.7, and not 3.9.
 		# I tried to find a reasonable way to do it, but I couldn't really find it, so I simply skip this entirely if I'm in Python3.9
 		# Note: the code seems to run well also in Python 3.7
 		from mastu_exhaust_analysis.eich_gui import prepare_data_for_Eich_fit_fn_time,Eich_fit_fn_time
@@ -372,25 +399,46 @@ def temp_function(full_saved_file_dict_FAST):
 		lambda_q_compression = (fpol['fpol_upper']/np.sin(fpol['poloidal_angle_upper']))[:,0]
 		lambda_q_compression_upper_interp = interp1d(fpol['time'],lambda_q_compression,fill_value="extrapolate",bounds_error=False)
 
-		if os.path.exists(path_alternate + '/' + 'elp0' + str(shotnumber) + '.nc') or os.path.exists(path_alternate + '/' + 'alp0' + str(shotnumber) + '.nc'):
-			LP_file_path = cp.deepcopy(path_alternate)
-			print('LP file found in '+LP_file_path)
-		elif os.path.exists(FF_LP_path + '/' + 'elp0' + str(shotnumber) + '.nc') or os.path.exists(FF_LP_path + '/' + 'alp0' + str(shotnumber) + '.nc'):
-			LP_file_path = cp.deepcopy(FF_LP_path)
-			print('LP file found in '+LP_file_path)
-		else:
+		# to go from wall coord to s
+		# client=pyuda.Client()
+		limiter=client.geometry("/limiter/efit",50000, no_cal=False)
+		limiter_r=limiter.data.R
+		limiter_z=limiter.data.Z
+		s_lookup=get_s_coords_tables_mastu(limiter_r, limiter_z, ds=1e-4, debug_plot=False)
+		# coleval.reset_connection(client)
+		# del client
+
+		found = False
+		for LP_file_type in ['alp0','elp0']:
+			for LP_file_path in [path_alternate,FF_LP_path]:
+				# print(str([LP_file_path,LP_file_type]))
+				if os.path.exists(LP_file_path + '/' + LP_file_type + str(shotnumber) + '.nc'):
+					found = True
+					break
+			if found:
+				print(LP_file_type + str(shotnumber) + '.nc' + ' found in '+LP_file_path)
+				break
+		# if os.path.exists(path_alternate + '/' + 'elp0' + str(shotnumber) + '.nc') or os.path.exists(path_alternate + '/' + 'alp0' + str(shotnumber) + '.nc'):
+		# 	LP_file_path = cp.deepcopy(path_alternate)
+		# 	print('LP file found in '+LP_file_path)
+		# elif os.path.exists(FF_LP_path + '/' + 'elp0' + str(shotnumber) + '.nc') or os.path.exists(FF_LP_path + '/' + 'alp0' + str(shotnumber) + '.nc'):
+		# 	LP_file_path = cp.deepcopy(FF_LP_path)
+		# 	print('LP file found in '+LP_file_path)
+		if not found:
 			newest_file = None
 			newest_time = None
 			for root, dirs, files in os.walk(path_alternate):
 				# Skip the root folder
 				if root == path_alternate:
 					continue
-				if 'elp0' + str(shotnumber) + '.nc' in files:
-					full_path = os.path.join(root, 'elp0' + str(shotnumber) + '.nc')
-					file_time = os.path.getmtime(full_path)
-					if newest_time is None or file_time > newest_time:
-						newest_time = file_time
-						newest_file = full_path
+				for LP_file_type_int in ['alp0','elp0']:
+					if LP_file_type_int + str(shotnumber) + '.nc' in files:
+						full_path = os.path.join(root, LP_file_type_int + str(shotnumber) + '.nc')
+						file_time = os.path.getmtime(full_path)
+						if newest_time is None or file_time > newest_time:
+							newest_time = file_time
+							newest_file = full_path
+							LP_file_type = cp.deepcopy(LP_file_type_int)
 			if newest_file:
 				LP_file_path = os.path.dirname(newest_file)
 				print('file not found in \n'+path_alternate+  '\n' + FF_LP_path + '\nbut the newest file was found in\n'+LP_file_path)
@@ -408,23 +456,33 @@ def temp_function(full_saved_file_dict_FAST):
 				print('LPs can be real properly only with Pithon 3.7, and it was not used here, so this step is skipped')
 				lambda_q_determination = False
 				# sblu=sgne	# I want an error to occour, as LPs can be real properly only with Pithon 3.7
-			try:
+			# try:
+			# 	fdir = coleval.uda_transfer(shotnumber,'elp',extra_path='/0'+str(shotnumber)[:2])
+			# 	lp_data,output_contour1 = coleval.read_LP_data(shotnumber,path = os.path.split(fdir)[0])
+			# 	os.remove(fdir)
+			# except:
+			# 	lp_data,output_contour1 = coleval.read_LP_data(shotnumber,path=LP_file_path)
+			try:	# considering that Peter just (12/02/2025) renwed the analisys code and is saving the files locally, I look at that first now
+				lp_data,output_contour1 = coleval.read_LP_data(shotnumber,path=LP_file_path,LP_file_type=LP_file_type)
+			except:
 				fdir = coleval.uda_transfer(shotnumber,'elp',extra_path='/0'+str(shotnumber)[:2])
 				lp_data,output_contour1 = coleval.read_LP_data(shotnumber,path = os.path.split(fdir)[0])
 				os.remove(fdir)
-			except:
-				lp_data,output_contour1 = coleval.read_LP_data(shotnumber,path=LP_file_path)
 			if True:	# use ot Peter Ryan function to combine data within time slice and to filter when strike point is on a dead channel
 				temp = np.logical_and(time_full_binned_crop>output_contour1['time'][0][0].min(),time_full_binned_crop<output_contour1['time'][0][0].max())
 				trange = tuple(map(list, np.array([time_full_binned_crop[temp] - np.mean(np.diff(time_full_binned_crop))/2,time_full_binned_crop[temp] + np.mean(np.diff(time_full_binned_crop))/2]).T))
+				# LP_lambdaq_time = np.mean(trange,axis=1)
 				try:
 					output_contour1=lp_data.contour_plot(trange=[0,1.5],bad_probes=None,divertor='lower', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T1','T2','T3','T4','T5'],show=False)
 					temp = output_contour1['y'][0][0]
+					temp = generic_filter(temp,np.nanmean,size=(int(0.002/np.diff(output_contour1['time'][0][0]).mean()),1))	# this is a way to fix that there are sometimes 6 nans for each good data point. i smooth ver 2ms, just to make sure
 					temp[np.isnan(temp)] = 0
-					for i_,probe_name in enumerate(output_contour1['probe_name'][0][0]):
-						if probe_name in badLPs_V0:
-							temp[:,i_] = 0
-					s10_lower_good_probes = np.nanmax(median_filter((temp>0.005),size=[5,1]),axis=0)	# threshold for broken probes
+					if shotnumber < 45514:	# 21/02/2025 Peter told me the the bad probes issue arises only in MU01 as most of it was dome in swept mode. from late MU01 onward he only did Isat mode, that does not have this issue
+						for i_,probe_name in enumerate(output_contour1['probe_name'][0][0]):
+							if probe_name in badLPs_V0:
+								temp[:,i_] = 0
+					# s10_lower_good_probes = np.nanmax(median_filter((temp>0.005),size=[5,1]),axis=0)	# threshold for broken probes
+					s10_lower_good_probes = np.nanmax(median_filter((temp>0.005),size=[int((0.015/(np.diff(output_contour1['time'][0][0]).mean()))//2*2+1),1]),axis=0)	# threshold for broken probes	# I change the median interval from 5 data point to the equivalent to 10ms, just to be sure that there is enough data
 					s10_lower_s = output_contour1['s'][0][0]
 					s10_lower_r = output_contour1['R'][0][0]
 					s10_lower_z = output_contour1['Z'][0][0]
@@ -445,12 +503,16 @@ def temp_function(full_saved_file_dict_FAST):
 
 						lambda_q_compression = lambda_q_compression_lower_interp(time_all_finite)
 						lambda_q_10_lower = fit_store['lambda_q']/lambda_q_compression
-						lambda_q_10_lower = lambda_q_10_lower[fit_store['acceptable_fit'].astype(bool)]
-						lambda_q_10_lower_sigma = fit_store['lambda_q_err']/lambda_q_compression
-						lambda_q_10_lower_sigma = lambda_q_10_lower_sigma[fit_store['acceptable_fit'].astype(bool)]
-						time_all_finite = time_all_finite[fit_store['acceptable_fit'].astype(bool)]
-						lambda_q_10_lower = [lambda_q_10_lower[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
-						lambda_q_10_lower_sigma = [lambda_q_10_lower_sigma[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
+						if not len(lambda_q_10_lower)==0:	# this means that there was no data to fit
+							lambda_q_10_lower = lambda_q_10_lower[fit_store['acceptable_fit'].astype(bool)]
+							lambda_q_10_lower_sigma = fit_store['lambda_q_err']/lambda_q_compression
+							lambda_q_10_lower_sigma = lambda_q_10_lower_sigma[fit_store['acceptable_fit'].astype(bool)]
+							time_all_finite = time_all_finite[fit_store['acceptable_fit'].astype(bool)]
+							lambda_q_10_lower = [lambda_q_10_lower[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
+							lambda_q_10_lower_sigma = [lambda_q_10_lower_sigma[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
+						else:
+							lambda_q_10_lower = np.ones((len(time_full_binned_crop)))*np.nan
+							lambda_q_10_lower_sigma = np.ones((len(time_full_binned_crop)))*np.nan
 						if False:
 							# plt.figure()
 							# for i in range(len(Eich)):
@@ -472,18 +534,21 @@ def temp_function(full_saved_file_dict_FAST):
 					s10_lower_jsat_sigma = np.zeros((len(trange),10))
 					s10_lower_jsat_r = np.zeros((len(trange),10))
 					s10_lower_jsat_s = np.zeros((len(trange),10))
-					lambda_q_10_lower = np.ones((len(trange)))*np.nan
-					lambda_q_10_lower_sigma = np.ones((len(trange)))*np.nan
+					lambda_q_10_lower = np.ones((len(time_full_binned_crop)))*np.nan
+					lambda_q_10_lower_sigma = np.ones((len(time_full_binned_crop)))*np.nan
 				plt.close('all')
 
 				try:
 					output_contour1=lp_data.contour_plot(trange=[0,1.5],bad_probes=None,divertor='lower', sectors=4, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],show=False)
 					temp = output_contour1['y'][0][0]
+					temp = generic_filter(temp,np.nanmean,size=(int(0.002/np.diff(output_contour1['time'][0][0]).mean()),1))	# this is a way to fix that there are sometimes 6 nans for each good data point. i smooth ver 2ms, just to make sure
 					temp[np.isnan(temp)] = 0
-					for i_,probe_name in enumerate(output_contour1['probe_name'][0][0]):
-						if probe_name in badLPs_V0:
-							temp[:,i_] = 0
-					s4_lower_good_probes = np.nanmax(median_filter((temp>0.005),size=[1,5]),axis=0)	# threshold for broken probes
+					if shotnumber < 45514:	# 21/02/2025 Peter told me the the bad probes issue arises only in MU01 as most of it was dome in swept mode. from late MU01 onward he only did Isat mode, that does not have this issue
+						for i_,probe_name in enumerate(output_contour1['probe_name'][0][0]):
+							if probe_name in badLPs_V0:
+								temp[:,i_] = 0
+					# s4_lower_good_probes = np.nanmax(median_filter((temp>0.005),size=[1,5]),axis=0)	# threshold for broken probes
+					s4_lower_good_probes = np.nanmax(median_filter((temp>0.005),size=[int((0.015/(np.diff(output_contour1['time'][0][0]).mean()))//2*2+1),1]),axis=0)	# threshold for broken probes	# I change the median interval from 5 data point to the equivalent to 10ms, just to be sure that there is enough data
 					s4_lower_s = output_contour1['s'][0][0]
 					s4_lower_r = output_contour1['R'][0][0]
 					s4_lower_z = output_contour1['Z'][0][0]
@@ -504,12 +569,16 @@ def temp_function(full_saved_file_dict_FAST):
 
 						lambda_q_compression = lambda_q_compression_lower_interp(time_all_finite)
 						lambda_q_4_lower = fit_store['lambda_q']/lambda_q_compression
-						lambda_q_4_lower = lambda_q_4_lower[fit_store['acceptable_fit'].astype(bool)]
-						lambda_q_4_lower_sigma = fit_store['lambda_q_err']/lambda_q_compression
-						lambda_q_4_lower_sigma = lambda_q_4_lower_sigma[fit_store['acceptable_fit'].astype(bool)]
-						time_all_finite = time_all_finite[fit_store['acceptable_fit'].astype(bool)]
-						lambda_q_4_lower = [lambda_q_4_lower[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
-						lambda_q_4_lower_sigma = [lambda_q_4_lower_sigma[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
+						if not len(lambda_q_4_lower)==0:	# this means that there was no data to fit
+							lambda_q_4_lower = lambda_q_4_lower[fit_store['acceptable_fit'].astype(bool)]
+							lambda_q_4_lower_sigma = fit_store['lambda_q_err']/lambda_q_compression
+							lambda_q_4_lower_sigma = lambda_q_4_lower_sigma[fit_store['acceptable_fit'].astype(bool)]
+							time_all_finite = time_all_finite[fit_store['acceptable_fit'].astype(bool)]
+							lambda_q_4_lower = [lambda_q_4_lower[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
+							lambda_q_4_lower_sigma = [lambda_q_4_lower_sigma[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
+						else:
+							lambda_q_4_lower = np.ones((len(time_full_binned_crop)))*np.nan
+							lambda_q_4_lower_sigma = np.ones((len(time_full_binned_crop)))*np.nan
 				except:
 					s4_lower_good_probes = np.zeros((10)).astype(bool)
 					s4_lower_s = np.zeros((10))
@@ -519,18 +588,21 @@ def temp_function(full_saved_file_dict_FAST):
 					s4_lower_jsat_sigma = np.zeros((len(trange),10))
 					s4_lower_jsat_r = np.zeros((len(trange),10))
 					s4_lower_jsat_s = np.zeros((len(trange),10))
-					lambda_q_4_lower = np.ones((len(trange)))*np.nan
-					lambda_q_4_lower_sigma = np.ones((len(trange)))*np.nan
+					lambda_q_4_lower = np.ones((len(time_full_binned_crop)))*np.nan
+					lambda_q_4_lower_sigma = np.ones((len(time_full_binned_crop)))*np.nan
 					plt.close('all')
 
 				try:
 					output_contour1=lp_data.contour_plot(trange=[0,1.5],bad_probes=None,divertor='upper', sectors=4, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],show=False)
 					temp = output_contour1['y'][0][0]
+					temp = generic_filter(temp,np.nanmean,size=(int(0.002/np.diff(output_contour1['time'][0][0]).mean()),1))	# this is a way to fix that there are sometimes 6 nans for each good data point. i smooth ver 2ms, just to make sure
 					temp[np.isnan(temp)] = 0
-					for i_,probe_name in enumerate(output_contour1['probe_name'][0][0]):
-						if probe_name in badLPs_V0:
-							temp[:,i_] = 0
-					s4_upper_good_probes = np.nanmax(median_filter((temp>0.005),size=[1,5]),axis=0)	# threshold for broken probes
+					if shotnumber < 45514:	# 21/02/2025 Peter told me the the bad probes issue arises only in MU01 as most of it was dome in swept mode. from late MU01 onward he only did Isat mode, that does not have this issue
+						for i_,probe_name in enumerate(output_contour1['probe_name'][0][0]):
+							if probe_name in badLPs_V0:
+								temp[:,i_] = 0
+					# s4_upper_good_probes = np.nanmax(median_filter((temp>0.005),size=[1,5]),axis=0)	# threshold for broken probes
+					s4_upper_good_probes = np.nanmax(median_filter((temp>0.005),size=[int((0.015/(np.diff(output_contour1['time'][0][0]).mean()))//2*2+1),1]),axis=0)	# threshold for broken probes	# I change the median interval from 5 data point to the equivalent to 10ms, just to be sure that there is enough data
 					s4_upper_s = output_contour1['s'][0][0]
 					s4_upper_r = output_contour1['R'][0][0]
 					s4_upper_z = output_contour1['Z'][0][0]
@@ -551,12 +623,16 @@ def temp_function(full_saved_file_dict_FAST):
 
 						lambda_q_compression = lambda_q_compression_upper_interp(time_all_finite)
 						lambda_q_4_upper = fit_store['lambda_q']/lambda_q_compression
-						lambda_q_4_upper = lambda_q_4_upper[fit_store['acceptable_fit'].astype(bool)]
-						lambda_q_4_upper_sigma = fit_store['lambda_q_err']/lambda_q_compression
-						lambda_q_4_upper_sigma = lambda_q_4_upper_sigma[fit_store['acceptable_fit'].astype(bool)]
-						time_all_finite = time_all_finite[fit_store['acceptable_fit'].astype(bool)]
-						lambda_q_4_upper = [lambda_q_4_upper[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
-						lambda_q_4_upper_sigma = [lambda_q_4_upper_sigma[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
+						if not len(lambda_q_4_upper)==0:	# this means that there was no data to fit
+							lambda_q_4_upper = lambda_q_4_upper[fit_store['acceptable_fit'].astype(bool)]
+							lambda_q_4_upper_sigma = fit_store['lambda_q_err']/lambda_q_compression
+							lambda_q_4_upper_sigma = lambda_q_4_upper_sigma[fit_store['acceptable_fit'].astype(bool)]
+							time_all_finite = time_all_finite[fit_store['acceptable_fit'].astype(bool)]
+							lambda_q_4_upper = [lambda_q_4_upper[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
+							lambda_q_4_upper_sigma = [lambda_q_4_upper_sigma[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
+						else:
+							lambda_q_4_upper = np.ones((len(time_full_binned_crop)))*np.nan
+							lambda_q_4_upper_sigma = np.ones((len(time_full_binned_crop)))*np.nan
 				except:
 					s4_upper_good_probes = np.zeros((10)).astype(bool)
 					s4_upper_s = np.zeros((10))
@@ -565,18 +641,21 @@ def temp_function(full_saved_file_dict_FAST):
 					s4_upper_jsat_sigma = np.zeros((len(trange),10))
 					s4_upper_jsat_r = np.zeros((len(trange),10))
 					s4_upper_jsat_s = np.zeros((len(trange),10))
-					lambda_q_4_upper = np.ones((len(trange)))*np.nan
-					lambda_q_4_upper_sigma = np.ones((len(trange)))*np.nan
+					lambda_q_4_upper = np.ones((len(time_full_binned_crop)))*np.nan
+					lambda_q_4_upper_sigma = np.ones((len(time_full_binned_crop)))*np.nan
 				plt.close('all')
 
 				try:
 					output_contour1=lp_data.contour_plot(trange=[0,1.5],bad_probes=None,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4'],show=False)
 					temp = output_contour1['y'][0][0]
+					temp = generic_filter(temp,np.nanmean,size=(int(0.002/np.diff(output_contour1['time'][0][0]).mean()),1))	# this is a way to fix that there are sometimes 6 nans for each good data point. i smooth ver 2ms, just to make sure
 					temp[np.isnan(temp)] = 0
-					for i_,probe_name in enumerate(output_contour1['probe_name'][0][0]):
-						if probe_name in badLPs_V0:
-							temp[:,i_] = 0
-					s10_upper_std_good_probes = np.nanmax(median_filter((temp>0.005),size=[1,5]),axis=0)	# threshold for broken probes
+					if shotnumber < 45514:	# 21/02/2025 Peter told me the the bad probes issue arises only in MU01 as most of it was dome in swept mode. from late MU01 onward he only did Isat mode, that does not have this issue
+						for i_,probe_name in enumerate(output_contour1['probe_name'][0][0]):
+							if probe_name in badLPs_V0:
+								temp[:,i_] = 0
+					# s10_upper_std_good_probes = np.nanmax(median_filter((temp>0.005),size=[1,5]),axis=0)	# threshold for broken probes
+					s10_upper_std_good_probes = np.nanmax(median_filter((temp>0.005),size=[int((0.015/(np.diff(output_contour1['time'][0][0]).mean()))//2*2+1),1]),axis=0)	# threshold for broken probes	# I change the median interval from 5 data point to the equivalent to 10ms, just to be sure that there is enough data
 					s10_upper_std_s = output_contour1['s'][0][0]
 					s10_upper_std_r = output_contour1['R'][0][0]
 					s10_upper_std_z = output_contour1['Z'][0][0]
@@ -597,12 +676,16 @@ def temp_function(full_saved_file_dict_FAST):
 
 						lambda_q_compression = lambda_q_compression_upper_interp(time_all_finite)
 						lambda_q_10_upper = fit_store['lambda_q']/lambda_q_compression
-						lambda_q_10_upper = lambda_q_10_upper[fit_store['acceptable_fit'].astype(bool)]
-						lambda_q_10_upper_sigma = fit_store['lambda_q_err']/lambda_q_compression
-						lambda_q_10_upper_sigma = lambda_q_10_upper_sigma[fit_store['acceptable_fit'].astype(bool)]
-						time_all_finite = time_all_finite[fit_store['acceptable_fit'].astype(bool)]
-						lambda_q_10_upper = [lambda_q_10_upper[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
-						lambda_q_10_upper_sigma = [lambda_q_10_upper_sigma[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
+						if not len(lambda_q_10_upper)==0:	# this means that there was no data to fit
+							lambda_q_10_upper = lambda_q_10_upper[fit_store['acceptable_fit'].astype(bool)]
+							lambda_q_10_upper_sigma = fit_store['lambda_q_err']/lambda_q_compression
+							lambda_q_10_upper_sigma = lambda_q_10_upper_sigma[fit_store['acceptable_fit'].astype(bool)]
+							time_all_finite = time_all_finite[fit_store['acceptable_fit'].astype(bool)]
+							lambda_q_10_upper = [lambda_q_10_upper[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
+							lambda_q_10_upper_sigma = [lambda_q_10_upper_sigma[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
+						else:
+							lambda_q_10_upper = np.ones((len(time_full_binned_crop)))*np.nan
+							lambda_q_10_upper_sigma = np.ones((len(time_full_binned_crop)))*np.nan
 				except:
 					s10_upper_std_good_probes = np.zeros((10)).astype(bool)
 					s10_upper_std_s = np.zeros((10))
@@ -611,18 +694,21 @@ def temp_function(full_saved_file_dict_FAST):
 					s10_upper_std_jsat_sigma = np.zeros((len(trange),10))
 					s10_upper_std_jsat_r = np.zeros((len(trange),10))
 					s10_upper_std_jsat_s = np.zeros((len(trange),10))
-					lambda_q_10_upper = np.ones((len(trange)))*np.nan
-					lambda_q_10_upper_sigma = np.ones((len(trange)))*np.nan
+					lambda_q_10_upper = np.ones((len(time_full_binned_crop)))*np.nan
+					lambda_q_10_upper_sigma = np.ones((len(time_full_binned_crop)))*np.nan
 				plt.close('all')
 
 				try:
 					output_contour1=lp_data.contour_plot(trange=[0,1.5],bad_probes=None,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['T5'],show=False)
 					temp = output_contour1['y'][0][0]
+					temp = generic_filter(temp,np.nanmean,size=(int(0.002/np.diff(output_contour1['time'][0][0]).mean()),1))	# this is a way to fix that there are sometimes 6 nans for each good data point. i smooth ver 2ms, just to make sure
 					temp[np.isnan(temp)] = 0
-					for i_,probe_name in enumerate(output_contour1['probe_name'][0][0]):
-						if probe_name in badLPs_V0:
-							temp[:,i_] = 0
-					s10_upper_large_good_probes = np.nanmax(median_filter((temp>0.005),size=[1,5]),axis=0)	# threshold for broken probes
+					if shotnumber < 45514:	# 21/02/2025 Peter told me the the bad probes issue arises only in MU01 as most of it was dome in swept mode. from late MU01 onward he only did Isat mode, that does not have this issue
+						for i_,probe_name in enumerate(output_contour1['probe_name'][0][0]):
+							if probe_name in badLPs_V0:
+								temp[:,i_] = 0
+					# s10_upper_large_good_probes = np.nanmax(median_filter((temp>0.005),size=[1,5]),axis=0)	# threshold for broken probes
+					s10_upper_large_good_probes = np.nanmax(median_filter((temp>0.005),size=[int((0.015/(np.diff(output_contour1['time'][0][0]).mean()))//2*2+1),1]),axis=0)	# threshold for broken probes	# I change the median interval from 5 data point to the equivalent to 10ms, just to be sure that there is enough data
 					s10_upper_large_s = output_contour1['s'][0][0]
 					s10_upper_large_r = output_contour1['R'][0][0]
 					s10_upper_large_z = output_contour1['Z'][0][0]
@@ -647,8 +733,7 @@ def temp_function(full_saved_file_dict_FAST):
 				plt.close('all')
 
 				closeness_limit_to_dead_channels = 0.01	# m
-				s10_lower_s,s4_lower_s,s4_upper_s,s10_upper_std_s,s10_upper_large_s
-				closeness_limit_for_good_channels = np.median(np.abs(np.diff(s10_lower_s).tolist()+np.diff(s4_lower_s).tolist()+np.diff(s4_upper_s).tolist()+np.diff(s10_upper_std_s).tolist()+np.diff(s10_upper_large_s).tolist()))*5
+				closeness_limit_for_good_channels = np.median(np.abs(np.diff(s10_lower_s).tolist()+np.diff(s4_lower_s).tolist()+np.diff(s4_upper_s).tolist()+np.diff(s10_upper_std_s).tolist()+np.diff(s10_upper_large_s).tolist()))*2	# *5
 				jsat_upper_inner_small_max = []
 				jsat_upper_outer_small_max = []
 				jsat_upper_inner_mid_max = []
@@ -781,19 +866,34 @@ def temp_function(full_saved_file_dict_FAST):
 					i_time = np.abs(time-np.mean(trange,axis=1)).argmin()
 
 					i_efit_time = np.abs(efit_reconstruction.time-time).argmin()
-					inner_strike_point = [np.min(efit_reconstruction.strikepointR[i_efit_time][:2]),0]
+					inner_strike_point = [np.min(efit_reconstruction.strikepointR[i_efit_time][:2]),0,0]
 					inner_strike_point[1] = -efit_reconstruction.strikepointZ[i_efit_time][np.abs(efit_reconstruction.strikepointR[i_efit_time]-inner_strike_point[0]).argmin()]
-					outer_strike_point = [np.max(efit_reconstruction.strikepointR[i_efit_time][:2]),0]
+					temp = get_nearest_s_coordinates_mastu([inner_strike_point[0]],[inner_strike_point[1]],s_lookup, tol=5e-1)
+					inner_strike_point[2] = np.abs(temp[0][0])	# this is all info for the upper divertor [R,Z,s]
+					outer_strike_point = [np.max(efit_reconstruction.strikepointR[i_efit_time][:2]),0,0]
 					outer_strike_point[1] = -efit_reconstruction.strikepointZ[i_efit_time][np.abs(efit_reconstruction.strikepointR[i_efit_time]-outer_strike_point[0]).argmin()]
-					mid_strike_point = [np.mean(efit_reconstruction.strikepointR[i_efit_time][:2]),-np.mean(efit_reconstruction.strikepointZ[i_efit_time][:2])]
+					temp = get_nearest_s_coordinates_mastu([outer_strike_point[0]],[outer_strike_point[1]],s_lookup, tol=5e-1)
+					outer_strike_point[2] = np.abs(temp[0][0])	# this is all info for the upper divertor [R,Z,s]
+					mid_strike_point = [np.mean(efit_reconstruction.strikepointR[i_efit_time][:2]),-np.mean(efit_reconstruction.strikepointZ[i_efit_time][:2]),0]
+					temp = get_nearest_s_coordinates_mastu([mid_strike_point[0]],[mid_strike_point[1]],s_lookup, tol=5e-1)
+					mid_strike_point[2] = np.abs(temp[0][0])	# this is all info for the upper divertor [R,Z,s]
 
-					# upper
-					s4_upper_inner_test = np.sum(np.logical_not(s4_upper_good_probes)[np.abs(s4_upper_r-inner_strike_point[0])<closeness_limit_to_dead_channels])==0 and np.sum(s4_upper_good_probes[np.abs(s4_upper_r-inner_strike_point[0])<closeness_limit_for_good_channels])>0
-					s10_upper_std_inner_test = np.sum(np.logical_not(s10_upper_std_good_probes)[np.abs(s10_upper_std_r-inner_strike_point[0])<closeness_limit_to_dead_channels])==0 and np.sum(s10_upper_std_good_probes[np.abs(s10_upper_std_r-inner_strike_point[0])<closeness_limit_for_good_channels])>0
-					s10_upper_large_inner_test = np.sum(np.logical_not(s10_upper_large_good_probes)[np.abs(s10_upper_large_r-inner_strike_point[0])<closeness_limit_to_dead_channels])==0 and np.sum(s10_upper_large_good_probes[np.abs(s10_upper_large_r-inner_strike_point[0])<closeness_limit_for_good_channels])>0
-					s4_upper_outer_test = np.sum(np.logical_not(s4_upper_good_probes)[np.abs(s4_upper_r-outer_strike_point[0])<closeness_limit_to_dead_channels])==0 and np.sum(s4_upper_good_probes[np.abs(s4_upper_r-outer_strike_point[0])<closeness_limit_for_good_channels])>0
-					s10_upper_std_outer_test = np.sum(np.logical_not(s10_upper_std_good_probes)[np.abs(s10_upper_std_r-outer_strike_point[0])<closeness_limit_to_dead_channels])==0 and np.sum(s10_upper_std_good_probes[np.abs(s10_upper_std_r-outer_strike_point[0])<closeness_limit_for_good_channels])>0
-					s10_upper_large_outer_test = np.sum(np.logical_not(s10_upper_large_good_probes)[np.abs(s10_upper_large_r-outer_strike_point[0])<closeness_limit_to_dead_channels])==0 and np.sum(s10_upper_large_good_probes[np.abs(s10_upper_large_r-outer_strike_point[0])<closeness_limit_for_good_channels])>0
+					# upper divertor
+					# 19/02/2025 I split the second condition so that I need close good plobes on both sides of the strike point to be able to say anything
+					# inner SP
+					temp = s4_upper_s-inner_strike_point[2]
+					s4_upper_inner_test = np.sum(np.logical_not(s4_upper_good_probes)[np.abs(temp)<closeness_limit_to_dead_channels])==0 and np.sum(s4_upper_good_probes[np.logical_and(temp>0 , np.abs(temp)<closeness_limit_for_good_channels)])>0 and np.sum(s4_upper_good_probes[np.logical_and(temp<0 , np.abs(temp)<closeness_limit_for_good_channels)])>0
+					temp = s10_upper_std_s-inner_strike_point[2]
+					s10_upper_std_inner_test = np.sum(np.logical_not(s10_upper_std_good_probes)[np.abs(temp)<closeness_limit_to_dead_channels])==0 and np.sum(s10_upper_std_good_probes[np.logical_and(temp>0 , np.abs(temp)<closeness_limit_for_good_channels)])>0 and np.sum(s10_upper_std_good_probes[np.logical_and(temp<0 , np.abs(temp)<closeness_limit_for_good_channels)])>0
+					temp = s10_upper_large_s-inner_strike_point[2]
+					s10_upper_large_inner_test = np.sum(np.logical_not(s10_upper_large_good_probes)[np.abs(temp)<closeness_limit_to_dead_channels])==0 and np.sum(s10_upper_large_good_probes[np.logical_and(temp>0 , np.abs(temp)<closeness_limit_for_good_channels)])>0 and np.sum(s10_upper_large_good_probes[np.logical_and(temp<0 , np.abs(temp)<closeness_limit_for_good_channels)])>0
+					# outer SP
+					temp = s4_upper_s-outer_strike_point[2]
+					s4_upper_outer_test = np.sum(np.logical_not(s4_upper_good_probes)[np.abs(temp)<closeness_limit_to_dead_channels])==0 and np.sum(s4_upper_good_probes[np.logical_and(temp>0 , np.abs(temp)<closeness_limit_for_good_channels)])>0 and np.sum(s4_upper_good_probes[np.logical_and(temp<0 , np.abs(temp)<closeness_limit_for_good_channels)])>0
+					temp = s10_upper_std_s-outer_strike_point[2]
+					s10_upper_std_outer_test = np.sum(np.logical_not(s10_upper_std_good_probes)[np.abs(temp)<closeness_limit_to_dead_channels])==0 and np.sum(s10_upper_std_good_probes[np.logical_and(temp>0 , np.abs(temp)<closeness_limit_for_good_channels)])>0 and np.sum(s10_upper_std_good_probes[np.logical_and(temp<0 , np.abs(temp)<closeness_limit_for_good_channels)])>0
+					temp = s10_upper_large_s-outer_strike_point[2]
+					s10_upper_large_outer_test = np.sum(np.logical_not(s10_upper_large_good_probes)[np.abs(temp)<closeness_limit_to_dead_channels])==0 and np.sum(s10_upper_large_good_probes[np.logical_and(temp>0 , np.abs(temp)<closeness_limit_for_good_channels)])>0 and np.sum(s10_upper_large_good_probes[np.logical_and(temp<0 , np.abs(temp)<closeness_limit_for_good_channels)])>0
 
 					jsat_upper_inner_small_max.append(0)
 					jsat_upper_inner_small_max_sigma.append(0)
@@ -803,6 +903,7 @@ def temp_function(full_saved_file_dict_FAST):
 					jsat_upper_inner_small_integrated_sigma.append(0)
 					jsat_upper_outer_small_integrated.append(0)
 					jsat_upper_outer_small_integrated_sigma.append(0)
+
 					temp = [np.nan]
 					if s4_upper_inner_test:
 						temp = np.concatenate([[0],temp,s4_upper_jsat[i_time][s4_upper_jsat_r[i_time]<mid_strike_point[0]]])
@@ -815,11 +916,18 @@ def temp_function(full_saved_file_dict_FAST):
 						temp_sigma = np.concatenate([[0],temp_sigma,s10_upper_std_jsat_sigma[i_time][s10_upper_std_jsat_r[i_time]<mid_strike_point[0]]])
 					jsat_upper_inner_mid_max.append(np.nanmax(temp))
 					jsat_upper_inner_mid_max_sigma.append(temp_sigma[np.nanargmax(np.concatenate([temp,[-np.inf]]))])
-					temp = 0
+
+					temp = [np.nan]
+					temp_sigma_extra = 0
 					if s4_upper_inner_test:
-						temp = np.nanmax([temp,np.trapz(s4_upper_jsat[i_time][s4_upper_jsat_r[i_time]<mid_strike_point[0]]*2*np.pi*s4_upper_jsat_r[i_time][s4_upper_jsat_r[i_time]<mid_strike_point[0]],x=s4_upper_jsat_s[i_time][s4_upper_jsat_r[i_time]<mid_strike_point[0]])])
+						temp.append( np.trapz(s4_upper_jsat[i_time][s4_upper_jsat_r[i_time]<mid_strike_point[0]]*2*np.pi*s4_upper_jsat_r[i_time][s4_upper_jsat_r[i_time]<mid_strike_point[0]],x=s4_upper_jsat_s[i_time][s4_upper_jsat_r[i_time]<mid_strike_point[0]]) )
 					if s10_upper_std_inner_test:	# I should consider them independently, but s10 upper has too many dead channes and it's not trustworthy on its own
-						temp = np.nanmax([temp,np.trapz(s10_upper_std_jsat[i_time][s10_upper_std_jsat_r[i_time]<mid_strike_point[0]]*2*np.pi*s10_upper_std_jsat_r[i_time][s10_upper_std_jsat_r[i_time]<mid_strike_point[0]],x=s10_upper_std_jsat_s[i_time][s10_upper_std_jsat_r[i_time]<mid_strike_point[0]])])
+						temp.append( np.trapz(s10_upper_std_jsat[i_time][s10_upper_std_jsat_r[i_time]<mid_strike_point[0]]*2*np.pi*s10_upper_std_jsat_r[i_time][s10_upper_std_jsat_r[i_time]<mid_strike_point[0]],x=s10_upper_std_jsat_s[i_time][s10_upper_std_jsat_r[i_time]<mid_strike_point[0]]) )
+					if np.nanmax(temp) - np.nanmin(temp)<np.nanmean(temp)/2:	# step added to see if averaging among the 2 sectors rather than taking the max matters
+						temp_sigma_extra = np.nanmax(temp) - np.nanmin(temp)
+						temp =np.nanmean(temp)
+					else:
+						temp = np.nan
 					if not(s4_upper_inner_test) and not(s10_upper_std_inner_test):
 						temp = np.nan
 					temp_sigma = 0
@@ -830,7 +938,8 @@ def temp_function(full_saved_file_dict_FAST):
 					if not(s4_upper_inner_test) and not(s10_upper_std_inner_test):
 						temp_sigma = np.nan
 					jsat_upper_inner_mid_integrated.append(temp)
-					jsat_upper_inner_mid_integrated_sigma.append(temp_sigma**0.5)
+					jsat_upper_inner_mid_integrated_sigma.append(max(temp_sigma**0.5,temp_sigma_extra))
+
 					temp = [np.nan]
 					if s4_upper_outer_test:
 						temp = np.concatenate([[0],temp,s4_upper_jsat[i_time][s4_upper_jsat_r[i_time]>mid_strike_point[0]]])
@@ -843,11 +952,18 @@ def temp_function(full_saved_file_dict_FAST):
 						temp_sigma = np.concatenate([[0],temp_sigma,s10_upper_std_jsat_sigma[i_time][s10_upper_std_jsat_r[i_time]>mid_strike_point[0]]])
 					jsat_upper_outer_mid_max.append(np.nanmax(temp))
 					jsat_upper_outer_mid_max_sigma.append(temp_sigma[np.nanargmax(np.concatenate([temp,[-np.inf]]))])
-					temp = 0
+
+					temp = [np.nan]
+					temp_sigma_extra = 0
 					if s4_upper_outer_test:
-						temp = np.nanmax([temp,np.trapz(s4_upper_jsat[i_time][s4_upper_jsat_r[i_time]>mid_strike_point[0]]*2*np.pi*s4_upper_jsat_r[i_time][s4_upper_jsat_r[i_time]>mid_strike_point[0]],x=s4_upper_jsat_s[i_time][s4_upper_jsat_r[i_time]>mid_strike_point[0]])])
+						temp.append( np.trapz(s4_upper_jsat[i_time][s4_upper_jsat_r[i_time]>mid_strike_point[0]]*2*np.pi*s4_upper_jsat_r[i_time][s4_upper_jsat_r[i_time]>mid_strike_point[0]],x=s4_upper_jsat_s[i_time][s4_upper_jsat_r[i_time]>mid_strike_point[0]]) )
 					if s10_upper_std_outer_test:	# I should consider them independently, but s10 upper has too many dead channes and it's not trustworthy on its own
-						temp = np.nanmax([temp,np.trapz(s10_upper_std_jsat[i_time][s10_upper_std_jsat_r[i_time]>mid_strike_point[0]]*2*np.pi*s10_upper_std_jsat_r[i_time][s10_upper_std_jsat_r[i_time]>mid_strike_point[0]],x=s10_upper_std_jsat_s[i_time][s10_upper_std_jsat_r[i_time]>mid_strike_point[0]])])
+						temp.append( np.trapz(s10_upper_std_jsat[i_time][s10_upper_std_jsat_r[i_time]>mid_strike_point[0]]*2*np.pi*s10_upper_std_jsat_r[i_time][s10_upper_std_jsat_r[i_time]>mid_strike_point[0]],x=s10_upper_std_jsat_s[i_time][s10_upper_std_jsat_r[i_time]>mid_strike_point[0]]) )
+					if np.nanmax(temp) - np.nanmin(temp)<np.nanmean(temp)/2:	# step added to see if averaging among the 2 sectors rather than taking the max matters
+						temp_sigma_extra = np.nanmax(temp) - np.nanmin(temp)
+						temp =np.nanmean(temp)
+					else:
+						temp = np.nan
 					if not(s4_upper_outer_test) and not(s10_upper_std_outer_test):
 						temp = np.nan
 					temp_sigma = 0
@@ -858,7 +974,7 @@ def temp_function(full_saved_file_dict_FAST):
 					if not(s4_upper_outer_test) and not(s10_upper_std_outer_test):
 						temp_sigma = np.nan
 					jsat_upper_outer_mid_integrated.append(temp)
-					jsat_upper_outer_mid_integrated_sigma.append(temp_sigma**0.5)
+					jsat_upper_outer_mid_integrated_sigma.append(max(temp_sigma**0.5,temp_sigma_extra))
 
 					temp = [np.nan]
 					if s10_upper_large_inner_test:
@@ -868,6 +984,7 @@ def temp_function(full_saved_file_dict_FAST):
 						temp_sigma = np.concatenate([[0],temp_sigma,s10_upper_large_jsat_sigma[i_time][s10_upper_large_jsat_r[i_time]<mid_strike_point[0]]])
 					jsat_upper_inner_large_max.append(np.nanmax(temp))
 					jsat_upper_inner_large_max_sigma.append(temp_sigma[np.nanargmax(np.concatenate([temp,[-np.inf]]))])
+
 					temp = 0
 					if s10_upper_large_inner_test:
 						temp += np.trapz(s10_upper_large_jsat[i_time][s10_upper_large_jsat_r[i_time]<mid_strike_point[0]]*2*np.pi*s10_upper_large_jsat_r[i_time][s10_upper_large_jsat_r[i_time]<mid_strike_point[0]],x=s10_upper_large_jsat_s[i_time][s10_upper_large_jsat_r[i_time]<mid_strike_point[0]])
@@ -880,6 +997,7 @@ def temp_function(full_saved_file_dict_FAST):
 						temp_sigma = np.nan
 					jsat_upper_inner_large_integrated.append(temp)
 					jsat_upper_inner_large_integrated_sigma.append(temp_sigma**0.5)
+
 					temp = [np.nan]
 					if s10_upper_large_outer_test:
 						temp = np.concatenate([[0],temp,s10_upper_large_jsat[i_time][s10_upper_large_jsat_r[i_time]>mid_strike_point[0]]])
@@ -888,6 +1006,7 @@ def temp_function(full_saved_file_dict_FAST):
 						temp_sigma = np.concatenate([[0],temp_sigma,s10_upper_large_jsat_sigma[i_time][s10_upper_large_jsat_r[i_time]>mid_strike_point[0]]])
 					jsat_upper_outer_large_max.append(np.nanmax(temp))
 					jsat_upper_outer_large_max_sigma.append(temp_sigma[np.nanargmax(np.concatenate([temp,[-np.inf]]))])
+
 					temp = 0
 					if s10_upper_large_outer_test:
 						temp += np.trapz(s10_upper_large_jsat[i_time][s10_upper_large_jsat_r[i_time]>mid_strike_point[0]]*2*np.pi*s10_upper_large_jsat_r[i_time][s10_upper_large_jsat_r[i_time]>mid_strike_point[0]],x=s10_upper_large_jsat_s[i_time][s10_upper_large_jsat_r[i_time]>mid_strike_point[0]])
@@ -902,12 +1021,17 @@ def temp_function(full_saved_file_dict_FAST):
 					jsat_upper_outer_large_integrated_sigma.append(temp_sigma**0.5)
 
 
-					# lower
+					# lower divertor
 					# I add the second part to exluce the case there are NO good channel close to the strike point, diving a bit of slack allowing twice the normal distance between probes
-					s4_lower_inner_test = np.sum(np.logical_not(s4_lower_good_probes)[np.abs(s4_lower_z-(-inner_strike_point[1]))<closeness_limit_to_dead_channels])==0 and np.sum(s4_lower_good_probes[np.abs(s4_lower_z-(-inner_strike_point[1]))<closeness_limit_for_good_channels])>0
-					s10_lower_inner_test = np.sum(np.logical_not(s10_lower_good_probes)[np.abs(s10_lower_r-inner_strike_point[0])<closeness_limit_to_dead_channels])==0 and np.sum(s10_lower_good_probes[np.abs(s10_lower_r-inner_strike_point[0])<closeness_limit_for_good_channels])>0
-					s4_lower_outer_test = np.sum(np.logical_not(s4_lower_good_probes)[np.abs(s4_lower_z-(-outer_strike_point[1]))<closeness_limit_to_dead_channels])==0 and np.sum(s4_lower_good_probes[np.abs(s4_lower_z-(-outer_strike_point[1]))<closeness_limit_for_good_channels])>0
-					s10_lower_outer_test = np.sum(np.logical_not(s10_lower_good_probes)[np.abs(s10_lower_r-outer_strike_point[0])<closeness_limit_to_dead_channels])==0 and np.sum(s10_lower_good_probes[np.abs(s10_lower_r-outer_strike_point[0])<closeness_limit_for_good_channels])>0
+					# 19/02/2025 I split the second condition so that I need close good plobes on both sides of the strike point to be able to say anything
+					temp = s4_lower_s-(-inner_strike_point[2])
+					s4_lower_inner_test = np.sum(np.logical_not(s4_lower_good_probes)[np.abs(temp)<closeness_limit_to_dead_channels])==0 and np.sum(s4_lower_good_probes[np.logical_and(temp>0 , np.abs(temp)<closeness_limit_for_good_channels)])>0 and np.sum(s4_lower_good_probes[np.logical_and(temp<0 , np.abs(temp)<closeness_limit_for_good_channels)])>0
+					temp = s10_lower_s-(-inner_strike_point[2])
+					s10_lower_inner_test = np.sum(np.logical_not(s10_lower_good_probes)[np.abs(temp)<closeness_limit_to_dead_channels])==0 and np.sum(s10_lower_good_probes[np.logical_and(temp>0 , np.abs(temp)<closeness_limit_for_good_channels)])>0 and np.sum(s10_lower_good_probes[np.logical_and(temp<0 , np.abs(temp)<closeness_limit_for_good_channels)])>0
+					temp = s4_lower_s-(-outer_strike_point[2])
+					s4_lower_outer_test = np.sum(np.logical_not(s4_lower_good_probes)[np.abs(temp)<closeness_limit_to_dead_channels])==0 and np.sum(s4_lower_good_probes[np.logical_and(temp>0 , np.abs(temp)<closeness_limit_for_good_channels)])>0 and np.sum(s4_lower_good_probes[np.logical_and(temp<0 , np.abs(temp)<closeness_limit_for_good_channels)])>0
+					temp = s10_lower_s-(-outer_strike_point[2])
+					s10_lower_outer_test = np.sum(np.logical_not(s10_lower_good_probes)[np.abs(temp)<closeness_limit_to_dead_channels])==0 and np.sum(s10_lower_good_probes[np.logical_and(temp>0 , np.abs(temp)<closeness_limit_for_good_channels)])>0 and np.sum(s10_lower_good_probes[np.logical_and(temp<0 , np.abs(temp)<closeness_limit_for_good_channels)])>0
 
 					temp = [np.nan]
 					if s4_lower_inner_test:
@@ -917,6 +1041,7 @@ def temp_function(full_saved_file_dict_FAST):
 						temp_sigma = np.concatenate([[0],temp_sigma,s4_lower_jsat_sigma[i_time][s4_lower_jsat_r[i_time]<mid_strike_point[0]]])
 					jsat_lower_inner_small_max.append(np.nanmax(temp))
 					jsat_lower_inner_small_max_sigma.append(temp_sigma[np.nanargmax(np.concatenate([temp,[-np.inf]]))])
+
 					temp = 0
 					if s4_lower_inner_test:
 						temp += np.trapz(s4_lower_jsat[i_time][s4_lower_jsat_r[i_time]<mid_strike_point[0]]*2*np.pi*s4_lower_jsat_r[i_time][s4_lower_jsat_r[i_time]<mid_strike_point[0]],x=s4_lower_jsat_s[i_time][s4_lower_jsat_r[i_time]<mid_strike_point[0]])
@@ -929,6 +1054,7 @@ def temp_function(full_saved_file_dict_FAST):
 						temp_sigma = np.nan
 					jsat_lower_inner_small_integrated.append(-temp)
 					jsat_lower_inner_small_integrated_sigma.append(temp_sigma**0.5)
+
 					temp = [np.nan]
 					if s4_lower_outer_test:
 						temp = np.concatenate([[0],temp,s4_lower_jsat[i_time][s4_lower_jsat_r[i_time]>mid_strike_point[0]]])
@@ -937,6 +1063,7 @@ def temp_function(full_saved_file_dict_FAST):
 						temp_sigma = np.concatenate([[0],temp_sigma,s4_lower_jsat_sigma[i_time][s4_lower_jsat_r[i_time]>mid_strike_point[0]]])
 					jsat_lower_outer_small_max.append(np.nanmax(temp))
 					jsat_lower_outer_small_max_sigma.append(temp_sigma[np.nanargmax(np.concatenate([temp,[-np.inf]]))])
+
 					temp = 0
 					if s4_lower_outer_test:
 						temp += np.trapz(s4_lower_jsat[i_time][s4_lower_jsat_r[i_time]>mid_strike_point[0]]*2*np.pi*s4_lower_jsat_r[i_time][s4_lower_jsat_r[i_time]>mid_strike_point[0]],x=s4_lower_jsat_s[i_time][s4_lower_jsat_r[i_time]>mid_strike_point[0]])
@@ -949,6 +1076,7 @@ def temp_function(full_saved_file_dict_FAST):
 						temp_sigma = np.nan
 					jsat_lower_outer_small_integrated.append(-temp)
 					jsat_lower_outer_small_integrated_sigma.append(temp_sigma**0.5)
+
 					temp = [np.nan]
 					if s10_lower_inner_test:
 						temp = np.concatenate([[0],temp,s10_lower_jsat[i_time][s10_lower_jsat_r[i_time]<mid_strike_point[0]]])
@@ -957,6 +1085,7 @@ def temp_function(full_saved_file_dict_FAST):
 						temp_sigma = np.concatenate([[0],temp_sigma,s10_lower_jsat_sigma[i_time][s10_lower_jsat_r[i_time]<mid_strike_point[0]]])
 					jsat_lower_inner_mid_max.append(np.nanmax(temp))
 					jsat_lower_inner_mid_max_sigma.append(temp_sigma[np.nanargmax(np.concatenate([temp,[-np.inf]]))])
+
 					temp = 0
 					if s10_lower_inner_test:
 						temp += np.trapz(s10_lower_jsat[i_time][s10_lower_jsat_r[i_time]<mid_strike_point[0]]*2*np.pi*s10_lower_jsat_r[i_time][s10_lower_jsat_r[i_time]<mid_strike_point[0]],x=s10_lower_jsat_s[i_time][s10_lower_jsat_r[i_time]<mid_strike_point[0]])
@@ -969,6 +1098,7 @@ def temp_function(full_saved_file_dict_FAST):
 						temp_sigma = np.nan
 					jsat_lower_inner_mid_integrated.append(-temp)
 					jsat_lower_inner_mid_integrated_sigma.append(temp_sigma**0.5)
+
 					temp = [np.nan]
 					if s10_lower_outer_test:
 						temp = np.concatenate([[0],temp,s10_lower_jsat[i_time][s10_lower_jsat_r[i_time]>mid_strike_point[0]]])
@@ -977,6 +1107,7 @@ def temp_function(full_saved_file_dict_FAST):
 						temp_sigma = np.concatenate([[0],temp_sigma,s10_lower_jsat_sigma[i_time][s10_lower_jsat_r[i_time]>mid_strike_point[0]]])
 					jsat_lower_outer_mid_max.append(np.nanmax(temp))
 					jsat_lower_outer_mid_max_sigma.append(temp_sigma[np.nanargmax(np.concatenate([temp,[-np.inf]]))])
+
 					temp = 0
 					if s10_lower_outer_test:
 						temp += np.trapz(s10_lower_jsat[i_time][s10_lower_jsat_r[i_time]>mid_strike_point[0]]*2*np.pi*s10_lower_jsat_r[i_time][s10_lower_jsat_r[i_time]>mid_strike_point[0]],x=s10_lower_jsat_s[i_time][s10_lower_jsat_r[i_time]>mid_strike_point[0]])
@@ -1191,6 +1322,7 @@ def temp_function(full_saved_file_dict_FAST):
 			jsat_upper_outer_large_max = np.array(jsat_upper_outer_large_max)
 			full_saved_file_dict_FAST['multi_instrument']['jsat_upper_outer_large_max'] = jsat_upper_outer_large_max
 			if lambda_q_determination:
+				# full_saved_file_dict_FAST['multi_instrument']['LP_lambdaq_time'] = np.array(LP_lambdaq_time)
 				full_saved_file_dict_FAST['multi_instrument']['lambda_q_10_lower'] = np.array(lambda_q_10_lower)
 				full_saved_file_dict_FAST['multi_instrument']['lambda_q_10_lower_sigma'] = np.array(lambda_q_10_lower_sigma)
 				full_saved_file_dict_FAST['multi_instrument']['lambda_q_4_lower'] = np.array(lambda_q_4_lower)
@@ -1252,6 +1384,13 @@ def temp_function(full_saved_file_dict_FAST):
 		P_loss = P_heat-dWdt
 		energy_confinement_time = stored_energy/P_loss	# s
 		energy_confinement_time[energy_confinement_time<0] = np.nan
+		# I add this to check if using transp there is any difference
+		power_balance = calc_psol(shot=shotnumber,smooth_dt =0.015)	# in W
+		pnbi = np.interp(time_full_binned_crop,power_balance['t'],power_balance['pnbi'],right=0.,left=0.)
+		P_heat_transp = output_pohm + pnbi
+		P_loss_transp = P_heat_transp-dWdt
+		energy_confinement_time_transp = stored_energy/P_loss_transp	# s
+		energy_confinement_time_transp[energy_confinement_time_transp<0] = np.nan
 		full_saved_file_dict_FAST['multi_instrument']['BEAMPOWER_time'] = time_full_binned_crop
 		full_saved_file_dict_FAST['multi_instrument']['SW_BEAMPOWER'] = SW_BEAMPOWER
 		full_saved_file_dict_FAST['multi_instrument']['SS_BEAMPOWER'] = SS_BEAMPOWER
@@ -1263,6 +1402,7 @@ def temp_function(full_saved_file_dict_FAST):
 		full_saved_file_dict_FAST['multi_instrument']['P_heat'] = P_heat
 		full_saved_file_dict_FAST['multi_instrument']['P_loss'] = P_loss
 		full_saved_file_dict_FAST['multi_instrument']['energy_confinement_time'] = energy_confinement_time
+		full_saved_file_dict_FAST['multi_instrument']['energy_confinement_time_transp'] = energy_confinement_time_transp
 		kappa = efit_data['kappa']
 		kappa = scipy.signal.savgol_filter(kappa, window_size, poly_order)
 		kappa = np.interp(time_full_binned_crop,efit_data['t'],kappa,right=0.,left=0.)
@@ -1315,24 +1455,36 @@ def temp_function(full_saved_file_dict_FAST):
 		full_saved_file_dict_FAST['multi_instrument']['Dalpha'] = Dalpha
 		full_saved_file_dict_FAST['multi_instrument']['Dalpha_time'] = Dalpha_time
 
+		from mastu_exhaust_analysis.read_efit import read_epm
+		fdir = coleval.uda_transfer(shotnumber,'epm')
+		efit_data = read_epm(fdir,calc_bfield=True)
+		os.remove(fdir)
 		psiN_peak_inner_all = []
+		psiN_core_inner_side_baricenter_all = []
 		from scipy.interpolate import interp1d,interp2d
 		for i_t in range(len(time_full_binned_crop)):
 			i_efit_time = np.abs(efit_reconstruction.time-time_full_binned_crop[i_t]).argmin()
+			psi_interpolator = interp2d(efit_reconstruction.R,efit_reconstruction.Z,efit_data['psiN'][i_efit_time])
+			psiN = psi_interpolator(inversion_R,inversion_Z)
+			select = np.logical_and(inversion_Z<-0.6,inversion_Z>efit_reconstruction.lower_xpoint_z[i_efit_time])
 			if inner_emissivity_peak_all[i_t][1]<efit_reconstruction.lower_xpoint_z[i_efit_time]:
 				psiN_peak_inner_all.append([np.nan])
-				continue
-			gna = efit_data['psiN'][i_efit_time]
-			psi_interpolator = interp2d(efit_reconstruction.R,efit_reconstruction.Z,gna)
-			psiN_peak_inner_all.append( psi_interpolator(inner_emissivity_peak_all[i_t][0],inner_emissivity_peak_all[i_t][1]))
-		psiN_peak_inner_all = np.array(psiN_peak_inner_all)
+				# print(i_t)
+			else:
+				psiN_peak_inner_all.append( psi_interpolator(inner_emissivity_peak_all[i_t][0],inner_emissivity_peak_all[i_t][1]))
+			psiN_core_inner_side_baricenter_all.append(np.nansum(((psiN*np.logical_and(psiN>0.9,psiN<1.1)).T*(inverted_data[i_t]))[:][:,select]) / np.nansum((inverted_data[i_t]*np.logical_and(psiN.T>0.9,psiN.T<1.1))[:][:,select]))
+		psiN_peak_inner_all = np.array(psiN_peak_inner_all).flatten()
+		psiN_core_inner_side_baricenter_all = np.array(psiN_core_inner_side_baricenter_all)
 		full_saved_file_dict_FAST['multi_instrument']['psiN_peak_inner_all'] = psiN_peak_inner_all
+		full_saved_file_dict_FAST['multi_instrument']['psiN_core_inner_side_baricenter_all'] = psiN_core_inner_side_baricenter_all
 
 		# here I calculate the upstream density
 		try:
 			from mastu_exhaust_analysis import divertor_geometry
 			from mastu_exhaust_analysis import Thomson
 			TS_data = Thomson(shot=laser_to_analyse[-9:-4])
+			# TS_data.ne = median_filter(TS_data.ne,size=[3,1])
+			# TS_data.Te = median_filter(TS_data.Te,size=[3,1])
 			tu_cowley = []
 			tu_labombard = []
 			tu_stangeby = []
@@ -1344,8 +1496,36 @@ def temp_function(full_saved_file_dict_FAST):
 			nu_EFIT = []
 			tu_EFIT_smoothing = []
 			nu_EFIT_smoothing = []
+			tu_EFIT_spatial_uncertainty = []
+			nu_EFIT_spatial_uncertainty = []
+			tu_EFIT_smoothing_spatial_uncertainty = []
+			nu_EFIT_smoothing_spatial_uncertainty = []
 			TS_time_smoothing = 0.05	# s
 			TS_time_smoothing_min = np.mean(np.diff(time_full_binned_crop))
+
+			client=pyuda.Client()
+			try:
+				recv_seg01_r = client.get('/xdc/reconstruction/s/recv_seg01_r',laser_to_analyse[-9:-4])
+				recv_seg01_r = np.interp(time_full_binned_crop,recv_seg01_r.time.data,recv_seg01_r.data)
+			except:
+				recv_seg01_r = np.ones_like(time_full_binned_crop)*np.nan
+			try:
+				epm_rmidplaneout = client.get('/epm/output/separatrixgeometry/rmidplaneout',laser_to_analyse[-9:-4])
+				epm_rmidplaneout = np.interp(time_full_binned_crop,epm_rmidplaneout.time.data,epm_rmidplaneout.data)
+			except:
+				epm_rmidplaneout = np.ones_like(time_full_binned_crop)*np.nan
+			try:
+				epq_rmidplaneout = client.get('/epq/output/separatrixgeometry/rmidplaneout',laser_to_analyse[-9:-4])
+				epq_rmidplaneout = np.interp(time_full_binned_crop,epq_rmidplaneout.time.data,epq_rmidplaneout.data)
+			except:
+				epq_rmidplaneout = np.ones_like(time_full_binned_crop)*np.nan
+			coleval.reset_connection(client)
+			del client
+			R_separatrix_OMP_uncertainty = 0.015/2	# m  1.5cm is already a lot, and this way it's split half in and half out of the separatrix
+			# the following is from a chat with Lucy Colgan 17/02/2025
+			R_separatrix_OMP_uncertainty_down = 0.01	# m  1.5cm is already a lot, and the uncertainty is more on the inboard side. it might be too much, I take 1cm
+			R_separatrix_OMP_uncertainty_up = 0.00	# m  1.5cm is already a lot, and the uncertainty is more on the inboard side. it might be too much, I take 1cm
+
 			for time in time_full_binned_crop:
 				try:
 					temp = divertor_geometry(shot=shotnumber,time=time)
@@ -1452,6 +1632,14 @@ def temp_function(full_saved_file_dict_FAST):
 						R_ = R_[psidat.argmax():psidat.argmin()]
 						psidat = psidat[psidat.argmax():psidat.argmin()]
 						R_separatrix_OMP = np.interp(efit_reconstruction.psi_bnd[i_efit_time],np.flip(psidat,axis=0),np.flip(R_,axis=0))
+
+						# I wanted to try using different methods of calculating the upstream radius to estimate the uncertainty, but id does not seem to really work
+						# R_separatrix_OMP-recv_seg01_r[i_time],R_separatrix_OMP-epm_rmidplaneout[i_time],R_separatrix_OMP-epq_rmidplaneout[i_time]
+
+						tu_EFIT_smoothing_spatial_uncertainty.append(max(0,np.abs(np.diff(np.interp([R_separatrix_OMP-R_separatrix_OMP_uncertainty_down,R_separatrix_OMP+R_separatrix_OMP_uncertainty_up],R_TS_smoothing,Te_smoothing)))[0] ))
+						nu_EFIT_smoothing_spatial_uncertainty.append(np.abs(np.diff(np.interp([R_separatrix_OMP-R_separatrix_OMP_uncertainty_down,R_separatrix_OMP+R_separatrix_OMP_uncertainty_up],R_TS_smoothing,ne_smoothing)))[0] )
+						tu_EFIT_spatial_uncertainty.append(np.abs(np.diff(np.interp([R_separatrix_OMP-R_separatrix_OMP_uncertainty_down,R_separatrix_OMP+R_separatrix_OMP_uncertainty_up],R_TS,Te)))[0] )
+						nu_EFIT_spatial_uncertainty.append(np.abs(np.diff(np.interp([R_separatrix_OMP-R_separatrix_OMP_uncertainty_down,R_separatrix_OMP+R_separatrix_OMP_uncertainty_up],R_TS,ne)))[0] )
 						tu_EFIT_smoothing.append(max(0,np.interp(R_separatrix_OMP,R_TS_smoothing,Te_smoothing)))
 						nu_EFIT_smoothing.append(np.interp(R_separatrix_OMP,R_TS_smoothing,ne_smoothing))
 						tu_EFIT.append(np.interp(R_separatrix_OMP,R_TS,Te))
@@ -1461,6 +1649,10 @@ def temp_function(full_saved_file_dict_FAST):
 						nu_EFIT_smoothing.append(np.nan)
 						tu_EFIT.append(np.nan)
 						nu_EFIT.append(np.nan)
+						tu_EFIT_smoothing_spatial_uncertainty.append(np.nan)
+						nu_EFIT_smoothing_spatial_uncertainty.append(np.nan)
+						tu_EFIT_spatial_uncertainty.append(np.nan)
+						nu_EFIT_spatial_uncertainty.append(np.nan)
 				except:
 					nu_cowley.append(np.nan)
 					nu_labombard.append(np.nan)
@@ -1470,6 +1662,10 @@ def temp_function(full_saved_file_dict_FAST):
 					nu_EFIT_smoothing.append(np.nan)
 					tu_EFIT.append(np.nan)
 					nu_EFIT.append(np.nan)
+					tu_EFIT_smoothing_spatial_uncertainty.append(np.nan)
+					nu_EFIT_smoothing_spatial_uncertainty.append(np.nan)
+					tu_EFIT_spatial_uncertainty.append(np.nan)
+					nu_EFIT_spatial_uncertainty.append(np.nan)
 			tu_cowley = np.array(tu_cowley)
 			tu_labombard = np.array(tu_labombard)
 			tu_stangeby = np.array(tu_stangeby)
@@ -1481,6 +1677,10 @@ def temp_function(full_saved_file_dict_FAST):
 			nu_EFIT = np.array(nu_EFIT)
 			tu_EFIT_smoothing = np.array(tu_EFIT_smoothing)
 			nu_EFIT_smoothing = np.array(nu_EFIT_smoothing)
+			tu_EFIT_spatial_uncertainty = np.array(tu_EFIT_spatial_uncertainty).flatten()
+			nu_EFIT_spatial_uncertainty = np.array(nu_EFIT_spatial_uncertainty)
+			tu_EFIT_smoothing_spatial_uncertainty = np.array(tu_EFIT_smoothing_spatial_uncertainty)
+			nu_EFIT_smoothing_spatial_uncertainty = np.array(nu_EFIT_smoothing_spatial_uncertainty)
 			full_saved_file_dict_FAST['multi_instrument']['tu_cowley'] = tu_cowley
 			full_saved_file_dict_FAST['multi_instrument']['tu_labombard'] = tu_labombard
 			full_saved_file_dict_FAST['multi_instrument']['tu_stangeby'] = tu_stangeby
@@ -1492,6 +1692,10 @@ def temp_function(full_saved_file_dict_FAST):
 			full_saved_file_dict_FAST['multi_instrument']['nu_EFIT'] = nu_EFIT
 			full_saved_file_dict_FAST['multi_instrument']['tu_EFIT_smoothing'] = tu_EFIT_smoothing
 			full_saved_file_dict_FAST['multi_instrument']['nu_EFIT_smoothing'] = nu_EFIT_smoothing
+			full_saved_file_dict_FAST['multi_instrument']['tu_EFIT_spatial_uncertainty'] = tu_EFIT_spatial_uncertainty
+			full_saved_file_dict_FAST['multi_instrument']['nu_EFIT_spatial_uncertainty'] = nu_EFIT_spatial_uncertainty
+			full_saved_file_dict_FAST['multi_instrument']['tu_EFIT_smoothing_spatial_uncertainty'] = tu_EFIT_smoothing_spatial_uncertainty
+			full_saved_file_dict_FAST['multi_instrument']['nu_EFIT_smoothing_spatial_uncertainty'] = nu_EFIT_smoothing_spatial_uncertainty
 			pu_cowley = nu_cowley*tu_cowley*11604*1.380649E-23
 			full_saved_file_dict_FAST['multi_instrument']['pu_cowley'] = pu_cowley
 			pu_labombard = nu_labombard*tu_labombard*11604*1.380649E-23
@@ -1502,11 +1706,36 @@ def temp_function(full_saved_file_dict_FAST):
 			full_saved_file_dict_FAST['multi_instrument']['pu_EFIT'] = pu_EFIT_smoothing
 			pu_EFIT = nu_EFIT*tu_EFIT*11604*1.380649E-23
 			full_saved_file_dict_FAST['multi_instrument']['pu_EFIT'] = pu_EFIT
+
+			try:
+				time_uncertainty_down = full_saved_file_dict_FAST['first_pass']['time_uncertainty_down']
+			except:
+				time_uncertainty_down = full_saved_file_dict_FAST['first_pass'].all()['time_uncertainty_down']
+			try:
+				time_uncertainty_up = full_saved_file_dict_FAST['first_pass']['time_uncertainty_up']
+			except:
+				time_uncertainty_up = full_saved_file_dict_FAST['first_pass'].all()['time_uncertainty_up']
+			def calc_time_related_uncertainty(time,quantity,time_uncertainty_down,time_uncertainty_up):
+				temp =[np.linspace(value-time_uncertainty_down,value+time_uncertainty_up,num=50) for value in time]	# 50 steps is completely arbitrary
+				temp = np.interp(temp,time,quantity)
+				diff = np.nanmax(temp,axis=1) - np.nanmin(temp,axis=1)
+				# diff = np.abs(np.diff(np.interp(np.array([time-time_uncertainty_down] + [time+time_uncertainty_up]).T,time,quantity),axis=1).flatten())
+				return diff
+			tu_EFIT_time_uncertainty = calc_time_related_uncertainty(time_full_binned_crop,tu_EFIT,time_uncertainty_down,time_uncertainty_up)
+			nu_EFIT_time_uncertainty = calc_time_related_uncertainty(time_full_binned_crop,nu_EFIT,time_uncertainty_down,time_uncertainty_up)
+			tu_EFIT_smoothing_time_uncertainty = calc_time_related_uncertainty(time_full_binned_crop,tu_EFIT_smoothing,time_uncertainty_down,time_uncertainty_up)
+			nu_EFIT_smoothing_time_uncertainty = calc_time_related_uncertainty(time_full_binned_crop,nu_EFIT_smoothing,time_uncertainty_down,time_uncertainty_up)
+			full_saved_file_dict_FAST['multi_instrument']['tu_EFIT_time_uncertainty'] = tu_EFIT_time_uncertainty
+			full_saved_file_dict_FAST['multi_instrument']['nu_EFIT_time_uncertainty'] = nu_EFIT_time_uncertainty
+			full_saved_file_dict_FAST['multi_instrument']['tu_EFIT_smoothing_time_uncertainty'] = tu_EFIT_smoothing_time_uncertainty
+			full_saved_file_dict_FAST['multi_instrument']['nu_EFIT_smoothing_time_uncertainty'] = nu_EFIT_smoothing_time_uncertainty
 			TS_reading_success = True
+
 		except Exception as e:
 			print('TS reading failed')
 			logging.exception('with error: ' + str(e))
 			TS_reading_success = False
+
 		# plt.figure()
 		# plt.plot(time_full_binned_crop,nu_labombard,label='nu_labombard')
 		# plt.plot(time_full_binned_crop,nu_stangeby,label='nu_stangeby')
@@ -1524,19 +1753,22 @@ def temp_function(full_saved_file_dict_FAST):
 				gna27 = client.get('/xbm/core/F27/AMP', laser_to_analyse[-9:-4])
 				try:
 					smoothing=1000
-					grad26 = scipy.signal.savgol_filter(gna26.data,smoothing//4,5)
-					grad26 = scipy.signal.savgol_filter(grad26,smoothing//4,3)
-					grad26 = scipy.signal.savgol_filter(grad26,smoothing//2,3)
-					grad27 = scipy.signal.savgol_filter(gna27.data,smoothing//4,5)
-					grad27 = scipy.signal.savgol_filter(grad27,smoothing//4,3)
-					grad27 = scipy.signal.savgol_filter(grad27,smoothing//2,3)
+					grad26 = scipy.signal.savgol_filter(gna26.data,smoothing//4+1,5)	# I need the +1 otherwise savgol_filter fails in python3.7
+					grad26 = scipy.signal.savgol_filter(grad26,smoothing//4+1,3)
+					grad26 = scipy.signal.savgol_filter(grad26,smoothing//2+1,3)
+					grad27 = scipy.signal.savgol_filter(gna27.data,smoothing//4+1,5)
+					grad27 = scipy.signal.savgol_filter(grad27,smoothing//4+1,3)
+					grad27 = scipy.signal.savgol_filter(grad27,smoothing//2+1,3)
 
-					smooth26=scipy.signal.savgol_filter(np.gradient(grad26,gna26.time.data),smoothing//2,5)
-					smooth26=scipy.signal.savgol_filter(smooth26,smoothing//2,2)
-					smooth27=scipy.signal.savgol_filter(np.gradient(grad27,gna27.time.data),smoothing//2,5)
-					smooth27=scipy.signal.savgol_filter(smooth27,smoothing//2,2)
+					smooth26=scipy.signal.savgol_filter(np.gradient(grad26,gna26.time.data),smoothing//2+1,5)
+					smooth26=scipy.signal.savgol_filter(smooth26,smoothing//2+1,2)
+					smooth27=scipy.signal.savgol_filter(np.gradient(grad27,gna27.time.data),smoothing//2+1,5)
+					smooth27=scipy.signal.savgol_filter(smooth27,smoothing//2+1,2)
 
-					new_MARFE_marker = (smooth27-smooth26)/(smooth26[np.logical_and(gna26.time.data>0,gna26.time.data<time_full_binned_crop.max()-0.1)].min())	# -0.1 because when there is a final disrupotion there is a sudden final spike down, and I want to avoid it
+					# new_MARFE_marker = (smooth27-smooth26)/(smooth26[np.logical_and(gna26.time.data>0,gna26.time.data<time_full_binned_crop.max()-0.1)].min())	# -0.1 because when there is a final disrupotion there is a sudden final spike down, and I want to avoid it
+					ratio = smooth27/smooth26
+					ratio[smooth27<0] = 1
+					new_MARFE_marker = median_filter(ratio,size=int(smoothing//1.5))
 
 					if False:
 						# gna = client.get('/xbm/core/F28/AMP', laser_to_analyse[-9:-4]).data.T
@@ -1544,12 +1776,12 @@ def temp_function(full_saved_file_dict_FAST):
 						gna26 = client.get('/xbm/core/F26/AMP', laser_to_analyse[-9:-4])
 						gna27 = client.get('/xbm/core/F27/AMP', laser_to_analyse[-9:-4])
 						smoothing=1000
-						grad26 = scipy.signal.savgol_filter(gna26.data,smoothing//4,5)
-						grad26 = scipy.signal.savgol_filter(grad26,smoothing//4,3)
-						grad26 = scipy.signal.savgol_filter(grad26,smoothing//2,3)
-						grad27 = scipy.signal.savgol_filter(gna27.data,smoothing//4,5)
-						grad27 = scipy.signal.savgol_filter(grad27,smoothing//4,3)
-						grad27 = scipy.signal.savgol_filter(grad27,smoothing//2,3)
+						grad26 = scipy.signal.savgol_filter(gna26.data,smoothing//4+1,5)
+						grad26 = scipy.signal.savgol_filter(grad26,smoothing//4+1,3)
+						grad26 = scipy.signal.savgol_filter(grad26,smoothing//2+1,3)
+						grad27 = scipy.signal.savgol_filter(gna27.data,smoothing//4+1,5)
+						grad27 = scipy.signal.savgol_filter(grad27,smoothing//4+1,3)
+						grad27 = scipy.signal.savgol_filter(grad27,smoothing//2+1,3)
 						plt.figure()
 						a = plt.plot(gna26.time.data,gna26.data)
 						plt.plot(gna26.time.data,grad26,'--',color='k')
@@ -1574,12 +1806,13 @@ def temp_function(full_saved_file_dict_FAST):
 
 						plt.figure()
 						plt.plot(gna27.time.data,smooth27/smooth26)
-						plt.plot(gna27.time.data,median_filter(smooth27/smooth26,size=smoothing//3))
+						plt.plot(gna27.time.data,median_filter(smooth27/smooth26,size=smoothing//3+1))
 						plt.plot(gna27.time.data,(smooth27-smooth26)/(smooth26[np.logical_and(gna26.time.data>0,gna26.time.data<time_full_binned_crop.max()-0.1)].min()))
 						plt.ylim(bottom=-5,top=10)
 						plt.xlim(left=0,right=1)
 						plt.grid()
-				except:
+				except Exception as e:
+					logging.exception('with error: ' + str(e))
 					new_MARFE_marker = np.ones_like(gna26.time.data)
 				new_MARFE_marker_time = gna26.time.data
 			except:
@@ -1769,6 +2002,42 @@ def temp_function(full_saved_file_dict_FAST):
 		full_saved_file_dict_FAST['multi_instrument']['time_start_MARFE'] = time_start_MARFE
 		full_saved_file_dict_FAST['multi_instrument']['time_active_MARFE'] = time_active_MARFE
 
+		# I add the triangularity and other measures
+		client=pyuda.Client()
+		try:
+			betan = client.get('/epm/output/globalparameters/betan', shotnumber)
+			betan_time = betan.time.data
+			betan = betan.data
+			elongation = client.get('/epm/output/separatrixgeometry/elongation', shotnumber)
+			elongation = elongation.data
+			temp = client.get('/epm/output/separatrixgeometry/lowertriangularity', shotnumber)
+			if len(np.shape(temp.data))!=1 and pass_number>0:
+				try:
+					lowertriangularity = full_saved_file_dict_FAST['multi_instrument']['lowertriangularity']
+				except:
+					lowertriangularity = np.ones_like(betan.time.data)*np.nan
+			else:
+				lowertriangularity = cp.deepcopy(temp.data)
+			temp = client.get('/epm/output/separatrixgeometry/uppertriangularity', shotnumber)
+			if len(np.shape(temp.data))!=1 and pass_number>0:	# I have to do this stupid thing because sometimes a txnmxn array is read instead of a t one
+				try:
+					uppertriangularity = full_saved_file_dict_FAST['multi_instrument']['uppertriangularity']
+				except:
+					uppertriangularity = np.ones_like(betan.time.data)*np.nan
+			else:
+				uppertriangularity = cp.deepcopy(temp.data)
+			adimensional_quantities_ok = True
+			full_saved_file_dict_FAST['multi_instrument']['lowertriangularity'] = lowertriangularity
+			full_saved_file_dict_FAST['multi_instrument']['uppertriangularity'] = uppertriangularity
+			full_saved_file_dict_FAST['multi_instrument']['elongation'] = elongation
+			full_saved_file_dict_FAST['multi_instrument']['betan'] = betan
+			full_saved_file_dict_FAST['multi_instrument']['betan_time'] = betan_time
+		except:
+			adimensional_quantities_ok = False
+			pass
+		coleval.reset_connection(client)
+		del client
+
 		fig, ax = plt.subplots( 2,1,figsize=(12, 12), squeeze=False,sharex=True)
 		if pass_number ==0:
 			fig.suptitle('shot '+str(shotnumber)+', '+scenario+' , '+experiment+'\nfirst pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
@@ -1870,7 +2139,7 @@ def temp_function(full_saved_file_dict_FAST):
 
 
 		# plot of absolute quantities
-		fig, ax = plt.subplots( 12,1,figsize=(12, 50), squeeze=False,sharex=False)
+		fig, ax = plt.subplots( 13,1,figsize=(12, 50), squeeze=False,sharex=False)
 		if pass_number ==0:
 			fig.suptitle('shot '+str(shotnumber)+', '+scenario+' , '+experiment+'\nfirst pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
 		elif pass_number ==1:
@@ -1882,10 +2151,14 @@ def temp_function(full_saved_file_dict_FAST):
 		ax[0,0].plot(time_full_binned_crop,inner_L_poloidal_peak_all/inner_L_poloidal_x_point_all,'r-',label=r'$IN_{peak}$')
 		ax[0,0].plot(time_full_binned_crop,inner_L_poloidal_peak_only_leg_all/inner_L_poloidal_x_point_all,'r:',label=r'$IN_{peak\;only\;leg}$')
 		# ax[0,0].plot(time_full_binned_crop,inner_L_poloidal_baricentre_only_leg_all/inner_L_poloidal_x_point_all,'r',label=r'$IN_{bari\;only\;leg}$')
-		ax[0,0].plot(time_full_binned_crop,inner_half_peak_L_pol_all/inner_L_poloidal_x_point_all,'r')
-		ax[0,0].plot(time_full_binned_crop,inner_half_peak_L_pol_all/inner_L_poloidal_x_point_all,'r+',label=r'$IN_{0.5\;front\;InLine}$')
-		ax[0,0].plot(time_full_binned_crop,inner_half_peak_divertor_L_pol_all/inner_L_poloidal_x_point_all,'r')
-		ax[0,0].plot(time_full_binned_crop,inner_half_peak_divertor_L_pol_all/inner_L_poloidal_x_point_all,'ro',fillstyle='none',label=r'$IN_{0.5\;front\;InLineDiv}$')
+		inner_half_peak_L_pol_all = np.array(inner_half_peak_L_pol_all)
+		temp = np.abs(inner_half_peak_L_pol_all.T-inner_half_peak_L_pol_all[:,1]).T
+		ax[0,0].errorbar(time_full_binned_crop,inner_half_peak_L_pol_all[:,1]/inner_L_poloidal_x_point_all,yerr=[temp[:,0]/inner_L_poloidal_x_point_all,temp[:,2]/inner_L_poloidal_x_point_all],color='r')
+		ax[0,0].plot(time_full_binned_crop,inner_half_peak_L_pol_all[:,1]/inner_L_poloidal_x_point_all,'r+',label=r'$IN_{0.5\;front\;InLine}$')
+		inner_half_peak_divertor_L_pol_all = np.array(inner_half_peak_divertor_L_pol_all)
+		temp = np.abs(inner_half_peak_divertor_L_pol_all.T-inner_half_peak_divertor_L_pol_all[:,1]).T
+		ax[0,0].errorbar(time_full_binned_crop,inner_half_peak_divertor_L_pol_all[:,1]/inner_L_poloidal_x_point_all,yerr=[temp[:,0]/inner_L_poloidal_x_point_all,temp[:,2]/inner_L_poloidal_x_point_all],color='r')
+		ax[0,0].plot(time_full_binned_crop,inner_half_peak_divertor_L_pol_all[:,1]/inner_L_poloidal_x_point_all,'ro',fillstyle='none',label=r'$IN_{0.5\;front\;InLineDiv}$')
 		ax[0,0].plot(time_full_binned_crop,movement_local_inner_leg_mean_emissivity,'r')
 		ax[0,0].plot(time_full_binned_crop,movement_local_inner_leg_mean_emissivity,'rx',label=r'$IN_{0.5\;front\;binned}$')
 		ax[0,0].plot(time_full_binned_crop,inner_L_poloidal_baricentre_all/inner_L_poloidal_x_point_all,'r--',label=r'$IN_{baricentre}$')
@@ -1893,10 +2166,14 @@ def temp_function(full_saved_file_dict_FAST):
 		ax[0,0].plot(time_full_binned_crop,outer_L_poloidal_peak_all/outer_L_poloidal_x_point_all,'b-',label=r'$OUT_{peak}$')
 		ax[0,0].plot(time_full_binned_crop,outer_L_poloidal_peak_only_leg_all/outer_L_poloidal_x_point_all,'b:',label=r'$OUT_{peak\;only\;leg}$')
 		# ax[0,0].plot(time_full_binned_crop,outer_L_poloidal_baricentre_only_leg_all/outer_L_poloidal_x_point_all,'b',label=r'$OUT_{bari\;only\;leg}$')
-		ax[0,0].plot(time_full_binned_crop,outer_half_peak_L_pol_all/outer_L_poloidal_x_point_all,'b')
-		ax[0,0].plot(time_full_binned_crop,outer_half_peak_L_pol_all/outer_L_poloidal_x_point_all,'b+',label=r'$OUT_{0.5\;front\;InLine}$')
-		ax[0,0].plot(time_full_binned_crop,outer_half_peak_divertor_L_pol_all/outer_L_poloidal_x_point_all,'b')
-		ax[0,0].plot(time_full_binned_crop,outer_half_peak_divertor_L_pol_all/outer_L_poloidal_x_point_all,'bo',fillstyle='none',label=r'$OUT_{0.5\;front\;InLineDiv}$')
+		outer_half_peak_L_pol_all = np.array(outer_half_peak_L_pol_all)
+		temp = np.abs(outer_half_peak_L_pol_all.T-outer_half_peak_L_pol_all[:,1]).T
+		ax[0,0].errorbar(time_full_binned_crop,outer_half_peak_L_pol_all[:,1]/outer_L_poloidal_x_point_all,yerr=[temp[:,0]/outer_L_poloidal_x_point_all,temp[:,2]/outer_L_poloidal_x_point_all],color='b')
+		ax[0,0].plot(time_full_binned_crop,outer_half_peak_L_pol_all[:,1]/outer_L_poloidal_x_point_all,'b+',label=r'$OUT_{0.5\;front\;InLine}$')
+		outer_half_peak_divertor_L_pol_all = np.array(outer_half_peak_divertor_L_pol_all)
+		temp = np.abs(outer_half_peak_divertor_L_pol_all.T-outer_half_peak_divertor_L_pol_all[:,1]).T
+		ax[0,0].errorbar(time_full_binned_crop,outer_half_peak_divertor_L_pol_all[:,1]/outer_L_poloidal_x_point_all,yerr=[temp[:,0]/outer_L_poloidal_x_point_all,temp[:,2]/outer_L_poloidal_x_point_all],color='b')
+		ax[0,0].plot(time_full_binned_crop,outer_half_peak_divertor_L_pol_all[:,1]/outer_L_poloidal_x_point_all,'bo',fillstyle='none',label=r'$OUT_{0.5\;front\;InLineDiv}$')
 		ax[0,0].plot(time_full_binned_crop,movement_local_outer_leg_mean_emissivity,'b')
 		ax[0,0].plot(time_full_binned_crop,movement_local_outer_leg_mean_emissivity,'bx',label=r'$OUT_{0.5\;front\;binned}$')
 		ax[0,0].plot(time_full_binned_crop,outer_L_poloidal_baricentre_all/outer_L_poloidal_x_point_all,'b--',label=r'$OUT_{baricentre}$')
@@ -1908,13 +2185,16 @@ def temp_function(full_saved_file_dict_FAST):
 		# ax2.spines["right"].set_position(("axes", 1.1125))
 		ax0.spines["right"].set_visible(True)
 		a0a, = ax0.plot(time_full_binned_crop,psiN_peak_inner_all,label=r'$IN\psi_{N\;peak}$',color='g')
+		a0b, = ax0.plot(time_full_binned_crop,psiN_core_inner_side_baricenter_all,':',label=r'$IN\psi_{N\;inner\;core\;baric}$',color='g')
 		ax0.axhline(y=1,color='g',linestyle='--')
 		ax0.set_ylabel('psi N [au]', color='g')  # we already handled the x-label with ax1
 		# ax2.tick_params(axis='y', labelcolor=a2a.get_color())
-		ax0.set_ylim(bottom=max(0.9,np.nanmin(psiN_peak_inner_all)),top=min(1.2,np.nanmax(psiN_peak_inner_all)))
+		ax0.set_ylim(bottom=max(0.9,min(0.95,np.nanmin([psiN_peak_inner_all,psiN_core_inner_side_baricenter_all]))),top=min(1.2,max(1.05,np.nanmax([psiN_peak_inner_all,psiN_core_inner_side_baricenter_all]))))
 		handles, labels = ax[0,0].get_legend_handles_labels()
 		handles.append(a0a)
 		labels.append(a0a.get_label())
+		handles.append(a0b)
+		labels.append(a0b.get_label())
 		ax0.legend(handles=handles, labels=labels, loc='upper left', fontsize='xx-small',ncol=3)
 		if time_start_MARFE!=None:
 			ax[0,0].axvline(x=time_start_MARFE,linestyle='--',color='k',label='MARFE start from bolo')
@@ -1956,9 +2236,12 @@ def temp_function(full_saved_file_dict_FAST):
 			ax[2,0].errorbar(time_full_binned_crop,lambda_q_10_lower,yerr=lambda_q_10_lower_sigma,label=r'$\lambda_q$'+'_10_lower (<-)')
 			ax[2,0].errorbar(time_full_binned_crop,lambda_q_4_upper,yerr=lambda_q_4_upper_sigma,label=r'$\lambda_q$'+'_4_upper (<-)')
 			ax[2,0].errorbar(time_full_binned_crop,lambda_q_10_upper,yerr=lambda_q_10_upper_sigma,label=r'$\lambda_q$'+'_10_upper (<-)')
-			temp = ([ median_filter(dr_sep_in,size=[int(max(1,0.1/(np.diff(time_full_binned_crop).mean())))],mode='constant',cval=0) ,median_filter(dr_sep_out,size=[int(max(1,0.1/(np.diff(time_full_binned_crop).mean())))],mode='constant',cval=0) ,
-			median_filter(lambda_q_10_lower,size=[int(max(1,0.1/(np.diff(time_full_binned_crop).mean())))],mode='constant',cval=0) , median_filter(lambda_q_4_lower,size=[int(max(1,0.1/(np.diff(time_full_binned_crop).mean())))],mode='constant',cval=0) ,
-			median_filter(lambda_q_4_upper,size=[int(max(1,0.1/(np.diff(time_full_binned_crop).mean())))],mode='constant',cval=0) , median_filter(lambda_q_10_upper,size=[int(max(1,0.1/(np.diff(time_full_binned_crop).mean())))],mode='constant',cval=0) ])
+			temp = median_filter(dr_sep_in,size=[int(max(1,0.1/(np.diff(time_full_binned_crop).mean())))],mode='constant',cval=0).tolist() + \
+			median_filter(dr_sep_out,size=[int(max(1,0.1/(np.diff(time_full_binned_crop).mean())))],mode='constant',cval=0).tolist() + \
+			median_filter(lambda_q_10_lower,size=[int(max(1,0.1/(np.diff(time_full_binned_crop).mean())))],mode='constant',cval=0).tolist() + \
+			median_filter(lambda_q_4_lower,size=[int(max(1,0.1/(np.diff(time_full_binned_crop).mean())))],mode='constant',cval=0).tolist() + \
+			median_filter(lambda_q_4_upper,size=[int(max(1,0.1/(np.diff(time_full_binned_crop).mean())))],mode='constant',cval=0).tolist() + \
+			median_filter(lambda_q_10_upper,size=[int(max(1,0.1/(np.diff(time_full_binned_crop).mean())))],mode='constant',cval=0).tolist()
 			ax[2,0].set_ylim(bottom =  np.nanmin(temp), top = np.nanmax(temp))
 
 		ax2 = ax[2,0].twinx()  # instantiate a second axes that shares the same x-axis
@@ -2014,6 +2297,33 @@ def temp_function(full_saved_file_dict_FAST):
 				ax[4,0].set_ylim(bottom=0,top=1e-6*1.2*np.nanmax(median_filter(temp[np.isfinite(temp)],size=21)[np.logical_and(power_balance['t'][np.isfinite(temp)]>0,power_balance['t'][np.isfinite(temp)]<time_full_binned_crop[-5])]))
 			except:
 				pass
+
+			# here I want to calculate lmda q from the scaling in Harrisom 2013
+			try:
+				from mastu_exhaust_analysis.read_efit import read_uda
+				efit_data = read_uda(shot=shotnumber)
+				from scipy.interpolate import RegularGridInterpolator
+				interpolator = RegularGridInterpolator((efit_data['t'], efit_data['z'], efit_data['r']), efit_data['Bpol'],bounds_error=False,fill_value=0)
+				bpol = np.interp(time_full_binned_crop,efit_data['t'],interpolator(np.array([efit_data['t'],efit_data['z_axis'],efit_data['r_axis']]).T))
+				Psol = np.interp(time_full_binned_crop,power_balance['t'],1e-6*power_balance['psol'])
+				lambda_q_Lmode_scaling = 0.012 * Psol**0.14 * (1e-6*plasma_current)**-0.36 * (1e-19*nu_EFIT_smoothing)**0.65 * bpol**-0.09
+				lambda_q_Hmode_scaling = 0.0045 * Psol**0.11 * (1e-6*plasma_current)**-1.05 * (1e-19*nu_EFIT_smoothing)**0.76 * bpol**-0.07
+				full_saved_file_dict_FAST['multi_instrument']['lambda_q_Lmode_scaling'] = np.array(lambda_q_Lmode_scaling)
+				full_saved_file_dict_FAST['multi_instrument']['lambda_q_Hmode_scaling'] = np.array(lambda_q_Hmode_scaling)
+				handles, labels = ax2.get_legend_handles_labels()
+				handles1, labels1 = ax[2,0].get_legend_handles_labels()
+				handles = handles +handles1
+				labels = labels + labels1
+				a2a, = ax[2,0].plot(time_full_binned_crop,lambda_q_Lmode_scaling,'--',label=r'$\lambda_q$'+'_L-mode scaling (<-)')
+				a2b, = ax[2,0].plot(time_full_binned_crop,lambda_q_Hmode_scaling,'--',label=r'$\lambda_q$'+'_H-mode scaling (<-)')
+				handles.append(a2a)
+				handles.append(a2b)
+				labels.append(a2a.get_label())
+				labels.append(a2b.get_label())
+				ax2.legend(handles=handles, labels=labels, loc='center left', fontsize='xx-small')
+			except:
+				pass
+
 		except:
 			input_power = output_pohm + SW_BEAMPOWER + SS_BEAMPOWER-dWdt
 
@@ -2128,7 +2438,11 @@ def temp_function(full_saved_file_dict_FAST):
 
 		if not toroidal_field_good:
 			ax[7,0].plot([],[],'+k',label='Toroidal magnetic\nfield at magnetic axis\nflagged as bad data')
-		ax[7,0].plot(time_full_binned_crop,energy_confinement_time,label='confinement time',color=color[0])
+		if np.abs(np.nanmedian((energy_confinement_time_transp-energy_confinement_time)/energy_confinement_time))>0.01:	# I want it plotted only if there is a significant difference
+			ax[7,0].plot(time_full_binned_crop,energy_confinement_time,label='confinement time NBI approx',color=color[0])
+			ax[7,0].plot(time_full_binned_crop,energy_confinement_time_transp,':',label='confinement time transp',color=color[0])
+		else:
+			ax[7,0].plot(time_full_binned_crop,energy_confinement_time,label='confinement time',color=color[0])
 		if not density_data_missing:
 			ax[7,0].plot(time_full_binned_crop,energy_confinement_time_98y2,label='98y2',color=color[3],alpha=0.3)
 			ax[7,0].plot(time_full_binned_crop,energy_confinement_time_97P,label='97P',color=color[2],alpha=0.3)
@@ -2229,14 +2543,24 @@ def temp_function(full_saved_file_dict_FAST):
 			ax10.plot(time_full_binned_crop,nu_labombard*1e-19,'--',color=temp.get_color())
 			temp, = ax[10,0].plot(time_full_binned_crop,tu_stangeby,label='stangeby')
 			ax10.plot(time_full_binned_crop,nu_stangeby*1e-19,'--',color=temp.get_color())
+			# temp, = ax[10,0].plot(time_full_binned_crop,tu_EFIT,'+',label='tu EFIT')
+			# ax[10,0].plot(time_full_binned_crop,tu_EFIT_smoothing,color=temp.get_color(),label='EFIT smooth')
+			# ax10.plot(time_full_binned_crop,nu_EFIT*1e-19,marker='o',fillstyle='none',color=temp.get_color())
+			# ax10.plot(time_full_binned_crop,nu_EFIT_smoothing*1e-19,'--',color=temp.get_color())
 			temp, = ax[10,0].plot(time_full_binned_crop,tu_EFIT,'+',label='tu EFIT')
-			ax[10,0].plot(time_full_binned_crop,tu_EFIT_smoothing,color=temp.get_color(),label='EFIT smooth')
-			ax10.plot(time_full_binned_crop,nu_EFIT*1e-19,marker='o',fillstyle='none',color=temp.get_color())
-			ax10.plot(time_full_binned_crop,nu_EFIT_smoothing*1e-19,'--',color=temp.get_color())
+			ax[10,0].errorbar(time_full_binned_crop,tu_EFIT_smoothing,yerr=tu_EFIT_smoothing_spatial_uncertainty,color=temp.get_color(),label='tu EFIT smooth',capsize=5)
+			temp, = ax10.plot(time_full_binned_crop,nu_EFIT*1e-19,marker='o',fillstyle='none',color='C6')
+			temp = ax10.errorbar(time_full_binned_crop,nu_EFIT_smoothing*1e-19,yerr=nu_EFIT_smoothing_spatial_uncertainty*1e-19,linestyle='--',color=temp.get_color(),capsize=5,label='nu EFIT smooth')
 			ax[10,0].grid()
-			ax[10,0].legend(loc='best', fontsize='xx-small')
-			ax[10,0].set_ylim(bottom=0,top=np.nanmax([tu_cowley,tu_labombard,tu_stangeby])*1.1)
-			ax10.set_ylim(bottom=0,top=np.nanmax([nu_cowley,nu_labombard,nu_stangeby])*1.1*1e-19)
+			# ax[10,0].legend(loc='best', fontsize='xx-small')
+			handles, labels = ax[10,0].get_legend_handles_labels()
+			handles.append(temp)
+			labels.append(temp.get_label())
+			ax[10,0].legend(handles=handles, labels=labels, loc='best', fontsize='xx-small')
+
+			select = time_full_binned_crop<time_full_binned_crop.max()-0.1
+			ax[10,0].set_ylim(bottom=0,top=np.nanmax([tu_cowley[select],tu_labombard[select],tu_stangeby[select],tu_EFIT_smoothing[select]])*1.1)
+			ax10.set_ylim(bottom=0,top=np.nanmax([nu_cowley[select],nu_labombard[select],nu_stangeby[select],nu_EFIT_smoothing[select]])*1.1*1e-19)
 
 		ax[11,0].axhline(y=1,color='k',linestyle='--')
 		ax[11,0].axhline(y=1.15,color='k',linestyle='--',label=r'$\psi_{N}=1.15$')
@@ -2249,6 +2573,20 @@ def temp_function(full_saved_file_dict_FAST):
 		ax[11,0].grid()
 		ax[11,0].legend(loc='best', fontsize='xx-small')
 		ax[11,0].set_ylim(bottom=0.9,top=1.3)
+		ax[11,0].set_ylabel(r'$\psi_{N}$')
+
+		if adimensional_quantities_ok:
+			try:
+				print(lowertriangularity)
+				ax[12,0].plot(betan_time,lowertriangularity,label='lowertriangularity')
+				print(uppertriangularity)
+				ax[12,0].plot(betan_time,uppertriangularity,label='uppertriangularity')
+				ax[12,0].plot(betan_time,elongation,label='elongation')
+				ax[12,0].plot(betan_time,betan,label='betan')
+			except:
+				pass
+			ax[12,0].grid()
+			ax[12,0].legend(loc='best', fontsize='xx-small')
 
 		ax[0,0].set_xlim(left=time_full_binned_crop.min(),right=time_full_binned_crop.max())
 		ax[1,0].set_xlim(left=time_full_binned_crop.min(),right=time_full_binned_crop.max())
@@ -2262,6 +2600,7 @@ def temp_function(full_saved_file_dict_FAST):
 		ax[9,0].set_xlim(left=time_full_binned_crop.min(),right=time_full_binned_crop.max())
 		ax[10,0].set_xlim(left=time_full_binned_crop.min(),right=time_full_binned_crop.max())
 		ax[11,0].set_xlim(left=time_full_binned_crop.min(),right=time_full_binned_crop.max())
+		ax[12,0].set_xlim(left=time_full_binned_crop.min(),right=time_full_binned_crop.max())
 
 		# plt.subplots_adjust(wspace=0, hspace=0)
 		# plt.pause(0.01)

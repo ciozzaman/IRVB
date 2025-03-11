@@ -25,7 +25,10 @@ print(os.path.abspath(os.getcwd()))
 
 # just to import _MASTU_CORE_GRID_POLYGON
 calculate_tangency_angle_for_poloidal_section=coleval.calculate_tangency_angle_for_poloidal_section
+client=pyuda.Client()
 exec(open("/home/ffederic/work/analysis_scripts/scripts/python_library/collect_and_eval/collect_and_eval/MASTU_structure.py").read())
+# reset_connection(client)
+del client
 
 # degree of polynomial of choice
 n=3
@@ -134,6 +137,7 @@ if False:	# plot for the papers
 		# to_do = ['46866','46769','46702']	# CD plot for PSI 2024
 		to_do = ['45468','45469','45470','45473']	# CD plot for thesis
 	if True:
+		to_do = []
 		to_do.extend(['47950','47973','48144'])#,'48328'])	# CD MU01/02/03
 		# to_do = ['47950','47973','48144','48328','48335']	# CD MU02/03
 		type = 'ohmicLmode'
@@ -153,14 +157,29 @@ if False:	# plot for the papers
 		to_do = ['48561','49139','48597','48599','46977','49392']	# beam heated H-modes all together
 
 
-	fig, ax = plt.subplots( 2,3,figsize=(22, 25), squeeze=False,sharex=True)
-	fig1, ax1 = plt.subplots( 2,3,figsize=(22, 25), squeeze=False,sharex=True)
-	fig1a, ax1a = plt.subplots( 2,2,figsize=(16, 10), squeeze=False,sharex=True)
-	fig2, ax2 = plt.subplots( 2,3,figsize=(22, 25), squeeze=False,sharex=True)
-	fig3, ax3 = plt.subplots( 2,3,figsize=(22, 25), squeeze=False,sharex=True)
-	fig4, ax4 = plt.subplots( 2,3,figsize=(22, 25), squeeze=False,sharex=True)
+	what_to_plot_selector = np.ones((10)).astype(bool)
+	what_to_plot_selector[0] = False
+	what_to_plot_selector[1] = False
+	what_to_plot_selector[2] = False
+	what_to_plot_selector[3] = False
+	what_to_plot_selector[4] = False
+	what_to_plot_selector[5] = False
+	# what_to_plot_selector[6] = False
+	if what_to_plot_selector[0]:
+		fig, ax = plt.subplots( 2,3,figsize=(22, 25), squeeze=False,sharex=True)
+	if what_to_plot_selector[1]:
+		fig1, ax1 = plt.subplots( 2,3,figsize=(22, 25), squeeze=False,sharex=True)
+	if what_to_plot_selector[2]:
+		fig1a, ax1a = plt.subplots( 2,2,figsize=(16, 10), squeeze=False,sharex=True)
+	if what_to_plot_selector[3]:
+		fig2, ax2 = plt.subplots( 2,3,figsize=(22, 25), squeeze=False,sharex=True)
+	if what_to_plot_selector[4]:
+		fig3, ax3 = plt.subplots( 2,3,figsize=(22, 25), squeeze=False,sharex=True)
+	if what_to_plot_selector[5]:
+		fig4, ax4 = plt.subplots( 2,3,figsize=(22, 25), squeeze=False,sharex=True)
 	# fig5, ax5 = plt.subplots( 2,3,figsize=(20, 10), squeeze=False,sharex=True)
-	fig5, ax5 = plt.subplots( 2,4,figsize=(27, 10), squeeze=False,sharex=True)
+	if what_to_plot_selector[6]:
+		fig5, ax5 = plt.subplots( 2,4,figsize=(27, 10), squeeze=False,sharex=True)
 	shot_list = get_data(path+'shot_list2.ods')
 	n_shot_added = 0
 	for name in np.sort(to_do):
@@ -195,6 +214,8 @@ if False:	# plot for the papers
 				inverted_dict = _dict['first_pass']['inverted_dict']
 				print(str(laser_to_analyse[-9:-4])+' first pass')
 			time_full_binned_crop = inverted_dict[str(grid_resolution)]['time_full_binned_crop']
+			time_resolution = np.mean(np.diff(time_full_binned_crop))
+			possible_time_skip = 1#int(1/30/time_resolution)
 			inverted_data = inverted_dict[str(grid_resolution)]['inverted_data']
 			inverted_data_sigma = inverted_dict[str(grid_resolution)]['inverted_data_sigma']
 			binning_type = inverted_dict[str(grid_resolution)]['binning_type']
@@ -216,19 +237,23 @@ if False:	# plot for the papers
 
 			t_end = -4
 			if int(name[-9:-4]) == 45468:
-				t_end = np.abs(time_full_binned_crop-0.82).argmin() - len(time_full_binned_crop)
+				t_min = 0.3
+				t_end = np.abs(time_full_binned_crop-0.80).argmin() - len(time_full_binned_crop)
 				fulcher_band_detachment = np.nan # from DMS, when it starts to decrease at the target location. in this shot this never happens
 				fulcher_band_detachment_current = np.nan
 			if int(name[-9:-4]) == 45469:
-				t_end = np.abs(time_full_binned_crop-0.75).argmin() - len(time_full_binned_crop)
+				t_min = 0.3
+				t_end = np.abs(time_full_binned_crop-0.65).argmin() - len(time_full_binned_crop)	# 20/02/2025 I reduce from 0.75 as psi on the babble starts to change around then, indicating that the SOL starts hitting the baffle and it's normal that the target currect will be reduced
 				fulcher_band_detachment = 0.500 # from DMS, when it starts to decrease at the target location
 				fulcher_band_detachment_current = 0.6E19
 			if int(name[-9:-4]) == 45470:
-				t_end = np.abs(time_full_binned_crop-0.75).argmin() - len(time_full_binned_crop)
+				t_min = 0.3
+				t_end = np.abs(time_full_binned_crop-0.70).argmin() - len(time_full_binned_crop)	# 20/02/2025 I reduce from 0.75 as psi on the babble starts to change around then, indicating that the SOL starts hitting the baffle and it's normal that the target currect will be reduced
 				fulcher_band_detachment = 0.703 # from DMS, when it starts to decrease at the target location
 				fulcher_band_detachment_current = 0.6E19
 			if int(name[-9:-4]) == 45473:
-				t_end = np.abs(time_full_binned_crop-0.75).argmin() - len(time_full_binned_crop)
+				t_min = 0.3
+				t_end = np.abs(time_full_binned_crop-0.70).argmin() - len(time_full_binned_crop)	# 20/02/2025 I reduce from 0.75 as psi on the babble starts to change around then, indicating that the SOL starts hitting the baffle and it's normal that the target currect will be reduced
 				fulcher_band_detachment = 0.711 # from DMS, when it starts to decrease at the target location
 				fulcher_band_detachment_current = 0.55E19
 			if int(name[-9:-4]) == 46864:
@@ -236,38 +261,40 @@ if False:	# plot for the papers
 				t_end = np.abs(time_full_binned_crop-0.72).argmin() - len(time_full_binned_crop)
 			if int(name[-9:-4]) == 46866:
 				t_min = 0.4
-				t_end = np.abs(time_full_binned_crop-0.8).argmin() - len(time_full_binned_crop)
+				t_end = np.abs(time_full_binned_crop-0.7).argmin() - len(time_full_binned_crop)	# 20/02/2025 I reduce from 0.8 as psi on the babble starts to change around then, indicating that the SOL starts hitting the baffle and it's normal that the target currect will be reduced
 			if int(name[-9:-4]) == 46769:
 				t_min = 0.4
 				t_end = np.abs(time_full_binned_crop-0.8).argmin() - len(time_full_binned_crop)
 			if int(name[-9:-4]) == 46702:
 				t_end = np.abs(time_full_binned_crop-0.6).argmin() - len(time_full_binned_crop)
 			if int(name[-9:-4]) == 47950:
-				t_min = 0.4
-				t_end = np.abs(time_full_binned_crop-0.75).argmin() - len(time_full_binned_crop)
+				t_min = 0.3
+				t_end = np.abs(time_full_binned_crop-0.65).argmin() - len(time_full_binned_crop)	# 20/02/2025 I reduce from 0.75 as psi on the babble starts to change around then, indicating that the SOL starts hitting the baffle and it's normal that the target currect will be reduced
 				fulcher_band_detachment = 0.560 # from DMS, when it starts to decrease at the target location
 				fulcher_band_detachment_current = 1E19
 				fulcher_band_detachment_pressure = 27	# Pa
 			if int(name[-9:-4]) == 47973:
 				t_min = 0.4
-				t_end = np.abs(time_full_binned_crop-0.7).argmin() - len(time_full_binned_crop)
+				t_end = np.abs(time_full_binned_crop-0.7).argmin() - len(time_full_binned_crop)	# 20/02/2025 I reduce from 0.75 as psi on the babble starts to change around then, indicating that the SOL starts hitting the baffle and it's normal that the target currect will be reduced
 				fulcher_band_detachment = np.nan
 				fulcher_band_detachment_current = np.nan
 			if int(name[-9:-4]) == 48144:
-				t_min = 0.5
-				t_end = np.abs(time_full_binned_crop-0.7).argmin() - len(time_full_binned_crop)
+				t_min = 0.3
+				t_end = np.abs(time_full_binned_crop-0.7).argmin() - len(time_full_binned_crop)	# 20/02/2025 I reduce from 0.75 as psi on the babble starts to change around then, indicating that the SOL starts hitting the baffle and it's normal that the target currect will be reduced
 				fulcher_band_detachment = 0.615 # from DMS, when it starts to decrease at the target location
 				fulcher_band_detachment_current = 1E19
 				fulcher_band_detachment_pressure = 25	# Pa
 			if int(name[-9:-4]) == 48328:
 				t_min = 0.4
-				t_end = np.abs(time_full_binned_crop-0.7).argmin() - len(time_full_binned_crop)
+				t_end = np.abs(time_full_binned_crop-0.7).argmin() - len(t
+
+				ime_full_binned_crop)
 			if int(name[-9:-4]) == 48335:
 				t_min = 0.5
 				t_end = np.abs(time_full_binned_crop-0.85).argmin() - len(time_full_binned_crop)
 			if int(name[-9:-4]) == 48336:
-				t_min = 0.4
-				t_end = np.abs(time_full_binned_crop-0.82).argmin() - len(time_full_binned_crop)
+				t_min = 0.3
+				t_end = np.abs(time_full_binned_crop-0.80).argmin() - len(time_full_binned_crop)	# 20/02/2025 I reduce from 0.75 as psi on the babble starts to change around then, indicating that the SOL starts hitting the baffle and it's normal that the target currect will be reduced
 				fulcher_band_detachment = 0.787 # DMS not available, when MWI Fulcher starts to decrease at the target location and passes through gain ~3
 				fulcher_band_detachment_current = 1.35E19
 				fulcher_band_detachment_pressure = 30	# Pa
@@ -281,14 +308,14 @@ if False:	# plot for the papers
 				t_min = 0.4
 				t_end = np.abs(time_full_binned_crop-0.7).argmin() - len(time_full_binned_crop)
 			if int(name[-9:-4]) == 46867:
-				t_min = 0.4
-				t_end = np.abs(time_full_binned_crop-0.75).argmin() - len(time_full_binned_crop)
+				t_min = 0.3
+				t_end = np.abs(time_full_binned_crop-0.70).argmin() - len(time_full_binned_crop)	# 20/02/2025 I reduce from 0.75 as psi on the babble starts to change around then, indicating that the SOL starts hitting the baffle and it's normal that the target currect will be reduced
 				fulcher_band_detachment = 0.570 # from DMS, when it starts to decrease at the target location
 				fulcher_band_detachment_current = 0.9E19
 				fulcher_band_detachment_pressure = 40	# Pa
 			if int(name[-9:-4]) == 46868:
 				t_min = 0.4
-				t_end = np.abs(time_full_binned_crop-0.75).argmin() - len(time_full_binned_crop)
+				t_end = np.abs(time_full_binned_crop-0.70).argmin() - len(time_full_binned_crop)	# 20/02/2025 I reduce from 0.75 as psi on the babble starts to change around then, indicating that the SOL starts hitting the baffle and it's normal that the target currect will be reduced
 				fulcher_band_detachment = 0.684 # DMS not available, when MWI Fulcher starts to decrease at the target location and passes through gain ~3
 				fulcher_band_detachment_current = 1.1E19
 				fulcher_band_detachment_pressure = 35	# Pa
@@ -300,6 +327,7 @@ if False:	# plot for the papers
 			if int(name[-9:-4]) == 49408:
 				t_min = 0.4
 				t_end = np.abs(time_full_binned_crop-0.8).argmin() - len(time_full_binned_crop)
+				fulcher_band_detachment = 0.650 # from DMS, when it starts to decrease at the target location
 			if int(name[-9:-4]) == 49283:
 				t_min = 0.4
 				t_end = np.abs(time_full_binned_crop-0.85).argmin() - len(time_full_binned_crop)
@@ -377,8 +405,21 @@ if False:	# plot for the papers
 			inner_L_poloidal_x_point_all = inverted_dict[str(grid_resolution)]['inner_L_poloidal_x_point_all']
 
 			inner_half_peak_L_pol_all = inverted_dict[str(grid_resolution)]['inner_half_peak_L_pol_all']
+			inner_half_peak_L_pol_all = np.array(inner_half_peak_L_pol_all)
+			inner_half_peak_L_pol_all_down = inner_half_peak_L_pol_all[:,0]
+			inner_half_peak_L_pol_all_up = inner_half_peak_L_pol_all[:,2]
+			inner_half_peak_L_pol_all = inner_half_peak_L_pol_all[:,1]
+			inner_half_peak_L_pol_all_down = np.maximum(inner_half_peak_L_pol_all-inner_half_peak_L_pol_all_down,0)
+			inner_half_peak_L_pol_all_up = np.maximum(inner_half_peak_L_pol_all_up - inner_half_peak_L_pol_all,0)
+			movement_local_outer_leg_mean_emissivity = inverted_dict[str(grid_resolution)]['movement_local_outer_leg_mean_emissivity']
 			movement_local_inner_leg_mean_emissivity = inverted_dict[str(grid_resolution)]['movement_local_inner_leg_mean_emissivity']
 			outer_half_peak_L_pol_all = inverted_dict[str(grid_resolution)]['outer_half_peak_L_pol_all']
+			outer_half_peak_L_pol_all = np.array(outer_half_peak_L_pol_all)
+			outer_half_peak_L_pol_all_down = outer_half_peak_L_pol_all[:,0]
+			outer_half_peak_L_pol_all_up = outer_half_peak_L_pol_all[:,2]
+			outer_half_peak_L_pol_all = outer_half_peak_L_pol_all[:,1]
+			outer_half_peak_L_pol_all_down = np.maximum(outer_half_peak_L_pol_all-outer_half_peak_L_pol_all_down,0)
+			outer_half_peak_L_pol_all_up = np.maximum(outer_half_peak_L_pol_all_up - outer_half_peak_L_pol_all,0)
 			movement_local_outer_leg_mean_emissivity = inverted_dict[str(grid_resolution)]['movement_local_outer_leg_mean_emissivity']
 
 			energy_confinement_time = _dict['multi_instrument']['energy_confinement_time']
@@ -393,39 +434,49 @@ if False:	# plot for the papers
 			# nu_EFIT = median_filter(nu_EFIT,size=int(0.05//(np.diff(time_full_binned_crop).mean())))
 			# nu_EFIT is noisy, I used the smoothed version
 			nu_EFIT = np.array(_dict['multi_instrument']['nu_EFIT_smoothing'])/1E19
+			nu_EFIT_smoothing_time_uncertainty = np.array(_dict['multi_instrument']['nu_EFIT_smoothing_time_uncertainty'])/1E19
+			nu_EFIT_smoothing_spatial_uncertainty = np.array(_dict['multi_instrument']['nu_EFIT_smoothing_spatial_uncertainty'])/1E19
+			nu_EFIT_smoothing_uncertainty = (nu_EFIT_smoothing_time_uncertainty**2 + nu_EFIT_smoothing_spatial_uncertainty**2)**0.5
 			try:
 				jsat_lower_outer_mid_integrated = _dict['multi_instrument']['jsat_lower_outer_mid_integrated']
 				jsat_upper_outer_mid_integrated = _dict['multi_instrument']['jsat_upper_outer_mid_integrated']
 				jsat_lower_outer_mid_integrated_sigma = _dict['multi_instrument']['jsat_lower_outer_mid_integrated_sigma']
 				jsat_upper_outer_mid_integrated_sigma = _dict['multi_instrument']['jsat_upper_outer_mid_integrated_sigma']
-				ax[1,0].plot((core_density)[time_full_binned_crop>t_min][:t_end],(jsat_lower_outer_mid_integrated)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
-				ax[1,0].plot((core_density)[time_full_binned_crop>t_min][:t_end],(jsat_upper_outer_mid_integrated)[time_full_binned_crop>t_min][:t_end],markers[(n_shot_added+len(color))//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
-				ax1[0,0].errorbar((f_gw)[time_full_binned_crop>t_min][:t_end],(jsat_lower_outer_mid_integrated)[time_full_binned_crop>t_min][:t_end],yerr=(jsat_lower_outer_mid_integrated_sigma)[time_full_binned_crop>t_min][:t_end],fmt='+',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5,capsize=5)
-				ax1[1,0].errorbar((f_gw)[time_full_binned_crop>t_min][:t_end],(jsat_upper_outer_mid_integrated)[time_full_binned_crop>t_min][:t_end],yerr=(jsat_upper_outer_mid_integrated_sigma)[time_full_binned_crop>t_min][:t_end],fmt='+',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5,capsize=5)
-				ax1a[1,0].errorbar((nu_cowley)[time_full_binned_crop>t_min][:t_end],(jsat_lower_outer_mid_integrated)[time_full_binned_crop>t_min][:t_end]/1.6e-19*1e-22,yerr=(jsat_lower_outer_mid_integrated_sigma)[time_full_binned_crop>t_min][:t_end]/1.6e-19*1e-22,fmt='+',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5,capsize=5)
-				ax1a[0,0].errorbar((nu_cowley)[time_full_binned_crop>t_min][:t_end],(jsat_upper_outer_mid_integrated)[time_full_binned_crop>t_min][:t_end]/1.6e-19*1e-22,yerr=(jsat_upper_outer_mid_integrated_sigma)[time_full_binned_crop>t_min][:t_end]/1.6e-19*1e-22,fmt='+',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5,capsize=5)
+				if what_to_plot_selector[0]:
+					ax[1,0].plot((core_density)[time_full_binned_crop>t_min][:t_end],(jsat_lower_outer_mid_integrated)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
+					ax[1,0].plot((core_density)[time_full_binned_crop>t_min][:t_end],(jsat_upper_outer_mid_integrated)[time_full_binned_crop>t_min][:t_end],markers[(n_shot_added+len(color))//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
+				if what_to_plot_selector[1]:
+					ax1[0,0].errorbar((f_gw)[time_full_binned_crop>t_min][:t_end],(jsat_lower_outer_mid_integrated)[time_full_binned_crop>t_min][:t_end],yerr=(jsat_lower_outer_mid_integrated_sigma)[time_full_binned_crop>t_min][:t_end],fmt='+',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5,capsize=5)
+					ax1[1,0].errorbar((f_gw)[time_full_binned_crop>t_min][:t_end],(jsat_upper_outer_mid_integrated)[time_full_binned_crop>t_min][:t_end],yerr=(jsat_upper_outer_mid_integrated_sigma)[time_full_binned_crop>t_min][:t_end],fmt='+',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5,capsize=5)
+				if what_to_plot_selector[2]:
+					ax1a[1,0].errorbar((nu_cowley)[time_full_binned_crop>t_min][:t_end],(jsat_lower_outer_mid_integrated)[time_full_binned_crop>t_min][:t_end]/1.6e-19*1e-22,yerr=(jsat_lower_outer_mid_integrated_sigma)[time_full_binned_crop>t_min][:t_end]/1.6e-19*1e-22,fmt='+',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5,capsize=5)
+					ax1a[0,0].errorbar((nu_cowley)[time_full_binned_crop>t_min][:t_end],(jsat_upper_outer_mid_integrated)[time_full_binned_crop>t_min][:t_end]/1.6e-19*1e-22,yerr=(jsat_upper_outer_mid_integrated_sigma)[time_full_binned_crop>t_min][:t_end]/1.6e-19*1e-22,fmt='+',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5,capsize=5)
 			except:
 				pass
-			try:
-				ax4[0,0].errorbar(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),(jsat_lower_outer_mid_integrated)[time_full_binned_crop>t_min][:t_end],yerr=(jsat_lower_outer_mid_integrated_sigma)[time_full_binned_crop>t_min][:t_end],fmt='+',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5,capsize=5)
-				ax4[1,0].errorbar(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),(jsat_upper_outer_mid_integrated)[time_full_binned_crop>t_min][:t_end],yerr=(jsat_upper_outer_mid_integrated_sigma)[time_full_binned_crop>t_min][:t_end],fmt='+',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5,capsize=5)
-			except:
-				pass
-			try:
-				ax5[1,0].errorbar(nu_EFIT[time_full_binned_crop>t_min][:t_end],(jsat_lower_outer_mid_integrated)[time_full_binned_crop>t_min][:t_end],yerr=(jsat_lower_outer_mid_integrated_sigma)[time_full_binned_crop>t_min][:t_end],fmt='+',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5,capsize=5)
-				ax5[0,0].errorbar(nu_EFIT[time_full_binned_crop>t_min][:t_end],(jsat_upper_outer_mid_integrated)[time_full_binned_crop>t_min][:t_end],yerr=(jsat_upper_outer_mid_integrated_sigma)[time_full_binned_crop>t_min][:t_end],fmt='+',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5,capsize=5)
-			except:
-				pass
+			if what_to_plot_selector[5]:
+				try:
+					ax4[0,0].errorbar(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),(jsat_lower_outer_mid_integrated)[time_full_binned_crop>t_min][:t_end],yerr=(jsat_lower_outer_mid_integrated_sigma)[time_full_binned_crop>t_min][:t_end],fmt='+',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5,capsize=5)
+					ax4[1,0].errorbar(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),(jsat_upper_outer_mid_integrated)[time_full_binned_crop>t_min][:t_end],yerr=(jsat_upper_outer_mid_integrated_sigma)[time_full_binned_crop>t_min][:t_end],fmt='+',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5,capsize=5)
+				except:
+					pass
+			if what_to_plot_selector[6]:
+				try:
+					# ax5[1,0].errorbar(nu_EFIT[time_full_binned_crop>t_min][:t_end],(jsat_lower_outer_mid_integrated)[time_full_binned_crop>t_min][:t_end],xerr=nu_EFIT_smoothing_uncertainty[time_full_binned_crop>t_min][:t_end],yerr=(jsat_lower_outer_mid_integrated_sigma)[time_full_binned_crop>t_min][:t_end],fmt='o',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.3,capsize=5)
+					# ax5[0,0].errorbar(nu_EFIT[time_full_binned_crop>t_min][:t_end],(jsat_upper_outer_mid_integrated)[time_full_binned_crop>t_min][:t_end],xerr=nu_EFIT_smoothing_uncertainty[time_full_binned_crop>t_min][:t_end],yerr=(jsat_upper_outer_mid_integrated_sigma)[time_full_binned_crop>t_min][:t_end],fmt='o',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.3,capsize=5)
+					ax5[1,0].errorbar(nu_EFIT[time_full_binned_crop>t_min][:t_end][::possible_time_skip],(jsat_lower_outer_mid_integrated)[time_full_binned_crop>t_min][:t_end][::possible_time_skip],xerr=nu_EFIT_smoothing_uncertainty[time_full_binned_crop>t_min][:t_end][::possible_time_skip],yerr=(jsat_lower_outer_mid_integrated_sigma)[time_full_binned_crop>t_min][:t_end][::possible_time_skip],fmt='o',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.3,capsize=5)
+					ax5[0,0].errorbar(nu_EFIT[time_full_binned_crop>t_min][:t_end][::possible_time_skip],(jsat_upper_outer_mid_integrated)[time_full_binned_crop>t_min][:t_end][::possible_time_skip],xerr=nu_EFIT_smoothing_uncertainty[time_full_binned_crop>t_min][:t_end][::possible_time_skip],yerr=(jsat_upper_outer_mid_integrated_sigma)[time_full_binned_crop>t_min][:t_end][::possible_time_skip],fmt='o',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.3,capsize=5)
+				except:
+					pass
 
-			try:
-				ax5[0,3].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(energy_confinement_time)[time_full_binned_crop>t_min][:t_end]*1000,'+',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
-			except:
-				pass
+				try:
+					ax5[0,3].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(energy_confinement_time)[time_full_binned_crop>t_min][:t_end]*1000,'+',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
+				except:
+					pass
 
-			try:
-				ax5[1,3].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],dr_sep_out[time_full_binned_crop>t_min][:t_end]*1000,'+',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
-			except:
-				pass
+				try:
+					ax5[1,3].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],dr_sep_out[time_full_binned_crop>t_min][:t_end]*1000,'+',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
+				except:
+					pass
 
 			try:
 				time_start_MARFE = _dict['multi_instrument']['time_start_MARFE']
@@ -463,112 +514,128 @@ if False:	# plot for the papers
 			# if np.nanmax(median_filter(outer_L_poloidal_peak_all/outer_L_poloidal_x_point_all,size=1)) >0.9:
 			# 	outer_L_poloidal_peak_all[np.nanargmax(median_filter(outer_L_poloidal_peak_all/outer_L_poloidal_x_point_all,size=1)):] = np.nan
 
-			ax[0,0].plot(core_density[time_full_binned_crop>t_min][:t_end],(inner_L_poloidal_peak_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
-			ax[0,1].plot(core_density[time_full_binned_crop>t_min][:t_end],(inner_L_poloidal_peak_only_leg_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
-			ax[0,2].plot(core_density[time_full_binned_crop>t_min][:t_end],(inner_L_poloidal_baricentre_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4]+' '+scenario+' '+experiment,alpha=0.5)
-			ax[1,1].plot(core_density[time_full_binned_crop>t_min][:t_end],(outer_L_poloidal_peak_all/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4]+' '+scenario+' '+experiment,alpha=0.5)
-			ax[1,2].plot(core_density[time_full_binned_crop>t_min][:t_end],(outer_L_poloidal_baricentre_all/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4]+' '+scenario+' '+experiment,alpha=0.5)
+			if what_to_plot_selector[0]:
+				ax[0,0].plot(core_density[time_full_binned_crop>t_min][:t_end],(inner_L_poloidal_peak_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
+				ax[0,1].plot(core_density[time_full_binned_crop>t_min][:t_end],(inner_L_poloidal_peak_only_leg_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
+				ax[0,2].plot(core_density[time_full_binned_crop>t_min][:t_end],(inner_L_poloidal_baricentre_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4]+' '+scenario+' '+experiment,alpha=0.5)
+				ax[1,1].plot(core_density[time_full_binned_crop>t_min][:t_end],(outer_L_poloidal_peak_all/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4]+' '+scenario+' '+experiment,alpha=0.5)
+				ax[1,2].plot(core_density[time_full_binned_crop>t_min][:t_end],(outer_L_poloidal_baricentre_all/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4]+' '+scenario+' '+experiment,alpha=0.5)
 
 
-			ax1[0,1].plot((f_gw)[time_full_binned_crop>t_min][:t_end],(inner_L_poloidal_peak_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
-			ax1[0,0].axvline(x=(f_gw)[np.abs(time_full_binned_crop-time_start_MARFE).argmin()],linestyle='--',color=color[n_shot_added%len(color)])
-			ax1[0,1].axvline(x=(f_gw)[np.abs(time_full_binned_crop-time_start_MARFE).argmin()],linestyle='--',color=color[n_shot_added%len(color)])
-			ax1[0,0].axvline(x=(f_gw)[np.abs(time_full_binned_crop-time_active_MARFE).argmin()],linestyle='-',color=color[n_shot_added%len(color)])
-			ax1[0,1].axvline(x=(f_gw)[np.abs(time_full_binned_crop-time_active_MARFE).argmin()],linestyle='-',color=color[n_shot_added%len(color)])
-			# ax1[0,1].plot((f_gw)[time_full_binned_crop>t_min][:t_end],(inner_L_poloidal_peak_only_leg_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
-			ax1[0,2].plot((f_gw)[time_full_binned_crop>t_min][:t_end],(inner_L_poloidal_baricentre_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4]+' '+scenario+' '+experiment,alpha=0.5)
-			# ax1[1,1].plot((f_gw)[time_full_binned_crop>t_min][:t_end],(outer_L_poloidal_peak_all/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4]+' '+scenario+' '+experiment,alpha=0.5)
-			ax1[1,1].plot((f_gw)[time_full_binned_crop>t_min][:t_end],(true_outer_target_position/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4]+' '+scenario+' '+experiment,alpha=0.5)
-			ax1[1,0].axvline(x=(f_gw)[np.abs(time_full_binned_crop-time_start_MARFE).argmin()],linestyle='--',color=color[n_shot_added%len(color)])
-			ax1[1,1].axvline(x=(f_gw)[np.abs(time_full_binned_crop-time_start_MARFE).argmin()],linestyle='--',color=color[n_shot_added%len(color)])
-			ax1[1,0].axvline(x=(f_gw)[np.abs(time_full_binned_crop-time_active_MARFE).argmin()],linestyle='-',color=color[n_shot_added%len(color)])
-			ax1[1,1].axvline(x=(f_gw)[np.abs(time_full_binned_crop-time_active_MARFE).argmin()],linestyle='-',color=color[n_shot_added%len(color)])
-			ax1[1,2].plot((f_gw)[time_full_binned_crop>t_min][:t_end],(outer_L_poloidal_baricentre_all/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4]+' '+scenario+' '+experiment,alpha=0.5)
+			if what_to_plot_selector[1]:
+				ax1[0,1].plot((f_gw)[time_full_binned_crop>t_min][:t_end],(inner_L_poloidal_peak_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
+				ax1[0,0].axvline(x=(f_gw)[np.abs(time_full_binned_crop-time_start_MARFE).argmin()],linestyle='--',color=color[n_shot_added%len(color)])
+				ax1[0,1].axvline(x=(f_gw)[np.abs(time_full_binned_crop-time_start_MARFE).argmin()],linestyle='--',color=color[n_shot_added%len(color)])
+				ax1[0,0].axvline(x=(f_gw)[np.abs(time_full_binned_crop-time_active_MARFE).argmin()],linestyle='-',color=color[n_shot_added%len(color)])
+				ax1[0,1].axvline(x=(f_gw)[np.abs(time_full_binned_crop-time_active_MARFE).argmin()],linestyle='-',color=color[n_shot_added%len(color)])
+				# ax1[0,1].plot((f_gw)[time_full_binned_crop>t_min][:t_end],(inner_L_poloidal_peak_only_leg_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
+				# ax1[0,2].plot((f_gw)[time_full_binned_crop>t_min][:t_end],(inner_L_poloidal_baricentre_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4]+' '+scenario+' '+experiment,alpha=0.5)
+				ax1[0,2].plot(f_gw[time_full_binned_crop>t_min][:t_end],(inner_half_peak_L_pol_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4]+' '+scenario+' '+experiment,alpha=0.5)
 
-			ax1a[0,1].plot((nu_cowley)[time_full_binned_crop>t_min][:t_end],(inner_L_poloidal_peak_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
-			# ax1a[0,0].axvline(x=(nu_cowley)[np.abs(time_full_binned_crop-time_start_MARFE).argmin()],linestyle='--',color=color[n_shot_added%len(color)])
-			if time_start_MARFE>t_min:
-				ax1a[0,1].axvline(x=(nu_cowley)[np.abs(time_full_binned_crop-time_start_MARFE).argmin()],linestyle='--',color=color[n_shot_added%len(color)])
-			# ax1a[0,0].axvline(x=(nu_cowley)[np.abs(time_full_binned_crop-time_active_MARFE).argmin()],linestyle='-',color=color[n_shot_added%len(color)])
-			# ax1a[0,1].axvline(x=(nu_cowley)[np.abs(time_full_binned_crop-time_active_MARFE).argmin()],linestyle='-',color=color[n_shot_added%len(color)])
-			ax1a[1,1].plot((nu_cowley)[time_full_binned_crop>t_min][:t_end],(true_outer_target_position/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4]+' '+scenario+' '+experiment,alpha=0.5)
-			# ax1a[1,0].axvline(x=(nu_cowley)[np.abs(time_full_binned_crop-time_start_MARFE).argmin()],linestyle='--',color=color[n_shot_added%len(color)])
-			# ax1a[1,1].axvline(x=(nu_cowley)[np.abs(time_full_binned_crop-time_start_MARFE).argmin()],linestyle='--',color=color[n_shot_added%len(color)])
-			# ax1a[1,0].axvline(x=(nu_cowley)[np.abs(time_full_binned_crop-time_active_MARFE).argmin()],linestyle='-',color=color[n_shot_added%len(color)])
-			# ax1a[1,1].axvline(x=(nu_cowley)[np.abs(time_full_binned_crop-time_active_MARFE).argmin()],linestyle='-',color=color[n_shot_added%len(color)])
+				# ax1[1,1].plot((f_gw)[time_full_binned_crop>t_min][:t_end],(outer_L_poloidal_peak_all/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4]+' '+scenario+' '+experiment,alpha=0.5)
+				ax1[1,1].plot((f_gw)[time_full_binned_crop>t_min][:t_end],(true_outer_target_position/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4]+' '+scenario+' '+experiment,alpha=0.5)
+				ax1[1,0].axvline(x=(f_gw)[np.abs(time_full_binned_crop-time_start_MARFE).argmin()],linestyle='--',color=color[n_shot_added%len(color)])
+				ax1[1,1].axvline(x=(f_gw)[np.abs(time_full_binned_crop-time_start_MARFE).argmin()],linestyle='--',color=color[n_shot_added%len(color)])
+				ax1[1,0].axvline(x=(f_gw)[np.abs(time_full_binned_crop-time_active_MARFE).argmin()],linestyle='-',color=color[n_shot_added%len(color)])
+				ax1[1,1].axvline(x=(f_gw)[np.abs(time_full_binned_crop-time_active_MARFE).argmin()],linestyle='-',color=color[n_shot_added%len(color)])
+				# ax1[1,2].plot((f_gw)[time_full_binned_crop>t_min][:t_end],(outer_L_poloidal_baricentre_all/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4]+' '+scenario+' '+experiment,alpha=0.5)
+				ax1[1,2].plot(f_gw[time_full_binned_crop>t_min][:t_end],((outer_half_peak_L_pol_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4]+' '+scenario+' '+experiment,alpha=0.5)
 
-			ax2[0,0].plot((energy_confinement_time)[time_full_binned_crop>t_min][:t_end],(inner_L_poloidal_peak_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
-			ax2[0,1].plot((energy_confinement_time)[time_full_binned_crop>t_min][:t_end],(inner_L_poloidal_peak_only_leg_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
-			ax2[0,2].plot((energy_confinement_time)[time_full_binned_crop>t_min][:t_end],(inner_L_poloidal_baricentre_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4]+' '+scenario+' '+experiment,alpha=0.5)
-			ax2[1,1].plot((energy_confinement_time)[time_full_binned_crop>t_min][:t_end],(outer_L_poloidal_peak_all/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4]+' '+scenario+' '+experiment,alpha=0.5)
-			ax2[1,2].plot((energy_confinement_time)[time_full_binned_crop>t_min][:t_end],(outer_L_poloidal_baricentre_all/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4]+' '+scenario+' '+experiment,alpha=0.5)
+			if what_to_plot_selector[2]:
+				ax1a[0,1].plot((nu_cowley)[time_full_binned_crop>t_min][:t_end],(inner_L_poloidal_peak_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
+				# ax1a[0,0].axvline(x=(nu_cowley)[np.abs(time_full_binned_crop-time_start_MARFE).argmin()],linestyle='--',color=color[n_shot_added%len(color)])
+				if time_start_MARFE>t_min:
+					ax1a[0,1].axvline(x=(nu_cowley)[np.abs(time_full_binned_crop-time_start_MARFE).argmin()],linestyle='--',color=color[n_shot_added%len(color)])
+				# ax1a[0,0].axvline(x=(nu_cowley)[np.abs(time_full_binned_crop-time_active_MARFE).argmin()],linestyle='-',color=color[n_shot_added%len(color)])
+				# ax1a[0,1].axvline(x=(nu_cowley)[np.abs(time_full_binned_crop-time_active_MARFE).argmin()],linestyle='-',color=color[n_shot_added%len(color)])
+				ax1a[1,1].plot((nu_cowley)[time_full_binned_crop>t_min][:t_end],(true_outer_target_position/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4]+' '+scenario+' '+experiment,alpha=0.5)
+				# ax1a[1,0].axvline(x=(nu_cowley)[np.abs(time_full_binned_crop-time_start_MARFE).argmin()],linestyle='--',color=color[n_shot_added%len(color)])
+				# ax1a[1,1].axvline(x=(nu_cowley)[np.abs(time_full_binned_crop-time_start_MARFE).argmin()],linestyle='--',color=color[n_shot_added%len(color)])
+				# ax1a[1,0].axvline(x=(nu_cowley)[np.abs(time_full_binned_crop-time_active_MARFE).argmin()],linestyle='-',color=color[n_shot_added%len(color)])
+				# ax1a[1,1].axvline(x=(nu_cowley)[np.abs(time_full_binned_crop-time_active_MARFE).argmin()],linestyle='-',color=color[n_shot_added%len(color)])
 
-			ax3[0,0].plot((energy_confinement_time/energy_confinement_time_LST)[time_full_binned_crop>t_min][:t_end],(inner_L_poloidal_peak_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
-			ax3[0,1].plot((energy_confinement_time/energy_confinement_time_LST)[time_full_binned_crop>t_min][:t_end],(inner_L_poloidal_peak_only_leg_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
-			ax3[0,2].plot((energy_confinement_time/energy_confinement_time_LST)[time_full_binned_crop>t_min][:t_end],(inner_L_poloidal_baricentre_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4]+' '+scenario+' '+experiment,alpha=0.5)
-			ax3[1,1].plot((energy_confinement_time/energy_confinement_time_LST)[time_full_binned_crop>t_min][:t_end],(outer_L_poloidal_peak_all/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4]+' '+scenario+' '+experiment,alpha=0.5)
-			ax3[1,2].plot((energy_confinement_time/energy_confinement_time_LST)[time_full_binned_crop>t_min][:t_end],(outer_L_poloidal_baricentre_all/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4]+' '+scenario+' '+experiment,alpha=0.5)
+			if what_to_plot_selector[3]:
+				ax2[0,0].plot((energy_confinement_time)[time_full_binned_crop>t_min][:t_end],(inner_L_poloidal_peak_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
+				ax2[0,1].plot((energy_confinement_time)[time_full_binned_crop>t_min][:t_end],(inner_L_poloidal_peak_only_leg_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
+				ax2[0,2].plot((energy_confinement_time)[time_full_binned_crop>t_min][:t_end],(inner_L_poloidal_baricentre_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4]+' '+scenario+' '+experiment,alpha=0.5)
+				ax2[1,1].plot((energy_confinement_time)[time_full_binned_crop>t_min][:t_end],(outer_L_poloidal_peak_all/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4]+' '+scenario+' '+experiment,alpha=0.5)
+				ax2[1,2].plot((energy_confinement_time)[time_full_binned_crop>t_min][:t_end],(outer_L_poloidal_baricentre_all/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4]+' '+scenario+' '+experiment,alpha=0.5)
+
+			if what_to_plot_selector[4]:
+				ax3[0,0].plot((energy_confinement_time/energy_confinement_time_LST)[time_full_binned_crop>t_min][:t_end],(inner_L_poloidal_peak_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
+				ax3[0,1].plot((energy_confinement_time/energy_confinement_time_LST)[time_full_binned_crop>t_min][:t_end],(inner_L_poloidal_peak_only_leg_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
+				ax3[0,2].plot((energy_confinement_time/energy_confinement_time_LST)[time_full_binned_crop>t_min][:t_end],(inner_L_poloidal_baricentre_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4]+' '+scenario+' '+experiment,alpha=0.5)
+				ax3[1,1].plot((energy_confinement_time/energy_confinement_time_LST)[time_full_binned_crop>t_min][:t_end],(outer_L_poloidal_peak_all/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4]+' '+scenario+' '+experiment,alpha=0.5)
+				ax3[1,2].plot((energy_confinement_time/energy_confinement_time_LST)[time_full_binned_crop>t_min][:t_end],(outer_L_poloidal_baricentre_all/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4]+' '+scenario+' '+experiment,alpha=0.5)
 
 			if n_shot_added==0:
-				try:
-					ax4[0,1].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),(inner_L_poloidal_peak_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],alpha=0.3,label=r'$IN_{peak}$')
-					ax4[0,2].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),(inner_half_peak_L_pol_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$IN_{0.5\;front\;InLine}$')
-					# ax4[0,2].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),(movement_local_inner_leg_mean_emissivity/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$IN_{0.5\;front\;binned}$')
-					ax4[1,1].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),((outer_L_poloidal_peak_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{peak}$')
-					ax4[1,1].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),((outer_L_poloidal_peak_only_leg_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{peak\;only\;leg}$')
-					ax4[1,1].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),((true_outer_target_position)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{peak\;leg\;combined}$')
-					# ax4[1,1].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),(true_outer_target_position/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'s',fillstyle='none',color=color[n_shot_added%len(color)],alpha=0.3)
-					ax4[1,2].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),((outer_half_peak_L_pol_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{0.5\;front\;InLine}$')
-					# ax4[1,2].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),((movement_local_outer_leg_mean_emissivity)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{0.5\;front\;binned}$')
-				except:
-					pass
-				try:
-					ax5[0,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(inner_L_poloidal_peak_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],alpha=0.3,label=r'$IN_{peak}$')
-					ax5[0,2].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(inner_half_peak_L_pol_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$IN_{0.5\;front\;InLine}$')
-					# ax5[0,2].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(movement_local_inner_leg_mean_emissivity/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$IN_{0.5\;front\;binned}$')
-					# ax5[1,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((outer_L_poloidal_peak_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{peak}$')
-					# ax5[1,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((outer_L_poloidal_peak_only_leg_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{peak\;only\;leg}$')
-					ax5[1,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((true_outer_target_position)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{peak\;leg\;combined}$')
-					# ax5[1,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(true_outer_target_position/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'s',fillstyle='none',color=color[n_shot_added%len(color)],alpha=0.3)
-					ax5[1,2].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((outer_half_peak_L_pol_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{0.5\;front\;InLine}$')
-					# ax5[1,2].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((movement_local_outer_leg_mean_emissivity)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{0.5\;front\;binned}$')
-				except:
-					pass
+				if what_to_plot_selector[5]:
+					try:
+						ax4[0,1].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),(inner_L_poloidal_peak_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],alpha=0.3,label=r'$IN_{peak}$')
+						ax4[0,2].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),(inner_half_peak_L_pol_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$IN_{0.5\;front\;InLine}$')
+						# ax4[0,2].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),(movement_local_inner_leg_mean_emissivity/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$IN_{0.5\;front\;binned}$')
+						ax4[1,1].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),((outer_L_poloidal_peak_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{peak}$')
+						ax4[1,1].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),((outer_L_poloidal_peak_only_leg_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{peak\;only\;leg}$')
+						ax4[1,1].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),((true_outer_target_position)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{peak\;leg\;combined}$')
+						# ax4[1,1].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),(true_outer_target_position/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'s',fillstyle='none',color=color[n_shot_added%len(color)],alpha=0.3)
+						ax4[1,2].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),((outer_half_peak_L_pol_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{0.5\;front\;InLine}$')
+						# ax4[1,2].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),((movement_local_outer_leg_mean_emissivity)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{0.5\;front\;binned}$')
+					except:
+						pass
+				if what_to_plot_selector[6]:
+					try:
+						ax5[0,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(inner_L_poloidal_peak_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],alpha=0.3,label=r'$IN_{peak}$')
+						# ax5[0,2].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(inner_half_peak_L_pol_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$IN_{0.5\;front\;InLine}$')
+						ax5[0,2].errorbar(nu_EFIT[time_full_binned_crop>t_min][:t_end],((inner_half_peak_L_pol_all)/(inner_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],yerr = [(inner_half_peak_L_pol_all_down/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],(inner_half_peak_L_pol_all_up/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end]],fmt='o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$IN_{0.5\;front\;InLine}$')
+						# ax5[0,2].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(movement_local_inner_leg_mean_emissivity/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$IN_{0.5\;front\;binned}$')
+						# ax5[1,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((outer_L_poloidal_peak_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{peak}$')
+						# ax5[1,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((outer_L_poloidal_peak_only_leg_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{peak\;only\;leg}$')
+						ax5[1,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((true_outer_target_position)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{peak\;leg\;combined}$')
+						# ax5[1,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(true_outer_target_position/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'s',fillstyle='none',color=color[n_shot_added%len(color)],alpha=0.3)
+						# ax5[1,2].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((outer_half_peak_L_pol_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{0.5\;front\;InLine}$')
+						ax5[1,2].errorbar(nu_EFIT[time_full_binned_crop>t_min][:t_end],((outer_half_peak_L_pol_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],yerr = [(outer_half_peak_L_pol_all_down/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],(outer_half_peak_L_pol_all_up/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end]],fmt='o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{0.5\;front\;InLine}$')
+						# ax5[1,2].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((movement_local_outer_leg_mean_emissivity)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{0.5\;front\;binned}$')
+					except:
+						pass
 			else:
-				try:
-					# ax4[0,0].plot((energy_confinement_time/energy_confinement_time_LST)[time_full_binned_crop>t_min][:t_end],(psiN_peak_inner_all[:,0])[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],alpha=0.3)
-					ax4[0,1].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),(inner_L_poloidal_peak_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],alpha=0.3)
-					# ax4[0,0].axvline(x=(f_gw)[np.abs(time_full_binned_crop-time_start_MARFE).argmin()],linestyle='--',color=color[n_shot_added%len(color)])
-					# ax4[0,1].axvline(x=(f_gw)[np.abs(time_full_binned_crop-time_start_MARFE).argmin()],linestyle='--',color=color[n_shot_added%len(color)])
-					# ax4[0,0].axvline(x=(f_gw)[np.abs(time_full_binned_crop-time_active_MARFE).argmin()],linestyle='-',color=color[n_shot_added%len(color)])
-					# ax4[0,1].axvline(x=(f_gw)[np.abs(time_full_binned_crop-time_active_MARFE).argmin()],linestyle='-',color=color[n_shot_added%len(color)])
-					ax4[0,2].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),(inner_half_peak_L_pol_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3)
-					# ax4[0,2].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),(movement_local_inner_leg_mean_emissivity/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3)
-					# ax4[1,1].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),(true_outer_target_position/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],alpha=0.3)
-					ax4[1,1].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),((outer_L_poloidal_peak_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3)
-					ax4[1,1].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),((outer_L_poloidal_peak_only_leg_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3)
-					ax4[1,1].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),((true_outer_target_position)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3)
-					# ax4[1,1].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),(true_outer_target_position/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'s',fillstyle='none',color=color[n_shot_added%len(color)],alpha=0.3)
-					# ax4[1,0].axvline(x=(f_gw)[np.abs(time_full_binned_crop-time_start_MARFE).argmin()],linestyle='--',color=color[n_shot_added%len(color)])
-					# ax4[1,1].axvline(x=(f_gw)[np.abs(time_full_binned_crop-time_start_MARFE).argmin()],linestyle='--',color=color[n_shot_added%len(color)])
-					# ax4[1,0].axvline(x=(f_gw)[np.abs(time_full_binned_crop-time_active_MARFE).argmin()],linestyle='-',color=color[n_shot_added%len(color)])
-					# ax4[1,1].axvline(x=(f_gw)[np.abs(time_full_binned_crop-time_active_MARFE).argmin()],linestyle='-',color=color[n_shot_added%len(color)])
-					ax4[1,2].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),((outer_half_peak_L_pol_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3)
-					# ax4[1,2].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),((movement_local_outer_leg_mean_emissivity)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3)
-				except:
-					pass
-				try:
-					ax5[0,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(inner_L_poloidal_peak_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],alpha=0.3)
-					ax5[0,2].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(inner_half_peak_L_pol_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3)
-					# ax5[0,2].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(movement_local_inner_leg_mean_emissivity/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3)
-					# ax5[1,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((outer_L_poloidal_peak_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3)
-					# ax5[1,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((outer_L_poloidal_peak_only_leg_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3)
-					ax5[1,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((true_outer_target_position)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3)
-					# ax5[1,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(true_outer_target_position/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'s',fillstyle='none',color=color[n_shot_added%len(color)],alpha=0.3)
-					ax5[1,2].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((outer_half_peak_L_pol_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3)
-					# ax5[1,2].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((movement_local_outer_leg_mean_emissivity)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3)
-				except:
-					pass
+				if what_to_plot_selector[5]:
+					try:
+						# ax4[0,0].plot((energy_confinement_time/energy_confinement_time_LST)[time_full_binned_crop>t_min][:t_end],(psiN_peak_inner_all[:,0])[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],alpha=0.3)
+						ax4[0,1].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),(inner_L_poloidal_peak_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],alpha=0.3)
+						# ax4[0,0].axvline(x=(f_gw)[np.abs(time_full_binned_crop-time_start_MARFE).argmin()],linestyle='--',color=color[n_shot_added%len(color)])
+						# ax4[0,1].axvline(x=(f_gw)[np.abs(time_full_binned_crop-time_start_MARFE).argmin()],linestyle='--',color=color[n_shot_added%len(color)])
+						# ax4[0,0].axvline(x=(f_gw)[np.abs(time_full_binned_crop-time_active_MARFE).argmin()],linestyle='-',color=color[n_shot_added%len(color)])
+						# ax4[0,1].axvline(x=(f_gw)[np.abs(time_full_binned_crop-time_active_MARFE).argmin()],linestyle='-',color=color[n_shot_added%len(color)])
+						ax4[0,2].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),(inner_half_peak_L_pol_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3)
+						# ax4[0,2].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),(movement_local_inner_leg_mean_emissivity/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3)
+						# ax4[1,1].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),(true_outer_target_position/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],alpha=0.3)
+						ax4[1,1].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),((outer_L_poloidal_peak_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3)
+						ax4[1,1].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),((outer_L_poloidal_peak_only_leg_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3)
+						ax4[1,1].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),((true_outer_target_position)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3)
+						# ax4[1,1].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),(true_outer_target_position/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'s',fillstyle='none',color=color[n_shot_added%len(color)],alpha=0.3)
+						# ax4[1,0].axvline(x=(f_gw)[np.abs(time_full_binned_crop-time_start_MARFE).argmin()],linestyle='--',color=color[n_shot_added%len(color)])
+						# ax4[1,1].axvline(x=(f_gw)[np.abs(time_full_binned_crop-time_start_MARFE).argmin()],linestyle='--',color=color[n_shot_added%len(color)])
+						# ax4[1,0].axvline(x=(f_gw)[np.abs(time_full_binned_crop-time_active_MARFE).argmin()],linestyle='-',color=color[n_shot_added%len(color)])
+						# ax4[1,1].axvline(x=(f_gw)[np.abs(time_full_binned_crop-time_active_MARFE).argmin()],linestyle='-',color=color[n_shot_added%len(color)])
+						ax4[1,2].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),((outer_half_peak_L_pol_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3)
+						# ax4[1,2].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),((movement_local_outer_leg_mean_emissivity)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3)
+					except:
+						pass
+				if what_to_plot_selector[6]:
+					try:
+						ax5[0,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(inner_L_poloidal_peak_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],alpha=0.3)
+						# ax5[0,2].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(inner_half_peak_L_pol_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3)
+						ax5[0,2].errorbar(nu_EFIT[time_full_binned_crop>t_min][:t_end],((inner_half_peak_L_pol_all)/(inner_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],yerr = [(inner_half_peak_L_pol_all_down/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],(inner_half_peak_L_pol_all_up/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end]],fmt='o',color=color[n_shot_added%len(color)],alpha=0.3)
+						# ax5[0,2].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(movement_local_inner_leg_mean_emissivity/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3)
+						# ax5[1,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((outer_L_poloidal_peak_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3)
+						# ax5[1,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((outer_L_poloidal_peak_only_leg_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3)
+						ax5[1,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((true_outer_target_position)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3)
+						# ax5[1,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(true_outer_target_position/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'s',fillstyle='none',color=color[n_shot_added%len(color)],alpha=0.3)
+						# ax5[1,2].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((outer_half_peak_L_pol_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3)
+						ax5[1,2].errorbar(nu_EFIT[time_full_binned_crop>t_min][:t_end],((outer_half_peak_L_pol_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],yerr = [(outer_half_peak_L_pol_all_down/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],(outer_half_peak_L_pol_all_up/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end]],fmt='o',color=color[n_shot_added%len(color)],alpha=0.3)
+						# ax5[1,2].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((movement_local_outer_leg_mean_emissivity)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3)
+					except:
+						pass
 
 			print('included '+str(laser_to_analyse[-9:-4]))
 			n_shot_added +=1
@@ -576,196 +643,212 @@ if False:	# plot for the papers
 			print('failed '+str(laser_to_analyse[-9:-4]))
 			pass
 	# fig.suptitle('L poloidal peak or baricentre / L poloidal x-point\nDN-600-SXD-OH, shot number < 45366, Experiment Tags!=MU01-EXH-06 (large drsep)\nt>'+str(t_min*1e3)+'ms,t<t end-150ms')
-	fig1.suptitle('L poloidal peak or baricentre / L poloidal x-point\nDN-450/600/750-CD-OH, shot number < 45366, Experiment Tags!=MU01-EXH-01 (large drsep)\nt>'+str(t_min*1e3)+'ms,t<t end-150ms')
-	fig1a.suptitle('nu_colwey')
-	fig.suptitle('L poloidal peak or baricentre / L poloidal x-point\nDN-450/600/750-CD-OH, shot number < 45366, Experiment Tags!=MU01-EXH-01 (large drsep)\nt>'+str(t_min*1e3)+'ms,t<t end-150ms')
-	ax[0,0].legend(loc='best', fontsize='xx-small',ncol=2)
-	# ax[0,1].legend(loc='best', fontsize='xx-small',ncol=2)
-	# ax[1,2].legend(loc='best', fontsize='xx-small',ncol=2)
-	ax[0,0].set_ylabel('inner separatrix peak\nL poloidal/L poloidal x-point')
-	ax[0,1].set_ylabel('inner leg peak\nL poloidal/L poloidal x-point')
-	ax[0,2].set_ylabel('inner separatrix baricentre\nL poloidal/L poloidal x-point')
-	ax[1,1].set_ylabel('outer leg peak\nL poloidal/L poloidal x-point')
-	ax[1,2].set_ylabel('outer leg baricentre\nL poloidal/L poloidal x-point')
-	ax[1,1].set_xlabel(r'$<n_{e}>$ [#/m2]')
-	ax[1,2].set_xlabel(r'$<n_{e}>$ [#/m2]')
-	ax[0,0].grid()
-	ax[0,1].grid()
-	ax[0,2].grid()
-	ax[1,0].grid()
-	ax[1,1].grid()
-	ax[1,2].grid()
-	ax[0,0].axhline(y=1,linestyle='--',color='k')
-	ax[0,1].axhline(y=1,linestyle='--',color='k')
-	ax[0,2].axhline(y=1,linestyle='--',color='k')
-	ax[1,1].axhline(y=1,linestyle='--',color='k')
-	ax[1,2].axhline(y=1,linestyle='--',color='k')
-	ax1[0,0].legend(loc='best', fontsize='xx-small',ncol=2)
-	# ax1[1,2].legend(loc='best', fontsize='xx-small',ncol=2)
-	ax1[0,1].set_ylabel('inner separatrix peak\nL poloidal/L poloidal x-point')
-	# ax1[0,1].set_ylabel('inner leg peak\nL poloidal/L poloidal x-point')
-	ax1[0,2].set_ylabel('inner separatrix baricentre\nL poloidal/L poloidal x-point')
-	ax1[0,0].set_ylabel('integradet lower outer jsat')
-	ax1[1,0].set_ylabel('integradet upper outer jsat')
-	ax1[1,1].set_ylabel('outer leg peak\nL poloidal/L poloidal x-point')
-	ax1[1,2].set_ylabel('outer leg baricentre\nL poloidal/L poloidal x-point')
-	ax1[0,0].grid()
-	ax1[0,1].grid()
-	ax1[0,2].grid()
-	ax1[1,0].grid()
-	ax1[1,1].grid()
-	ax1[1,2].grid()
-	ax1[0,1].axhline(y=1,linestyle='--',color='k')
-	ax1[0,2].axhline(y=1,linestyle='--',color='k')
-	ax1[1,1].axhline(y=1,linestyle='--',color='k')
-	ax1[1,2].axhline(y=1,linestyle='--',color='k')
-	ax1[1,1].set_xlabel(r'$f_{GW}$'+' [au]')
-	ax1[1,2].set_xlabel(r'$f_{GW}$'+' [au]')
-	# ax1[1,1].set_xlim(right=0.27)
-	# ax1[1,1].set_xlim(right=0.27)
 
-	ax1a[0,0].legend(loc='best', fontsize='small',ncol=2)
-	ax1a[0,1].set_ylabel(r'${\hat{L}}_{peak}$ inner separatrix')
-	ax1a[0,0].set_ylabel('upper outer target\n'+r'particle flux [$10^{22}\#/s$]')
-	ax1a[1,0].set_ylabel('lower outer target\n'+r'particle flux [$10^{22}\#/s$]')
-	ax1a[1,1].set_ylabel(r'${\hat{L}}_{peak}$ outer separatrix')
-	ax1a[0,0].grid()
-	ax1a[0,1].grid()
-	ax1a[1,0].grid()
-	ax1a[1,1].grid()
-	ax1a[0,1].axhline(y=1,linestyle='--',color='k')
-	ax1a[1,1].axhline(y=1,linestyle='--',color='k')
-	ax1a[1,0].set_xlabel(r'$n_{e,up} [10^{19}\#/m^3]$ Cowley')
-	ax1a[1,1].set_xlabel(r'$n_{e,up} [10^{19}\#/m^3]$ Cowley')
+	if True:	# this is just to compress the wollowing lines
+		if what_to_plot_selector[1]:
+			fig1.suptitle('L poloidal peak or baricentre / L poloidal x-point\nDN-450/600/750-CD-OH, shot number < 45366, Experiment Tags!=MU01-EXH-01 (large drsep)\nt>'+str(t_min*1e3)+'ms,t<t end-150ms')
+		if what_to_plot_selector[2]:
+			fig1a.suptitle('nu_colwey')
+		if what_to_plot_selector[0]:
+			fig.suptitle('L poloidal peak or baricentre / L poloidal x-point\nDN-450/600/750-CD-OH, shot number < 45366, Experiment Tags!=MU01-EXH-01 (large drsep)\nt>'+str(t_min*1e3)+'ms,t<t end-150ms')
+			ax[0,0].legend(loc='best', fontsize='xx-small',ncol=2)
+			# ax[0,1].legend(loc='best', fontsize='xx-small',ncol=2)
+			# ax[1,2].legend(loc='best', fontsize='xx-small',ncol=2)
+			ax[0,0].set_ylabel('inner separatrix peak\nL poloidal/L poloidal x-point')
+			ax[0,1].set_ylabel('inner leg peak\nL poloidal/L poloidal x-point')
+			ax[0,2].set_ylabel('inner separatrix baricentre\nL poloidal/L poloidal x-point')
+			ax[1,1].set_ylabel('outer leg peak\nL poloidal/L poloidal x-point')
+			ax[1,2].set_ylabel('outer leg baricentre\nL poloidal/L poloidal x-point')
+			ax[1,1].set_xlabel(r'$<n_{e}>$ [#/m2]')
+			ax[1,2].set_xlabel(r'$<n_{e}>$ [#/m2]')
+			ax[0,0].grid()
+			ax[0,1].grid()
+			ax[0,2].grid()
+			ax[1,0].grid()
+			ax[1,1].grid()
+			ax[1,2].grid()
+			ax[0,0].axhline(y=1,linestyle='--',color='k')
+			ax[0,1].axhline(y=1,linestyle='--',color='k')
+			ax[0,2].axhline(y=1,linestyle='--',color='k')
+			ax[1,1].axhline(y=1,linestyle='--',color='k')
+			ax[1,2].axhline(y=1,linestyle='--',color='k')
+		if what_to_plot_selector[1]:
+			ax1[0,0].legend(loc='best', fontsize='xx-small',ncol=2)
+			# ax1[1,2].legend(loc='best', fontsize='xx-small',ncol=2)
+			ax1[0,1].set_ylabel('inner separatrix peak\nL poloidal/L poloidal x-point')
+			# ax1[0,1].set_ylabel('inner leg peak\nL poloidal/L poloidal x-point')
+			ax1[0,0].set_ylabel('integradet lower outer jsat')
+			ax1[1,0].set_ylabel('integradet upper outer jsat')
+			ax1[1,1].set_ylabel('outer leg peak\nL poloidal/L poloidal x-point')
+			# ax1[0,2].set_ylabel('inner separatrix baricentre\nL poloidal/L poloidal x-point')
+			# ax1[1,2].set_ylabel('outer leg baricentre\nL poloidal/L poloidal x-point')
+			ax1[0,2].set_ylabel(r'${\hat{L}}_{50\%}$ inner separatrix')#('inner sep 50% '+r'$L_{pol}/L_{pol \; X-point}$')
+			ax1[1,2].set_ylabel(r'${\hat{L}}_{50\%}$ outer separatrix')#('outer sep 50% '+r'$L_{pol}/L_{pol \; X-point}$')
+			ax1[0,0].grid()
+			ax1[0,1].grid()
+			ax1[0,2].grid()
+			ax1[1,0].grid()
+			ax1[1,1].grid()
+			ax1[1,2].grid()
+			ax1[0,1].axhline(y=1,linestyle='--',color='k')
+			ax1[0,2].axhline(y=1,linestyle='--',color='k')
+			ax1[1,1].axhline(y=1,linestyle='--',color='k')
+			ax1[1,2].axhline(y=1,linestyle='--',color='k')
+			ax1[1,1].set_xlabel(r'$f_{GW}$'+' [au]')
+			ax1[1,2].set_xlabel(r'$f_{GW}$'+' [au]')
+			# ax1[1,1].set_xlim(right=0.27)
+			# ax1[1,1].set_xlim(right=0.27)
 
-	ax2[0,0].legend(loc='best', fontsize='xx-small',ncol=2)
-	# ax2[1,2].legend(loc='best', fontsize='xx-small',ncol=2)
-	ax2[0,0].set_ylabel('inner separatrix peak\nL poloidal/L poloidal x-point')
-	ax2[0,1].set_ylabel('inner leg peak\nL poloidal/L poloidal x-point')
-	ax2[0,2].set_ylabel('inner separatrix baricentre\nL poloidal/L poloidal x-point')
-	ax2[1,1].set_ylabel('outer leg peak\nL poloidal/L poloidal x-point')
-	ax2[1,2].set_ylabel('outer leg baricentre\nL poloidal/L poloidal x-point')
-	ax2[0,0].grid()
-	ax2[0,1].grid()
-	ax2[0,2].grid()
-	ax2[1,1].grid()
-	ax2[1,2].grid()
-	ax2[0,1].axhline(y=1,linestyle='--',color='k')
-	ax2[0,2].axhline(y=1,linestyle='--',color='k')
-	ax2[1,1].axhline(y=1,linestyle='--',color='k')
-	ax2[1,2].axhline(y=1,linestyle='--',color='k')
-	ax2[1,1].set_xlabel('energy confinement time [s]')
-	ax2[1,2].set_xlabel('energy confinement time [s]')
+		if what_to_plot_selector[2]:
+			ax1a[0,0].legend(loc='best', fontsize='small',ncol=2)
+			ax1a[0,1].set_ylabel(r'${\hat{L}}_{peak}$ inner separatrix')
+			ax1a[0,0].set_ylabel('upper outer target\n'+r'particle flux [$10^{22}\#/s$]')
+			ax1a[1,0].set_ylabel('lower outer target\n'+r'particle flux [$10^{22}\#/s$]')
+			ax1a[1,1].set_ylabel(r'${\hat{L}}_{peak}$ outer separatrix')
+			ax1a[0,0].grid()
+			ax1a[0,1].grid()
+			ax1a[1,0].grid()
+			ax1a[1,1].grid()
+			ax1a[0,1].axhline(y=1,linestyle='--',color='k')
+			ax1a[1,1].axhline(y=1,linestyle='--',color='k')
+			ax1a[1,0].set_xlabel(r'$n_{e,up} [10^{19}\#/m^3]$ Cowley')
+			ax1a[1,1].set_xlabel(r'$n_{e,up} [10^{19}\#/m^3]$ Cowley')
 
-	ax3[0,0].legend(loc='best', fontsize='xx-small',ncol=2)
-	# ax3[1,2].legend(loc='best', fontsize='xx-small',ncol=2)
-	ax3[0,0].set_ylabel('inner separatrix peak\nL poloidal/L poloidal x-point')
-	ax3[0,1].set_ylabel('inner leg peak\nL poloidal/L poloidal x-point')
-	ax3[0,2].set_ylabel('inner separatrix baricentre\nL poloidal/L poloidal x-point')
-	ax3[1,1].set_ylabel('outer leg peak\nL poloidal/L poloidal x-point')
-	ax3[1,2].set_ylabel('outer leg baricentre\nL poloidal/L poloidal x-point')
-	ax3[0,0].grid()
-	ax3[0,1].grid()
-	ax3[0,2].grid()
-	ax3[1,1].grid()
-	ax3[1,2].grid()
-	ax3[0,0].axhline(y=1,linestyle='--',color='k')
-	ax3[0,2].axhline(y=1,linestyle='--',color='k')
-	ax3[1,1].axhline(y=1,linestyle='--',color='k')
-	ax3[1,2].axhline(y=1,linestyle='--',color='k')
-	ax3[1,1].set_xlabel('energy confinement/lmode ref [au]')
-	ax3[1,2].set_xlabel('energy confinement/lmode ref [au]')
+		if what_to_plot_selector[3]:
+			ax2[0,0].legend(loc='best', fontsize='xx-small',ncol=2)
+			# ax2[1,2].legend(loc='best', fontsize='xx-small',ncol=2)
+			ax2[0,0].set_ylabel('inner separatrix peak\nL poloidal/L poloidal x-point')
+			ax2[0,1].set_ylabel('inner leg peak\nL poloidal/L poloidal x-point')
+			ax2[0,2].set_ylabel('inner separatrix baricentre\nL poloidal/L poloidal x-point')
+			ax2[1,1].set_ylabel('outer leg peak\nL poloidal/L poloidal x-point')
+			ax2[1,2].set_ylabel('outer leg baricentre\nL poloidal/L poloidal x-point')
+			ax2[0,0].grid()
+			ax2[0,1].grid()
+			ax2[0,2].grid()
+			ax2[1,1].grid()
+			ax2[1,2].grid()
+			ax2[0,1].axhline(y=1,linestyle='--',color='k')
+			ax2[0,2].axhline(y=1,linestyle='--',color='k')
+			ax2[1,1].axhline(y=1,linestyle='--',color='k')
+			ax2[1,2].axhline(y=1,linestyle='--',color='k')
+			ax2[1,1].set_xlabel('energy confinement time [s]')
+			ax2[1,2].set_xlabel('energy confinement time [s]')
 
-	ax4[0,0].legend(loc='best', fontsize='xx-small',ncol=2)
-	ax4[1,0].legend(loc='best', fontsize='xx-small',ncol=2)
-	ax4[1,1].legend(loc='best', fontsize='xx-small',ncol=2)
-	ax4[0,2].legend(loc='best', fontsize='xx-small',ncol=2)
-	ax4[1,2].legend(loc='best', fontsize='xx-small',ncol=2)
-	ax4[0,1].set_ylabel('inner separatrix peak\nL poloidal/L poloidal x-point')
-	ax4[0,0].set_ylabel('integradet lower outer jsat')
-	ax4[1,0].set_ylabel('integradet upper outer jsat')
-	ax4[1,1].set_ylabel('outer leg peak\nL poloidal/L poloidal x-point')
-	ax4[0,2].set_ylabel('inner separatrix 50% front\nL poloidal/L poloidal x-point')
-	ax4[1,2].set_ylabel('outer leg  50% front\nL poloidal/L poloidal x-point')
-	ax4[0,0].grid()
-	ax4[0,1].grid()
-	ax4[1,0].grid()
-	ax4[1,1].grid()
-	ax4[0,1].axhline(y=1,linestyle='--',color='k')
-	ax4[1,1].axhline(y=1,linestyle='--',color='k')
-	ax4[1,1].set_xlabel(r'$n_{e,up}$'+' David [#/m3]')
+		if what_to_plot_selector[4]:
+			ax3[0,0].legend(loc='best', fontsize='xx-small',ncol=2)
+			# ax3[1,2].legend(loc='best', fontsize='xx-small',ncol=2)
+			ax3[0,0].set_ylabel('inner separatrix peak\nL poloidal/L poloidal x-point')
+			ax3[0,1].set_ylabel('inner leg peak\nL poloidal/L poloidal x-point')
+			ax3[0,2].set_ylabel('inner separatrix baricentre\nL poloidal/L poloidal x-point')
+			ax3[1,1].set_ylabel('outer leg peak\nL poloidal/L poloidal x-point')
+			ax3[1,2].set_ylabel('outer leg baricentre\nL poloidal/L poloidal x-point')
+			ax3[0,0].grid()
+			ax3[0,1].grid()
+			ax3[0,2].grid()
+			ax3[1,1].grid()
+			ax3[1,2].grid()
+			ax3[0,0].axhline(y=1,linestyle='--',color='k')
+			ax3[0,2].axhline(y=1,linestyle='--',color='k')
+			ax3[1,1].axhline(y=1,linestyle='--',color='k')
+			ax3[1,2].axhline(y=1,linestyle='--',color='k')
+			ax3[1,1].set_xlabel('energy confinement/lmode ref [au]')
+			ax3[1,2].set_xlabel('energy confinement/lmode ref [au]')
 
-	ax5[0,0].legend(loc='best', fontsize='xx-small',ncol=2)
-	# ax5[1,0].legend(loc='best', fontsize='xx-small',ncol=2)
-	# ax5[1,1].legend(loc='best', fontsize='xx-small',ncol=2)
-	# ax5[0,2].legend(loc='best', fontsize='xx-small',ncol=2)
-	# ax5[1,2].legend(loc='best', fontsize='xx-small',ncol=2)
-	ax1a[0,1].set_ylabel(r'${\hat{L}}_{peak}$ inner separatrix')
-	ax1a[0,0].set_ylabel('upper outer target\n'+r'particle flux [$10^{22}\#/s$]')
-	ax1a[1,0].set_ylabel('lower outer target\n'+r'particle flux [$10^{22}\#/s$]')
-	ax1a[1,1].set_ylabel(r'${\hat{L}}_{peak}$ outer separatrix')
+		if what_to_plot_selector[5]:
+			ax4[0,0].legend(loc='best', fontsize='xx-small',ncol=2)
+			ax4[1,0].legend(loc='best', fontsize='xx-small',ncol=2)
+			ax4[1,1].legend(loc='best', fontsize='xx-small',ncol=2)
+			ax4[0,2].legend(loc='best', fontsize='xx-small',ncol=2)
+			ax4[1,2].legend(loc='best', fontsize='xx-small',ncol=2)
+			ax4[0,1].set_ylabel('inner separatrix peak\nL poloidal/L poloidal x-point')
+			ax4[0,0].set_ylabel('integradet lower outer jsat')
+			ax4[1,0].set_ylabel('integradet upper outer jsat')
+			ax4[1,1].set_ylabel('outer leg peak\nL poloidal/L poloidal x-point')
+			ax4[0,2].set_ylabel('inner separatrix 50% front\nL poloidal/L poloidal x-point')
+			ax4[1,2].set_ylabel('outer leg  50% front\nL poloidal/L poloidal x-point')
+			ax4[0,0].grid()
+			ax4[0,1].grid()
+			ax4[1,0].grid()
+			ax4[1,1].grid()
+			ax4[0,1].axhline(y=1,linestyle='--',color='k')
+			ax4[1,1].axhline(y=1,linestyle='--',color='k')
+			ax4[1,1].set_xlabel(r'$n_{e,up}$'+' David [#/m3]')
 
-	ax5[1,0].set_ylabel('lower outer target\n'+r'particle flux [$10^{22}\#/s$]')
-	ax5[0,0].set_ylabel('upper outer target\n'+r'particle flux [$10^{22}\#/s$]')
-	ax5[0,1].set_ylabel(r'${\hat{L}}_{peak}$ inner separatrix')
-	ax5[1,1].set_ylabel(r'${\hat{L}}_{peak}$ outer separatrix')
-	ax5[0,2].set_ylabel(r'${\hat{L}}_{50\%}$ inner separatrix')#('inner sep 50% '+r'$L_{pol}/L_{pol \; X-point}$')
-	ax5[1,2].set_ylabel(r'${\hat{L}}_{50\%}$ outer separatrix')#('outer sep 50% '+r'$L_{pol}/L_{pol \; X-point}$')
-	ax5[0,3].set_ylabel('energy confinement time [ms]')
-	ax5[1,3].set_ylabel(r'$dr_{sep}$ [mm]')
-	ax5[0,0].grid()
-	ax5[0,1].grid()
-	ax5[0,2].grid()
-	ax5[1,0].grid()
-	ax5[1,1].grid()
-	ax5[1,2].grid()
-	ax5[0,3].grid()
-	ax5[1,3].grid()
-	ax5[0,1].axhline(y=1,linestyle='--',color='k')
-	ax5[0,1].axhline(y=0,linestyle='--',color='k')
-	ax5[1,1].axhline(y=1,linestyle='--',color='k')
-	ax5[1,1].axhline(y=0,linestyle='--',color='k')
-	ax5[0,2].axhline(y=1,linestyle='--',color='k')
-	ax5[0,2].axhline(y=0,linestyle='--',color='k')
-	ax5[1,2].axhline(y=1,linestyle='--',color='k')
-	ax5[1,2].axhline(y=0,linestyle='--',color='k')
-	ax5[0,1].set_ylim(bottom=-0.1,top=2)
-	ax5[0,2].set_ylim(bottom=-0.1,top=2)
-	ax5[1,1].set_ylim(bottom=-0.1,top=2)
-	ax5[1,2].set_ylim(bottom=-0.1,top=2)
-	ax5[1,1].set_xlabel(r'$n_{e,up}$'+' EFIT '+r'[$10^{19}$ #/$m^3$]')
+		if what_to_plot_selector[6]:
+			ax5[0,0].legend(loc='best', fontsize='xx-small',ncol=2)
+			# ax5[1,0].legend(loc='best', fontsize='xx-small',ncol=2)
+			# ax5[1,1].legend(loc='best', fontsize='xx-small',ncol=2)
+			# ax5[0,2].legend(loc='best', fontsize='xx-small',ncol=2)
+			# ax5[1,2].legend(loc='best', fontsize='xx-small',ncol=2)
+		if what_to_plot_selector[2]:
+			ax1a[0,1].set_ylabel(r'${\hat{L}}_{peak}$ inner separatrix')
+			ax1a[0,0].set_ylabel('upper outer target\n'+r'particle flux [$10^{22}\#/s$]')
+			ax1a[1,0].set_ylabel('lower outer target\n'+r'particle flux [$10^{22}\#/s$]')
+			ax1a[1,1].set_ylabel(r'${\hat{L}}_{peak}$ outer separatrix')
 
-	if type == 'ohmicLmode':
-		ax5[0,0].axvline(x=0.5,color='gray',linestyle='--')
-		ax5[0,1].axvline(x=0.5,color='gray',linestyle='--')
-		ax5[0,2].axvline(x=0.5,color='gray',linestyle='--')
-		ax5[1,0].axvline(x=0.5,color='gray',linestyle='--')
-		ax5[1,1].axvline(x=0.5,color='gray',linestyle='--')
-		ax5[1,2].axvline(x=0.5,color='gray',linestyle='--')
-		ax5[0,3].axvline(x=0.5,color='gray',linestyle='--')
-		ax5[1,3].axvline(x=0.5,color='gray',linestyle='--')
+		if what_to_plot_selector[6]:
+			ax5[1,0].set_ylabel('lower outer target\n'+r'particle flux [$10^{22}\#/s$]')
+			ax5[0,0].set_ylabel('upper outer target\n'+r'particle flux [$10^{22}\#/s$]')
+			ax5[0,1].set_ylabel(r'${\hat{L}}_{peak}$ inner separatrix')
+			ax5[1,1].set_ylabel(r'${\hat{L}}_{peak}$ outer separatrix')
+			ax5[0,2].set_ylabel(r'${\hat{L}}_{50\%}$ inner separatrix')#('inner sep 50% '+r'$L_{pol}/L_{pol \; X-point}$')
+			ax5[1,2].set_ylabel(r'${\hat{L}}_{50\%}$ outer separatrix')#('outer sep 50% '+r'$L_{pol}/L_{pol \; X-point}$')
+			ax5[0,3].set_ylabel('energy confinement time [ms]')
+			ax5[1,3].set_ylabel(r'$dr_{sep}$ [mm]')
+			ax5[0,0].grid()
+			ax5[0,1].grid()
+			ax5[0,2].grid()
+			ax5[1,0].grid()
+			ax5[1,1].grid()
+			ax5[1,2].grid()
+			ax5[0,3].grid()
+			ax5[1,3].grid()
+			ax5[0,1].axhline(y=1,linestyle='--',color='k')
+			ax5[0,1].axhline(y=0,linestyle='--',color='k')
+			ax5[1,1].axhline(y=1,linestyle='--',color='k')
+			ax5[1,1].axhline(y=0,linestyle='--',color='k')
+			ax5[0,2].axhline(y=1,linestyle='--',color='k')
+			ax5[0,2].axhline(y=0,linestyle='--',color='k')
+			ax5[1,2].axhline(y=1,linestyle='--',color='k')
+			ax5[1,2].axhline(y=0,linestyle='--',color='k')
+			ax5[0,1].set_ylim(bottom=-0.1,top=5)
+			ax5[0,2].set_ylim(bottom=-0.1,top=5)
+			ax5[1,1].set_ylim(bottom=-0.1,top=1.5)
+			ax5[1,2].set_ylim(bottom=-0.1,top=1.5)
+			ax5[1,1].set_xlabel(r'$n_{e,up}$'+' EFIT '+r'[$10^{19}$ #/$m^3$]')
 
-		ax5[0,0].axvline(x=0.95,color='gray',linestyle='--')
-		ax5[0,1].axvline(x=0.95,color='gray',linestyle='--')
-		ax5[0,2].axvline(x=0.95,color='gray',linestyle='--')
-		ax5[1,0].axvline(x=0.95,color='gray',linestyle='--')
-		ax5[1,1].axvline(x=0.95,color='gray',linestyle='--')
-		ax5[1,2].axvline(x=0.95,color='gray',linestyle='--')
-		ax5[0,3].axvline(x=0.95,color='gray',linestyle='--')
-		ax5[1,3].axvline(x=0.95,color='gray',linestyle='--')
-		fig5.savefig('/home/ffederic/work/irvb/0__outputs/PSI2024_proceeding_ohmic.png')
+			if type == 'ohmicLmode':
+				ax5[0,0].axvline(x=0.5,color='gray',linestyle='--')
+				ax5[0,1].axvline(x=0.5,color='gray',linestyle='--')
+				ax5[0,2].axvline(x=0.5,color='gray',linestyle='--')
+				ax5[1,0].axvline(x=0.5,color='gray',linestyle='--')
+				ax5[1,1].axvline(x=0.5,color='gray',linestyle='--')
+				ax5[1,2].axvline(x=0.5,color='gray',linestyle='--')
+				ax5[0,3].axvline(x=0.5,color='gray',linestyle='--')
+				ax5[1,3].axvline(x=0.5,color='gray',linestyle='--')
 
-	if type == 'beamLmode':
-		ax5[0,0].axvline(x=1,color='gray',linestyle='--')
-		ax5[0,1].axvline(x=1,color='gray',linestyle='--')
-		ax5[0,2].axvline(x=1,color='gray',linestyle='--')
-		ax5[1,0].axvline(x=1,color='gray',linestyle='--')
-		ax5[1,1].axvline(x=1,color='gray',linestyle='--')
-		ax5[1,2].axvline(x=1,color='gray',linestyle='--')
-		ax5[0,3].axvline(x=1,color='gray',linestyle='--')
-		ax5[1,3].axvline(x=1,color='gray',linestyle='--')
-		fig5.savefig('/home/ffederic/work/irvb/0__outputs/PSI2024_proceeding_beam_heated.png')
+				ax5[0,0].axvline(x=0.95,color='gray',linestyle='--')
+				ax5[0,1].axvline(x=0.95,color='gray',linestyle='--')
+				ax5[0,2].axvline(x=0.95,color='gray',linestyle='--')
+				ax5[1,0].axvline(x=0.95,color='gray',linestyle='--')
+				ax5[1,1].axvline(x=0.95,color='gray',linestyle='--')
+				ax5[1,2].axvline(x=0.95,color='gray',linestyle='--')
+				ax5[0,3].axvline(x=0.95,color='gray',linestyle='--')
+				ax5[1,3].axvline(x=0.95,color='gray',linestyle='--')
+				# fig5.savefig('/home/ffederic/work/irvb/0__outputs/PSI2024_proceeding_ohmic_second_review.png')
 
+			if type == 'beamLmode':
+				ax5[0,0].axvline(x=1,color='gray',linestyle='--')
+				ax5[0,1].axvline(x=1,color='gray',linestyle='--')
+				ax5[0,2].axvline(x=1,color='gray',linestyle='--')
+				ax5[1,0].axvline(x=1,color='gray',linestyle='--')
+				ax5[1,1].axvline(x=1,color='gray',linestyle='--')
+				ax5[1,2].axvline(x=1,color='gray',linestyle='--')
+				ax5[0,3].axvline(x=1,color='gray',linestyle='--')
+				ax5[1,3].axvline(x=1,color='gray',linestyle='--')
+				# fig5.savefig('/home/ffederic/work/irvb/0__outputs/PSI2024_proceeding_beam_heated_second_review.png')
+	else:
+		pass
 
 
 	# fig5.savefig('/home/ffederic/work/irvb/0__outputs/PSI2024_CD_OH_MU01_compare.png')

@@ -19,88 +19,155 @@ exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_indexing.py").r
 
 from pyexcel_ods import save_data,get_data
 path = '/home/ffederic/work/irvb/MAST-U/'
+log_file_name = 'shot_list2.ods'
 
-shot_list = get_data(path+'shot_list2.ods')
+shot_list = get_data(path+log_file_name)
 max_length = 0
 for i in range(len(shot_list['Sheet1'])):
 	max_length = max(max_length,len(shot_list['Sheet1'][i]))
 for i in range(len(shot_list['Sheet1'])):
 	shot_list['Sheet1'][i].extend(['']*(max_length-len(shot_list['Sheet1'][i])))
 
-fuelling_prefix = '/XDC/GAS/T/'
-fuelling_location_list_orig = shot_list['Sheet1'][0][25:72]
+fuelling_prefix = '/XDC/GAS/F/'	# for some reason '/XDC/GAS/T/' does not work
+fuelling_location_list_orig = shot_list['Sheet1'][0][29:77]
+temp = []
+for value in fuelling_location_list_orig:
+	if value.find('fuelling')!=-1 and value.find('_')!=-1:
+		temp.append(value)
+fuelling_location_list_orig = temp[:-1]
 fuelling_location_list = [string.replace('fuelling ',fuelling_prefix) for string in fuelling_location_list_orig]
-
+XPAD_fuelling_location_list = ['HFS_BOT_B03','HFS_BOT_B09','HFS_MID_L02','HFS_MID_L08','HFS_MID_U02','HFS_MID_U08','HFS_TOP_T03','HFS_TOP_T09','LFSD_BOT_L0102','LFSD_BOT_L0304','LFSD_BOT_L0506','LFSD_BOT_L0708','LFSD_BOT_L0910','LFSD_BOT_L1112','LFSD_TOP_U0102','LFSD_TOP_U0304','LFSD_TOP_U0506','LFSD_TOP_U0708','LFSD_TOP_U0910','LFSD_TOP_U1112','LFSS_BOT_L0112','LFSS_BOT_L0203','LFSS_BOT_L0405','LFSS_BOT_L0607','LFSS_BOT_L0809','LFSS_BOT_L1011','LFSS_TOP_U0112','LFSS_TOP_U0203','LFSS_TOP_U0405','LFSS_TOP_U0607','LFSS_TOP_U0809','LFSS_TOP_U1011','LFSV_BOT_L03','LFSV_BOT_L09','LFSV_TOP_U05','LFSV_TOP_U11','PFR_BOT_B01','PFR_BOT_B03','PFR_BOT_B05','PFR_BOT_B07','PFR_BOT_B09','PFR_BOT_B11','PFR_TOP_T01','PFR_TOP_T03','PFR_TOP_T05','PFR_TOP_T07','PFR_TOP_T09','PFR_TOP_T11']
+fuelling_locations = np.unique([string[:string.find('_')] for string in fuelling_location_list_orig])
 
 if True:
-	shot_list = get_data(path+'shot_list2.ods')
-	for i in range(1,len(shot_list['Sheet1'])):
-		shot = int(np.array(shot_list['Sheet1'][i])[np.array(shot_list['Sheet1'][0]) == 'shot number'])
-		# if shot<48900:
-		# 	continue
-		print(shot)
+	if True:
+		shot_list = get_data(path+log_file_name)
+		for i in range(1,len(shot_list['Sheet1'])):
+			try:
+				shot = int(np.array(shot_list['Sheet1'][i]) [np.array(shot_list['Sheet1'][0]) == 'shot number'])
+				# if shot<48900:
+				# 	continue
+				print(shot)
+				# try:
+				# 	data_all = client.get_batch(fuelling_location_list,shot)
+				# 	for i_data,data in enumerate(data_all):
+				# 		if np.nanmax(data.data[data.time.data>0.2])>0:
+				# 			print(fuelling_location_list[i_data]+' set')
+				# 			shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == fuelling_location_list_orig[i_data]).argmax()] = 'X'
+				# 		else:
+				# 			shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == fuelling_location_list_orig[i_data]).argmax()] = ''
+				# 	continue
+				# except:
+				# 	pass
+				# reset the aggregated fuelling locations
+				for i_signal_name,signal_name in enumerate(fuelling_locations):
+					shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == fuelling_locations[i_signal_name]).argmax()] = ''
+				shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'number_of_fuelling_locations').argmax()] = ''
+
+				for i_signal_name,signal_name in enumerate(fuelling_location_list):
+					try:
+						data = client.get(signal_name,shot,timefirst=0.2,time_last=False)
+						if np.nanmax(data.data)>0:#[data.time.data>0.2])>0:
+							print(signal_name+' set')
+							shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == fuelling_location_list_orig[i_signal_name]).argmax()] = 'X'
+							ind2 = fuelling_location_list_orig[i_signal_name].find('_')
+							target = fuelling_location_list_orig[i_signal_name][:ind2]
+							shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == target).argmax()] = shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == target).argmax()] + 'X'
+							shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'number_of_fuelling_locations').argmax()] = shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'number_of_fuelling_locations').argmax()] + 'X'
+						else:
+							shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == fuelling_location_list_orig[i_signal_name]).argmax()] = ''
+					except:
+						shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == fuelling_location_list_orig[i_signal_name]).argmax()] = ''
+						pass
+			except:
+				pass
+		save_data(path+log_file_name,shot_list)
+		print('done')
+
+	if False:
+		shot_list = get_data(path+log_file_name)
+		beams_prefix = '/XNB/'
+		beams_affix = '/BEAMPOWER'
+		for i in range(2,len(shot_list['Sheet1'])):
+			try:
+				shot = int(np.array(shot_list['Sheet1'][i])[(np.array(shot_list['Sheet1'][0]) == 'shot number').argmax()])
+				# if shot<48900:
+				# 	continue
+				try:
+					data = client.get('/AMB/CTIME',shot)
+					shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'SW beam').argmax()] = 'N'
+					shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'SS beam').argmax()] = 'N'
+
+					signal_name = beams_prefix + 'SW' + beams_affix
+					try:
+						data = client.get(signal_name,shot,timefirst=0.2,time_last=False)
+						if np.nanmax(np.abs(data.data))>0:
+							shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'SW beam').argmax()] = 'Y'
+							print(shot+'SW')
+					except:
+						pass
+					try:
+						signal_name = beams_prefix + 'SS' + beams_affix
+						data = client.get(signal_name,shot)
+						if np.nanmax(np.abs(data.data))>0:
+							shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'SS beam').argmax()] = 'Y'
+							print(shot+'SS')
+					except:
+						pass
+				except:
+					shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'SS beam').argmax()] = ''
+					shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'SW beam').argmax()] = ''
+			except:
+				pass
+
+		save_data(path+log_file_name,shot_list)
+		print('done')
+		# exit()
+
+
+	# for MU04-div02 I need to look at shots with a large distance from strike point to x-point when the plasma is developed at ~350ms
+	if False:
 		try:
-			data_all = client.get_batch(fuelling_location_list,shot)
-			for i_data,data in enumerate(data_all):
-				if np.nanmax(data.data[data.time.data>0.2])>0:
-					print(fuelling_location_list[i_data]+' set')
-					shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == fuelling_location_list_orig[i_data]).argmax()] = 'X'
-				else:
-					shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == fuelling_location_list_orig[i_data]).argmax()] = ''
-			continue
+			shot_list = get_data(path+log_file_name)
+			for i in range(1,len(shot_list['Sheet1'])):
+				shot = int(np.array(shot_list['Sheet1'][i]) [np.array(shot_list['Sheet1'][0]) == 'shot number'])
+				if coleval.get_tend(shot)>0.4:	# I filter out irrelevan shots
+					try:
+						print(shot)
+						EFIT_path_default = '/common/uda-scratch/lkogan/efitpp_eshed'
+						efit_reconstruction = coleval.mclass(EFIT_path_default+'/epm0'+str(shot)+'.nc',pulse_ID=str(shot))
+						# i_efit_time = np.abs(efit_reconstruction.time-0.35).argmin()
+						# distance = ((efit_reconstruction.lower_xpoint_r[i_efit_time] - efit_reconstruction.strikepointR[i_efit_time][0])**2 + (efit_reconstruction.lower_xpoint_z[i_efit_time] - (-efit_reconstruction.strikepointZ[i_efit_time][0]))**2)**0.5
+						distance = ((efit_reconstruction.lower_xpoint_r - efit_reconstruction.strikepointR[:,0])**2 + (efit_reconstruction.lower_xpoint_z - (-np.abs(efit_reconstruction.strikepointZ[:,0])))**2)**0.5	# for some reason efit_reconstruction.strikepointZ swaps up and down, so I have to do np.abs
+						select = np.logical_and(efit_reconstruction.time<0.45,efit_reconstruction.time>0.35)
+						distance = np.mean(distance[select])
+						shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'distance X-point to SP [mm]').argmax()] = int(np.round(distance*1000))	# I can save properly only integers, it seems
+					except:
+						pass
 		except:
 			pass
-		for i_signal_name,signal_name in enumerate(fuelling_location_list):
-			try:
-				data = client.get(signal_name,shot,timefirst=0.2,time_last=False)
-				if np.nanmax(data.data)>0:#[data.time.data>0.2])>0:
-					print(signal_name+' set')
-					shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == fuelling_location_list_orig[i_signal_name]).argmax()] = 'X'
-				else:
-					shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == fuelling_location_list_orig[i_signal_name]).argmax()] = ''
-			except:
-				shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == fuelling_location_list_orig[i_signal_name]).argmax()] = ''
-				pass
-	save_data(path+'shot_list2.ods',shot_list)
-	print('done')
-
-
-	shot_list = get_data(path+'shot_list2.ods')
-	beams_prefix = '/XNB/'
-	beams_affix = '/BEAMPOWER'
-	for i in range(2,len(shot_list['Sheet1'])):
-		shot = int(np.array(shot_list['Sheet1'][i])[(np.array(shot_list['Sheet1'][0]) == 'shot number').argmax()])
-		# if shot<48900:
-		# 	continue
+		save_data(path+log_file_name,shot_list)
+		print('done')
+	if False:
 		try:
-			data = client.get('/AMB/CTIME',shot)
-			shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'SW beam').argmax()] = 'N'
-			shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'SS beam').argmax()] = 'N'
-
-			signal_name = beams_prefix + 'SW' + beams_affix
-			try:
-				data = client.get(signal_name,shot,timefirst=0.2,time_last=False)
-				if np.nanmax(np.abs(data.data))>0:
-					shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'SW beam').argmax()] = 'Y'
-					print(shot+'SW')
-			except:
-				pass
-			try:
-				signal_name = beams_prefix + 'SS' + beams_affix
-				data = client.get(signal_name,shot)
-				if np.nanmax(np.abs(data.data))>0:
-					shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'SS beam').argmax()] = 'Y'
-					print(shot+'SS')
-			except:
-				pass
+			shot_list = get_data(path+log_file_name)
+			for i in range(1,len(shot_list['Sheet1'])):
+				shot = int(np.array(shot_list['Sheet1'][i]) [np.array(shot_list['Sheet1'][0]) == 'shot number'])
+				if coleval.get_tend(shot)>0.4:	# I filter out irrelevan shots
+					try:
+						print(shot)
+						EFIT_path_default = '/common/uda-scratch/lkogan/efitpp_eshed'
+						efit_reconstruction = coleval.mclass(EFIT_path_default+'/epm0'+str(shot)+'.nc',pulse_ID=str(shot))
+						select = np.logical_and(efit_reconstruction.time<0.45,efit_reconstruction.time>0.35)
+						distance = np.mean(efit_reconstruction.lower_xpoint_r[select])
+						shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'X-point radius [mm]').argmax()] = int(np.round(distance*1000))	# I can save properly only integers, it seems
+					except:
+						pass
 		except:
-			shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'SS beam').argmax()] = ''
-			shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'SW beam').argmax()] = ''
-
-	save_data(path+'shot_list2.ods',shot_list)
-	print('done')
-	# exit()
-
+			pass
+		save_data(path+log_file_name,shot_list)
+		print('done')
+	exit()
 
 	# I want to at least get the date automatically so I can run my analysis
 	if False:	# ATTENTION, this DOES NOT work. afterwards you need to open the file and convert from text to date

@@ -65,6 +65,8 @@ from mastu_exhaust_analysis.calc_pohm import calc_pohm
 from pyexcel_ods import get_data
 import pyuda
 
+from mast.geom.geomTileSurfaceUtils import get_nearest_s_coordinates_mastu,get_s_coords_tables_mastu	# added 19/02/2025
+
 def PrintException():
     exc_type, exc_obj, tb = sys.exc_info()
     f = tb.tb_frame

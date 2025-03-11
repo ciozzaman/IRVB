@@ -60,8 +60,8 @@ if False:	# main purpose, show image contrast with wavelength
 	ax[2].axhline(y=300/5,linestyle='--',color='k')
 	ax[2].grid()
 	reflection_temperature = 20
-	min_temp = 40
-	delta_wave = 3	# I consider a sensor of that measures the wavelengths from start to start+delta_wave
+	min_temp = 30
+	delta_wave = 5	# I consider a sensor of that measures the wavelengths from start to start+delta_wave
 	delta_t = 1
 	ref_int_time = 0.001
 	int_time = 0.001
@@ -70,7 +70,7 @@ if False:	# main purpose, show image contrast with wavelength
 	old_res_max = 320
 	new_res_max = 320
 	old_freq = 383
-	new_freq = 885
+	new_freq = 383
 	temp = []
 	temp1 = []
 	temp2 = []

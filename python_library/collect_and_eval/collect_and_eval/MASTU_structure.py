@@ -425,11 +425,11 @@ FULL_MASTU_CORE_GRID_POLYGON = np.array([
 	(1.49, 0.0)
 ])
 
-FULL_MASTU_CORE_GRID_POLYGON_lower_baffle = FULL_MASTU_CORE_GRID_POLYGON[:20]
-FULL_MASTU_CORE_GRID_POLYGON_lower_target = FULL_MASTU_CORE_GRID_POLYGON[20-1:32]
-FULL_MASTU_CORE_GRID_POLYGON_central_column = FULL_MASTU_CORE_GRID_POLYGON[32-1:36]
-FULL_MASTU_CORE_GRID_POLYGON_upper_target = FULL_MASTU_CORE_GRID_POLYGON[36-1:48]
-FULL_MASTU_CORE_GRID_POLYGON_upper_baffle = FULL_MASTU_CORE_GRID_POLYGON[48-1:]
+# FULL_MASTU_CORE_GRID_POLYGON_lower_baffle = FULL_MASTU_CORE_GRID_POLYGON[:20]
+# FULL_MASTU_CORE_GRID_POLYGON_lower_target = FULL_MASTU_CORE_GRID_POLYGON[20-1:32]
+# FULL_MASTU_CORE_GRID_POLYGON_central_column = FULL_MASTU_CORE_GRID_POLYGON[32-1:36]
+# FULL_MASTU_CORE_GRID_POLYGON_upper_target = FULL_MASTU_CORE_GRID_POLYGON[36-1:48]
+# FULL_MASTU_CORE_GRID_POLYGON_upper_baffle = FULL_MASTU_CORE_GRID_POLYGON[48-1:]
 
 
 # 2024/11/25 from chatty
@@ -465,8 +465,28 @@ def interpolate_points(coords, max_distance):
     return np.array(new_coords)
 
 
-FULL_MASTU_CORE_GRID_POLYGON_lower_baffle = interpolate_points(FULL_MASTU_CORE_GRID_POLYGON_lower_baffle,0.05)
-FULL_MASTU_CORE_GRID_POLYGON_lower_target = interpolate_points(FULL_MASTU_CORE_GRID_POLYGON_lower_target,0.05)
-FULL_MASTU_CORE_GRID_POLYGON_central_column = interpolate_points(FULL_MASTU_CORE_GRID_POLYGON_central_column,0.05)
-FULL_MASTU_CORE_GRID_POLYGON_upper_target = interpolate_points(FULL_MASTU_CORE_GRID_POLYGON_upper_target,0.05)
-FULL_MASTU_CORE_GRID_POLYGON_upper_baffle = interpolate_points(FULL_MASTU_CORE_GRID_POLYGON_upper_baffle,0.05)
+# FULL_MASTU_CORE_GRID_POLYGON_lower_baffle = interpolate_points(FULL_MASTU_CORE_GRID_POLYGON_lower_baffle,0.05)
+# FULL_MASTU_CORE_GRID_POLYGON_lower_target = interpolate_points(FULL_MASTU_CORE_GRID_POLYGON_lower_target,0.05)
+# FULL_MASTU_CORE_GRID_POLYGON_central_column = interpolate_points(FULL_MASTU_CORE_GRID_POLYGON_central_column,0.05)
+# FULL_MASTU_CORE_GRID_POLYGON_upper_target = interpolate_points(FULL_MASTU_CORE_GRID_POLYGON_upper_target,0.05)
+# FULL_MASTU_CORE_GRID_POLYGON_upper_baffle = interpolate_points(FULL_MASTU_CORE_GRID_POLYGON_upper_baffle,0.05)
+
+
+# 20/02/2025 I use this methid now that uses a standardized way of getting the geometry
+from mast.geom.geomTileSurfaceUtils import get_nearest_s_coordinates_mastu,get_s_coords_tables_mastu	# added 19/02/2025
+limiter=client.geometry("/limiter/efit",50000, no_cal=False)
+limiter_r=limiter.data.R
+limiter_z=limiter.data.Z
+s_lookup=get_s_coords_tables_mastu(limiter_r, limiter_z, ds=1e-4, debug_plot=False)
+
+select = np.logical_and(s_lookup['s_bottom'].R>0.78,s_lookup['s_bottom'].Z>-1.66)
+FULL_MASTU_CORE_GRID_POLYGON_lower_baffle = np.array([s_lookup['s_bottom'].R[select],s_lookup['s_bottom'].Z[select]]).T
+select = np.logical_and(np.logical_or(s_lookup['s_bottom'].R<0.78,s_lookup['s_bottom'].Z<-1.66),s_lookup['s_bottom'].Z<-1)
+FULL_MASTU_CORE_GRID_POLYGON_lower_target = np.array([s_lookup['s_bottom'].R[select],s_lookup['s_bottom'].Z[select]]).T
+select = np.logical_and(s_lookup['s_top'].R<0.78,np.abs(s_lookup['s_top'].Z)<1)
+FULL_MASTU_CORE_GRID_POLYGON_central_column = np.array([s_lookup['s_top'].R[select],s_lookup['s_top'].Z[select]]).T
+FULL_MASTU_CORE_GRID_POLYGON_central_column = np.array(FULL_MASTU_CORE_GRID_POLYGON_central_column.tolist() + (FULL_MASTU_CORE_GRID_POLYGON_central_column*[1,-1]).tolist())
+select = np.logical_and(np.logical_or(s_lookup['s_top'].R<0.78,s_lookup['s_top'].Z>1.66),s_lookup['s_top'].Z>1)
+FULL_MASTU_CORE_GRID_POLYGON_upper_target = np.array([s_lookup['s_top'].R[select],s_lookup['s_top'].Z[select]]).T
+select = np.logical_and(s_lookup['s_top'].R>0.78,s_lookup['s_top'].Z<1.66)
+FULL_MASTU_CORE_GRID_POLYGON_upper_baffle = np.array([s_lookup['s_top'].R[select],s_lookup['s_top'].Z[select]]).T

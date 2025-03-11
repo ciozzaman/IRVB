@@ -102,7 +102,7 @@ elif MU_campaign==3:
 elif MU_campaign==99:	# just an exeption to have manual runs
 	to_do = ['2024-01-19']
 else:
-	to_do = ['2021-10-27']
+	to_do = ['2024-11-12','2024-11-13','2024-11-27','2024-11-28','2024-11-29']
 # # for Lingyan
 # to_do = ['2021-10-27']
 # path = '/home/ffederic/work/irvb/MAST-U/preliminaly_shots/'
@@ -140,10 +140,11 @@ elif True:	# with this all the shots are in a single array
 		for (dirpath, dirnames, filenames) in os.walk(path+day+'/'):
 			f.append(filenames)
 		# shot_available.append([])
-		for name in f[0]:
-			if name[-3:]=='ats' or name[-3:]=='ptw':
-				shot_available.append(name)
-				temp.append(day)
+		if len(f)>0:
+			for name in f[0]:
+				if name[-3:]=='ats' or name[-3:]=='ptw':
+					shot_available.append(name)
+					temp.append(day)
 	to_do = temp
 
 
@@ -233,6 +234,7 @@ elif True:	# section to use when specifying the shots
 	# to_do = ['IRVB-MASTU_shot-45401.ptw']
 	# shots for the RSI paper
 	# to_do = ['IRVB-MASTU_shot-44647.ptw','IRVB-MASTU_shot-45409.ptw','IRVB-MASTU_shot-45225.ptw','IRVB-MASTU_shot-45351.ptw','IRVB-MASTU_shot-45401.ptw','IRVB-MASTU_shot-44892.ptw','IRVB-MASTU_shot-45295.ptw','IRVB-MASTU_shot-45328.ptw','IRVB-MASTU_shot-45371.ptw']
+
 	# shots for the science paper
 	# to_do = ['IRVB-MASTU_shot-45371.ptw']
 	# shots for the CD radiator location comparison shots
@@ -298,6 +300,7 @@ elif True:	# section to use when specifying the shots
 
 	# MU03 snowflake by Vlad Soukhanovskii
 	# to_do = ['IRVB-MASTU_shot-49463.ptw','IRVB-MASTU_shot-49464.ptw','IRVB-MASTU_shot-49465.ptw','IRVB-MASTU_shot-49466.ptw','IRVB-MASTU_shot-49467.ptw','IRVB-MASTU_shot-49468.ptw']
+	# to_do = ['IRVB-MASTU_shot-49465.ptw','IRVB-MASTU_shot-49467.ptw','IRVB-MASTU_shot-49468.ptw']
 
 	# to_do = []
 	# # mu03 DIV-02 by Jack
@@ -309,16 +312,21 @@ elif True:	# section to use when specifying the shots
 
 
 	# data for psi2024 poster
-	to_do = []
+	# to_do = []
 	# # ohmic L-mode
+	# to_do = to_do + ['IRVB-MASTU_shot-45468.ptw','IRVB-MASTU_shot-45469.ptw','IRVB-MASTU_shot-45470.ptw','IRVB-MASTU_shot-45473.ptw']
+	# to_do = to_do + ['IRVB-MASTU_shot-47950.ptw','IRVB-MASTU_shot-47973.ptw','IRVB-MASTU_shot-48144.ptw','IRVB-MASTU_shot-48328.ptw','IRVB-MASTU_shot-48335.ptw']
+	# # beam heated L-mode
+	# to_do = to_do + ['IRVB-MASTU_shot-46866.ptw','IRVB-MASTU_shot-46864.ptw','IRVB-MASTU_shot-46867.ptw','IRVB-MASTU_shot-46868.ptw','IRVB-MASTU_shot-46889.ptw','IRVB-MASTU_shot-46891.ptw','IRVB-MASTU_shot-46903.ptw','IRVB-MASTU_shot-48336.ptw','IRVB-MASTU_shot-49408.ptw','IRVB-MASTU_shot-49283.ptw']
+	# # H-mode
+	# to_do = to_do + ['IRVB-MASTU_shot-45401.ptw','IRVB-MASTU_shot-48596.ptw','IRVB-MASTU_shot-48597.ptw','IRVB-MASTU_shot-46977.ptw','IRVB-MASTU_shot-48599.ptw','IRVB-MASTU_shot-48561.ptw','IRVB-MASTU_shot-49139.ptw','IRVB-MASTU_shot-c.ptw','IRVB-MASTU_shot-49396.ptw','IRVB-MASTU_shot-49400.ptw','IRVB-MASTU_shot-49401.ptw']
+	# # mix
+	# to_do = to_do + ['IRVB-MASTU_shot-48690.ptw','IRVB-MASTU_shot-48692.ptw','IRVB-MASTU_shot-49463.ptw','IRVB-MASTU_shot-49464.ptw','IRVB-MASTU_shot-49465.ptw','IRVB-MASTU_shot-49466.ptw','IRVB-MASTU_shot-49467.ptw','IRVB-MASTU_shot-49468.ptw']
+	# IRVB science paper 2025
+	to_do = []
 	to_do = to_do + ['IRVB-MASTU_shot-45468.ptw','IRVB-MASTU_shot-45469.ptw','IRVB-MASTU_shot-45470.ptw','IRVB-MASTU_shot-45473.ptw']
-	to_do = to_do + ['IRVB-MASTU_shot-47950.ptw','IRVB-MASTU_shot-47973.ptw','IRVB-MASTU_shot-48144.ptw','IRVB-MASTU_shot-48328.ptw','IRVB-MASTU_shot-48335.ptw']
-	# beam heated L-mode
-	to_do = to_do + ['IRVB-MASTU_shot-46866.ptw','IRVB-MASTU_shot-46864.ptw','IRVB-MASTU_shot-46867.ptw','IRVB-MASTU_shot-46868.ptw','IRVB-MASTU_shot-46889.ptw','IRVB-MASTU_shot-46891.ptw','IRVB-MASTU_shot-46903.ptw','IRVB-MASTU_shot-48336.ptw','IRVB-MASTU_shot-49408.ptw','IRVB-MASTU_shot-49283.ptw']
-	# H-mode
-	to_do = to_do + ['IRVB-MASTU_shot-45401.ptw','IRVB-MASTU_shot-48596.ptw','IRVB-MASTU_shot-48597.ptw','IRVB-MASTU_shot-46977.ptw','IRVB-MASTU_shot-48599.ptw','IRVB-MASTU_shot-48561.ptw','IRVB-MASTU_shot-49139.ptw','IRVB-MASTU_shot-49392.ptw','IRVB-MASTU_shot-49396.ptw','IRVB-MASTU_shot-49400.ptw','IRVB-MASTU_shot-49401.ptw']
-	# mix
-	to_do = to_do + ['IRVB-MASTU_shot-48690.ptw','IRVB-MASTU_shot-48692.ptw','IRVB-MASTU_shot-49463.ptw','IRVB-MASTU_shot-49464.ptw','IRVB-MASTU_shot-49465.ptw','IRVB-MASTU_shot-49466.ptw','IRVB-MASTU_shot-49467.ptw','IRVB-MASTU_shot-49468.ptw']
+	to_do = to_do + ['IRVB-MASTU_shot-47950.ptw','IRVB-MASTU_shot-47973.ptw','IRVB-MASTU_shot-48144.ptw']
+	to_do = to_do + ['IRVB-MASTU_shot-46866.ptw','IRVB-MASTU_shot-46867.ptw','IRVB-MASTU_shot-46868.ptw','IRVB-MASTU_shot-46891.ptw','IRVB-MASTU_shot-48336.ptw','IRVB-MASTU_shot-49408.ptw']
 
 	# # data for Yasmin Adnrew (female) about LH transition
 	# to_do = []
@@ -344,8 +352,8 @@ elif True:	# section to use when specifying the shots
 		except:
 			print('no shots left to process')
 			sys.exit(1)
-	for name in to_do:
-	# for name in np.flip(to_do,axis=0):
+	# for name in to_do:
+	for name in np.flip(to_do,axis=0):
 		# shot_list = get_data(path+'shot_list2.ods')
 		# temp1 = (np.array(shot_list['Sheet1'][0])=='shot number').argmax()
 		# for i in range(1,len(shot_list['Sheet1'])):
@@ -363,7 +371,7 @@ elif True:	# section to use when specifying the shots
 		laser_to_analyse=path+day+'/'+name
 
 		try:
-			if True:
+			if False:
 				exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_pulse_process2_BB.py").read())
 			else:
 				pass_number = 0
@@ -448,7 +456,7 @@ else:	# section to use when analysing only one shot
 	# name = 'IRVB-MASTU_shot-45463.ptw'	# large VDE: peak /XIM/DA/HL02/SXD 711.3ms; peak /XIM/DA/HE05/ISP/L and start decrease /XBM/CORE/F15/AMP 710.9ms; IRVB 3019 ms from recording start -2.5 = 519ms	NOTE framerate 50Hz, so starting point very wrong
 	# name = 'IRVB-MASTU_shot-47953.ptw'
 	# name = 'IRVB-MASTU_shot-45225.ptw'
-	name = 'IRVB-MASTU_shot-45401.ptw'
+	name = 'IRVB-MASTU_shot-49408.ptw'
 
 	path = '/home/ffederic/work/irvb/MAST-U/'
 	# shot_list = get_data(path+'shot_list2.ods')

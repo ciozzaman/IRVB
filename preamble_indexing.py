@@ -1420,6 +1420,77 @@ collection_of_records['laserG03']['absorber_material'] = 'Au'	# name of the elem
 
 
 
+# new data from the foil olympics in September 2024 in Greifswald
+
+# no laser reference for G12
+vacuumG12=['Rec-000059-001_06_34_24_097','Rec-000071-001_06_47_15_712','Rec-000079-001_06_55_58_114','Rec-000085-001_07_03_35_858']
+for i in range(len(vacuumG12)):
+	vacuumG12[i] = vacuumG12[i] + '/home/ffederic/work/irvb/laser/Sept17_2024/'
+vacuumframerateG12=[383,383,383,383,383,383,383,383,383,383,383,383,383,383,383,383,383,383,383,383,383,383,383,383,383,383,383,383]
+vacuuminttimeG12=[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+vacuumtimeG12=[900,913,922,929] #[min]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'vacuumG12':vacuumG12}))
+vacuumROIG12 = [ 'ff' ] * len(vacuumG12)
+
+# my 350C/315Pt/1000Ti/325Pt/350C CVD foil made summer 2024
+power_interpolatorG12 = interp1d([0,0.,2.5,10],[0,0,0.043,0.043])
+laserG12=['Rec-000060-001_06_36_06_485','Rec-000061-001_06_37_27_644','Rec-000062-001_06_38_27_675','Rec-000063-001_06_39_09_026','Rec-000064-001_06_39_49_437','Rec-000065-001_06_40_50_709','Rec-000066-001_06_42_07_374','Rec-000067-001_06_43_08_847','Rec-000068-001_06_43_50_064','Rec-000069-001_06_44_47_613','Rec-000070-001_06_46_30_538','Rec-000072-001_06_48_07_694','Rec-000073-001_06_48_50_319','Rec-000074-001_06_50_31_432','Rec-000075-001_06_51_31_128','Rec-000076-001_06_52_47_894','Rec-000077-001_06_53_48_595','Rec-000078-001_06_55_07_507','Rec-000080-001_06_56_47_447','Rec-000081-001_06_57_47_947','Rec-000082-001_06_58_47_240','Rec-000083-001_07_01_27_915','Rec-000084-001_07_02_46_324']
+for i in range(len(laserG12)):
+	laserG12[i] = '/home/ffederic/work/irvb/laser/Sept17_2024/' + laserG12[i]
+voltlaserG12=[1]
+freqlaserG12=[0.02]
+dutylaserG12=[0.5]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'laserG12':laserG12}))
+laserROIG12 = [ 'ff' ] * len(laserG12)
+collection_of_records['laserG12'] = dict([])
+collection_of_records['laserG12']['path_files_laser'] = laserG12
+collection_of_records['laserG12']['voltlaser'] = voltlaserG12
+collection_of_records['laserG12']['freqlaser'] = freqlaserG12
+collection_of_records['laserG12']['dutylaser'] = dutylaserG12
+collection_of_records['laserG12']['laserROI'] = laserROIG12
+collection_of_records['laserG12']['reference_clear'] = [vacuumG12] * len(laserG12)
+collection_of_records['laserG12']['power_interpolator'] = [power_interpolatorG12] * len(laserG12)
+collection_of_records['laserG12']['focus_status'] = ['focused'] * len(laserG12)
+collection_of_records['laserG12']['foil_position_dict'] = [dict([('angle',0),('foilcenter',[162,133]),('foilhorizwpixel',240)])] * len(laserG12)
+collection_of_records['laserG12']['scan_type'] = 'power&freq'	# other: 'freq&duty' 'power&freq' 'freq'
+collection_of_records['laserG12']['absorber_material'] = 'Au'	# name of the element from periodic table
+
+
+
+# no laser reference for G13
+vacuumG13=['Rec-000001-001_00_52_23_745','Rec-000010-001_01_03_58_795','Rec-000018-001_01_11_20_509','Rec-000028-001_01_23_11_422','Rec-000035-001_01_30_09_424']
+for i in range(len(vacuumG13)):
+	vacuumG13[i] = vacuumG13[i] + '/home/ffederic/work/irvb/laser/Sept18_2024/'
+vacuumframerateG13=[383,383,383,383,383,383,383,383,383,383,383,383,383,383,383,383,383,383,383,383,383,383,383,383,383,383,383,383]
+vacuuminttimeG13=[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+vacuumtimeG13=[900,913,922,929] #[min]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'vacuumG13':vacuumG13}))
+vacuumROIG13 = [ 'ff' ] * len(vacuumG13)
+
+# Japanese foil 2.5mum Pt CVD carbon both sides
+power_interpolatorG13 = interp1d([0,0.,2.5,10],[0,0,0.043,0.043])
+laserG13=['Rec-000002-001_00_52_53_090','Rec-000003-001_00_54_13_444','Rec-000004-001_00_57_11_960','Rec-000005-001_00_58_11_891','Rec-000006-001_00_58_53_611','Rec-000007-001_00_59_35_330','Rec-000008-001_01_01_32_676','Rec-000009-001_01_03_18_082','Rec-000011-001_01_05_13_314','Rec-000012-001_01_05_54_263','Rec-000013-001_01_06_52_516','Rec-000014-001_01_07_34_705','Rec-000015-001_01_08_33_328','Rec-000016-001_01_09_32_084','Rec-000017-001_01_10_33_524','Rec-000019-001_01_12_34_222','Rec-000020-001_01_13_32_442','Rec-000021-001_01_14_33_949','Rec-000022-001_01_15_53_815','Rec-000023-001_01_16_52_992','Rec-000024-001_01_17_34_410','Rec-000025-001_01_18_32_228','Rec-000026-001_01_19_36_417','Rec-000027-001_01_22_33_357','Rec-000029-001_01_24_33_419','Rec-000030-001_01_25_13_663','Rec-000031-001_01_26_39_719','Rec-000032-001_01_27_13_792','Rec-000033-001_01_28_11_945','Rec-000034-001_01_29_13_183']
+for i in range(len(laserG13)):
+	laserG13[i] = '/home/ffederic/work/irvb/laser/Sept18_2024/' + laserG13[i]
+voltlaserG13=[1]
+freqlaserG13=[0.02]
+dutylaserG13=[0.5]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'laserG13':laserG13}))
+laserROIG13 = [ 'ff' ] * len(laserG13)
+collection_of_records['laserG13'] = dict([])
+collection_of_records['laserG13']['path_files_laser'] = laserG13
+collection_of_records['laserG13']['voltlaser'] = voltlaserG13
+collection_of_records['laserG13']['freqlaser'] = freqlaserG13
+collection_of_records['laserG13']['dutylaser'] = dutylaserG13
+collection_of_records['laserG13']['laserROI'] = laserROIG13
+collection_of_records['laserG13']['reference_clear'] = [vacuumG13] * len(laserG13)
+collection_of_records['laserG13']['power_interpolator'] = [power_interpolatorG13] * len(laserG13)
+collection_of_records['laserG13']['focus_status'] = ['focused'] * len(laserG13)
+collection_of_records['laserG13']['foil_position_dict'] = [dict([('angle',0),('foilcenter',[162,133]),('foilhorizwpixel',240)])] * len(laserG13)
+collection_of_records['laserG13']['scan_type'] = 'power&freq'	# other: 'freq&duty' 'power&freq' 'freq'
+collection_of_records['laserG13']['absorber_material'] = 'Au'	# name of the element from periodic table
+
+
 
 ##  IRVB FOIL PARAMETERS
 
