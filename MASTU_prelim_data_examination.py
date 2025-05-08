@@ -217,7 +217,7 @@ if False or MU_campaign>0:	# section to use when specifying the days
 			logging.exception('with error: ' + str(e))
 			pass
 
-elif True:	# section to use when specifying the shots
+elif False:	# section to use when specifying the shots
 
 	# simpler way of starting works
 	# to_do = ['IRVB-MASTU_shot-45468.ptw','IRVB-MASTU_shot-45469.ptw','IRVB-MASTU_shot-45470.ptw','IRVB-MASTU_shot-45473.ptw','IRVB-MASTU_shot-45401.ptw','IRVB-MASTU_shot-45399.ptw','IRVB-MASTU_shot-45371.ptw']#,'IRVB-MASTU_shot-45473.ptw']
@@ -456,7 +456,7 @@ else:	# section to use when analysing only one shot
 	# name = 'IRVB-MASTU_shot-45463.ptw'	# large VDE: peak /XIM/DA/HL02/SXD 711.3ms; peak /XIM/DA/HE05/ISP/L and start decrease /XBM/CORE/F15/AMP 710.9ms; IRVB 3019 ms from recording start -2.5 = 519ms	NOTE framerate 50Hz, so starting point very wrong
 	# name = 'IRVB-MASTU_shot-47953.ptw'
 	# name = 'IRVB-MASTU_shot-45225.ptw'
-	name = 'IRVB-MASTU_shot-49408.ptw'
+	name = 'IRVB-MASTU_shot-51422.ptw'
 
 	path = '/home/ffederic/work/irvb/MAST-U/'
 	# shot_list = get_data(path+'shot_list2.ods')

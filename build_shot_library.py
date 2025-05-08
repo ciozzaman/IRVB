@@ -40,7 +40,7 @@ XPAD_fuelling_location_list = ['HFS_BOT_B03','HFS_BOT_B09','HFS_MID_L02','HFS_MI
 fuelling_locations = np.unique([string[:string.find('_')] for string in fuelling_location_list_orig])
 
 if True:
-	if True:
+	if False:
 		shot_list = get_data(path+log_file_name)
 		for i in range(1,len(shot_list['Sheet1'])):
 			try:
@@ -83,6 +83,8 @@ if True:
 				pass
 		save_data(path+log_file_name,shot_list)
 		print('done')
+	else:
+		pass
 
 	if False:
 		shot_list = get_data(path+log_file_name)
@@ -123,6 +125,37 @@ if True:
 		save_data(path+log_file_name,shot_list)
 		print('done')
 		# exit()
+	else:
+		pass
+
+	# what is the largest inner leg angle we did before?
+	if True:
+		try:
+			shot_list = get_data(path+log_file_name)
+			for i in range(1,len(shot_list['Sheet1'])):
+				shot = int(np.array(shot_list['Sheet1'][i]) [np.array(shot_list['Sheet1'][0]) == 'shot number'])
+				if coleval.get_tend(shot)>0.4 and shot>45000:	# I filter out irrelevan shots
+					try:
+						print(shot)
+						EFIT_path_default = '/common/uda-scratch/lkogan/efitpp_eshed'
+						efit_reconstruction = coleval.mclass(EFIT_path_default+'/epm0'+str(shot)+'.nc',pulse_ID=str(shot))
+						# i_efit_time = np.abs(efit_reconstruction.time-0.35).argmin()
+						angle = np.degrees(np.arctan2(efit_reconstruction.lower_xpoint_z-(-np.abs(efit_reconstruction.strikepointZ[:,0])),efit_reconstruction.lower_xpoint_r-efit_reconstruction.strikepointR[:,0]))
+						angle = median_filter(angle,size=[10])
+						tend = coleval.get_tend(shot)
+						shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'end time of shot [ms]').argmax()] = int(np.round(tend*1000))	# I can save properly only integers, it seems
+						tend = tend-0.2	# reduceto to keep only central parts of the shot
+						select = np.logical_and(efit_reconstruction.time<tend,efit_reconstruction.time>0.35)
+						# angle = np.nanmax(angle[select])
+						# print([angle])
+						shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'inner leg angle min [deg]').argmax()] = int(np.round(np.nanmin(angle[select])*1))	# I can save properly only integers, it seems
+						shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'inner leg angle max [deg]').argmax()] = int(np.round(np.nanmax(angle[select])*1))	# I can save properly only integers, it seems
+					except:
+						pass
+		except:
+			pass
+		save_data(path+log_file_name,shot_list)
+		print('done')
 
 
 	# for MU04-div02 I need to look at shots with a large distance from strike point to x-point when the plasma is developed at ~350ms

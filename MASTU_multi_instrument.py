@@ -309,31 +309,58 @@ def temp_function(full_saved_file_dict_FAST):
 		plt.savefig(filename_root+filename_root_add+'_FAST_tot_rad_power.eps')
 		plt.close()
 
-		local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution = coleval.track_outer_leg_radiation(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction)
+		local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution = coleval.track_outer_leg_radiation(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,leg_resolution=0.05)
 		try:
-			peak_location,midpoint_location = coleval.plot_leg_radiation_tracking(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution,filename_root,filename_root_add,laser_to_analyse,scenario,which_leg='outer')
+			peak_location,midpoint_location = coleval.plot_leg_radiation_tracking(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution,filename_root,filename_root_add,laser_to_analyse,scenario,which_leg='outer',x_point_L_pol=outer_L_poloidal_x_point_all)
 		except Exception as e:
 			logging.exception('with error: ' + str(e))
 			print('failed to print\n'+'/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_outer_leg_radiation_tracking.eps')
-		inverted_dict[str(grid_resolution)]['local_outer_leg_power'] = local_power_all
-		inverted_dict[str(grid_resolution)]['local_outer_leg_mean_emissivity'] = local_mean_emis_all
-		inverted_dict[str(grid_resolution)]['leg_outer_length_all'] = leg_length_all
-		inverted_dict[str(grid_resolution)]['leg_outer_length_interval_all'] = leg_length_interval_all
-		inverted_dict[str(grid_resolution)]['leg_outer_peak_location'] = peak_location
-		inverted_dict[str(grid_resolution)]['leg_outer_midpoint_location'] = midpoint_location
+		inverted_dict[str(grid_resolution)]['outer_leg_only_local_power'] = local_power_all
+		inverted_dict[str(grid_resolution)]['outer_leg_only_local_emissivity'] = local_mean_emis_all
+		inverted_dict[str(grid_resolution)]['outer_leg_only_length_all'] = leg_length_all
+		inverted_dict[str(grid_resolution)]['outer_leg_only_length_interval_all'] = leg_length_interval_all
+		inverted_dict[str(grid_resolution)]['outer_leg_only_peak_location'] = peak_location
+		inverted_dict[str(grid_resolution)]['outer_leg_only_midpoint_location'] = midpoint_location
 
 		local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution = coleval.track_inner_leg_radiation(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction)
 		try:
-			peak_location,midpoint_location = coleval.plot_leg_radiation_tracking(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution,filename_root,filename_root_add,laser_to_analyse,scenario,which_leg='inner')
+			peak_location,midpoint_location = coleval.plot_leg_radiation_tracking(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution,filename_root,filename_root_add,laser_to_analyse,scenario,which_leg='inner',x_point_L_pol=inner_L_poloidal_x_point_all)
 		except Exception as e:
 			logging.exception('with error: ' + str(e))
 			print('failed to print\n'+'/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_inner_leg_radiation_tracking.eps')
-		inverted_dict[str(grid_resolution)]['local_inner_leg_power'] = local_power_all
-		inverted_dict[str(grid_resolution)]['local_inner_leg_mean_emissivity'] = local_mean_emis_all
-		inverted_dict[str(grid_resolution)]['leg_inner_length_all'] = leg_length_all
-		inverted_dict[str(grid_resolution)]['leg_inner_length_interval_all'] = leg_length_interval_all
-		inverted_dict[str(grid_resolution)]['leg_inner_peak_location'] = peak_location
-		inverted_dict[str(grid_resolution)]['leg_inner_midpoint_location'] = midpoint_location
+		inverted_dict[str(grid_resolution)]['inner_leg_only_local_power'] = local_power_all
+		inverted_dict[str(grid_resolution)]['inner_leg_only_local_emissivity'] = local_mean_emis_all
+		inverted_dict[str(grid_resolution)]['inner_leg_only_length_all'] = leg_length_all
+		inverted_dict[str(grid_resolution)]['inner_leg_only_length_interval_all'] = leg_length_interval_all
+		inverted_dict[str(grid_resolution)]['inner_leg_only_peak_location'] = peak_location
+		inverted_dict[str(grid_resolution)]['inner_leg_only_midpoint_location'] = midpoint_location
+
+
+		local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution = coleval.track_outer_leg_radiation(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,type='separatrix',leg_resolution=0.05)
+		try:
+			peak_location,midpoint_location = coleval.plot_leg_radiation_tracking(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution,filename_root,filename_root_add,laser_to_analyse,scenario,which_leg='outer',x_point_L_pol=outer_L_poloidal_x_point_all,which_part_of_separatrix='separatrix')
+		except Exception as e:
+			logging.exception('with error: ' + str(e))
+			print('failed to print\n'+'/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_outer_leg_radiation_tracking.eps')
+		inverted_dict[str(grid_resolution)]['outer_separatrix_local_power'] = local_power_all
+		inverted_dict[str(grid_resolution)]['outer_separatrix_local_emissivity'] = local_mean_emis_all
+		inverted_dict[str(grid_resolution)]['outer_separatrix_length_all'] = leg_length_all
+		inverted_dict[str(grid_resolution)]['outer_separatrix_length_interval_all'] = leg_length_interval_all
+		inverted_dict[str(grid_resolution)]['outer_separatrix_peak_location'] = peak_location
+		inverted_dict[str(grid_resolution)]['outer_separatrix_midpoint_location'] = midpoint_location
+
+		local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution = coleval.track_inner_leg_radiation(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,type='separatrix')
+		try:
+			peak_location,midpoint_location = coleval.plot_leg_radiation_tracking(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution,filename_root,filename_root_add,laser_to_analyse,scenario,which_leg='inner',x_point_L_pol=inner_L_poloidal_x_point_all,which_part_of_separatrix='separatrix')
+		except Exception as e:
+			logging.exception('with error: ' + str(e))
+			print('failed to print\n'+'/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_inner_leg_radiation_tracking.eps')
+		inverted_dict[str(grid_resolution)]['inner_separatrix_local_power'] = local_power_all
+		inverted_dict[str(grid_resolution)]['inner_separatrix_local_emissivity'] = local_mean_emis_all
+		inverted_dict[str(grid_resolution)]['inner_separatrix_length_all'] = leg_length_all
+		inverted_dict[str(grid_resolution)]['inner_separatrix_length_interval_all'] = leg_length_interval_all
+		inverted_dict[str(grid_resolution)]['inner_separatrix_peak_location'] = peak_location
+		inverted_dict[str(grid_resolution)]['inner_separatrix_midpoint_location'] = midpoint_location
 
 		gas = get_gas_info(shotnumber)
 		gas_core = 0.
@@ -1475,8 +1502,8 @@ def temp_function(full_saved_file_dict_FAST):
 			psiN_core_inner_side_baricenter_all.append(np.nansum(((psiN*np.logical_and(psiN>0.9,psiN<1.1)).T*(inverted_data[i_t]))[:][:,select]) / np.nansum((inverted_data[i_t]*np.logical_and(psiN.T>0.9,psiN.T<1.1))[:][:,select]))
 		psiN_peak_inner_all = np.array(psiN_peak_inner_all).flatten()
 		psiN_core_inner_side_baricenter_all = np.array(psiN_core_inner_side_baricenter_all)
-		full_saved_file_dict_FAST['multi_instrument']['psiN_peak_inner_all'] = psiN_peak_inner_all
-		full_saved_file_dict_FAST['multi_instrument']['psiN_core_inner_side_baricenter_all'] = psiN_core_inner_side_baricenter_all
+		inverted_dict[str(grid_resolution)]['psiN_peak_inner_all'] = psiN_peak_inner_all
+		inverted_dict[str(grid_resolution)]['psiN_core_inner_side_baricenter_all'] = psiN_core_inner_side_baricenter_all
 
 		# here I calculate the upstream density
 		try:

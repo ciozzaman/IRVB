@@ -60,7 +60,7 @@ for path in parameters_available_BB:
 parameters_available_int_time_BB = np.array(parameters_available_int_time_BB)
 parameters_available_framerate_BB = np.array(parameters_available_framerate_BB)
 
-color = ['b', 'r', 'm', 'y', 'g', 'c', 'k', 'slategrey', 'darkorange', 'lime', 'teal', 'olive','blueviolet','tan','skyblue','brown','hotpink']
+color = ['b', 'r', 'm', 'y', 'g', 'c', 'darkorange', 'lime', 'k', 'slategrey', 'teal', 'olive','blueviolet','tan','skyblue','brown','hotpink']
 markers = ['o','+','*','v','^','<','>']
 path = '/home/ffederic/work/irvb/MAST-U/'
 shot_list = get_data(path+'shot_list2.ods')
@@ -147,7 +147,7 @@ if False:	# plot for the papers
 		# ,'46903','48336','49408','49283']	# beam heated L-modes MU02/03
 		# to_do = ['46864','46866','46867','46868','46891','48336']	# beam heated L-modes MU02/03
 	if False:
-		to_do = ['46866','46867','46868','46891','48336']	# beam heated L-modes MU02/03
+		to_do = ['46866','46867','46868','46891','48336','49408']	# beam heated L-modes MU02/03
 		type = 'beamLmode'
 	if False:
 		to_do = ['46977']	# beam heated H-modes MU02/03
@@ -165,6 +165,8 @@ if False:	# plot for the papers
 	what_to_plot_selector[4] = False
 	what_to_plot_selector[5] = False
 	# what_to_plot_selector[6] = False
+	what_to_plot_selector[7] = False
+	what_to_plot_selector[8] = False
 	if what_to_plot_selector[0]:
 		fig, ax = plt.subplots( 2,3,figsize=(22, 25), squeeze=False,sharex=True)
 	if what_to_plot_selector[1]:
@@ -177,9 +179,13 @@ if False:	# plot for the papers
 		fig3, ax3 = plt.subplots( 2,3,figsize=(22, 25), squeeze=False,sharex=True)
 	if what_to_plot_selector[5]:
 		fig4, ax4 = plt.subplots( 2,3,figsize=(22, 25), squeeze=False,sharex=True)
-	# fig5, ax5 = plt.subplots( 2,3,figsize=(20, 10), squeeze=False,sharex=True)
+	# fig5, ax6 = plt.subplots( 2,3,figsize=(20, 10), squeeze=False,sharex=True)
 	if what_to_plot_selector[6]:
 		fig5, ax5 = plt.subplots( 2,4,figsize=(27, 10), squeeze=False,sharex=True)
+	if what_to_plot_selector[7]:
+		fig6, ax6 = plt.subplots( 2,4,figsize=(27, 10), squeeze=False,sharex=True)
+	if what_to_plot_selector[8]:
+		fig7, ax7 = plt.subplots( 2,4,figsize=(27, 10), squeeze=False,sharex=True)
 	shot_list = get_data(path+'shot_list2.ods')
 	n_shot_added = 0
 	for name in np.sort(to_do):
@@ -235,119 +241,162 @@ if False:	# plot for the papers
 			elif 'SXD' in _dict['multi_instrument']['scenario']:
 				t_min = 0.5
 
+			MWI_inversion_available = False
+			fulcher_band_detachment_outer_leg_start = np.nan
+			fulcher_band_detachment_outer_leg_end = np.nan
+			fulcher_band_detachment_outer_leg_MWI = np.nan
 			t_end = -4
 			if int(name[-9:-4]) == 45468:
-				t_min = 0.3
-				t_end = np.abs(time_full_binned_crop-0.80).argmin() - len(time_full_binned_crop)
-				fulcher_band_detachment = np.nan # from DMS, when it starts to decrease at the target location. in this shot this never happens
-				fulcher_band_detachment_current = np.nan
+				t_min = 0.25
+				t_max = 0.85
+				t_end = np.abs(time_full_binned_crop-t_max).argmin() - len(time_full_binned_crop)
+				fulcher_band_detachment_outer_leg = np.nan # from DMS, when it starts to decrease at the target location. in this shot this never happens
+				fulcher_band_detachment_outer_leg_start = np.nan # from DMS. in this shot this never happens
+				fulcher_band_detachment_outer_leg_end = np.nan # from DMS. in this shot this never happens
+				fulcher_band_detachment_outer_leg_current = np.nan
 			if int(name[-9:-4]) == 45469:
-				t_min = 0.3
-				t_end = np.abs(time_full_binned_crop-0.65).argmin() - len(time_full_binned_crop)	# 20/02/2025 I reduce from 0.75 as psi on the babble starts to change around then, indicating that the SOL starts hitting the baffle and it's normal that the target currect will be reduced
-				fulcher_band_detachment = 0.500 # from DMS, when it starts to decrease at the target location
-				fulcher_band_detachment_current = 0.6E19
+				t_min = 0.25
+				t_max = 0.8
+				t_end = np.abs(time_full_binned_crop-t_max).argmin() - len(time_full_binned_crop)	# 20/02/2025 I reduce from 0.75 as psi on the babble starts to change around then, indicating that the SOL starts hitting the baffle and it's normal that the target currect will be reduced
+				fulcher_band_detachment_outer_leg = 0.500 # from DMS, when it starts to decrease at the target location
+				fulcher_band_detachment_outer_leg_start = 0.361	#0.469 # from DMS, very approximate, almost meaningless
+				fulcher_band_detachment_outer_leg_end = 0.7 # from DMS, very approximate, almost meaningless
+				fulcher_band_detachment_outer_leg_current = 0.6E19
 			if int(name[-9:-4]) == 45470:
-				t_min = 0.3
-				t_end = np.abs(time_full_binned_crop-0.70).argmin() - len(time_full_binned_crop)	# 20/02/2025 I reduce from 0.75 as psi on the babble starts to change around then, indicating that the SOL starts hitting the baffle and it's normal that the target currect will be reduced
-				fulcher_band_detachment = 0.703 # from DMS, when it starts to decrease at the target location
-				fulcher_band_detachment_current = 0.6E19
+				t_min = 0.4
+				t_max = 0.8
+				t_end = np.abs(time_full_binned_crop-t_max).argmin() - len(time_full_binned_crop)	# 20/02/2025 I reduce from 0.75 as psi on the babble starts to change around then, indicating that the SOL starts hitting the baffle and it's normal that the target currect will be reduced
+				fulcher_band_detachment_outer_leg = 0.703 # from DMS, when it starts to decrease at the target location
+				fulcher_band_detachment_outer_leg_start = 0.591 # from DMS
+				fulcher_band_detachment_outer_leg_end = 0.777 # from DMS
+				fulcher_band_detachment_outer_leg_current = 0.6E19
 			if int(name[-9:-4]) == 45473:
-				t_min = 0.3
-				t_end = np.abs(time_full_binned_crop-0.70).argmin() - len(time_full_binned_crop)	# 20/02/2025 I reduce from 0.75 as psi on the babble starts to change around then, indicating that the SOL starts hitting the baffle and it's normal that the target currect will be reduced
-				fulcher_band_detachment = 0.711 # from DMS, when it starts to decrease at the target location
-				fulcher_band_detachment_current = 0.55E19
+				t_min = 0.30	# 0.2 changed because the averaged emissivity wants to stick to the x-point, just because of the area that it considers, no physics there
+				t_max = 0.85
+				t_end = np.abs(time_full_binned_crop-t_max).argmin() - len(time_full_binned_crop)	# 20/02/2025 I reduce from 0.75 as psi on the babble starts to change around then, indicating that the SOL starts hitting the baffle and it's normal that the target currect will be reduced
+				fulcher_band_detachment_outer_leg = 0.711 # from DMS, when it starts to decrease at the target location
+				fulcher_band_detachment_outer_leg_start = 0.616 # from DMS
+				fulcher_band_detachment_outer_leg_end = 0.790 # from DMS
+				fulcher_band_detachment_outer_leg_current = 0.55E19
+			if int(name[-9:-4]) == 46702:
+				t_end = np.abs(time_full_binned_crop-0.6).argmin() - len(time_full_binned_crop)
+			if int(name[-9:-4]) == 46769:
+				t_min = 0.4
+				t_end = np.abs(time_full_binned_crop-0.8).argmin() - len(time_full_binned_crop)
 			if int(name[-9:-4]) == 46864:
 				t_min = 0.4
 				t_end = np.abs(time_full_binned_crop-0.72).argmin() - len(time_full_binned_crop)
 			if int(name[-9:-4]) == 46866:
 				t_min = 0.4
-				t_end = np.abs(time_full_binned_crop-0.7).argmin() - len(time_full_binned_crop)	# 20/02/2025 I reduce from 0.8 as psi on the babble starts to change around then, indicating that the SOL starts hitting the baffle and it's normal that the target currect will be reduced
-			if int(name[-9:-4]) == 46769:
+				t_max = 0.8
+				t_end = np.abs(time_full_binned_crop-t_max).argmin() - len(time_full_binned_crop)	# 20/02/2025 I reduce from 0.8 as psi on the babble starts to change around then, indicating that the SOL starts hitting the baffle and it's normal that the target currect will be reduced
+				fulcher_band_detachment_outer_leg_start = 0.565	# # from DMS, not full Fulcher band, only 596 to 605 nm
+				fulcher_band_detachment_outer_leg_end = 0.799	# # from DMS, not full Fulcher band, only 596 to 605 nm
+				fulcher_band_detachment_outer_leg_MWI = 0.7175 # MWI Fulcher starts to decrease at the target location and passes through gain ~3
+				fulcher_band_detachment_outer_leg = 0.619 # from DMS, when it starts to decrease at the target location
+				fulcher_band_detachment_outer_leg_current = 1.E19
+				fulcher_band_detachment_outer_leg_pressure = 40	# Pa
+			if int(name[-9:-4]) == 46867:
+				t_min = 0.35
+				t_max = 0.8
+				t_end = np.abs(time_full_binned_crop-t_max).argmin() - len(time_full_binned_crop)	# 20/02/2025 I reduce from 0.75 as psi on the babble starts to change around then, indicating that the SOL starts hitting the baffle and it's normal that the target currect will be reduced
+				fulcher_band_detachment_outer_leg = 0.570 # from DMS, when it starts to decrease at the target location
+				fulcher_band_detachment_outer_leg_start = 0.447 # from DMS
+				fulcher_band_detachment_outer_leg_end = 0.765 # from DMS
+				fulcher_band_detachment_outer_leg_MWI = 0.7025 # MWI Fulcher starts to decrease at the target location and passes through gain ~3
+				fulcher_band_detachment_outer_leg_current = 0.9E19
+				fulcher_band_detachment_outer_leg_pressure = 40	# Pa
+			if int(name[-9:-4]) == 46868:
 				t_min = 0.4
-				t_end = np.abs(time_full_binned_crop-0.8).argmin() - len(time_full_binned_crop)
-			if int(name[-9:-4]) == 46702:
-				t_end = np.abs(time_full_binned_crop-0.6).argmin() - len(time_full_binned_crop)
+				t_max = 0.8
+				t_end = np.abs(time_full_binned_crop-t_max).argmin() - len(time_full_binned_crop)	# 20/02/2025 I reduce from 0.75 as psi on the babble starts to change around then, indicating that the SOL starts hitting the baffle and it's normal that the target currect will be reduced
+				fulcher_band_detachment_outer_leg_MWI = 0.675 # when MWI Fulcher starts to decrease at the target location and passes through gain ~3
+				fulcher_band_detachment_outer_leg_start = np.nan # DMS not available
+				fulcher_band_detachment_outer_leg_end = np.nan # DMS not available
+				fulcher_band_detachment_outer_leg_current = 1.1E19
+				fulcher_band_detachment_outer_leg_pressure = 35	# Pa
+			if int(name[-9:-4]) == 46891:
+				t_min = 0.4
+				t_max = 0.8
+				t_end = np.abs(time_full_binned_crop-t_max).argmin() - len(time_full_binned_crop)
+				fulcher_band_detachment_outer_leg_start = np.nan # DMS not available
+				fulcher_band_detachment_outer_leg_end = np.nan # DMS not available
+				fulcher_band_detachment_outer_leg_MWI = 0.755 # when MWI Fulcher starts to decrease at the target location and passes through gain ~3
+				fulcher_band_detachment_outer_leg_current = np.nan # DMS not available
+			if int(name[-9:-4]) == 46977:
+				t_min = 0.2
+				t_end = np.abs(time_full_binned_crop-0.85).argmin() - len(time_full_binned_crop)
 			if int(name[-9:-4]) == 47950:
-				t_min = 0.3
-				t_end = np.abs(time_full_binned_crop-0.65).argmin() - len(time_full_binned_crop)	# 20/02/2025 I reduce from 0.75 as psi on the babble starts to change around then, indicating that the SOL starts hitting the baffle and it's normal that the target currect will be reduced
-				fulcher_band_detachment = 0.560 # from DMS, when it starts to decrease at the target location
-				fulcher_band_detachment_current = 1E19
-				fulcher_band_detachment_pressure = 27	# Pa
+				t_min = 0.35
+				t_max = 0.65
+				t_end = np.abs(time_full_binned_crop-t_max).argmin() - len(time_full_binned_crop)	# 20/02/2025 I reduce from 0.75 as psi on the babble starts to change around then, indicating that the SOL starts hitting the baffle and it's normal that the target currect will be reduced
+				fulcher_band_detachment_outer_leg = 0.560 # from DMS, when it starts to decrease at the target location
+				fulcher_band_detachment_outer_leg_start = 0.512 # from DMS
+				fulcher_band_detachment_outer_leg_end = 0.709 # from DMS
+				fulcher_band_detachment_outer_leg_MWI = 0.5525 # MWI Fulcher starts to decrease at the target location and passes through gain ~3
+				fulcher_band_detachment_outer_leg_current = 1E19
+				fulcher_band_detachment_outer_leg_pressure = 27	# Pa
 			if int(name[-9:-4]) == 47973:
-				t_min = 0.4
-				t_end = np.abs(time_full_binned_crop-0.7).argmin() - len(time_full_binned_crop)	# 20/02/2025 I reduce from 0.75 as psi on the babble starts to change around then, indicating that the SOL starts hitting the baffle and it's normal that the target currect will be reduced
-				fulcher_band_detachment = np.nan
-				fulcher_band_detachment_current = np.nan
+				t_min = 0.35
+				t_max = 0.8
+				t_end = np.abs(time_full_binned_crop-t_max).argmin() - len(time_full_binned_crop)	# 20/02/2025 I reduce from 0.75 as psi on the babble starts to change around then, indicating that the SOL starts hitting the baffle and it's normal that the target currect will be reduced
+				fulcher_band_detachment_outer_leg = np.nan
+				fulcher_band_detachment_outer_leg_start = 0.432	# # from DMS, not full Fulcher band, only 599.5 to 605 nm
+				fulcher_band_detachment_outer_leg_end = 0.639	# # from DMS, not full Fulcher band, only 599.5 to 605 nm
+				fulcher_band_detachment_outer_leg_MWI = np.nan # MWI Fulcher NA
+				fulcher_band_detachment_outer_leg_current = np.nan
 			if int(name[-9:-4]) == 48144:
 				t_min = 0.3
-				t_end = np.abs(time_full_binned_crop-0.7).argmin() - len(time_full_binned_crop)	# 20/02/2025 I reduce from 0.75 as psi on the babble starts to change around then, indicating that the SOL starts hitting the baffle and it's normal that the target currect will be reduced
-				fulcher_band_detachment = 0.615 # from DMS, when it starts to decrease at the target location
-				fulcher_band_detachment_current = 1E19
-				fulcher_band_detachment_pressure = 25	# Pa
+				t_max = 0.75
+				t_end = np.abs(time_full_binned_crop-t_max).argmin() - len(time_full_binned_crop)	# 20/02/2025 I reduce from 0.75 as psi on the babble starts to change around then, indicating that the SOL starts hitting the baffle and it's normal that the target currect will be reduced
+				fulcher_band_detachment_outer_leg = 0.615 # from DMS, when it starts to decrease at the target location
+				fulcher_band_detachment_outer_leg_start = np.nan # from DMS, there are multiple peak, so I dunno what to use
+				fulcher_band_detachment_outer_leg_end = 0.680 # from DMS
+				fulcher_band_detachment_outer_leg_MWI = 0.535 # MWI Fulcher starts to decrease at the target location and passes through gain ~3
+				fulcher_band_detachment_outer_leg_current = 1E19
+				fulcher_band_detachment_outer_leg_pressure = 25	# Pa
+				MWI_inversion_available = True
 			if int(name[-9:-4]) == 48328:
 				t_min = 0.4
-				t_end = np.abs(time_full_binned_crop-0.7).argmin() - len(t
-
-				ime_full_binned_crop)
+				t_end = np.abs(time_full_binned_crop-0.7).argmin() - len(time_full_binned_crop)
 			if int(name[-9:-4]) == 48335:
 				t_min = 0.5
 				t_end = np.abs(time_full_binned_crop-0.85).argmin() - len(time_full_binned_crop)
 			if int(name[-9:-4]) == 48336:
 				t_min = 0.3
-				t_end = np.abs(time_full_binned_crop-0.80).argmin() - len(time_full_binned_crop)	# 20/02/2025 I reduce from 0.75 as psi on the babble starts to change around then, indicating that the SOL starts hitting the baffle and it's normal that the target currect will be reduced
-				fulcher_band_detachment = 0.787 # DMS not available, when MWI Fulcher starts to decrease at the target location and passes through gain ~3
-				fulcher_band_detachment_current = 1.35E19
-				fulcher_band_detachment_pressure = 30	# Pa
-			if int(name[-9:-4]) == 46866:
-				t_min = 0.4
-				t_end = np.abs(time_full_binned_crop-0.8).argmin() - len(time_full_binned_crop)
-				fulcher_band_detachment = 0.619 # from DMS, when it starts to decrease at the target location
-				fulcher_band_detachment_current = 1.E19
-				fulcher_band_detachment_pressure = 40	# Pa
-			if int(name[-9:-4]) == 46864:
-				t_min = 0.4
-				t_end = np.abs(time_full_binned_crop-0.7).argmin() - len(time_full_binned_crop)
-			if int(name[-9:-4]) == 46867:
-				t_min = 0.3
-				t_end = np.abs(time_full_binned_crop-0.70).argmin() - len(time_full_binned_crop)	# 20/02/2025 I reduce from 0.75 as psi on the babble starts to change around then, indicating that the SOL starts hitting the baffle and it's normal that the target currect will be reduced
-				fulcher_band_detachment = 0.570 # from DMS, when it starts to decrease at the target location
-				fulcher_band_detachment_current = 0.9E19
-				fulcher_band_detachment_pressure = 40	# Pa
-			if int(name[-9:-4]) == 46868:
-				t_min = 0.4
-				t_end = np.abs(time_full_binned_crop-0.70).argmin() - len(time_full_binned_crop)	# 20/02/2025 I reduce from 0.75 as psi on the babble starts to change around then, indicating that the SOL starts hitting the baffle and it's normal that the target currect will be reduced
-				fulcher_band_detachment = 0.684 # DMS not available, when MWI Fulcher starts to decrease at the target location and passes through gain ~3
-				fulcher_band_detachment_current = 1.1E19
-				fulcher_band_detachment_pressure = 35	# Pa
-			if int(name[-9:-4]) == 46891:
-				t_min = 0.4
-				t_end = np.abs(time_full_binned_crop-0.8).argmin() - len(time_full_binned_crop)
-				fulcher_band_detachment = np.nan
-				fulcher_band_detachment_current = np.nan
-			if int(name[-9:-4]) == 49408:
-				t_min = 0.4
-				t_end = np.abs(time_full_binned_crop-0.8).argmin() - len(time_full_binned_crop)
-				fulcher_band_detachment = 0.650 # from DMS, when it starts to decrease at the target location
-			if int(name[-9:-4]) == 49283:
-				t_min = 0.4
-				t_end = np.abs(time_full_binned_crop-0.85).argmin() - len(time_full_binned_crop)
-			if int(name[-9:-4]) == 46977:
-				t_min = 0.2
-				t_end = np.abs(time_full_binned_crop-0.85).argmin() - len(time_full_binned_crop)
-			if int(name[-9:-4]) == 49139:
-				t_min = 0.6
-				t_end = np.abs(time_full_binned_crop-0.9).argmin() - len(time_full_binned_crop)
-			if int(name[-9:-4]) == 48599:
-				t_min = 0.2
-				t_end = np.abs(time_full_binned_crop-0.6).argmin() - len(time_full_binned_crop)
-			if int(name[-9:-4]) == 49392:
-				t_min = 0.6
-				t_end = np.abs(time_full_binned_crop-0.9).argmin() - len(time_full_binned_crop)
+				t_max = 0.85
+				t_end = np.abs(time_full_binned_crop-t_max).argmin() - len(time_full_binned_crop)	# 20/02/2025 I reduce from 0.75 as psi on the babble starts to change around then, indicating that the SOL starts hitting the baffle and it's normal that the target currect will be reduced
+				fulcher_band_detachment_outer_leg_start = 0.581 # from DMS, not full Fulcher band, only 599.5 to 605 nm
+				fulcher_band_detachment_outer_leg_end = 0.837 # from DMS, not full Fulcher band, only 599.5 to 605 nm
+				fulcher_band_detachment_outer_leg_MWI = 0.790 # when MWI Fulcher starts to decrease at the target location and passes through gain ~3
+				fulcher_band_detachment_outer_leg_current = 1.35E19
+				fulcher_band_detachment_outer_leg_pressure = 30	# Pa
+				MWI_inversion_available = True
 			if int(name[-9:-4]) == 48561:
 				t_min = 0.3
 				t_end = np.abs(time_full_binned_crop-0.9).argmin() - len(time_full_binned_crop)
 			if int(name[-9:-4]) == 48597:
 				t_min = 0.3
+				t_end = np.abs(time_full_binned_crop-0.9).argmin() - len(time_full_binned_crop)
+			if int(name[-9:-4]) == 48599:
+				t_min = 0.2
+				t_end = np.abs(time_full_binned_crop-0.6).argmin() - len(time_full_binned_crop)
+			if int(name[-9:-4]) == 49139:
+				t_min = 0.6
+				t_end = np.abs(time_full_binned_crop-0.9).argmin() - len(time_full_binned_crop)
+			if int(name[-9:-4]) == 49283:
+				t_min = 0.4
+				t_end = np.abs(time_full_binned_crop-0.85).argmin() - len(time_full_binned_crop)
+			if int(name[-9:-4]) == 49408:
+				t_min = 0.4
+				t_max = 0.85
+				t_end = np.abs(time_full_binned_crop-t_max).argmin() - len(time_full_binned_crop)
+				fulcher_band_detachment_outer_leg_start = 0.692 # from DMS, not full Fulcher band, only 599.5 to 605 nm
+				fulcher_band_detachment_outer_leg_end = np.nan # from DMS, not full Fulcher band, only 599.5 to 605 nm
+				fulcher_band_detachment_outer_leg_MWI = 0.8575 # when MWI Fulcher starts to decrease at the target location and passes through gain ~3
+				MWI_inversion_available = True
+			if int(name[-9:-4]) == 49392:
+				t_min = 0.6
 				t_end = np.abs(time_full_binned_crop-0.9).argmin() - len(time_full_binned_crop)
 
 
@@ -422,6 +471,43 @@ if False:	# plot for the papers
 			outer_half_peak_L_pol_all_up = np.maximum(outer_half_peak_L_pol_all_up - outer_half_peak_L_pol_all,0)
 			movement_local_outer_leg_mean_emissivity = inverted_dict[str(grid_resolution)]['movement_local_outer_leg_mean_emissivity']
 
+			outer_separatrix_peak_location = inverted_dict[str(grid_resolution)]['outer_separatrix_peak_location']
+			outer_separatrix_midpoint_location = inverted_dict[str(grid_resolution)]['outer_separatrix_midpoint_location']
+			outer_separatrix_midpoint_location = np.array(outer_separatrix_midpoint_location)
+			outer_separatrix_midpoint_location_down = outer_separatrix_midpoint_location[:,0]
+			outer_separatrix_midpoint_location_up = outer_separatrix_midpoint_location[:,2]
+			outer_separatrix_midpoint_location = outer_separatrix_midpoint_location[:,1]
+			outer_separatrix_midpoint_location_down = np.maximum(outer_separatrix_midpoint_location-outer_separatrix_midpoint_location_down,0)
+			outer_separatrix_midpoint_location_up = np.maximum(outer_separatrix_midpoint_location_up - outer_separatrix_midpoint_location,0)
+			inner_separatrix_peak_location = inverted_dict[str(grid_resolution)]['inner_separatrix_peak_location']
+			inner_separatrix_midpoint_location = inverted_dict[str(grid_resolution)]['inner_separatrix_midpoint_location']
+			inner_separatrix_midpoint_location = np.array(inner_separatrix_midpoint_location)
+			inner_separatrix_midpoint_location_down = inner_separatrix_midpoint_location[:,0]
+			inner_separatrix_midpoint_location_up = inner_separatrix_midpoint_location[:,2]
+			inner_separatrix_midpoint_location = inner_separatrix_midpoint_location[:,1]
+			inner_separatrix_midpoint_location_down = np.maximum(inner_separatrix_midpoint_location-inner_separatrix_midpoint_location_down,0)
+			inner_separatrix_midpoint_location_up = np.maximum(inner_separatrix_midpoint_location_up - inner_separatrix_midpoint_location,0)
+			psiN_core_inner_side_baricenter_all = inverted_dict[str(grid_resolution)]['psiN_core_inner_side_baricenter_all']
+
+			if MWI_inversion_available:
+				MWI_time_eps = _dict['multi_instrument']['MWI']['time_eps']
+				MWI_outer_separatrix_peak_location = _dict['multi_instrument']['MWI']['outer_separatrix_peak_location']
+				MWI_outer_separatrix_midpoint_location = _dict['multi_instrument']['MWI']['outer_separatrix_midpoint_location']
+				MWI_outer_separatrix_midpoint_location = np.array(MWI_outer_separatrix_midpoint_location)
+				MWI_outer_separatrix_midpoint_location_down = MWI_outer_separatrix_midpoint_location[:,0]
+				MWI_outer_separatrix_midpoint_location_up = MWI_outer_separatrix_midpoint_location[:,2]
+				MWI_outer_separatrix_midpoint_location = MWI_outer_separatrix_midpoint_location[:,1]
+				MWI_outer_separatrix_midpoint_location_down = np.maximum(MWI_outer_separatrix_midpoint_location-MWI_outer_separatrix_midpoint_location_down,0)
+				MWI_outer_separatrix_midpoint_location_up = np.maximum(MWI_outer_separatrix_midpoint_location_up - MWI_outer_separatrix_midpoint_location,0)
+				MWI_inner_separatrix_peak_location = _dict['multi_instrument']['MWI']['inner_separatrix_peak_location']
+				MWI_inner_separatrix_midpoint_location = _dict['multi_instrument']['MWI']['inner_separatrix_midpoint_location']
+				MWI_inner_separatrix_midpoint_location = np.array(MWI_inner_separatrix_midpoint_location)
+				MWI_inner_separatrix_midpoint_location_down = MWI_inner_separatrix_midpoint_location[:,0]
+				MWI_inner_separatrix_midpoint_location_up = MWI_inner_separatrix_midpoint_location[:,2]
+				MWI_inner_separatrix_midpoint_location = MWI_inner_separatrix_midpoint_location[:,1]
+				MWI_inner_separatrix_midpoint_location_down = np.maximum(MWI_inner_separatrix_midpoint_location-MWI_inner_separatrix_midpoint_location_down,0)
+				MWI_inner_separatrix_midpoint_location_up = np.maximum(MWI_inner_separatrix_midpoint_location_up - MWI_inner_separatrix_midpoint_location,0)
+
 			energy_confinement_time = _dict['multi_instrument']['energy_confinement_time']
 			energy_confinement_time_98y2 = _dict['multi_instrument']['energy_confinement_time_98y2']
 			energy_confinement_time_97P = _dict['multi_instrument']['energy_confinement_time_97P']
@@ -469,14 +555,32 @@ if False:	# plot for the papers
 					pass
 
 				try:
-					ax5[0,3].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(energy_confinement_time)[time_full_binned_crop>t_min][:t_end]*1000,'+',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
+					ax5[0,3].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(energy_confinement_time)[time_full_binned_crop>t_min][:t_end]*1000,'o',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
 				except:
 					pass
 
 				try:
-					ax5[1,3].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],dr_sep_out[time_full_binned_crop>t_min][:t_end]*1000,'+',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
+					# ax5[1,3].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],dr_sep_out[time_full_binned_crop>t_min][:t_end]*1000,'o',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
+					ax5[1,3].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],psiN_core_inner_side_baricenter_all[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
 				except:
 					pass
+
+			if what_to_plot_selector[7]:
+				try:
+					ax6[1,0].errorbar(nu_EFIT[time_full_binned_crop>t_min][:t_end][::possible_time_skip],(jsat_lower_outer_mid_integrated)[time_full_binned_crop>t_min][:t_end][::possible_time_skip],xerr=nu_EFIT_smoothing_uncertainty[time_full_binned_crop>t_min][:t_end][::possible_time_skip],yerr=(jsat_lower_outer_mid_integrated_sigma)[time_full_binned_crop>t_min][:t_end][::possible_time_skip],fmt='o',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.3,capsize=5)
+					ax6[0,0].errorbar(nu_EFIT[time_full_binned_crop>t_min][:t_end][::possible_time_skip],(jsat_upper_outer_mid_integrated)[time_full_binned_crop>t_min][:t_end][::possible_time_skip],xerr=nu_EFIT_smoothing_uncertainty[time_full_binned_crop>t_min][:t_end][::possible_time_skip],yerr=(jsat_upper_outer_mid_integrated_sigma)[time_full_binned_crop>t_min][:t_end][::possible_time_skip],fmt='o',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.3,capsize=5)
+				except:
+					pass
+				try:
+					ax6[0,3].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(energy_confinement_time)[time_full_binned_crop>t_min][:t_end]*1000,'o',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
+				except:
+					pass
+
+				try:
+					ax6[1,3].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],psiN_core_inner_side_baricenter_all[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],label=laser_to_analyse[-9:-4],alpha=0.5)
+				except:
+					pass
+
 
 			try:
 				time_start_MARFE = _dict['multi_instrument']['time_start_MARFE']
@@ -499,10 +603,11 @@ if False:	# plot for the papers
 			# elif name == 'IRVB-MASTU_shot-45473.ptw':
 			# 	true_outer_target_position[time_full_binned_crop>0.68] = outer_L_poloidal_peak_all[time_full_binned_crop>0.68]
 			# else:
-			temp = ((outer_L_poloidal_peak_only_leg_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end]
-			if temp.max()>0.5:
-				true_outer_target_position[(((outer_L_poloidal_peak_only_leg_all)/(outer_L_poloidal_x_point_all))==temp.max()).argmax()+1:] = outer_L_poloidal_peak_all[(((outer_L_poloidal_peak_only_leg_all)/(outer_L_poloidal_x_point_all))==temp.max()).argmax()+1:]
 
+			# 2025/03/14 this was done to avoid some problem with the radiation on the outer separatrix, but I don't think it's necessary
+			# temp = ((outer_L_poloidal_peak_only_leg_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end]
+			# if temp.max()>0.5:
+			# 	true_outer_target_position[(((outer_L_poloidal_peak_only_leg_all)/(outer_L_poloidal_x_point_all))==temp.max()).argmax()+1:] = outer_L_poloidal_peak_all[(((outer_L_poloidal_peak_only_leg_all)/(outer_L_poloidal_x_point_all))==temp.max()).argmax()+1:]
 
 
 
@@ -582,21 +687,6 @@ if False:	# plot for the papers
 						# ax4[1,2].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),((movement_local_outer_leg_mean_emissivity)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{0.5\;front\;binned}$')
 					except:
 						pass
-				if what_to_plot_selector[6]:
-					try:
-						ax5[0,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(inner_L_poloidal_peak_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],alpha=0.3,label=r'$IN_{peak}$')
-						# ax5[0,2].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(inner_half_peak_L_pol_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$IN_{0.5\;front\;InLine}$')
-						ax5[0,2].errorbar(nu_EFIT[time_full_binned_crop>t_min][:t_end],((inner_half_peak_L_pol_all)/(inner_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],yerr = [(inner_half_peak_L_pol_all_down/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],(inner_half_peak_L_pol_all_up/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end]],fmt='o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$IN_{0.5\;front\;InLine}$')
-						# ax5[0,2].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(movement_local_inner_leg_mean_emissivity/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$IN_{0.5\;front\;binned}$')
-						# ax5[1,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((outer_L_poloidal_peak_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{peak}$')
-						# ax5[1,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((outer_L_poloidal_peak_only_leg_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{peak\;only\;leg}$')
-						ax5[1,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((true_outer_target_position)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{peak\;leg\;combined}$')
-						# ax5[1,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(true_outer_target_position/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'s',fillstyle='none',color=color[n_shot_added%len(color)],alpha=0.3)
-						# ax5[1,2].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((outer_half_peak_L_pol_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{0.5\;front\;InLine}$')
-						ax5[1,2].errorbar(nu_EFIT[time_full_binned_crop>t_min][:t_end],((outer_half_peak_L_pol_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],yerr = [(outer_half_peak_L_pol_all_down/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],(outer_half_peak_L_pol_all_up/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end]],fmt='o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{0.5\;front\;InLine}$')
-						# ax5[1,2].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((movement_local_outer_leg_mean_emissivity)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{0.5\;front\;binned}$')
-					except:
-						pass
 			else:
 				if what_to_plot_selector[5]:
 					try:
@@ -621,21 +711,77 @@ if False:	# plot for the papers
 						# ax4[1,2].plot(nsep_interpolator(time_full_binned_crop[time_full_binned_crop>t_min][:t_end]),((movement_local_outer_leg_mean_emissivity)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3)
 					except:
 						pass
-				if what_to_plot_selector[6]:
-					try:
-						ax5[0,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(inner_L_poloidal_peak_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],alpha=0.3)
-						# ax5[0,2].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(inner_half_peak_L_pol_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3)
-						ax5[0,2].errorbar(nu_EFIT[time_full_binned_crop>t_min][:t_end],((inner_half_peak_L_pol_all)/(inner_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],yerr = [(inner_half_peak_L_pol_all_down/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],(inner_half_peak_L_pol_all_up/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end]],fmt='o',color=color[n_shot_added%len(color)],alpha=0.3)
-						# ax5[0,2].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(movement_local_inner_leg_mean_emissivity/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3)
-						# ax5[1,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((outer_L_poloidal_peak_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3)
-						# ax5[1,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((outer_L_poloidal_peak_only_leg_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3)
-						ax5[1,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((true_outer_target_position)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3)
-						# ax5[1,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(true_outer_target_position/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'s',fillstyle='none',color=color[n_shot_added%len(color)],alpha=0.3)
-						# ax5[1,2].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((outer_half_peak_L_pol_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3)
-						ax5[1,2].errorbar(nu_EFIT[time_full_binned_crop>t_min][:t_end],((outer_half_peak_L_pol_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],yerr = [(outer_half_peak_L_pol_all_down/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],(outer_half_peak_L_pol_all_up/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end]],fmt='o',color=color[n_shot_added%len(color)],alpha=0.3)
-						# ax5[1,2].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((movement_local_outer_leg_mean_emissivity)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3)
-					except:
-						pass
+
+			if what_to_plot_selector[6]:
+				try:
+					ax5[0,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(inner_L_poloidal_peak_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],alpha=0.3,label=r'$IN_{peak}$')
+					ax5[0,2].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(inner_half_peak_L_pol_all/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3,label=laser_to_analyse[-9:-4])
+					# ax5[0,2].errorbar(nu_EFIT[time_full_binned_crop>t_min][:t_end],((inner_half_peak_L_pol_all)/(inner_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],yerr = [(inner_half_peak_L_pol_all_down/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],(inner_half_peak_L_pol_all_up/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end]],fmt='o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$IN_{0.5\;front\;InLine}$')
+					# ax5[0,2].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(movement_local_inner_leg_mean_emissivity/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$IN_{0.5\;front\;binned}$')
+					# ax5[1,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((outer_L_poloidal_peak_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{peak}$')
+					# ax5[1,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((outer_L_poloidal_peak_only_leg_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{peak\;only\;leg}$')
+					ax5[1,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((true_outer_target_position)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{peak\;leg\;combined}$')
+					# ax5[1,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(true_outer_target_position/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'s',fillstyle='none',color=color[n_shot_added%len(color)],alpha=0.3)
+					ax5[1,2].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((outer_half_peak_L_pol_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{0.5\;front\;InLine}$')
+					# ax5[1,2].errorbar(nu_EFIT[time_full_binned_crop>t_min][:t_end],((outer_half_peak_L_pol_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],yerr = [(outer_half_peak_L_pol_all_down/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],(outer_half_peak_L_pol_all_up/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end]],fmt='o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{0.5\;front\;InLine}$')
+					# ax5[1,2].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((movement_local_outer_leg_mean_emissivity)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{0.5\;front\;binned}$')
+					if MWI_inversion_available:
+						ax5[0,1].plot(np.interp(MWI_time_eps,time_full_binned_crop,nu_EFIT)[np.logical_and(MWI_time_eps>t_min,MWI_time_eps<t_max)][::8],(MWI_inner_separatrix_peak_location/np.interp(MWI_time_eps,time_full_binned_crop,inner_L_poloidal_x_point_all))[np.logical_and(MWI_time_eps>t_min,MWI_time_eps<t_max)][::8],'x',color=color[n_shot_added%len(color)],alpha=0.8,label=r'$IN_{peak}$')
+						ax5[0,2].plot(np.interp(MWI_time_eps,time_full_binned_crop,nu_EFIT)[np.logical_and(MWI_time_eps>t_min,MWI_time_eps<t_max)][::8],(MWI_inner_separatrix_midpoint_location/np.interp(MWI_time_eps,time_full_binned_crop,inner_L_poloidal_x_point_all))[np.logical_and(MWI_time_eps>t_min,MWI_time_eps<t_max)][::8],'x',color=color[n_shot_added%len(color)],alpha=0.8)
+						ax5[1,1].plot(np.interp(MWI_time_eps,time_full_binned_crop,nu_EFIT)[np.logical_and(MWI_time_eps>t_min,MWI_time_eps<t_max)][::8],(MWI_outer_separatrix_peak_location/np.interp(MWI_time_eps,time_full_binned_crop,inner_L_poloidal_x_point_all))[np.logical_and(MWI_time_eps>t_min,MWI_time_eps<t_max)][::8],'x',color=color[n_shot_added%len(color)],alpha=0.8,label=r'$OUT_{peak\;leg\;combined}$')
+						ax5[1,2].plot(np.interp(MWI_time_eps,time_full_binned_crop,nu_EFIT)[np.logical_and(MWI_time_eps>t_min,MWI_time_eps<t_max)][::8],(MWI_outer_separatrix_midpoint_location/np.interp(MWI_time_eps,time_full_binned_crop,inner_L_poloidal_x_point_all))[np.logical_and(MWI_time_eps>t_min,MWI_time_eps<t_max)][::8],'x',color=color[n_shot_added%len(color)],alpha=0.8,label=r'$OUT_{0.5\;front\;InLine}$')
+					# ax5[1,1].axvline(x=np.interp(fulcher_band_detachment_outer_leg_MWI,time_full_binned_crop,nu_EFIT),linestyle=':',color=color[n_shot_added%len(color)],alpha=0.3)
+					ax5[1,2].axvline(x=np.interp(fulcher_band_detachment_outer_leg_start,time_full_binned_crop,nu_EFIT),linestyle='-',color=color[n_shot_added%len(color)],alpha=0.2)
+					# ax5[1,2].axvline(x=np.interp(fulcher_band_detachment_outer_leg_start,time_full_binned_crop,nu_EFIT),linestyle='-',color=color[n_shot_added%len(color)],alpha=0.3)
+					# ax5[1,1].axvline(x=np.interp(fulcher_band_detachment_outer_leg_end,time_full_binned_crop,nu_EFIT),linestyle='--',color=color[n_shot_added%len(color)],alpha=0.3)
+					ax5[1,2].axvline(x=np.interp(fulcher_band_detachment_outer_leg_end,time_full_binned_crop,nu_EFIT),linestyle='--',color=color[n_shot_added%len(color)],alpha=0.5)
+					ax5[1,2].axvline(x=np.interp(fulcher_band_detachment_outer_leg_MWI,time_full_binned_crop,nu_EFIT),linestyle=':',color=color[n_shot_added%len(color)],alpha=1)
+
+				except:
+					pass
+			if what_to_plot_selector[7]:
+				try:
+					ax6[0,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(inner_separatrix_peak_location/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],markers[n_shot_added//len(color)],color=color[n_shot_added%len(color)],alpha=0.3,label=r'$IN_{peak}$')
+					# ax6[0,2].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(inner_separatrix_midpoint_location/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$IN_{0.5\;front\;InLine}$')
+					ax6[0,2].errorbar(nu_EFIT[time_full_binned_crop>t_min][:t_end],((inner_separatrix_midpoint_location)/(inner_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],yerr = [(inner_separatrix_midpoint_location_down/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],(inner_separatrix_midpoint_location_up/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end]],fmt='o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$IN_{0.5\;front\;InLine}$')
+					# ax6[0,2].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(movement_local_inner_leg_mean_emissivity/inner_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$IN_{0.5\;front\;binned}$')
+					# ax6[1,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((outer_L_poloidal_peak_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{peak}$')
+					# ax6[1,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((outer_L_poloidal_peak_only_leg_all)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{peak\;only\;leg}$')
+					ax6[1,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((outer_separatrix_peak_location)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{peak\;leg\;combined}$')
+					# ax6[1,1].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],(true_outer_target_position/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],'s',fillstyle='none',color=color[n_shot_added%len(color)],alpha=0.3)
+					# ax6[1,2].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((outer_separatrix_midpoint_location)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{0.5\;front\;InLine}$')
+					ax6[1,2].errorbar(nu_EFIT[time_full_binned_crop>t_min][:t_end],((outer_separatrix_midpoint_location)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],yerr = [(outer_separatrix_midpoint_location_down/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end],(outer_separatrix_midpoint_location_up/outer_L_poloidal_x_point_all)[time_full_binned_crop>t_min][:t_end]],fmt='o',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{0.5\;front\;InLine}$')
+					# ax6[1,2].plot(nu_EFIT[time_full_binned_crop>t_min][:t_end],((movement_local_outer_leg_mean_emissivity)/(outer_L_poloidal_x_point_all))[time_full_binned_crop>t_min][:t_end],'+',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{0.5\;front\;binned}$')
+					if MWI_inversion_available:
+						ax6[0,1].plot(np.interp(MWI_time_eps,time_full_binned_crop,nu_EFIT)[np.logical_and(MWI_time_eps>t_min,MWI_time_eps<t_max)][::8],(MWI_inner_separatrix_peak_location/np.interp(MWI_time_eps,time_full_binned_crop,inner_L_poloidal_x_point_all))[np.logical_and(MWI_time_eps>t_min,MWI_time_eps<t_max)][::8],'x',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$IN_{peak}$')
+						ax6[0,2].plot(np.interp(MWI_time_eps,time_full_binned_crop,nu_EFIT)[np.logical_and(MWI_time_eps>t_min,MWI_time_eps<t_max)][::8],(MWI_inner_separatrix_midpoint_location/np.interp(MWI_time_eps,time_full_binned_crop,inner_L_poloidal_x_point_all))[np.logical_and(MWI_time_eps>t_min,MWI_time_eps<t_max)][::8],'x',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$IN_{0.5\;front\;InLine}$')
+						ax6[1,1].plot(np.interp(MWI_time_eps,time_full_binned_crop,nu_EFIT)[np.logical_and(MWI_time_eps>t_min,MWI_time_eps<t_max)][::8],(MWI_outer_separatrix_peak_location/np.interp(MWI_time_eps,time_full_binned_crop,inner_L_poloidal_x_point_all))[np.logical_and(MWI_time_eps>t_min,MWI_time_eps<t_max)][::8],'x',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{peak\;leg\;combined}$')
+						ax6[1,2].plot(np.interp(MWI_time_eps,time_full_binned_crop,nu_EFIT)[np.logical_and(MWI_time_eps>t_min,MWI_time_eps<t_max)][::8],(MWI_outer_separatrix_midpoint_location/np.interp(MWI_time_eps,time_full_binned_crop,inner_L_poloidal_x_point_all))[np.logical_and(MWI_time_eps>t_min,MWI_time_eps<t_max)][::8],'x',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{0.5\;front\;InLine}$')
+					# ax6[1,1].axvline(x=np.interp(fulcher_band_detachment_outer_leg_MWI,time_full_binned_crop,nu_EFIT),linestyle=':',color=color[n_shot_added%len(color)],alpha=0.3)
+					ax6[1,2].axvline(x=np.interp(fulcher_band_detachment_outer_leg_MWI,time_full_binned_crop,nu_EFIT),linestyle=':',color=color[n_shot_added%len(color)],alpha=0.3)
+					ax6[1,1].axvline(x=np.interp(fulcher_band_detachment_outer_leg_start,time_full_binned_crop,nu_EFIT),linestyle='-',color=color[n_shot_added%len(color)],alpha=0.3)
+					# ax6[1,2].axvline(x=np.interp(fulcher_band_detachment_outer_leg_start,time_full_binned_crop,nu_EFIT),linestyle='-',color=color[n_shot_added%len(color)],alpha=0.3)
+					# ax6[1,1].axvline(x=np.interp(fulcher_band_detachment_outer_leg_end,time_full_binned_crop,nu_EFIT),linestyle='--',color=color[n_shot_added%len(color)],alpha=0.3)
+					ax6[1,2].axvline(x=np.interp(fulcher_band_detachment_outer_leg_end,time_full_binned_crop,nu_EFIT),linestyle='--',color=color[n_shot_added%len(color)],alpha=0.3)
+				except:
+					pass
+
+			if what_to_plot_selector[8]:
+				try:
+					if MWI_inversion_available:
+						ax7[0,1].plot(np.interp(MWI_time_eps,time_full_binned_crop,nu_EFIT)[np.logical_and(MWI_time_eps>t_min,MWI_time_eps<t_max)],(MWI_inner_separatrix_peak_location/np.interp(MWI_time_eps,time_full_binned_crop,inner_L_poloidal_x_point_all))[np.logical_and(MWI_time_eps>t_min,MWI_time_eps<t_max)],'x',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$IN_{peak}$')
+						ax7[0,2].plot(np.interp(MWI_time_eps,time_full_binned_crop,nu_EFIT)[np.logical_and(MWI_time_eps>t_min,MWI_time_eps<t_max)],(MWI_inner_separatrix_midpoint_location/np.interp(MWI_time_eps,time_full_binned_crop,inner_L_poloidal_x_point_all))[np.logical_and(MWI_time_eps>t_min,MWI_time_eps<t_max)],'x',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$IN_{0.5\;front\;InLine}$')
+						ax7[1,1].plot(np.interp(MWI_time_eps,time_full_binned_crop,nu_EFIT)[np.logical_and(MWI_time_eps>t_min,MWI_time_eps<t_max)],(MWI_outer_separatrix_peak_location/np.interp(MWI_time_eps,time_full_binned_crop,inner_L_poloidal_x_point_all))[np.logical_and(MWI_time_eps>t_min,MWI_time_eps<t_max)],'x',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{peak\;leg\;combined}$')
+						ax7[1,2].plot(np.interp(MWI_time_eps,time_full_binned_crop,nu_EFIT)[np.logical_and(MWI_time_eps>t_min,MWI_time_eps<t_max)],(MWI_outer_separatrix_midpoint_location/np.interp(MWI_time_eps,time_full_binned_crop,inner_L_poloidal_x_point_all))[np.logical_and(MWI_time_eps>t_min,MWI_time_eps<t_max)],'x',color=color[n_shot_added%len(color)],alpha=0.3,label=r'$OUT_{0.5\;front\;InLine}$')
+					# ax7[1,1].axvline(x=np.interp(fulcher_band_detachment_outer_leg_MWI,time_full_binned_crop,nu_EFIT),linestyle=':',color=color[n_shot_added%len(color)],alpha=0.3)
+					ax7[1,2].axvline(x=np.interp(fulcher_band_detachment_outer_leg_MWI,time_full_binned_crop,nu_EFIT),linestyle=':',color=color[n_shot_added%len(color)],alpha=0.3)
+					ax7[1,1].axvline(x=np.interp(fulcher_band_detachment_outer_leg_start,time_full_binned_crop,nu_EFIT),linestyle='-',color=color[n_shot_added%len(color)],alpha=0.3)
+					# ax7[1,2].axvline(x=np.interp(fulcher_band_detachment_outer_leg_start,time_full_binned_crop,nu_EFIT),linestyle='-',color=color[n_shot_added%len(color)],alpha=0.3)
+					# ax7[1,1].axvline(x=np.interp(fulcher_band_detachment_outer_leg_end,time_full_binned_crop,nu_EFIT),linestyle='--',color=color[n_shot_added%len(color)],alpha=0.3)
+					ax7[1,2].axvline(x=np.interp(fulcher_band_detachment_outer_leg_end,time_full_binned_crop,nu_EFIT),linestyle='--',color=color[n_shot_added%len(color)],alpha=0.3)
+				except:
+					pass
+
 
 			print('included '+str(laser_to_analyse[-9:-4]))
 			n_shot_added +=1
@@ -775,11 +921,17 @@ if False:	# plot for the papers
 			ax4[1,1].set_xlabel(r'$n_{e,up}$'+' David [#/m3]')
 
 		if what_to_plot_selector[6]:
-			ax5[0,0].legend(loc='best', fontsize='xx-small',ncol=2)
+			ax5[0,2].legend(loc='best', fontsize='x-small',ncol=2)
 			# ax5[1,0].legend(loc='best', fontsize='xx-small',ncol=2)
 			# ax5[1,1].legend(loc='best', fontsize='xx-small',ncol=2)
 			# ax5[0,2].legend(loc='best', fontsize='xx-small',ncol=2)
 			# ax5[1,2].legend(loc='best', fontsize='xx-small',ncol=2)
+		if what_to_plot_selector[7]:
+			ax6[0,0].legend(loc='best', fontsize='xx-small',ncol=2)
+			# ax6[1,0].legend(loc='best', fontsize='xx-small',ncol=2)
+			# ax6[1,1].legend(loc='best', fontsize='xx-small',ncol=2)
+			# ax6[0,2].legend(loc='best', fontsize='xx-small',ncol=2)
+			# ax6[1,2].legend(loc='best', fontsize='xx-small',ncol=2)
 		if what_to_plot_selector[2]:
 			ax1a[0,1].set_ylabel(r'${\hat{L}}_{peak}$ inner separatrix')
 			ax1a[0,0].set_ylabel('upper outer target\n'+r'particle flux [$10^{22}\#/s$]')
@@ -794,7 +946,8 @@ if False:	# plot for the papers
 			ax5[0,2].set_ylabel(r'${\hat{L}}_{50\%}$ inner separatrix')#('inner sep 50% '+r'$L_{pol}/L_{pol \; X-point}$')
 			ax5[1,2].set_ylabel(r'${\hat{L}}_{50\%}$ outer separatrix')#('outer sep 50% '+r'$L_{pol}/L_{pol \; X-point}$')
 			ax5[0,3].set_ylabel('energy confinement time [ms]')
-			ax5[1,3].set_ylabel(r'$dr_{sep}$ [mm]')
+			# ax5[1,3].set_ylabel(r'$dr_{sep}$ [mm]')
+			ax5[1,3].set_ylabel(r'core baric $\Psi_N$ [au]')
 			ax5[0,0].grid()
 			ax5[0,1].grid()
 			ax5[0,2].grid()
@@ -803,6 +956,10 @@ if False:	# plot for the papers
 			ax5[1,2].grid()
 			ax5[0,3].grid()
 			ax5[1,3].grid()
+			from matplotlib.ticker import MultipleLocator
+			ax5[1,3].yaxis.set_major_locator(MultipleLocator(0.01))
+			from matplotlib.ticker import FormatStrFormatter
+			ax5[1,3].yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
 			ax5[0,1].axhline(y=1,linestyle='--',color='k')
 			ax5[0,1].axhline(y=0,linestyle='--',color='k')
 			ax5[1,1].axhline(y=1,linestyle='--',color='k')
@@ -811,6 +968,7 @@ if False:	# plot for the papers
 			ax5[0,2].axhline(y=0,linestyle='--',color='k')
 			ax5[1,2].axhline(y=1,linestyle='--',color='k')
 			ax5[1,2].axhline(y=0,linestyle='--',color='k')
+			ax5[1,3].axhline(y=1,linestyle='--',color='k')
 			ax5[0,1].set_ylim(bottom=-0.1,top=5)
 			ax5[0,2].set_ylim(bottom=-0.1,top=5)
 			ax5[1,1].set_ylim(bottom=-0.1,top=1.5)
@@ -836,6 +994,14 @@ if False:	# plot for the papers
 				ax5[0,3].axvline(x=0.95,color='gray',linestyle='--')
 				ax5[1,3].axvline(x=0.95,color='gray',linestyle='--')
 				# fig5.savefig('/home/ffederic/work/irvb/0__outputs/PSI2024_proceeding_ohmic_second_review.png')
+				ax5[0,0].set_xlim(left=0.15,right=1.55)
+				ax5[0,1].set_xlim(left=0.15,right=1.55)
+				ax5[0,2].set_xlim(left=0.15,right=1.55)
+				ax5[0,3].set_xlim(left=0.15,right=1.55)
+				ax5[1,0].set_xlim(left=0.15,right=1.55)
+				ax5[1,1].set_xlim(left=0.15,right=1.55)
+				ax5[1,2].set_xlim(left=0.15,right=1.55)
+				ax5[1,3].set_xlim(left=0.15,right=1.55)
 
 			if type == 'beamLmode':
 				ax5[0,0].axvline(x=1,color='gray',linestyle='--')
@@ -846,6 +1012,78 @@ if False:	# plot for the papers
 				ax5[1,2].axvline(x=1,color='gray',linestyle='--')
 				ax5[0,3].axvline(x=1,color='gray',linestyle='--')
 				ax5[1,3].axvline(x=1,color='gray',linestyle='--')
+				ax5[0,0].set_xlim(left=0.3,right=1.5)
+				ax5[0,1].set_xlim(left=0.3,right=1.5)
+				ax5[0,2].set_xlim(left=0.3,right=1.5)
+				ax5[0,3].set_xlim(left=0.3,right=1.5)
+				ax5[1,0].set_xlim(left=0.3,right=1.5)
+				ax5[1,1].set_xlim(left=0.3,right=1.5)
+				ax5[1,2].set_xlim(left=0.3,right=1.5)
+				ax5[1,3].set_xlim(left=0.3,right=1.5)
+
+				# fig5.savefig('/home/ffederic/work/irvb/0__outputs/PSI2024_proceeding_beam_heated_second_review.png')
+
+		if what_to_plot_selector[7]:
+			ax6[1,0].set_ylabel('lower outer target\n'+r'particle flux [$10^{22}\#/s$]')
+			ax6[0,0].set_ylabel('upper outer target\n'+r'particle flux [$10^{22}\#/s$]')
+			ax6[0,1].set_ylabel(r'${\hat{L}}_{peak}$ inner separatrix')
+			ax6[1,1].set_ylabel(r'${\hat{L}}_{peak}$ outer separatrix')
+			ax6[0,2].set_ylabel(r'${\hat{L}}_{50\%}$ inner separatrix')#('inner sep 50% '+r'$L_{pol}/L_{pol \; X-point}$')
+			ax6[1,2].set_ylabel(r'${\hat{L}}_{50\%}$ outer separatrix')#('outer sep 50% '+r'$L_{pol}/L_{pol \; X-point}$')
+			ax6[0,3].set_ylabel('energy confinement time [ms]')
+			ax6[1,3].set_ylabel('core baric psi N [au]')
+			ax6[0,0].grid()
+			ax6[0,1].grid()
+			ax6[0,2].grid()
+			ax6[1,0].grid()
+			ax6[1,1].grid()
+			ax6[1,2].grid()
+			ax6[0,3].grid()
+			ax6[1,3].grid()
+			ax6[0,1].axhline(y=1,linestyle='--',color='k')
+			ax6[0,1].axhline(y=0,linestyle='--',color='k')
+			ax6[1,1].axhline(y=1,linestyle='--',color='k')
+			ax6[1,1].axhline(y=0,linestyle='--',color='k')
+			ax6[0,2].axhline(y=1,linestyle='--',color='k')
+			ax6[0,2].axhline(y=0,linestyle='--',color='k')
+			ax6[1,2].axhline(y=1,linestyle='--',color='k')
+			ax6[1,2].axhline(y=0,linestyle='--',color='k')
+			ax6[1,3].axhline(y=1,linestyle='--',color='k')
+			ax6[0,1].set_ylim(bottom=-0.1,top=5)
+			ax6[0,2].set_ylim(bottom=-0.1,top=5)
+			ax6[1,1].set_ylim(bottom=-0.1,top=1.5)
+			ax6[1,2].set_ylim(bottom=-0.1,top=1.5)
+			ax6[1,1].set_xlabel(r'$n_{e,up}$'+' EFIT '+r'[$10^{19}$ #/$m^3$]')
+
+			if type == 'ohmicLmode':
+				ax6[0,0].axvline(x=0.5,color='gray',linestyle='--')
+				ax6[0,1].axvline(x=0.5,color='gray',linestyle='--')
+				ax6[0,2].axvline(x=0.5,color='gray',linestyle='--')
+				ax6[1,0].axvline(x=0.5,color='gray',linestyle='--')
+				ax6[1,1].axvline(x=0.5,color='gray',linestyle='--')
+				ax6[1,2].axvline(x=0.5,color='gray',linestyle='--')
+				ax6[0,3].axvline(x=0.5,color='gray',linestyle='--')
+				ax6[1,3].axvline(x=0.5,color='gray',linestyle='--')
+
+				ax6[0,0].axvline(x=0.95,color='gray',linestyle='--')
+				ax6[0,1].axvline(x=0.95,color='gray',linestyle='--')
+				ax6[0,2].axvline(x=0.95,color='gray',linestyle='--')
+				ax6[1,0].axvline(x=0.95,color='gray',linestyle='--')
+				ax6[1,1].axvline(x=0.95,color='gray',linestyle='--')
+				ax6[1,2].axvline(x=0.95,color='gray',linestyle='--')
+				ax6[0,3].axvline(x=0.95,color='gray',linestyle='--')
+				ax6[1,3].axvline(x=0.95,color='gray',linestyle='--')
+				# fig5.savefig('/home/ffederic/work/irvb/0__outputs/PSI2024_proceeding_ohmic_second_review.png')
+
+			if type == 'beamLmode':
+				ax6[0,0].axvline(x=1,color='gray',linestyle='--')
+				ax6[0,1].axvline(x=1,color='gray',linestyle='--')
+				ax6[0,2].axvline(x=1,color='gray',linestyle='--')
+				ax6[1,0].axvline(x=1,color='gray',linestyle='--')
+				ax6[1,1].axvline(x=1,color='gray',linestyle='--')
+				ax6[1,2].axvline(x=1,color='gray',linestyle='--')
+				ax6[0,3].axvline(x=1,color='gray',linestyle='--')
+				ax6[1,3].axvline(x=1,color='gray',linestyle='--')
 				# fig5.savefig('/home/ffederic/work/irvb/0__outputs/PSI2024_proceeding_beam_heated_second_review.png')
 	else:
 		pass
@@ -853,8 +1091,10 @@ if False:	# plot for the papers
 
 	# fig5.savefig('/home/ffederic/work/irvb/0__outputs/PSI2024_CD_OH_MU01_compare.png')
 	# fig5.savefig('/home/ffederic/work/irvb/0__outputs/PSI2024_CD_OH_compare.png')
-	fig5.savefig('/home/ffederic/work/irvb/0__outputs/PSI2024_proceeding_beam_heated.png')
-	fig5.savefig('/home/ffederic/work/irvb/0__outputs/PSI2024_proceeding_ohmic.png')
+	fig5.savefig('/home/ffederic/work/irvb/0__outputs/PSI2024_proceeding_beam_heated_second_review2.png')
+	fig5.savefig('/home/ffederic/work/irvb/0__outputs/PSI2024_proceeding_ohmic_second_review1.png')
+	fig5.savefig('/home/ffederic/work/irvb/0__outputs/PSI2024_proceeding_ohmic_second_review2.png')
+	fig5.savefig('/home/ffederic/work/irvb/0__outputs/PSI2024_proceeding_ohmic_second_review_full2.png')
 	# fig5.savefig('/home/ffederic/work/irvb/0__outputs/PSI2024_H-mode_compare.png')
 	# fig5.savefig('/home/ffederic/work/irvb/0__outputs/PSI2024_H-mode_compare2.png')
 	plt.close('all')
@@ -1389,7 +1629,7 @@ elif False:	# same but time is the axis
 		d = .01  # how big to make the diagonal lines in axes coordinates
 		# arguments to pass to plot, just so we don't keep repeating them
 		kwargs = dict(transform=ax[1,0].transAxes, color='k', clip_on=False)
-		ax[1,0].plot((-d, +d), (-d, +d), **kwargs)        # top-left diagonal
+		ax[1,0].plot((-d, +d), (-d, +d), **kwargs)		# top-left diagonal
 		ax[1,0].plot((1 - d, 1 + d), (-d, +d), **kwargs)  # top-right diagonal
 
 		kwargs.update(transform=ax[2,0].transAxes)  # switch to the bottom axes
@@ -1713,3 +1953,204 @@ if True:	# this bit is to check the fast camera data
 	plt.plot(times,np.mean(data[:,513-2:525+2,521-2:533+2],axis=(1,2)),'--')
 	plt.grid()
 	plt.pause(0.01)
+
+
+if False:	# 14/03/2025 code to read MWI inversions and plot it for the IRVB science paper
+
+	import numpy as np
+	# from mwi_dp.cam.multi_cam import multi_cam
+	import numpy as np
+	import os
+	import matplotlib.pyplot as plt
+	#from MWI_inversions_reader import MWI_inversions_reader
+	import matplotlib.tri as mat_tri
+	import scipy.io as sio
+
+
+
+	plot_time = 0.8
+	# shot = 49408
+	# shot = 48336
+	shot = 48144
+	atomic_line = "Fulcher"
+	save_dir = "/home/xg0421/Desktop/Work/For/Fabio/"
+
+	file_name = save_dir+"eps_sh" + str(shot) + "_multicam_" + atomic_line + "_grid_grid_MAST-U_MU03_lower_10mm_SART_v1_MC_10mm.npz"
+	grid_file = save_dir+"grid_MAST-U_MU03_lower_10mm.mat"
+
+	data_stored = np.load(file_name,allow_pickle=True)
+	eps = data_stored['eps']
+	time_eps = data_stored['time_eps']
+
+	grid_data = sio.loadmat(grid_file)
+	# construct triangulation object
+	if 'tri_x' in grid_data:
+		file_type = 0
+	if file_type == 0:
+		if np.min(grid_data['tri_nodes'])==1:
+			tri_nodes = grid_data['tri_nodes']-1
+		else:
+			tri_nodes = grid_data['tri_nodes']
+	grid =  mat_tri.Triangulation(np.ravel(grid_data['tri_x']),\
+									 np.ravel(grid_data['tri_y']),tri_nodes)
+
+	time_difference = np.abs(plot_time -time_eps)
+	idx = np.where(time_difference == np.min(time_difference))[0]
+
+	# fig, ax = plt.subplots()
+	# triplot = ax.tripcolor(grid,np.ravel(eps[:,idx]),cmap="hot",edgecolors='face', vmin =0, vmax = 0.2e19)
+	# ax.set_aspect('equal')
+	# plt.show()
+
+
+	R_cells= np.mean(grid_data['tri_x'][0][grid_data['tri_nodes']],axis=1)
+	Z_cells= np.mean(grid_data['tri_y'][0][grid_data['tri_nodes']],axis=1)
+
+	# from scipy.interpolate import LinearNDInterpolator
+	# inversion_R = np.linspace(0.2,1.6,num=60)
+	# inversion_Z = np.linspace(0.2,-1.8,num=100)
+	# X, Y = np.meshgrid(inversion_R, inversion_Z)  # 2D grid for interpolation
+	# resolution = 0.01	# m
+	#
+	# selection = np.ones_like(X)
+	# for i in range(len(inversion_R)):
+	# 	for j in range(len(inversion_Z)):
+	# 		if np.nanmin((R_cells-inversion_R[i])**2 + (Z_cells-inversion_Z[j])**2 > resolution*1.1):
+	# 			selection[j,i] = np.nan
+	#
+	# normal_emissivity_array = []
+	# for i in range(len(time_eps)):
+	# 	emissivity_interpolator = LinearNDInterpolator(list(zip(R_cells, Z_cells)),np.ravel(eps[:,i]))
+	# 	Z = emissivity_interpolator(X, Y)
+	# 	normal_emissivity_array.append((Z*selection).T)
+	#
+	# np.save(file_name[:-3]+'_rectangular_mesh',normal_emissivity_array)
+	#
+	#
+	# from matplotlib.colors import LogNorm	# added 2018-11-17 to allow logarithmic scale plots
+	# plt.figure()
+	# plt.imshow(Z*selection,norm=LogNorm)
+
+
+	name = 'IRVB-MASTU_shot-'+str(shot)+'.ptw'
+
+	i_day,day = 0,coleval.retrive_shot_date_and_time(name[-9:-4])[0]
+	print(name)
+	print(path+day)
+
+	laser_to_analyse=path+day+'/'+name
+	pass_number = 1
+
+	full_saved_file_dict_FAST = np.load(laser_to_analyse[:-4]+'_FAST'+'.npz')
+	full_saved_file_dict_FAST.allow_pickle=True
+	full_saved_file_dict_FAST = dict(full_saved_file_dict_FAST)
+	try:
+		full_saved_file_dict_FAST['multi_instrument'] = full_saved_file_dict_FAST['multi_instrument'].all()
+	except:
+		full_saved_file_dict_FAST['multi_instrument'] = dict([])
+	if pass_number==0:
+		full_saved_file_dict_FAST['first_pass'] = full_saved_file_dict_FAST['first_pass'].all()
+		inverted_dict = full_saved_file_dict_FAST['first_pass']['inverted_dict']
+		powernoback = full_saved_file_dict_FAST['first_pass']['FAST_powernoback']
+		time_binned = full_saved_file_dict_FAST['first_pass']['FAST_time_binned']
+	elif pass_number==1:
+		full_saved_file_dict_FAST['second_pass'] = full_saved_file_dict_FAST['second_pass'].all()
+		inverted_dict = full_saved_file_dict_FAST['second_pass']['inverted_dict']
+		powernoback = full_saved_file_dict_FAST['second_pass']['FAST_powernoback']
+		time_binned = full_saved_file_dict_FAST['second_pass']['FAST_time_binned']
+	else:
+		full_saved_file_dict_FAST['third_pass'] = full_saved_file_dict_FAST['third_pass'].all()
+		inverted_dict = full_saved_file_dict_FAST['third_pass']['inverted_dict']
+		powernoback = full_saved_file_dict_FAST['third_pass']['FAST_powernoback']
+		time_binned = full_saved_file_dict_FAST['third_pass']['FAST_time_binned']
+	grid_resolution = 2	# cm
+	filename_root = inverted_dict[str(grid_resolution)]['filename_root']
+	filename_root_add = inverted_dict[str(grid_resolution)]['filename_root_add']
+	scenario = full_saved_file_dict_FAST['multi_instrument']['scenario']
+	time_full_binned_crop = inverted_dict[str(grid_resolution)]['time_full_binned_crop']
+	outer_L_poloidal_x_point_all = inverted_dict[str(grid_resolution)]['outer_L_poloidal_x_point_all']
+	inner_L_poloidal_x_point_all = inverted_dict[str(grid_resolution)]['inner_L_poloidal_x_point_all']
+	inverted_data = inverted_dict[str(grid_resolution)]['inverted_data']
+	binning_type = inverted_dict[str(grid_resolution)]['binning_type']
+
+	EFIT_path_default = '/common/uda-scratch/lkogan/efitpp_eshed'
+	efit_reconstruction = coleval.mclass(EFIT_path_default+'/epm0'+laser_to_analyse[-9:-4]+'.nc',pulse_ID=laser_to_analyse[-9:-4])
+	inversion_R = inverted_dict[str(grid_resolution)]['geometry']['R']
+	inversion_Z = inverted_dict[str(grid_resolution)]['geometry']['Z']
+	# the MWI has a much higher resolution than the IRVB, so I go from 2cm to 1 tm
+	resolution = 0.01	# m
+	inversion_R = np.linspace(inversion_R.min(),inversion_R.max(),num=int((inversion_R.max()-inversion_R.min())//resolution)+1)
+	inversion_Z = np.linspace(inversion_Z.min(),inversion_Z.max(),num=int((inversion_Z.max()-inversion_Z.min())//resolution)+1)
+
+	X, Y = np.meshgrid(inversion_R, inversion_Z)  # 2D grid for interpolation
+
+	selection = np.ones_like(X)
+	for i in range(len(inversion_R)):
+		for j in range(len(inversion_Z)):
+			if np.nanmin((R_cells-inversion_R[i])**2 + (Z_cells-inversion_Z[j])**2 > resolution*1.1):
+				selection[j,i] = np.nan
+
+	client=pyuda.Client()
+	exec(open("/home/ffederic/work/analysis_scripts/scripts/python_library/collect_and_eval/collect_and_eval/MASTU_structure.py").read())
+	del client
+	from shapely.geometry.polygon import Polygon
+	polygon = Polygon(FULL_MASTU_CORE_GRID_POLYGON)
+	select_good_voxels = coleval.select_cells_inside_polygon(polygon,[inversion_R,inversion_Z]).T
+
+
+	from scipy.interpolate import LinearNDInterpolator
+	normal_emissivity_array = []
+	for i in range(len(time_eps)):
+		emissivity_interpolator = LinearNDInterpolator(list(zip(R_cells, Z_cells)),np.ravel(eps[:,i]))
+		Z = emissivity_interpolator(X, Y)
+		normal_emissivity_array.append((Z*selection*select_good_voxels).T)
+	normal_emissivity_array = np.array(normal_emissivity_array)
+
+	extent = [inversion_R.min(), inversion_R.max(), inversion_Z.min(), inversion_Z.max()]
+	image_extent = [inversion_R.min(), inversion_R.max(), inversion_Z.min(), inversion_Z.max()]
+	# additional_each_frame_label_description = ['reg coeff=']*len(inverted_data)
+	# additional_each_frame_label_number = np.array(regolarisation_coeff_all)
+	ani,trash = coleval.movie_from_data_radial_profile(np.array([np.flip(np.transpose(np.log(normal_emissivity_array),(0,2,1)),axis=2)]), 1/(np.mean(np.diff(time_eps))), extent = extent, image_extent=image_extent,timesteps=time_eps,integration=1,barlabel='Log Emissivity [ph/m3 sec s]',xlabel='R [m]', ylabel='Z [m]', prelude='shot ' + laser_to_analyse[-9:-4]+' '+scenario+'\n'+file_name[-8:-4] + '_MWI_' + file_name[-60:-53] +'\n' ,overlay_structure=True,include_EFIT=True,EFIT_output_requested=True,efit_reconstruction=efit_reconstruction,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True,extvmin=np.nanmax(np.log(normal_emissivity_array),axis=(1,2))-8)#,extvmax=4e4)
+	ani.save(filename_root[:filename_root.find('pass')]+'Fulcher'+'_FAST_reconstruct_emissivity_bayesian'+'.mp4', fps=5*(1/(np.mean(np.diff(time_eps))))/383, writer='ffmpeg',codec='mpeg4')
+	plt.close()
+
+
+	normal_emissivity_array_no_artefact = cp.deepcopy(normal_emissivity_array)
+	normal_emissivity_array_no_artefact[:,:,inversion_Z>-0.7] = np.nan
+	outer_separatrix_local_emissivity,outer_separatrix_local_power,outer_separatrix_length_interval_all,outer_separatrix_length_all,data_length,leg_resolution = coleval.track_outer_leg_radiation(normal_emissivity_array_no_artefact,inversion_R,inversion_Z,time_eps,efit_reconstruction,type='separatrix',leg_resolution=0.05)
+	outer_separatrix_peak_location,outer_separatrix_midpoint_location = coleval.plot_leg_radiation_tracking(normal_emissivity_array_no_artefact,inversion_R,inversion_Z,time_eps,outer_separatrix_local_emissivity,outer_separatrix_local_power,outer_separatrix_length_interval_all,outer_separatrix_length_all,data_length,leg_resolution,filename_root[:filename_root.find('pass')]+'Fulcher','',laser_to_analyse,scenario,which_leg='outer',x_point_L_pol=np.interp(time_eps,time_full_binned_crop,outer_L_poloidal_x_point_all),which_part_of_separatrix='separatrix')
+
+	inner_separatrix_local_emissivity,inner_separatrix_local_power,inner_separatrix_length_interval_all,inner_separatrix_length_all,data_length,leg_resolution = coleval.track_inner_leg_radiation(normal_emissivity_array_no_artefact,inversion_R,inversion_Z,time_eps,efit_reconstruction,type='separatrix',leg_resolution=0.05)
+	inner_separatrix_peak_location,inner_separatrix_midpoint_location = coleval.plot_leg_radiation_tracking(normal_emissivity_array_no_artefact,inversion_R,inversion_Z,time_eps,inner_separatrix_local_emissivity,inner_separatrix_local_power,inner_separatrix_length_interval_all,inner_separatrix_length_all,data_length,leg_resolution,filename_root[:filename_root.find('pass')]+'Fulcher','',laser_to_analyse,scenario,which_leg='inner',x_point_L_pol=np.interp(time_eps,time_full_binned_crop,inner_L_poloidal_x_point_all),which_part_of_separatrix='separatrix')
+
+
+	full_saved_file_dict_FAST = np.load(laser_to_analyse[:-4]+'_FAST'+'.npz')
+	full_saved_file_dict_FAST.allow_pickle=True
+	full_saved_file_dict_FAST = dict(full_saved_file_dict_FAST)
+	full_saved_file_dict_FAST['multi_instrument'] = full_saved_file_dict_FAST['multi_instrument'].all()
+	full_saved_file_dict_FAST['multi_instrument']['MWI'] = dict([])
+	full_saved_file_dict_FAST['multi_instrument']['MWI']['file_name'] = file_name
+	full_saved_file_dict_FAST['multi_instrument']['MWI']['grid_file'] = grid_file
+	full_saved_file_dict_FAST['multi_instrument']['MWI']['time_eps'] = time_eps
+	full_saved_file_dict_FAST['multi_instrument']['MWI']['inversion_R'] = inversion_R
+	full_saved_file_dict_FAST['multi_instrument']['MWI']['inversion_Z'] = inversion_Z
+	full_saved_file_dict_FAST['multi_instrument']['MWI']['normal_emissivity_array'] = normal_emissivity_array
+
+	full_saved_file_dict_FAST['multi_instrument']['MWI']['outer_separatrix_local_power'] = outer_separatrix_local_power
+	full_saved_file_dict_FAST['multi_instrument']['MWI']['outer_separatrix_local_emissivity'] = outer_separatrix_local_emissivity
+	full_saved_file_dict_FAST['multi_instrument']['MWI']['outer_separatrix_length_all'] = outer_separatrix_length_all
+	full_saved_file_dict_FAST['multi_instrument']['MWI']['outer_separatrix_length_interval_all'] = outer_separatrix_length_interval_all
+	full_saved_file_dict_FAST['multi_instrument']['MWI']['outer_separatrix_peak_location'] = outer_separatrix_peak_location
+	full_saved_file_dict_FAST['multi_instrument']['MWI']['outer_separatrix_midpoint_location'] = outer_separatrix_midpoint_location
+
+	full_saved_file_dict_FAST['multi_instrument']['MWI']['inner_separatrix_local_power'] = inner_separatrix_local_power
+	full_saved_file_dict_FAST['multi_instrument']['MWI']['inner_separatrix_local_emissivity'] = inner_separatrix_local_emissivity
+	full_saved_file_dict_FAST['multi_instrument']['MWI']['inner_separatrix_length_all'] = inner_separatrix_length_all
+	full_saved_file_dict_FAST['multi_instrument']['MWI']['inner_separatrix_length_interval_all'] = inner_separatrix_length_interval_all
+	full_saved_file_dict_FAST['multi_instrument']['MWI']['inner_separatrix_peak_location'] = inner_separatrix_peak_location
+	full_saved_file_dict_FAST['multi_instrument']['MWI']['inner_separatrix_midpoint_location'] = inner_separatrix_midpoint_location
+	coleval.savez_protocol4(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
+
+
+
+	###

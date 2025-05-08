@@ -960,7 +960,7 @@ elif True:
 		pass
 
 
-	if True:	# HGH BB source with damaged window, SC7500 camera, geometry as per MU02 inttime=1.0	# ms
+	if False:	# HGH BB source with damaged window, SC7500 camera, geometry as per MU02 inttime=1.0	# ms
 		description = 'HGH BB source with damaged window, geometry as per MU02 inttime=1.0	# ms'
 		fileshot = np.concatenate([files70[:-5]])
 		temperaturehot = np.concatenate([temperature70[:-5]])
@@ -986,7 +986,7 @@ elif True:
 		pass
 
 
-	if True:	# HGH BB source with damaged window, X6980 camera, geometry as per MU02 inttime=1.0	# ms
+	if False:	# HGH BB source with damaged window, X6980 camera, geometry as per MU02 inttime=1.0	# ms
 		# first I need to split the files in the individual integration time/frequency combos
 
 		ID_all = np.arange(59,134+1)
@@ -1031,6 +1031,39 @@ elif True:
 
 				np.savez_compressed(file[:-4]+'_int'+str(full_saved_file_dict['IntegrationTime'])+'_fr'+str(np.round(settings_table[str(Preset)]['FrameRate'])),**full_saved_file_dict)
 			os.remove(file[:-4]+'.npz')
+	else:
+		pass
+
+
+	if True:	# NUC plate data from Kevin W7X, no window inttime=4.911200 # ms
+		description = 'NUC plate data from Kevin W7X, no window inttime=4.911200 # ms, PS0'
+		temperature=np.load('/home/ffederic/work/irvb/laser/Feb_2025/C-T_conversion/pixbypix_coeffs/0402_PS0_data/temp_list_PS0.npy')
+		meancounttot=np.load('/home/ffederic/work/irvb/laser/Feb_2025/C-T_conversion/pixbypix_coeffs/0402_PS0_data/counts_PS0.npy')
+		digitizer_ID = np.array([0])
+		inttime=4.911200# ms
+		framerate=100	# Hz
+		n=3
+		pathparam='/home/ffederic/work/irvb/laser/Feb_2025/C-T_conversion/pixbypix_coeffs/Params_by_FF/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
+		if not os.path.exists(pathparam):
+			os.makedirs(pathparam)
+		coleval.build_poly_coeff_multi_digitizer_W7X(temperature,meancounttot,digitizer_ID,inttime,pathparam,n,wavewlength_top=5,wavelength_bottom=3,description=description)
+	else:
+		pass
+
+	if True:	# NUC plate data from Kevin W7X, no window inttime=1.848640 # ms
+		description = 'NUC plate data from Kevin W7X, no window inttime=1.848640 # ms, PS1'
+		temperature=np.load('/home/ffederic/work/irvb/laser/Feb_2025/C-T_conversion/pixbypix_coeffs/0402_PS1_data/temp_list_PS1.npy')
+		meancounttot=np.load('/home/ffederic/work/irvb/laser/Feb_2025/C-T_conversion/pixbypix_coeffs/0402_PS1_data/counts_PS1.npy')
+		digitizer_ID = np.array([0])
+		inttime=1.848640# ms
+		framerate=100	# Hz
+		n=3
+		pathparam='/home/ffederic/work/irvb/laser/Feb_2025/C-T_conversion/pixbypix_coeffs/Params_by_FF/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
+		if not os.path.exists(pathparam):
+			os.makedirs(pathparam)
+		coleval.build_poly_coeff_multi_digitizer_W7X(temperature,meancounttot,digitizer_ID,inttime,pathparam,n,wavewlength_top=5,wavelength_bottom=3,description=description)
+	else:
+		pass
 
 
 
@@ -1074,53 +1107,80 @@ elif True:
 		plt.colorbar()
 		plt.pause(0.01)
 
-		plt.figure(figsize=(10, 10))
+		plt.figure(figsize=(14, 14))
 		if len(temperature_window)<6:
-			plt.title('proportional window component BB curve fit NUC\n'+description)
+			plt.title('proportional component BB curve fit NUC\n'+description)
 		else:
-			plt.title('proportional window component BB curve fit BB source\n'+description)
-		to_plot = median_filter(params2[1,:,:,0]*params2[0,:,:,2],[5,5])
-		plt.imshow(to_plot,'rainbow',vmin=to_plot[30:170,30:170].min(),vmax=to_plot[30:170,30:170].max())
+			plt.title('proportional component BB curve fit BB source\n'+description)
+		to_plot = median_filter(params2[0,:,:,0]*params2[0,:,:,2],[5,5])
+		# plt.imshow(to_plot,'rainbow',vmin=to_plot[30:170,30:170].min(),vmax=to_plot[30:170,30:170].max())
+		plt.imshow(params2[0,:,:,0]*params2[0,:,:,2],'rainbow',vmin=to_plot.min(),vmax=to_plot.max())
 		plt.colorbar().set_label('a1*a3 [counts/photons]')
-		plt.pause(0.01)
+		plt.savefig(pathparam+'/BB_a1*a3_window+no_windiw.eps')#, bbox_inches='tight')
+		# plt.pause(0.01)
+		plt.close()
 
-		plt.figure(figsize=(10, 10))
+		plt.figure(figsize=(14, 14))
 		if len(temperature_window)<6:
 			plt.title('proportional no window component BB curve fit NUC\n'+description)
 		else:
 			plt.title('proportional no window component BB curve fit BB source\n'+description)
 		to_plot = median_filter(params2[0,:,:,0],[3,3])
-		plt.imshow(to_plot)#,vmin=to_plot[30:170,30:170].min(),vmax=to_plot[30:170,30:170].max())
+		# plt.imshow(to_plot)#,vmin=to_plot[30:170,30:170].min(),vmax=to_plot[30:170,30:170].max())
+		plt.imshow(params2[0,:,:,0],'rainbow',vmin=to_plot.min(),vmax=to_plot.max())
 		plt.colorbar().set_label('a1 [counts/photons]')
-		plt.pause(0.01)
+		plt.savefig(pathparam+'/BB_a1_window+no_windiw.eps')#, bbox_inches='tight')
+		# plt.pause(0.01)
+		plt.close()
 
 		plt.figure(figsize=(10, 10))
 		if len(temperature_window)<6:
 			plt.title('proportional window modifier BB curve fit NUC\n'+description)
 		else:
 			plt.title('proportional window modifier BB curve fit BB source\n'+description)
-		to_plot = median_filter(params2[0,:,:,2],[3,3])
-		plt.imshow(to_plot)#,vmin=to_plot[30:170,30:170].min(),vmax=to_plot[30:170,30:170].max())
+		to_plot = median_filter(params2[0,:,:,2],[5,5])
+		# plt.imshow(to_plot)#,vmin=to_plot[30:170,30:170].min(),vmax=to_plot[30:170,30:170].max())
+		plt.imshow(params2[0,:,:,2],'rainbow',vmin=to_plot.min(),vmax=to_plot.max())
 		plt.colorbar().set_label('a3 [au]')
-		plt.pause(0.01)
+		plt.savefig(pathparam+'/BB_a3_window+no_windiw.eps')#, bbox_inches='tight')
+		# plt.pause(0.01)
+		plt.close()
 
-		plt.figure(figsize=(10, 10))
+		plt.figure(figsize=(14, 14))
 		if len(temperature_window)<6:
 			plt.title('offset no window component BB curve fit NUC\n'+description)
 		else:
 			plt.title('offset no window component BB curve fit BB source\n'+description)
-		plt.imshow(median_filter(params2[0,:,:,1],[3,3]))
-		plt.colorbar()
-		plt.pause(0.01)
+		to_plot = median_filter(params2[0,:,:,1],[5,5])
+		plt.imshow(params2[0,:,:,1],'rainbow',vmin=to_plot.min(),vmax=to_plot.max())
+		plt.colorbar().set_label('a2 [counts]')
+		plt.savefig(pathparam+'/BB_a2_window+no_windiw.eps')#, bbox_inches='tight')
+		# plt.pause(0.01)
+		plt.close()
 
-		plt.figure(figsize=(10, 10))
+		plt.figure(figsize=(14, 14))
 		if len(temperature_window)<6:
 			plt.title('offset window modifier BB curve fit NUC\n'+description)
 		else:
 			plt.title('offset window modifier BB curve fit BB source\n'+description)
-		plt.imshow(median_filter(params2[0,:,:,3],[3,3]))
-		plt.colorbar()
-		plt.pause(0.01)
+		to_plot = median_filter(params2[0,:,:,3],[5,5])
+		plt.imshow(params2[0,:,:,3],'rainbow',vmin=to_plot.min(),vmax=to_plot.max())
+		plt.colorbar().set_label('a4 [counts]')
+		plt.savefig(pathparam+'/BB_a4_window+no_windiw.eps')#, bbox_inches='tight')
+		# plt.pause(0.01)
+		plt.close()
+
+		plt.figure(figsize=(14, 14))
+		if len(temperature_window)<6:
+			plt.title('offset component BB curve fit NUC\n'+description)
+		else:
+			plt.title('offset component BB curve fit BB source\n'+description)
+		to_plot = median_filter(params2[0,:,:,1]+params2[0,:,:,3],[5,5])
+		plt.imshow(params2[0,:,:,1]+params2[0,:,:,3],'rainbow',vmin=to_plot.min(),vmax=to_plot.max())
+		plt.colorbar().set_label('a2+a4 [counts]')
+		plt.savefig(pathparam+'/BB_a2+a4_window+no_windiw.eps')#, bbox_inches='tight')
+		# plt.pause(0.01)
+		plt.close()
 
 		plt.figure(figsize=(10, 10))
 		if len(temperature_window)<6:

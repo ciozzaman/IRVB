@@ -6285,6 +6285,7 @@ def build_poly_coeff_multi_digitizer(temperature,files,inttime,pathparam,n):
 	np.savez_compressed(os.path.join(pathparam,'coeff_polynomial_deg'+str(n-1)+'int_time'+str(inttime)+'ms'),**dict([('coeff',coeff),('errcoeff',errcoeff),('score',score),('coeff2',coeff2),('errcoeff2',errcoeff2),('score2',score2)]))
 	print('for a polinomial of degree '+str(n-1)+' the R^2 score is '+str(np.sum(score[n-2])))
 
+
 def build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5.1,wavelength_bottom=1.5):
 	# modified 2018-10-08 to build the coefficient only for 1 degree of polinomial
 	# modified 2024-07-11 do accommodate also the case in which only the window data is provided, so I can use and optimize this process for all cases
@@ -6467,7 +6468,7 @@ def build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window
 	# photon_flux_interpolator = interp1d(temperature_range,photon_flux,bounds_error=False,fill_value='extrapolate')
 
 	photon_dict = calc_interpolators_BB(wavewlength_top=wavewlength_top,wavelength_bottom=wavelength_bottom,inttime=inttime)
-	photon_flux_interpolator = photon_dict['photon_flux_interpolator']
+	photon_flux_interpolator = photon_dict['photon_flux_interpolator']	# this alreay contains inttime
 
 
 	def BB_rad_prob_and_gradient(T_,counts,lambda_cam_x=lambda_cam_x,grads=True):
@@ -6652,6 +6653,275 @@ def build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window
 	print('for a polinomial of degree '+str(n-1)+' the R^2 score is '+str(np.sum(score[n-2])))
 
 
+def build_poly_coeff_multi_digitizer_W7X(temperature,meancounttot,digitizer_ID,inttime,pathparam,n,wavewlength_top=5,wavelength_bottom=3,description=''):
+	# created 2025/03/31 to analyze data from Kevin, W7X
+
+	window_data_present = True
+	no_window_data_present = False
+	number_of_window = len(temperature)
+	meancounttot = np.transpose([meancounttot],axes=(3,0,1,2))
+
+	shapex=np.shape(meancounttot)[-2]	# changed for the case in which there is only data for no_window
+	shapey=np.shape(meancounttot)[-1]
+	score=np.zeros((len(digitizer_ID),shapex,shapey))
+	score2=np.zeros((len(digitizer_ID),shapex,shapey))
+	score3=np.zeros((len(digitizer_ID),shapex,shapey))
+	score4=np.zeros((len(digitizer_ID),shapex,shapey))
+
+	# WARNING; THIS CREATE COEFFICIENTS INCOMPATIBLE WITH PREVIOUS build_poly_coeff FUNCTION
+	coeff=np.zeros((len(digitizer_ID),shapex,shapey,n))*np.nan
+	errcoeff=np.zeros((len(digitizer_ID),shapex,shapey,n,n))*np.nan
+	coeff2=np.zeros((len(digitizer_ID),shapex,shapey,4))*np.nan
+	errcoeff2=np.zeros((len(digitizer_ID),shapex,shapey,4,4))*np.nan
+	coeff3=np.zeros((len(digitizer_ID),shapex,shapey,2))*np.nan
+	errcoeff3=np.zeros((len(digitizer_ID),shapex,shapey,2,2))*np.nan
+	coeff4=np.zeros((len(digitizer_ID),shapex,shapey,2))*np.nan
+	errcoeff4=np.zeros((len(digitizer_ID),shapex,shapey,2,2))*np.nan
+
+	# lambda_cam_x = np.linspace(1.5,5.1,10)*1e-6	# m, Range of FLIR SC7500
+	# lambda_cam_x = np.linspace(wavelength_bottom,wavewlength_top,100)*1e-6	# m, Range of FLIR SC7500
+	lambda_cam_x = np.arange(wavelength_bottom,wavewlength_top,0.02)*1e-6	# m, Range of FLIR SC7500
+	temperature = temperature
+	# temperature_range = np.linspace(np.min(temperature),np.max(temperature))
+
+	# temperature_range = np.unique(temperature)
+	# photon_flux = []
+	# for T_ in temperature_range:
+	# 	photon_flux.append(np.trapz(2*scipy.constants.c/(lambda_cam_x**4) * 1/( np.exp(scipy.constants.h*scipy.constants.c/(lambda_cam_x*scipy.constants.k*(T_+273.15))) -1) ,x=lambda_cam_x,axis=0) * inttime/1000)
+	# photon_flux = np.array(photon_flux)
+	# photon_flux_interpolator = interp1d(temperature_range,photon_flux,bounds_error=False,fill_value='extrapolate')
+
+	photon_dict = calc_interpolators_BB(wavewlength_top=wavewlength_top,wavelength_bottom=wavelength_bottom,inttime=inttime)
+	photon_flux_interpolator = photon_dict['photon_flux_interpolator']	# this alreay contains inttime
+
+
+	def BB_rad_prob_and_gradient(T_,counts,lambda_cam_x=lambda_cam_x,grads=True):
+		def int(arg):
+			a1=arg[0]
+			a2=arg[1]
+			lambda_cam = np.array([lambda_cam_x.tolist()]*len(T_)).T
+			# temp1 = np.trapz(2*scipy.constants.c/(lambda_cam**4) * 1/( np.exp(scipy.constants.h*scipy.constants.c/(lambda_cam*scipy.constants.k*(T_+273.15))) -1) ,x=lambda_cam_x,axis=0) * inttime/1000
+			temp1 = photon_flux_interpolator(T_)
+			temp2 = a1*temp1 + a2 - counts
+			out = np.sum(temp2**2)
+			if grads:
+				grad = [np.sum(2*temp2*temp1),np.sum(2*temp2*1)]
+				return out,np.array(grad)
+			else:
+				return out
+		return int
+
+	import numdifftools as nd
+	def make_standatd_fit_output(function,x_optimal):
+		hessian = nd.Hessian(function)
+		hessian = hessian(x_optimal)
+		covariance = np.linalg.inv(hessian)
+		for i in range(len(covariance)):
+			covariance[i,i] = np.abs(covariance[i,i])
+		fit = [x_optimal,covariance]
+		return fit
+
+	BB_rad = lambda T,a1,a2 : a1*2*scipy.constants.c/((5e-6)**5) * 1/( np.exp(scipy.constants.h*scipy.constants.c/((5e-6)*scipy.constants.k*(T+273.15))) -1) * inttime/1000 + a2
+
+	def BB_rad(number_of_window,lambda_cam_x=lambda_cam_x,emissivity=1):
+		def int(T_,a1,a2,a3,a4):
+			# lambda_cam_x = np.linspace(1.5,5.1,10)*1e-6	# m, Range of FLIR SC7500
+			# lambda_cam = np.array([lambda_cam_x.tolist()]*len(T_)).T
+			# temp1 = np.trapz(2*scipy.constants.c/(lambda_cam**4) * 1/( np.exp(scipy.constants.h*scipy.constants.c/(lambda_cam*scipy.constants.k*(T_+273.15))) -1) ,x=lambda_cam_x,axis=0) * inttime/1000
+			temp1 = emissivity*photon_flux_interpolator(T_)
+			# temp1 = 2*scipy.constants.h*(scipy.constants.c**2)/(lambda_cam_x.max()**5) * 1/( np.exp(scipy.constants.h*scipy.constants.c/(lambda_cam_x.max()*scipy.constants.k*T_)) -1)
+			out = a1*temp1 + a2
+			out[:number_of_window] = a1*a3*temp1[:number_of_window] + a2 + a4
+			return out
+		return int
+
+	def BB_rad_window_OR_no_window(lambda_cam_x=lambda_cam_x,emissivity=1):
+		def int(T_,a1,a2):
+			# lambda_cam_x = np.linspace(1.5,5.1,10)*1e-6	# m, Range of FLIR SC7500
+			# lambda_cam = np.array([lambda_cam_x.tolist()]*len(T_)).T
+			# temp1 = np.trapz(2*scipy.constants.c/(lambda_cam**4) * 1/( np.exp(scipy.constants.h*scipy.constants.c/(lambda_cam*scipy.constants.k*(T_+273.15))) -1) ,x=lambda_cam_x,axis=0) * inttime/1000
+			temp1 = emissivity*photon_flux_interpolator(T_)
+			# temp1 = 2*scipy.constants.h*(scipy.constants.c**2)/(lambda_cam_x.max()**5) * 1/( np.exp(scipy.constants.h*scipy.constants.c/(lambda_cam_x.max()*scipy.constants.k*T_)) -1)
+			out = a1*temp1 + a2
+			return out
+		return int
+
+	def deg_2_poly(x,a2,a1,a0):
+		out = a2*x**2 + a1*x + a0
+		return out
+
+	def BB_rad_counts_to_delta_temp(trash,T_,lambda_cam_x=lambda_cam_x):
+		# lambda_cam_x = np.linspace(1.5,5.1,10)*1e-6	# m, Range of FLIR SC7500
+		# temp1 = np.trapz(2*scipy.constants.c/(lambda_cam_x**4) * 1/( np.exp(scipy.constants.h*scipy.constants.c/(lambda_cam_x*scipy.constants.k*(T_+273.15))) -1) ,x=lambda_cam_x) * inttime/1000
+		temp1 = photon_flux_interpolator(T_)
+		# temp1 = 2*scipy.constants.h*(scipy.constants.c**2)/(lambda_cam_x.max()**5) * 1/( np.exp(scipy.constants.h*scipy.constants.c/(lambda_cam_x.max()*scipy.constants.k*T_)) -1)
+		return temp1
+
+	def sigma_T_multimpier(T_,lambda_cam_x=lambda_cam_x):
+		# lambda_cam_x = np.linspace(1.5,5.1,10)*1e-6	# m, Range of FLIR SC7500
+		temp = 2*scipy.constants.c/(lambda_cam_x**4) * 1/( np.exp(scipy.constants.h*scipy.constants.c/(lambda_cam_x*scipy.constants.k*(T_+273.15))) -1) * inttime/1000
+		temp1 = np.trapz(temp* scipy.constants.h*scipy.constants.c/(lambda_cam_x*scipy.constants.k*(T_**2)) ,x=lambda_cam_x)
+		# temp1 = 2*scipy.constants.h*(scipy.constants.c**2)/(lambda_cam_x.max()**5) * 1/( np.exp(scipy.constants.h*scipy.constants.c/(lambda_cam_x.max()*scipy.constants.k*T_)) -1)
+		return temp1
+
+	bds = [[0,-np.inf,0,-np.inf],[np.inf,np.inf,1,np.inf]]
+	bds1=np.array(bds)[:,:2]
+	x__all = meancounttot
+	meancountstdtot = np.ones_like(meancounttot)
+	xerr__all = meancountstdtot
+
+	for j in range(shapex):
+		for k in range(shapey):
+			for i_z,z in enumerate(digitizer_ID):
+				if window_data_present:
+					x=np.array(meancounttot[:,z==digitizer_ID,j,k]).flatten()
+					x_=x__all[:,z==digitizer_ID,j,k].flatten()
+					xerr=np.array(meancountstdtot[:,z==digitizer_ID,j,k]).flatten()
+					xerr_=xerr__all[:,z==digitizer_ID,j,k].flatten()
+					# temp1,temp2=np.polyfit(temperature,x,n-1,cov='unscaled')
+					temp1=np.polyfit(x,temperature,n-1)	# this correction alone decrease the errors by 2 error by 2 orders of magnitude
+					yerr=(np.polyval(temp1,x+xerr)-np.polyval(temp1,x-xerr))/2
+					temp1,temp2=np.polyfit(x,temperature,n-1,w=1/yerr,cov='unscaled')
+
+					x__window=np.array(meancounttot[:,z==digitizer_ID,j,k]).flatten()
+					xerr__window=np.array(meancountstdtot[:,z==digitizer_ID,j,k]).flatten()
+					fit2 = curve_fit(BB_rad_window_OR_no_window(),np.array(temperature),x__window,sigma=xerr__window,absolute_sigma=True,p0=[1e-19,1000],bounds=bds1,x_scale=[1e-20,1])
+				if no_window_data_present:
+					x__no_window=np.array(meancounttot_no_window[:,z==digitizer_ID,j,k]).flatten()
+					xerr__no_window=np.array(meancountstdtot_no_window[:,z==digitizer_ID,j,k]).flatten()
+					fit1 = curve_fit(BB_rad_window_OR_no_window(),np.array(temperature_no_window),x__no_window,sigma=xerr__no_window,absolute_sigma=True,p0=[1e-19,1000],bounds=bds1,x_scale=[1e-20,1])
+				if window_data_present and no_window_data_present:
+					# fit = curve_fit(deg_2_poly,x,temperature,sigma=yerr,absolute_sigma=True,p0=[1,1,1])	# equivalent to np.polyfit, just to check that both return the same uncertainty
+					fit = curve_fit(BB_rad(number_of_window),np.array(temperature),x_,sigma=xerr_,absolute_sigma=True,p0=[1e-19,1000,1,100],bounds=bds,x_scale=[1e-20,1,1,1])
+					# the following is much slower
+					# x_optimal, y_opt, opt_info = scipy.optimize.fmin_l_bfgs_b(BB_rad_prob_and_gradient(np.array(temperature)+273,x), x0=[1e4,100], iprint=0, factr=1e2, pgtol=1e-6, maxiter=5000)#,m=1000, maxls=1000, pgtol=1e-10, factr=1e0)#,approx_grad = True)
+					# fit = make_standatd_fit_output(BB_rad_prob_and_gradient(np.array(temperature)+273,x,grads=False),x_optimal)
+				elif window_data_present:
+					fit = [[1,0,*fit2[0]] , np.zeros((4,4))]
+					fit[1][2:,2:] = fit2[1]
+				elif no_window_data_present:
+					fit = [[*fit1[0],1,0] , np.zeros((4,4))]
+					fit[1][:2,:2] = fit1[1]
+				if False:	# plot for paper
+					plt.figure(figsize=(10, 7))
+					plt.errorbar(x,temperature,yerr=np.zeros_like(temperature),xerr=xerr,fmt='+',color='b',label='view port')
+					# plt.errorbar(x_[number_of_window:],temperature_no_window,yerr=np.zeros_like(temperature_no_window),xerr=xerr_[number_of_window:],fmt='+',color='r',label='no view port')
+					plt.plot(np.sort(x),np.polyval(temp1,np.sort(x)),'-b',label='polynomial fit n='+str(n-1)+', '+r'$R^2=%.5g$' %(rsquared(temperature,np.polyval(temp1,x))))
+					plt.plot(BB_rad_window_OR_no_window()(np.sort(temperature),*fit2[0]),np.sort(temperature),'-.b',label='BB window'+', '+r'$R^2=%.5g$' %(rsquared(x__window,BB_rad_window_OR_no_window()(temperature,*fit2[0]))))
+					plt.plot(BB_rad_window_OR_no_window()(np.sort(temperature),*[fit[0][0]*fit[0][2],fit[0][1]+fit[0][3]]),np.sort(temperature),'--y',label='BB fit window+no window, '+r'$R^2=%.5g$' %(rsquared(x_,BB_rad(number_of_window)(temperature,*fit[0]))) + '\n'+r'$C_1=%.3g, C_2=%.3g, C_3=%.3g, C_4=%.3g$' %(fit[0][0],fit[0][1],fit[0][2],fit[0][3]))
+					# plt.plot(BB_rad_window_OR_no_window()(np.sort(temperature_no_window),*fit1[0]),np.sort(temperature_no_window),'-.r',label='BB no window')
+					# plt.plot(BB_rad_window_OR_no_window()(np.sort(temperature_no_window),*fit[0][:2]),np.sort(temperature_no_window),'--y')
+					plt.grid()
+					plt.legend(loc='upper left', fontsize='small')
+					plt.ylabel('temperature [°C]')
+					plt.xlabel('counts [au]')
+					plt.title('digitizer,j,k='+str((z,j,k)))
+					# plt.pause(0.01)
+					plt.savefig('/home/ffederic/work/irvb/flatfield'+'/example_BB_fit'+str((z,j,k))+'.png')#, bbox_inches='tight')
+				if False:	# same but with only window
+					plt.figure(figsize=(10, 7))
+					plt.grid()
+					color='r'
+					p1 = plt.errorbar(x,temperature,yerr=np.zeros_like(temperature),xerr=xerr,fmt='+',color=color)
+					plt.plot(BB_rad_window_OR_no_window()(np.sort(temperature),*fit2[0]),np.sort(temperature),'--',color=p1.lines[0].get_color(),label='fit '+str((z,j,k))+' \n'+r'$a_1=%.3g\pm%.3g$''\n'r'$a_2=%.3g\pm%.3g$''\n'r'$R^2=%.5g$' %(fit2[0][0],fit2[1][0,0]**0.5,fit2[0][1],fit2[1][1,1]**0.5,rsquared(x__window,BB_rad_window_OR_no_window()(temperature,*fit2[0]))))
+					plt.legend(loc='upper left', fontsize='small')
+					plt.ylabel('temperature [°C]')
+					plt.xlabel('counts [au]')
+					plt.title('digitizer,j,k='+str((z,j,k)))
+					# plt.pause(0.01)
+					plt.savefig('/home/ffederic/work/irvb/flatfield'+'/example_BB_fit'+str((z,j,k))+'2.png')#, bbox_inches='tight')
+				if False:	# small piece to check how the uncertainty goes between the 2 models
+					delta_counts = 7194-5800
+					a1a3 = fit[0][0]*fit[0][2]
+					sigma_a1a3 = a1a3 * ((fit[1][0,0]**0.5/fit[0][0])**2 + (fit[1][2,2]**0.5/fit[0][2])**2 + 2*fit[1][0,2]/a1a3)**0.5
+					ref = delta_counts/a1a3 + BB_rad_counts_to_delta_temp(1,300)
+					sigma_ref = delta_counts/a1a3*(( (estimate_counts_std(5800+delta_counts)*2/delta_counts)**2 + (sigma_a1a3/(a1a3**2))**2 )**0.5)
+					# sigma_ref = (sigma_ref**2 + ((sigma_T_multimpier(300)*0.1)**2))**0.5	# I'm not sure if I should consider this
+					check = curve_fit(BB_rad_counts_to_delta_temp,1,ref,sigma=[sigma_ref],absolute_sigma=True,p0=[300])
+					counts = 5800+delta_counts
+					temp = temp1[-1] + temp1[-2] * counts + temp1[-3] * (counts**2)
+					counts_std = estimate_counts_std(counts)
+					temperature_std = (temp2[2,2] + (counts_std**2)*(temp1[1]**2) + (counts**2+counts_std**2)*temp2[1,1] + (counts_std**2)*(4*counts**2+3*counts_std**2)*(temp1[0]**2) + (counts**4+6*(counts**2)*(counts_std**2)+3*counts_std**4)*temp2[0,0] + 2*counts*temp2[2,1] + 2*(counts**2+counts_std**2)*temp2[2,0] + 2*(counts**3+counts*(counts_std**2))*temp2[1,0])**0.5
+				if window_data_present:
+					coeff[i_z,j,k,:]=temp1
+					errcoeff[i_z,j,k,:]=temp2
+					coeff2[i_z,j,k,:]=fit[0]
+					errcoeff2[i_z,j,k,:]=fit[1]
+					coeff4[i_z,j,k,:]=fit2[0]
+					errcoeff4[i_z,j,k,:]=fit2[1]
+					score[i_z,j,k]=rsquared(temperature,np.polyval(temp1,x))
+					score2[i_z,j,k]=rsquared(x_,BB_rad(number_of_window)(np.array(temperature),*fit[0]))
+					score4[i_z,j,k]=rsquared(x__window,BB_rad_window_OR_no_window()(temperature,*fit2[0]))
+				if no_window_data_present:
+					coeff3[i_z,j,k,:]=fit1[0]
+					errcoeff3[i_z,j,k,:]=fit1[1]
+					score3[i_z,j,k]=rsquared(x__no_window,BB_rad_window_OR_no_window()(temperature_no_window,*fit1[0]))
+	output_dict = dict([('coeff',coeff),('errcoeff',errcoeff),('score',score),('coeff2',coeff2),('errcoeff2',errcoeff2),('score2',score2),('coeff3',coeff3),('errcoeff3',errcoeff3),('score3',score3),('coeff4',coeff4),('errcoeff4',errcoeff4),('score4',score4)])
+	output_dict['all_dead_pixels_markers'] = dict([('all_dead_pixels_markers',[])])
+	output_dict['common_dead_pixels_markers'] = dict([('common_dead_pixels_markers',[])])
+	np.savez(os.path.join(pathparam,'coeff_polynomial_deg'+str(n-1)+'int_time'+str(inttime)+'ms'),**output_dict)
+	print('for a polinomial of degree '+str(n-1)+' the R^2 score is '+str(np.sum(score)))
+
+	from scipy.ndimage import median_filter
+	plt.figure(figsize=(14, 14))
+	plt.title('proportional component BB curve fit NUC\n'+description)
+	to_plot = median_filter(coeff2[0,:,:,0]*coeff2[0,:,:,2],[5,5])
+	# plt.imshow(to_plot,'rainbow',vmin=to_plot[30:170,30:170].min(),vmax=to_plot[30:170,30:170].max())
+	plt.imshow(coeff2[0,:,:,0]*coeff2[0,:,:,2],'rainbow',vmin=to_plot.min(),vmax=to_plot.max())
+	plt.colorbar().set_label('a1*a3 [counts/photons]')
+	plt.savefig(pathparam+'/BB_a1*a3_window+no_windiw.eps')#, bbox_inches='tight')
+	# plt.pause(0.01)
+	plt.close()
+
+	plt.figure(figsize=(14, 14))
+	plt.title('proportional no window component BB curve fit NUC\n'+description)
+	to_plot = median_filter(coeff2[0,:,:,0],[3,3])
+	# plt.imshow(to_plot)#,vmin=to_plot[30:170,30:170].min(),vmax=to_plot[30:170,30:170].max())
+	plt.imshow(coeff2[0,:,:,0],'rainbow',vmin=to_plot.min(),vmax=to_plot.max())
+	plt.colorbar().set_label('a1 [counts/photons]')
+	plt.savefig(pathparam+'/BB_a1_window+no_windiw.eps')#, bbox_inches='tight')
+	# plt.pause(0.01)
+	plt.close()
+
+	plt.figure(figsize=(10, 10))
+	plt.title('proportional window modifier BB curve fit NUC\n'+description)
+	to_plot = median_filter(coeff2[0,:,:,2],[5,5])
+	# plt.imshow(to_plot)#,vmin=to_plot[30:170,30:170].min(),vmax=to_plot[30:170,30:170].max())
+	plt.imshow(coeff2[0,:,:,2],'rainbow',vmin=to_plot.min(),vmax=to_plot.max())
+	plt.colorbar().set_label('a3 [au]')
+	plt.savefig(pathparam+'/BB_a3_window+no_windiw.eps')#, bbox_inches='tight')
+	# plt.pause(0.01)
+	plt.close()
+
+	plt.figure(figsize=(14, 14))
+	plt.title('offset no window component BB curve fit NUC\n'+description)
+	to_plot = median_filter(coeff2[0,:,:,1],[5,5])
+	plt.imshow(coeff2[0,:,:,1],'rainbow',vmin=to_plot.min(),vmax=to_plot.max())
+	plt.colorbar().set_label('a2 [counts]')
+	plt.savefig(pathparam+'/BB_a2_window+no_windiw.eps')#, bbox_inches='tight')
+	# plt.pause(0.01)
+	plt.close()
+
+	plt.figure(figsize=(14, 14))
+	plt.title('offset window modifier BB curve fit NUC\n'+description)
+	to_plot = median_filter(coeff2[0,:,:,3],[5,5])
+	plt.imshow(coeff2[0,:,:,3],'rainbow',vmin=to_plot.min(),vmax=to_plot.max())
+	plt.colorbar().set_label('a4 [counts]')
+	plt.savefig(pathparam+'/BB_a4_window+no_windiw.eps')#, bbox_inches='tight')
+	# plt.pause(0.01)
+	plt.close()
+
+	plt.figure(figsize=(14, 14))
+	plt.title('offset component BB curve fit NUC\n'+description)
+	to_plot = median_filter(coeff2[0,:,:,1]+coeff2[0,:,:,3],[5,5])
+	plt.imshow(coeff2[0,:,:,1]+coeff2[0,:,:,3],'rainbow',vmin=to_plot.min(),vmax=to_plot.max())
+	plt.colorbar().set_label('a2+a4 [counts]')
+	plt.savefig(pathparam+'/BB_a2+a4_window+no_windiw.eps')#, bbox_inches='tight')
+	# plt.pause(0.01)
+	plt.close()
+
+
+
 def build_average_poly_coeff_multi_digitizer(temperaturehot,temperaturecold,fileshot,filescold,int,framerate,pathparam,n):
 	# 08/10/2018 THIS MAKES THE AVERAGE OF COEFFICIENTS FROM MULTIPLE HOT>ROOM AND COLD >ROOM CYCLES THE COEFFICIENTS
 
@@ -6811,7 +7081,7 @@ def count_to_temp_poly_multi_digitizer(counts,params,errparams,digitizer_ID,numb
 			exit()
 		return count_to_temp_poly_multi_digitizer_time_dependent(counts,params,errparams,reference_background,reference_background_std,reference_background_flat,digitizer_ID,number_cpu_available,n,parallelised=parallelised,report=report)
 
-def count_to_temp_BB_multi_digitizer(counts,params,errparams,digitizer_ID,counts_std=[0],reference_background=[0],reference_background_std=[0],ref_temperature=20,ref_temperature_std=0,wavewlength_top=5.1,wavelength_bottom=1.5,inttime=2):
+def count_to_temp_BB_multi_digitizer(counts,params,errparams,digitizer_ID,counts_std=[],reference_background=[0],reference_background_std=[0],ref_temperature=20,ref_temperature_std=0,wavewlength_top=5.1,wavelength_bottom=1.5,inttime=2,framerate=383):
 	# I don't think that there is the need of a separate function for stationary and time dependent
 
 	shape = np.shape(counts)
@@ -6824,21 +7094,22 @@ def count_to_temp_BB_multi_digitizer(counts,params,errparams,digitizer_ID,counts
 		if (len(np.shape(reference_background))<2 or len(np.shape(reference_background_std))<2) and False:	# this is no longer necessary in count_to_temp_poly_multi_digitizer_time_dependent
 			print("you didn't supply the appropriate background counts, requested "+str(np.shape(counts)[-2:]))
 			exit()
-		if counts_std==[0]:
+		if len(counts_std)==0:
 			counts_std = []
 			for i in range(len(digitizer_ID)):
-				counts_std.append(estimate_counts_std(counts[i],int_time=inttime))
+				counts_std.append(estimate_counts_std(counts[i],int_time=inttime,framerate=framerate))
 		return count_to_temp_BB_multi_digitizer_int(counts,counts_std,params,errparams,digitizer_ID,reference_background,reference_background_std,ref_temperature=ref_temperature,ref_temperature_std=ref_temperature_std,wavewlength_top=wavewlength_top,wavelength_bottom=wavelength_bottom,inttime=inttime)
 
 
 def calc_interpolators_BB(wavewlength_top=5.1,wavelength_bottom=1.5,inttime=2):
+	# inttime in ms
 	# lambda_cam_x = np.linspace(wavelength_bottom,wavewlength_top,100)*1e-6	# m, Range of FLIR SC7500
 	lambda_cam_x = np.arange(wavelength_bottom,wavewlength_top,0.02)*1e-6	# m, Range of FLIR SC7500
 	def BB_rad_counts_to_delta_temp(trash,T_,lambda_cam_x=lambda_cam_x):
 		temp1 = np.trapz(2*np.pi*scipy.constants.c/(lambda_cam_x**4) * 1/( np.exp(scipy.constants.h*scipy.constants.c/(lambda_cam_x*scipy.constants.k*T_)) -1) ,x=lambda_cam_x) * inttime/1000
 		return temp1
 
-	temperature_range = np.linspace(0,50,num=100)	# degC
+	temperature_range = np.linspace(0,150,num=300)	# degC
 	temperature_range += 273.15	# K
 	photon_flux = []
 	for T in temperature_range:
@@ -8527,6 +8798,9 @@ def track_outer_leg_radiation(inverted_data,inversion_R,inversion_Z,time_full_bi
 			local_mean_emis = []
 			local_power = []
 			emissivity_flat = cp.deepcopy(inverted_data[i_t].flatten())
+			# 2025-03-17 I want to exclude the inner leg assigned volume. this should help a lot around the x-point
+			delimiter = return_inner_outer_leg_delimiter(efit_reconstruction,i_efit_time)
+			emissivity_flat[b_flat<=delimiter(a_flat)] = np.nan
 			num_cells=[]
 			for i_ref_point in range(1,len(ref_points)):
 				# print(i_ref_point)
@@ -8536,7 +8810,7 @@ def track_outer_leg_radiation(inverted_data,inversion_R,inversion_Z,time_full_bi
 				# 	point = Point((b_flat[i_e],a_flat[i_e]))
 				# 	select.append(polygon.contains(point))
 				select = select_cells_inside_polygon(polygon,[inversion_R,inversion_Z],center_line=ref_points).flatten()
-				num_cells.append(np.sum(select))
+				num_cells.append(np.sum(np.isfinite(emissivity_flat[select])))
 				local_mean_emis.append(np.nanmean(emissivity_flat[select]))
 				local_power.append(2*np.pi*np.nansum(emissivity_flat[select]*b_flat[select]*(grid_resolution**2)))
 			# local_mean_emis = np.array(local_mean_emis)
@@ -8721,6 +8995,9 @@ def track_inner_leg_radiation(inverted_data,inversion_R,inversion_Z,time_full_bi
 			local_mean_emis = []
 			local_power = []
 			emissivity_flat = cp.deepcopy(inverted_data[i_t].flatten())
+			# 2025-03-17 I want to exclude the outer leg assigned volume. this should help a lot around the x-point
+			delimiter = return_inner_outer_leg_delimiter(efit_reconstruction,i_efit_time)
+			emissivity_flat[b_flat>=delimiter(a_flat)] = np.nan
 			num_cells=[]
 			for i_ref_point in range(1,len(ref_points)):
 				# print(i_ref_point)
@@ -8730,7 +9007,7 @@ def track_inner_leg_radiation(inverted_data,inversion_R,inversion_Z,time_full_bi
 				# 	point = Point((b_flat[i_e],a_flat[i_e]))
 				# 	select.append(polygon.contains(point))
 				select = select_cells_inside_polygon(polygon,[inversion_R,inversion_Z],center_line=ref_points).flatten()
-				num_cells.append(np.sum(select))
+				num_cells.append(np.sum(np.isfinite(emissivity_flat[select])))
 				local_mean_emis.append(np.nanmean(emissivity_flat[select]))
 				local_power.append(2*np.pi*np.nansum(emissivity_flat[select]*b_flat[select]*(grid_resolution**2)))
 			# local_mean_emis = np.array(local_mean_emis)
@@ -8760,7 +9037,7 @@ def track_inner_leg_radiation(inverted_data,inversion_R,inversion_Z,time_full_bi
 
 	return local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,average_leg_resolution
 
-def plot_leg_radiation_tracking(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution,filename_root,filename_root_add,laser_to_analyse,scenario,which_leg='',which_part_of_separatrix='leg',x_point_L_pol=[]):
+def plot_leg_radiation_tracking(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution,filename_root,filename_root_add,laser_to_analyse,scenario,which_leg='',which_part_of_separatrix='leg',x_point_L_pol=[],midpoint_range=0.2):
 	from scipy.ndimage import generic_filter
 	from scipy.ndimage import median_filter
 
@@ -8780,12 +9057,19 @@ def plot_leg_radiation_tracking(inverted_data,inversion_R,inversion_Z,time_full_
 	peak = [np.nanargmax(gna) for gna in local_mean_emis_all]
 	peak_location = [np.sum(leng[:val])+leng[val]/2 for val,leng in zip(peak,leg_length_interval_all)]
 	midpoint_location = []
+	midpoint_location_down = []
+	midpoint_location_up = []
 	for i in range(len(local_mean_emis_all)):
-		midpoint_location.append(np.interp(np.nanmax(local_mean_emis_all[i])/2,local_mean_emis_all[i][:peak[i]+1],np.concatenate(([0],np.cumsum(leg_length_interval_all[i])[:peak[i]])),left=0,right=np.inf))
-	ax[0,1].plot(peak_location,time_full_binned_crop,'ok')
+		midpoint_location.append(np.interp(np.nanmax(local_mean_emis_all[i])*(0.5),local_mean_emis_all[i][:peak[i]+1],np.concatenate(([0],np.cumsum(leg_length_interval_all[i])[:peak[i]])),left=0,right=np.inf))
+		midpoint_location_down.append(np.interp(np.nanmax(local_mean_emis_all[i])*(0.5-midpoint_range),local_mean_emis_all[i][:peak[i]+1],np.concatenate(([0],np.cumsum(leg_length_interval_all[i])[:peak[i]])),left=0,right=np.inf))
+		midpoint_location_up.append(np.interp(np.nanmax(local_mean_emis_all[i])*(0.5+midpoint_range),local_mean_emis_all[i][:peak[i]+1],np.concatenate(([0],np.cumsum(leg_length_interval_all[i])[:peak[i]])),left=0,right=np.inf))
+	ax[0,1].plot(peak_location,time_full_binned_crop,'ok',fillstyle='none')
 	ax[0,1].plot(midpoint_location,time_full_binned_crop,'xk')
+	ax[0,1].plot(midpoint_location_down,time_full_binned_crop,'>k',fillstyle='none')
+	ax[0,1].plot(midpoint_location_up,time_full_binned_crop,'<k',fillstyle='none')
+	midpoint_location = np.array([midpoint_location_down,midpoint_location,midpoint_location_up]).T
 	ax[0,1].set_aspect(3)
-	fig.suptitle('shot ' + laser_to_analyse[-9:-4]+' '+scenario+'\ntracking radiation on the '+which_leg+' '+which_part_of_separatrix+'\naveraged/summed %.3gcm above and below the separatrix'%(leg_resolution*100))
+	fig.suptitle('shot ' + laser_to_analyse[-9:-4]+' '+scenario+'\ntracking radiation on the '+which_leg+' '+which_part_of_separatrix+'\naveraged/summed with %.3gcm resolution above and below the separatrix'%(leg_resolution*100))
 	ax[0,0].set_xlabel('distance from the strike point [m]')
 	ax[0,0].grid()
 	ax[0,0].set_ylabel('time [s]')
@@ -13098,9 +13382,13 @@ def calc_temp_to_power_BB_1(photon_flux_over_temperature_interpolator,temperatur
 	zeroC=273.15 #K / C
 
 	# from scipy.sparse import csc_matrix
+	counts_std_crop_binned = counts_std_crop_binned.astype(np.float32)
+	BB_proportional_crop_binned = BB_proportional_crop_binned.astype(np.float32)
+	reference_background_std_crop_binned = reference_background_std_crop_binned.astype(np.float32)
+	BB_proportional_std_crop_binned = BB_proportional_std_crop_binned.astype(np.float32)
 
 	dt = time_binned[2:]-time_binned[:-2]
-	photon_flux_over_temperature = photon_flux_over_temperature_interpolator(temperature_minus_background_crop_binned+ref_temperature)
+	photon_flux_over_temperature = photon_flux_over_temperature_interpolator(temperature_minus_background_crop_binned+ref_temperature).astype(np.float32)
 	# basetemp=np.nanmean(datatempcrop[0,frame-7:frame+7,1:-1,1:-1],axis=0)
 	dT = (temperature_minus_background_crop_binned[2:,1:-1,1:-1]-temperature_minus_background_crop_binned[:-2,1:-1,1:-1]).astype(np.float32)
 	dTdt = np.gradient(temperature_minus_background_crop_binned,time_binned,axis=0)[1:-1,1:-1,1:-1].astype(np.float32)	# K/s	# this is still a central difference but it doesn't rely on hand made code
@@ -13119,7 +13407,7 @@ def calc_temp_to_power_BB_1(photon_flux_over_temperature_interpolator,temperatur
 		grid_laplacian = -build_laplacian(grid,diagonal_factor=0.5) / (dx**2) / 2	# the /2 comes from the fact that including the diagonals amounts to double counting, so i do a mean by summing half of it. on the diagonal I have a 1/2**0.5 in crease odistance, but I have to do the square of that distance so it becomes 1/2
 	# grid_laplacian = csc_matrix(grid_laplacian)
 	d2Tdxy = np.dot(temperature_minus_background_crop_binned.reshape((len(temperature_minus_background_crop_binned),np.shape(grid_laplacian)[0])),grid_laplacian).reshape(np.shape(temperature_minus_background_crop_binned))[1:-1,1:-1,1:-1]
-	d2Tdxy_std = (np.dot( ((counts_std_crop_binned/(BB_proportional_crop_binned*photon_flux_over_temperature))**2+(reference_background_std_crop_binned/(BB_proportional_crop_binned*photon_flux_over_temperature_interpolator(ref_temperature)))**2 + (temperature_minus_background_crop_binned*BB_proportional_std_crop_binned/BB_proportional_crop_binned)**2 ).reshape((len(temperature_minus_background_crop_binned),np.shape(grid_laplacian)[0])),grid_laplacian**2)**0.5).reshape(np.shape(temperature_minus_background_crop_binned))[1:-1,1:-1,1:-1]
+	d2Tdxy_std = (np.dot( ((counts_std_crop_binned/(BB_proportional_crop_binned*photon_flux_over_temperature))**2+(reference_background_std_crop_binned/(BB_proportional_crop_binned*photon_flux_over_temperature_interpolator(ref_temperature)))**2 + ((temperature_minus_background_crop_binned.astype(np.float32))*BB_proportional_std_crop_binned/BB_proportional_crop_binned)**2 ).reshape((len(temperature_minus_background_crop_binned),np.shape(grid_laplacian)[0])),(grid_laplacian.astype(np.float32))**2)**0.5).reshape(np.shape(temperature_minus_background_crop_binned))[1:-1,1:-1,1:-1]
 
 	# temp = np.ones_like(dTdt).astype(np.float32)*np.nan
 	# temp[:,nan_ROI_mask[1:-1,1:-1]]=d2Tdxy[:,nan_ROI_mask[1:-1,1:-1]]
@@ -13577,8 +13865,11 @@ def image_from_data_radial_profile(data,xlabel=(),ylabel=(),barlabel=(),cmap='ra
 		# exit()
 
 	form_factor = (image_extent[1]-image_extent[0])/(image_extent[3]-image_extent[2])
-	fig = plt.figure(figsize=(form_factor_size*form_factor, form_factor_size*1.2))
+	fig = plt.figure(figsize=(form_factor_size*form_factor, form_factor_size*1.0))
 	ax = fig.add_subplot(111)
+
+	ax.tick_params('both',labelsize= 18)
+	# ax.tick_params('x',labelsize= 18)
 
 	data_rotated = np.array([np.flip(data[0],axis=2)])
 
@@ -13690,9 +13981,10 @@ def image_from_data_radial_profile(data,xlabel=(),ylabel=(),barlabel=(),cmap='ra
 				hline[i] = max(0,min(hline[i],np.shape(cv0)[0]-1))
 				axhline = ax.axhline(y=hline[i],linestyle='--',color='k')
 
-	cb = fig.colorbar(im,fraction=0.0577, pad=0.04).set_label(barlabel)
-	cb = ax.set_xlabel(xlabel)
-	cb = ax.set_ylabel(ylabel)
+	cb = fig.colorbar(im,fraction=0.0577, pad=0.04).set_label(barlabel,size=18)
+	# cb.ax.tick_params(labelsize=20)
+	cb = ax.set_xlabel(xlabel,size=18)
+	cb = ax.set_ylabel(ylabel,size=18)
 	tx = ax.set_title('Frame 0')
 
 
@@ -13776,7 +14068,7 @@ def estimate_counts_std(counts,int_time=2,framerate=383):
 		counts_std_fit = np.array([1.50373493e-27, -4.19101786e-23,  4.93707276e-19, -3.17906562e-15,  1.20397117e-11, -2.66143902e-08,  3.10847589e-05, -1.27980432e-02])	# found 2022-12-07 with generate_count_std_VS_count_coeff.py
 		print('noise estimation 0.5ms int time')
 	else:
-		print(str(framerate)+'Hz framerate does not have std coefficients assotiated with it, this should be checked')
+		print(str(framerate)+'Hz framerate does not have std coefficients assotiated with '+str(int_time)+'ms, this should be checked')
 		a=b	# a and b are not defined so this will cause an error to occour
 	counts_temp_std = np.polyval(counts_std_fit,counts).astype(np.float32)*counts
 	return counts_temp_std
@@ -14190,7 +14482,6 @@ def reduce_voxels(sensitivities_reshaped,grid_laplacian,grid_data,std_treshold =
 
 	return sensitivities_reshaped_masked,grid_laplacian_masked,grid_data_masked,grid_Z_derivate_masked,grid_R_derivate_masked
 
-
 def retrive_shot_scenario(shot,path='/home/ffederic/work/irvb/MAST-U/'+'shot_list2.ods'):
 
 	scenario = ''
@@ -14342,7 +14633,6 @@ def load_shot_list(path):
 			pass
 	return shot_list
 
-
 def retrive_shot_foil_mask_type(shot,path='/home/ffederic/work/irvb/MAST-U/'+'shot_list2.ods'):
 	from datetime import datetime
 	from pyexcel_ods import save_data,get_data
@@ -14368,7 +14658,6 @@ def retrive_shot_foil_mask_type(shot,path='/home/ffederic/work/irvb/MAST-U/'+'sh
 	# except:
 	# 	day = str(date)
 	return mask_type
-
 
 # from Kevin 11/05/2022
 def uda_transfer(shotnr,tag,savedir=os.getcwd()+'/dum.nc',extra_path = ''):

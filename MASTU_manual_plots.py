@@ -191,6 +191,8 @@ try:
 		movement_local_outer_leg_mean_emissivity = np.array(temp)
 		inverted_dict[str(grid_resolution)]['movement_local_inner_leg_mean_emissivity'] = movement_local_inner_leg_mean_emissivity
 		inverted_dict[str(grid_resolution)]['movement_local_outer_leg_mean_emissivity'] = movement_local_outer_leg_mean_emissivity
+	else:
+		pass
 
 	# local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution = track_inner_leg_radiation(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction)
 
@@ -363,7 +365,7 @@ try:
 
 
 
-	local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution = coleval.track_outer_leg_radiation(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction)
+	local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution = coleval.track_outer_leg_radiation(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,leg_resolution=0.05)
 	try:
 		peak_location,midpoint_location = coleval.plot_leg_radiation_tracking(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution,filename_root,filename_root_add,laser_to_analyse,scenario,which_leg='outer',x_point_L_pol=outer_L_poloidal_x_point_all)
 	except Exception as e:
@@ -390,7 +392,7 @@ try:
 	inverted_dict[str(grid_resolution)]['inner_leg_only_midpoint_location'] = midpoint_location
 
 
-	local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution = coleval.track_outer_leg_radiation(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,type='separatrix')
+	local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution = coleval.track_outer_leg_radiation(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,type='separatrix',leg_resolution=0.05)
 	try:
 		peak_location,midpoint_location = coleval.plot_leg_radiation_tracking(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution,filename_root,filename_root_add,laser_to_analyse,scenario,which_leg='outer',x_point_L_pol=outer_L_poloidal_x_point_all,which_part_of_separatrix='separatrix')
 	except Exception as e:
@@ -1613,6 +1615,8 @@ try:
 		psi_interpolator = interp2d(efit_reconstruction.R,efit_reconstruction.Z,efit_data['psiN'][i_efit_time])
 		psiN = psi_interpolator(inversion_R,inversion_Z)
 		select = np.logical_and(inversion_Z<-0.6,inversion_Z>efit_reconstruction.lower_xpoint_z[i_efit_time])
+		# select = np.logical_and(psiN>0.9,psiN<1.1).T
+		# select[:,np.logical_not(np.logical_and(inversion_Z<-0.6,inversion_Z>efit_reconstruction.lower_xpoint_z[i_efit_time]))] = False
 		if inner_emissivity_peak_all[i_t][1]<efit_reconstruction.lower_xpoint_z[i_efit_time]:
 			psiN_peak_inner_all.append([np.nan])
 			# print(i_t)
@@ -1621,8 +1625,8 @@ try:
 		psiN_core_inner_side_baricenter_all.append(np.nansum(((psiN*np.logical_and(psiN>0.9,psiN<1.1)).T*(inverted_data[i_t]))[:][:,select]) / np.nansum((inverted_data[i_t]*np.logical_and(psiN.T>0.9,psiN.T<1.1))[:][:,select]))
 	psiN_peak_inner_all = np.array(psiN_peak_inner_all).flatten()
 	psiN_core_inner_side_baricenter_all = np.array(psiN_core_inner_side_baricenter_all)
-	full_saved_file_dict_FAST['multi_instrument']['psiN_peak_inner_all'] = psiN_peak_inner_all
-	full_saved_file_dict_FAST['multi_instrument']['psiN_core_inner_side_baricenter_all'] = psiN_core_inner_side_baricenter_all
+	inverted_dict[str(grid_resolution)]['psiN_peak_inner_all'] = psiN_peak_inner_all
+	inverted_dict[str(grid_resolution)]['psiN_core_inner_side_baricenter_all'] = psiN_core_inner_side_baricenter_all
 
 	# here I calculate the upstream density
 	try:

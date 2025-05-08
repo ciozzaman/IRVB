@@ -619,7 +619,7 @@ def export_image():
 			histogram_level_low_for_plot = cp.deepcopy(histogram_level_low)
 	a = w2.x
 	if barlabel[-6:] == '[W/m3]':
-		barlabel = barlabel[:-6] + '[kW/m3]'
+		barlabel = barlabel[:-6] + '(kW/m3)'
 		to_plot = data[round(a)]*1e-3
 	elif barlabel[-6:] == '[W/m2]' and not (('power' in barlabel) or ('foil' in barlabel)):
 		barlabel = barlabel[:-6] + '[kW/m2]'

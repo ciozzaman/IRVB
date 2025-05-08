@@ -659,14 +659,14 @@ def function_a(index):
 						for i in np.arange(1,np.ceil(len(laser_counts_filtered[0])/500)).astype(int):
 							temp = coleval.count_to_temp_BB_multi_digitizer(laser_counts_filtered[:,i*500:(i+1)*500],params_BB,errparams_BB,digitizer_ID,reference_background=reference_background,reference_background_std=reference_background_std,ref_temperature=ref_temperature,ref_temperature_std=ref_temperature_std,wavewlength_top=5.1,wavelength_bottom=1.5,inttime=int_time)
 							laser_temperature=np.append(laser_temperature,temp[0],axis=1)
-							laser_temperature_std=np.append(laser_temperature_std,temp[0],axis=1)
+							laser_temperature_std=np.append(laser_temperature_std,temp[1],axis=1)
 					elif type_of_calibration == 'NUC_plate':
 						reference_background_flat = np.mean(reference_background,axis=(1,2))
 						laser_temperature,laser_temperature_std = coleval.count_to_temp_poly_multi_digitizer(laser_counts_filtered[:,0*500:(0+1)*500],params,errparams,laser_digitizer_ID,number_cpu_available,reference_background=reference_background,reference_background_std=reference_background_std,reference_background_flat=reference_background_flat,report=0)
 						for i in np.arange(1,np.ceil(len(laser_counts_filtered[0])/500)).astype(int):
 							temp = coleval.count_to_temp_poly_multi_digitizer(laser_counts_filtered[:,i*500:(i+1)*500],params,errparams,laser_digitizer_ID,number_cpu_available,reference_background=reference_background,reference_background_std=reference_background_std,reference_background_flat=reference_background_flat,report=0)
 							laser_temperature=np.append(laser_temperature,temp[0],axis=1)
-							laser_temperature_std=np.append(laser_temperature_std,temp[0],axis=1)
+							laser_temperature_std=np.append(laser_temperature_std,temp[1],axis=1)
 				else:
 					if type_of_calibration == 'BB_source_w_window' or type_of_calibration == 'BB_source_w/o_window':
 						laser_temperature,laser_temperature_std = coleval.count_to_temp_BB_multi_digitizer(laser_counts_filtered,params_BB,errparams_BB,digitizer_ID,reference_background=reference_background,reference_background_std=reference_background_std,ref_temperature=ref_temperature,ref_temperature_std=ref_temperature_std,wavewlength_top=5.1,wavelength_bottom=1.5,inttime=int_time)
