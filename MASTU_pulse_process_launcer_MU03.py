@@ -8,9 +8,6 @@ exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_import_pc.py").
 # #this is if working in batch, use predefined NOT visual printer
 # exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_import_batch.py").read())
 
-# to copy the files
-import shutil
-
 #this is for importing all the variables names and which are the files
 exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_indexing.py").read())
 number_cpu_available = 8
@@ -104,6 +101,9 @@ day = day[day.find('_')+1:]
 day = day[:day.find('_')]
 day = day[:4] + '-' + day[4:6] + '-' + day[6:]
 name = str(last_pulse_dict['filename'][selected_index])
+
+# to copy the files
+import shutil
 
 if not os.path.exists(done_pulse_path + day):
 	os.mkdir(done_pulse_path + day)

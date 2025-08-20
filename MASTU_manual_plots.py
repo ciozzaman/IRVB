@@ -1,6 +1,7 @@
 from mastu_exhaust_analysis.calc_ne_bar import calc_ne_bar
 from mastu_exhaust_analysis.calc_w_dot import calc_w_dot
 from mastu_exhaust_analysis.calc_pohm import calc_pohm
+
 # # i_day,day = 0,'2021-10-22'
 # # name='IRVB-MASTU_shot-45401.ptw'
 # i_day,day = 0,'2021-10-21'
@@ -87,7 +88,7 @@ try:
 			del covariance_out_sing
 
 	except Exception as e:
-		print('inverted_data_covariance_log reading failed because of '+e)
+		print('inverted_data_covariance_log reading failed because of '+str(e))
 		logging.exception('with error: ' + str(e))
 		try:
 			inverted_data_covariance_scaling_factor = inverted_dict[str(grid_resolution)]['inverted_data_covariance_scaling_factor']
@@ -129,9 +130,14 @@ try:
 		inverted_dict[str(grid_resolution)]['x_point_region_radious'] = x_point_region_radious
 
 	EFIT_path_default = '/common/uda-scratch/lkogan/efitpp_eshed'
-	efit_reconstruction = coleval.mclass(EFIT_path_default+'/epm0'+laser_to_analyse[-9:-4]+'.nc',pulse_ID=laser_to_analyse[-9:-4])
+	efit_reconstruction = coleval.mclass(EFIT_path_default+'/epm0'+str(shotnumber)+'.nc',pulse_ID=str(shotnumber))
 	inversion_R = inverted_dict[str(grid_resolution)]['geometry']['R']
 	inversion_Z = inverted_dict[str(grid_resolution)]['geometry']['Z']
+
+	import sys
+	sys.path.append("/home/ffederic/esm-release-v2.1.0")
+	from esm import read_data
+	efit_data2 = read_data.get_efit_data(shotnumber)
 
 	client=pyuda.Client()
 	try:
@@ -172,9 +178,9 @@ try:
 		for i in range(len(local_inner_leg_mean_emissivity)):
 			if np.sum(np.isfinite([local_inner_leg_mean_emissivity[i]]))==0:
 				temp.append(np.nan)
-			elif not (local_inner_leg_mean_emissivity[i]<np.nanmax(local_inner_leg_mean_emissivity[i])/2)[0]:
+			elif not (local_inner_leg_mean_emissivity[i]<np.nanmax(local_inner_leg_mean_emissivity[i])/2)[0]:	# if >50% of the peak at the target, then target location
 				temp.append(0)
-			else:
+			else:	# this finds the location of the 50% of the peak
 				temp.append(((np.arange(len(local_inner_leg_mean_emissivity[i]))[(local_inner_leg_mean_emissivity[i]<np.nanmax(local_inner_leg_mean_emissivity[i])/2)])[-1]+0.5) / ((np.arange(len(local_inner_leg_mean_emissivity[i]))[np.isfinite(local_inner_leg_mean_emissivity[i])])[-1]))
 		movement_local_inner_leg_mean_emissivity = np.array(temp)
 
@@ -184,9 +190,9 @@ try:
 		for i in range(len(local_outer_leg_mean_emissivity)):
 			if np.sum(np.isfinite([local_outer_leg_mean_emissivity[i]]))==0:
 				temp.append(np.nan)
-			elif not (local_outer_leg_mean_emissivity[i]<np.nanmax(local_outer_leg_mean_emissivity[i])/2)[0]:
+			elif not (local_outer_leg_mean_emissivity[i]<np.nanmax(local_outer_leg_mean_emissivity[i])/2)[0]:	# if >50% of the peak at the target, then target location
 				temp.append(0)
-			else:
+			else:	# this finds the location of the 50% of the peak
 				temp.append(((np.arange(len(local_outer_leg_mean_emissivity[i]))[(local_outer_leg_mean_emissivity[i]<np.nanmax(local_outer_leg_mean_emissivity[i])/2)])[-1]+0.5) / ((np.arange(len(local_outer_leg_mean_emissivity[i]))[np.isfinite(local_outer_leg_mean_emissivity[i])])[-1]))
 		movement_local_outer_leg_mean_emissivity = np.array(temp)
 		inverted_dict[str(grid_resolution)]['movement_local_inner_leg_mean_emissivity'] = movement_local_inner_leg_mean_emissivity
@@ -211,6 +217,7 @@ try:
 	inverted_dict[str(grid_resolution)]['outer_L_poloidal_peak_all'] = outer_L_poloidal_peak_all
 	inverted_dict[str(grid_resolution)]['outer_L_poloidal_peak_only_leg_all'] = outer_L_poloidal_peak_only_leg_all
 	inverted_dict[str(grid_resolution)]['outer_L_poloidal_baricentre_only_leg_all'] = outer_L_poloidal_baricentre_only_leg_all
+	inverted_dict[str(grid_resolution)]['x_point_region_radious'] = x_point_region_radious
 	inverted_dict[str(grid_resolution)]['x_point_tot_rad_power_all'] = x_point_tot_rad_power_all
 	inverted_dict[str(grid_resolution)]['x_point_tot_rad_power_sigma_all'] = x_point_tot_rad_power_sigma_all
 	full_saved_file_dict_FAST['multi_instrument']['time_full_binned_crop'] = time_full_binned_crop
@@ -227,7 +234,7 @@ try:
 	inverted_dict[str(grid_resolution)]['outer_half_peak_L_pol_all'] = outer_half_peak_L_pol_all
 	inverted_dict[str(grid_resolution)]['outer_half_peak_divertor_L_pol_all'] = outer_half_peak_divertor_L_pol_all
 	inverted_dict[str(grid_resolution)]['outer_sideways_leg_resolution'] = outer_sideways_leg_resolution
-	inner_local_mean_emis_all,inner_local_power_all,inner_local_L_poloidal_all,inner_leg_length_interval_all,inner_leg_length_all,inner_data_length,inner_leg_resolution,inner_emissivity_baricentre_all,inner_emissivity_peak_all,inner_L_poloidal_baricentre_all,inner_L_poloidal_peak_all,inner_L_poloidal_peak_only_leg_all,inner_L_poloidal_baricentre_only_leg_all,inner_L_poloidal_midplane_all,inner_leg_reliable_power_all,inner_leg_reliable_power_sigma_all,trash,dr_sep_in,dr_sep_out,inner_L_poloidal_x_point_all,inner_half_peak_L_pol_all,inner_half_peak_divertor_L_pol_all,inner_sideways_leg_resolution = coleval.baricentre_inner_separatrix_radiation(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,covariance_out,grid_data_masked_crop,x_point_region_radious=x_point_region_radious)
+	inner_local_mean_emis_all,inner_local_power_all,inner_local_L_poloidal_all,inner_leg_length_interval_all,inner_leg_length_all,inner_data_length,inner_leg_resolution,inner_emissivity_baricentre_all,inner_emissivity_peak_all,inner_L_poloidal_baricentre_all,inner_L_poloidal_peak_all,inner_L_poloidal_peak_only_leg_all,inner_L_poloidal_baricentre_only_leg_all,inner_L_poloidal_midplane_all,inner_leg_reliable_power_all,inner_leg_reliable_power_sigma_all,trash,dr_sep_in,dr_sep_out,inner_L_poloidal_x_point_all,inner_half_peak_L_pol_all,inner_half_peak_divertor_L_pol_all,inner_sideways_leg_resolution,inner_L_poloidal_gap_all,inner_L_par_gap_start_all,inner_L_par_gap_end_all,inner_L_par_Xpoint_all = coleval.baricentre_inner_separatrix_radiation(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,covariance_out,grid_data_masked_crop,x_point_region_radious=x_point_region_radious)
 	inverted_dict[str(grid_resolution)]['inner_local_mean_emis_all'] = inner_local_mean_emis_all
 	inverted_dict[str(grid_resolution)]['inner_local_power_all'] = inner_local_power_all
 	inverted_dict[str(grid_resolution)]['inner_local_L_poloidal_all'] = inner_local_L_poloidal_all
@@ -247,6 +254,10 @@ try:
 	inverted_dict[str(grid_resolution)]['inner_half_peak_L_pol_all'] = inner_half_peak_L_pol_all
 	inverted_dict[str(grid_resolution)]['inner_half_peak_divertor_L_pol_all'] = inner_half_peak_divertor_L_pol_all
 	inverted_dict[str(grid_resolution)]['inner_sideways_leg_resolution'] = inner_sideways_leg_resolution
+	inverted_dict[str(grid_resolution)]['inner_L_poloidal_gap_all'] = inner_L_poloidal_gap_all
+	inverted_dict[str(grid_resolution)]['inner_L_par_gap_start_all'] = inner_L_par_gap_start_all
+	inverted_dict[str(grid_resolution)]['inner_L_par_gap_end_all'] = inner_L_par_gap_end_all
+	inverted_dict[str(grid_resolution)]['inner_L_par_Xpoint_all'] = inner_L_par_Xpoint_all
 	full_saved_file_dict_FAST['multi_instrument']['time_full_binned_crop'] = time_full_binned_crop
 	# full_saved_file_dict_FAST['multi_instrument']['greenwald_density'] = greenwald_density
 	full_saved_file_dict_FAST['multi_instrument']['dr_sep_in'] = dr_sep_in
@@ -303,8 +314,6 @@ try:
 	inverted_dict[str(grid_resolution)]['all_out_of_sxd_all'] = all_out_of_sxd_all
 	inverted_dict[str(grid_resolution)]['all_out_of_sxd_sigma_all'] = all_out_of_sxd_sigma_all
 
-	shot_list = get_data(path+'shot_list2.ods')
-	temp1 = (np.array(shot_list['Sheet1'][0])=='shot number').argmax()
 	scenario = ''
 	experiment = ''
 	useful = ''
@@ -312,7 +321,15 @@ try:
 	Postshot = ''
 	SC = ''
 	SL = ''
+	reference = ''
+	abort = ''
 	try:
+		# shot_list = get_data(path+'shot_list2.ods')
+		temp_path = coleval.copy_shot_list_file_and_read(path=path+'shot_list2.ods')
+		shot_list = coleval.load_shot_list(temp_path[0])
+		os.remove(temp_path[0])
+		os.remove(temp_path[1])
+		temp1 = (np.array(shot_list['Sheet1'][0])=='shot number').argmax()
 		for i in range(1,len(shot_list['Sheet1'])):
 			if shot_list['Sheet1'][i][temp1] == shotnumber:
 				scenario = shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0])=='Scenario').argmax()]
@@ -322,8 +339,27 @@ try:
 				Postshot = shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0])=='Postshot').argmax()]
 				SC = shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0])=='SC').argmax()]
 				SL = shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0])=='SL').argmax()]
+				reference = shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0])=='Parent').argmax()]
+				abort = shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0])=='Abort').argmax()]
 				break
 	except:
+		try:
+			try:
+				from pycpf import pycpf
+			except:
+				import pycpf
+			dict_ = pycpf.query(['program','useful','preshot','postshot','pic','sl','reference','abort'], filters=['exp_number = '+str(shotnumber)])
+			scenario = dict_['program']
+			useful = dict_['useful']
+			Preshot = dict_['preshot']
+			Postshot = dict_['postshot']
+			SC = dict_['pic']
+			SL = dict_['sl']
+			reference = dict_['reference']
+			abort = dict_['abort']
+		except:
+			pass
+
 		pass
 	full_saved_file_dict_FAST['multi_instrument']['scenario'] = scenario
 	full_saved_file_dict_FAST['multi_instrument']['experiment'] = experiment
@@ -332,6 +368,8 @@ try:
 	full_saved_file_dict_FAST['multi_instrument']['Postshot'] = Postshot
 	full_saved_file_dict_FAST['multi_instrument']['SC'] = SC
 	full_saved_file_dict_FAST['multi_instrument']['SL'] = SL
+	full_saved_file_dict_FAST['multi_instrument']['reference'] = reference
+	full_saved_file_dict_FAST['multi_instrument']['abort'] = abort
 
 	plt.figure(figsize=(30, 10))
 	# plt.errorbar(time_full_binned_crop,outer_leg_tot_rad_power_all/1e3,yerr=outer_leg_tot_rad_power_sigma_all/1e3,label='outer_leg\nwith x-point',capsize=5,elinewidth=1)
@@ -343,7 +381,7 @@ try:
 	plt.errorbar(time_full_binned_crop,all_separatrix_radiation_all/1e3,yerr=all_separatrix_radiation_sigma_all/1e3,label='tot\nwithin separatrix',capsize=5,elinewidth=1)
 	plt.errorbar(time_full_binned_crop,all_lower_volume_radiation_all/1e3,yerr=all_lower_volume_radiation_sigma_all/1e3,label='tot',capsize=5,elinewidth=1)
 	plt.errorbar(time_full_binned_crop,inner_SOL_leg_all/1e3,yerr=inner_SOL_leg_sigma_all/1e3,label='inner SOL\n+inner div',capsize=5,elinewidth=1)
-	plt.errorbar(time_full_binned_crop,DMS_equivalent_all/1e3,yerr=DMS_equivalent_sigma_all/1e3,label='DMS equivalent\nLOS19 V2',capsize=5,elinewidth=1,linestyle='--')
+	plt.errorbar(time_full_binned_crop,DMS_equivalent_all/1e3,yerr=DMS_equivalent_sigma_all/1e3,label='DMS equivalent\nLOS19 V2',capsize=5,elinewidth=1,linestyle='-')
 	plt.errorbar(time_full_binned_crop,MWI_equivalent_all/1e3,yerr=MWI_equivalent_sigma_all/1e3,label='MWI equivalent',capsize=5,linestyle=':')
 	plt.errorbar(time_full_binned_crop,inner_SOL_all/1e3,yerr=inner_SOL_sigma_all/1e3,label='inner SOL',capsize=5,elinewidth=1,linestyle='--')
 	plt.errorbar(time_full_binned_crop,outer_SOL_leg_all/1e3,yerr=outer_SOL_leg_sigma_all/1e3,label='outer SOL\n+outer div\n+sxd',capsize=5,elinewidth=1,linestyle='--')
@@ -368,6 +406,8 @@ try:
 	local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution = coleval.track_outer_leg_radiation(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,leg_resolution=0.05)
 	try:
 		peak_location,midpoint_location = coleval.plot_leg_radiation_tracking(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution,filename_root,filename_root_add,laser_to_analyse,scenario,which_leg='outer',x_point_L_pol=outer_L_poloidal_x_point_all)
+		inverted_dict[str(grid_resolution)]['outer_leg_only_peak_location'] = peak_location
+		inverted_dict[str(grid_resolution)]['outer_leg_only_midpoint_location'] = midpoint_location
 	except Exception as e:
 		logging.exception('with error: ' + str(e))
 		print('failed to print\n'+'/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_outer_leg_radiation_tracking.eps')
@@ -375,12 +415,12 @@ try:
 	inverted_dict[str(grid_resolution)]['outer_leg_only_local_emissivity'] = local_mean_emis_all
 	inverted_dict[str(grid_resolution)]['outer_leg_only_length_all'] = leg_length_all
 	inverted_dict[str(grid_resolution)]['outer_leg_only_length_interval_all'] = leg_length_interval_all
-	inverted_dict[str(grid_resolution)]['outer_leg_only_peak_location'] = peak_location
-	inverted_dict[str(grid_resolution)]['outer_leg_only_midpoint_location'] = midpoint_location
 
 	local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution = coleval.track_inner_leg_radiation(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction)
 	try:
 		peak_location,midpoint_location = coleval.plot_leg_radiation_tracking(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution,filename_root,filename_root_add,laser_to_analyse,scenario,which_leg='inner',x_point_L_pol=inner_L_poloidal_x_point_all)
+		inverted_dict[str(grid_resolution)]['inner_leg_only_peak_location'] = peak_location
+		inverted_dict[str(grid_resolution)]['inner_leg_only_midpoint_location'] = midpoint_location
 	except Exception as e:
 		logging.exception('with error: ' + str(e))
 		print('failed to print\n'+'/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_inner_leg_radiation_tracking.eps')
@@ -388,8 +428,6 @@ try:
 	inverted_dict[str(grid_resolution)]['inner_leg_only_local_emissivity'] = local_mean_emis_all
 	inverted_dict[str(grid_resolution)]['inner_leg_only_length_all'] = leg_length_all
 	inverted_dict[str(grid_resolution)]['inner_leg_only_length_interval_all'] = leg_length_interval_all
-	inverted_dict[str(grid_resolution)]['inner_leg_only_peak_location'] = peak_location
-	inverted_dict[str(grid_resolution)]['inner_leg_only_midpoint_location'] = midpoint_location
 
 
 	local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution = coleval.track_outer_leg_radiation(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,type='separatrix',leg_resolution=0.05)
@@ -2171,6 +2209,41 @@ try:
 	coleval.reset_connection(client)
 	del client
 
+	# here I find what is the angle from the x-point to the inner strike point and locally at the SP itself. all angles are with respect to the vertical
+	full_leg_angle = np.degrees(np.arctan2(efit_reconstruction.lower_xpoint_r-np.interp(efit_reconstruction.time,efit_data2['xpl_isp_r'].time.data,efit_data2['xpl_isp_r'].data),efit_reconstruction.lower_xpoint_z-np.interp(efit_reconstruction.time,efit_data2['xpl_isp_z'].time.data,efit_data2['xpl_isp_z'].data)))
+	full_leg_angle = median_filter(full_leg_angle,size=[10])
+
+	# import sys
+	# sys.path.append("/home/ffederic/esm-release-v2.1.0")
+	from esm.calculation import run_esm,limiter_s0
+	from esm.calc_flux_expansion import convert_s_to_RZ,convert_RZ_to_s,calculate_tile_SN
+	esm_dataset=run_esm(shotnumber)
+	cos_poloidal_angle_vertical = esm_dataset['/esm/fluxexp/full']['cos_poloidal_angle_vertical'].data[:,:-1]
+	cos_poloidal_angle_vertical_time = esm_dataset['/esm/fluxexp/full']['cos_poloidal_angle_vertical'].time.data
+	s_target = np.nanmax(esm_dataset['/esm/fluxexp/full']['s_target'],axis=0)[:-1]
+	limiter,s0 = limiter_s0(shotnumber)
+	ISP_s = convert_RZ_to_s(limiter,s0,efit_data2['xpl_isp_r'].data,efit_data2['xpl_isp_z'].data)
+	tile_SN = [calculate_tile_SN(efit_data2['xpl_isp_r'].data[ii],s_pos=ISP_s[ii]) for ii in range(len(ISP_s))]
+	tile_SN_angle = np.array([np.arctan2(tile_SN[ii][0],tile_SN[ii][2]) for ii in range(len(ISP_s))])*360/(2*np.pi)
+	# ISP_s = np.interp(cos_poloidal_angle_vertical_time,efit_reconstruction.time,ISP_s)
+	# tile_SN_angle = np.interp(cos_poloidal_angle_vertical_time,efit_reconstruction.time,tile_SN_angle)
+	from scipy.interpolate import RegularGridInterpolator
+	cos_poloidal_angle_vertical_interp = RegularGridInterpolator((cos_poloidal_angle_vertical_time,s_target),cos_poloidal_angle_vertical,bounds_error=False)
+	# plt.imshow(cos_poloidal_angle_vertical, extent=[s_target.min(),s_target.max(),cos_poloidal_angle_vertical_time.max(),cos_poloidal_angle_vertical_time.min()])
+	cos_poloidal_angle_ISP = cos_poloidal_angle_vertical_interp(np.array([cos_poloidal_angle_vertical_time,ISP_s]).T)
+	poloidal_angle_ISP = np.degrees(np.arccos(cos_poloidal_angle_ISP))
+	# plt.figure()
+	# plt.plot(efit_reconstruction.time,full_leg_angle,label='x-point to ISP')
+	# plt.plot(cos_poloidal_angle_vertical_time,poloidal_angle_ISP,label='local at ISP')
+	# plt.ylabel('angle wrt vertical [deg]')
+	# plt.legend(loc='best', fontsize='xx-small')
+	# plt.grid()
+	# plt.xlabel('time [s]')
+
+	full_saved_file_dict_FAST['multi_instrument']['full_leg_angle'] = full_leg_angle
+	full_saved_file_dict_FAST['multi_instrument']['cos_poloidal_angle_ISP'] = cos_poloidal_angle_ISP
+	full_saved_file_dict_FAST['multi_instrument']['poloidal_angle_ISP'] = poloidal_angle_ISP
+
 	print('start plotting 1')
 	fig, ax = plt.subplots( 2,1,figsize=(12, 12), squeeze=False,sharex=True)
 	if pass_number ==0:
@@ -2272,7 +2345,7 @@ try:
 
 	print('start plotting 2')
 	# plot of absolute quantities
-	fig, ax = plt.subplots( 13,1,figsize=(12, 50), squeeze=False,sharex=False)
+	fig, ax = plt.subplots( 14,1,figsize=(12, 50), squeeze=False,sharex=True)
 	if pass_number ==0:
 		fig.suptitle('shot '+str(shotnumber)+', '+scenario+' , '+experiment+'\nfirst pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
 	elif pass_number ==1:
@@ -2380,11 +2453,15 @@ try:
 	ax2 = ax[2,0].twinx()  # instantiate a second axes that shares the same x-axis
 	# ax2.spines["right"].set_position(("axes", 1.1125))
 	ax2.spines["right"].set_visible(True)
+	ax2.axhline(y=0,color='k',linestyle='--',alpha=0.3)
 	a2a, = ax2.plot(time_full_binned_crop,vert_displacement,label='vert\ndisplacement (->)',color='r')
 	a2b, = ax2.plot(time_full_binned_crop,radius_inner_separatrix-0.2608,'-',label='inner gap (->)',color=color[12])
 	ax2.set_ylabel('vert disp, gap [m]', color='r')  # we already handled the x-label with ax1
 	# ax2.tick_params(axis='y', labelcolor=a2a.get_color())
-	ax2.set_ylim(bottom=min(0,np.nanmin(np.concatenate([vert_displacement[time_full_binned_crop>0.05][:-4],(radius_inner_separatrix-0.2608)[time_full_binned_crop>0.05][:-4]]))),top=np.nanmax(np.concatenate([vert_displacement[time_full_binned_crop>0.05][:-4],(radius_inner_separatrix-0.2608)[time_full_binned_crop>0.05][:-4]])))
+	temp = median_filter(vert_displacement,size=[int(max(1,0.1/(np.diff(time_full_binned_crop).mean())))],mode='constant',cval=0).tolist() + \
+	median_filter(radius_inner_separatrix-0.2608,size=[int(max(1,0.1/(np.diff(time_full_binned_crop).mean())))],mode='constant',cval=0).tolist()
+	# ax2.set_ylim(bottom=min(0,np.nanmin(np.concatenate([vert_displacement[time_full_binned_crop>0.05][:-4],(radius_inner_separatrix-0.2608)[time_full_binned_crop>0.05][:-4]]))),top=np.nanmax(np.concatenate([vert_displacement[time_full_binned_crop>0.05][:-4],(radius_inner_separatrix-0.2608)[time_full_binned_crop>0.05][:-4]])))
+	ax2.set_ylim(bottom =  np.nanmin(temp), top = np.nanmax(temp))
 	handles, labels = ax[2,0].get_legend_handles_labels()
 	handles.append(a2a)
 	handles.append(a2b)
@@ -2469,8 +2546,8 @@ try:
 		ax[4,0].plot(time_full_binned_crop,1e-6*SW_BEAMPOWER,label='SW beam x '+str(sw_absorption),color=color[8])
 		ax[4,0].plot(time_full_binned_crop,1e-6*SS_BEAMPOWER,label='SS beam x '+str(ss_absorption),color=color[9])
 		ax[4,0].set_ylim(bottom=0)
-	ax[4,0].plot(time_full_binned_crop,1e-6*real_core_radiation_all*2,label='core_radiation',color=color[3])
-	ax[4,0].plot(time_full_binned_crop,1e-6*real_non_core_radiation_all*2,label='non_core_radiation',color=color[4])
+	ax[4,0].plot(time_full_binned_crop,1e-6*real_core_radiation_all*2,label='core_radiation (Z<0 x2)',color=color[3])
+	ax[4,0].plot(time_full_binned_crop,1e-6*real_non_core_radiation_all*2,label='non_core_radiation (Z<0 x2)',color=color[4])
 	ax[4,0].grid()
 	ax[4,0].set_ylabel('power [MW]')
 	ax[4,0].legend(loc='upper left', fontsize='xx-small')
@@ -2662,7 +2739,7 @@ try:
 		ax[9,0].plot(time_full_binned_crop,pu_EFIT_smoothing,color=temp.get_color(),label='EFIT smooth')
 		ax[9,0].grid()
 		ax[9,0].legend(loc='best', fontsize='xx-small')
-		ax[9,0].set_ylim(bottom=0,top=np.nanmax([pu_cowley,pu_labombard,pu_stangeby])*1.1)
+		ax[9,0].set_ylim(bottom=0,top=np.nanmax([np.ones_like(pu_cowley),pu_cowley,pu_labombard,pu_stangeby])*1.1)
 		# ax[9,0].set_ylim(bottom=0,top=np.nanmax([pu_EFIT])*1.1)
 
 
@@ -2693,8 +2770,11 @@ try:
 		ax[10,0].legend(handles=handles, labels=labels, loc='best', fontsize='xx-small')
 
 		select = time_full_binned_crop<time_full_binned_crop.max()-0.1
-		ax[10,0].set_ylim(bottom=0,top=np.nanmax([tu_cowley[select],tu_labombard[select],tu_stangeby[select],tu_EFIT_smoothing[select]])*1.1)
-		ax10.set_ylim(bottom=0,top=np.nanmax([nu_cowley[select],nu_labombard[select],nu_stangeby[select],nu_EFIT_smoothing[select]])*1.1*1e-19)
+		try:
+			ax[10,0].set_ylim(bottom=0,top=np.nanmax([tu_cowley[select],tu_labombard[select],tu_stangeby[select],tu_EFIT_smoothing[select]])*1.1)
+			ax10.set_ylim(bottom=0,top=np.nanmax([nu_cowley[select],nu_labombard[select],nu_stangeby[select],nu_EFIT_smoothing[select]])*1.1*1e-19)
+		except:
+			pass
 
 	ax[11,0].axhline(y=1,color='k',linestyle='--')
 	ax[11,0].axhline(y=1.15,color='k',linestyle='--',label=r'$\psi_{N}=1.15$')
@@ -2711,9 +2791,9 @@ try:
 
 	if adimensional_quantities_ok:
 		try:
-			print(lowertriangularity)
+			# print(lowertriangularity)
 			ax[12,0].plot(betan_time,lowertriangularity,label='lowertriangularity')
-			print(uppertriangularity)
+			# print(uppertriangularity)
 			ax[12,0].plot(betan_time,uppertriangularity,label='uppertriangularity')
 			ax[12,0].plot(betan_time,elongation,label='elongation')
 			ax[12,0].plot(betan_time,betan,label='betan')
@@ -2721,6 +2801,13 @@ try:
 			pass
 		ax[12,0].grid()
 		ax[12,0].legend(loc='best', fontsize='xx-small')
+
+	ax[13,0].plot(efit_reconstruction.time,full_leg_angle,label='x-point to ISP')
+	ax[13,0].plot(cos_poloidal_angle_vertical_time,poloidal_angle_ISP,label='local at ISP')
+	ax[13,0].set_ylabel('angle wrt vertical [deg]')
+	ax[13,0].legend(loc='best', fontsize='xx-small')
+	ax[13,0].grid()
+	ax[13,0].set_xlabel('time [s]')
 
 	ax[0,0].set_xlim(left=time_full_binned_crop.min(),right=time_full_binned_crop.max())
 	ax[1,0].set_xlim(left=time_full_binned_crop.min(),right=time_full_binned_crop.max())
@@ -2735,11 +2822,21 @@ try:
 	ax[10,0].set_xlim(left=time_full_binned_crop.min(),right=time_full_binned_crop.max())
 	ax[11,0].set_xlim(left=time_full_binned_crop.min(),right=time_full_binned_crop.max())
 	ax[12,0].set_xlim(left=time_full_binned_crop.min(),right=time_full_binned_crop.max())
+	ax[13,0].set_xlim(left=time_full_binned_crop.min(),right=time_full_binned_crop.max())
 
 	# plt.subplots_adjust(wspace=0, hspace=0)
 	# plt.pause(0.01)
 	plt.savefig(filename_root+filename_root_add+'_all_variables_absolute.eps')
 	plt.close()
+
+	try:
+		exec(open("/home/ffederic/work/analysis_scripts/scripts/get_thermography.py").read())
+	except Exception as e:
+		print('reading thermography FAILED ' + laser_to_analyse+' pass '+str(pass_number))
+		logging.exception('with error: ' + str(e))
+
+
+	full_saved_file_dict_FAST['multi_instrument']['timestamp_end_process'] = str(datetime.fromtimestamp(tm.time()))
 
 
 	if pass_number==0:

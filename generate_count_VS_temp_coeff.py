@@ -986,56 +986,156 @@ elif True:
 		pass
 
 
-	if False:	# HGH BB source with damaged window, X6980 camera, geometry as per MU02 inttime=1.0	# ms
-		# first I need to split the files in the individual integration time/frequency combos
+	if True:	# HGH BB source with damaged window, X6980 camera, geometry as per MU02 inttime=1.0	# ms
 
-		ID_all = np.arange(59,134+1)
-		ID_all = np.arange(101,134+1)
-		for ID in ID_all:
+		if False:
+			# first I need to split the files in the individual intllsegration time/frequency combos
+			# ID_all = np.arange(59,134+1)
+			# ID_all = np.arange(101,134+1)
+			# ID_all = np.arange(137,207+1)
+			# ID_all = np.arange(230,387+1)
+			ID_all = np.arange(236,310+1)
+			path = '/home/ffederic/work/irvb/flatfield/Apr27_2025/'
+			for ID in ID_all:
+			# for ID in np.flip(ID_all,axis=0):
 
-			file = '/home/ffederic/work/irvb/flatfield/Oct28_2024/Untitled-'+str(ID)+'.ats'
-			print('starting'+file)
+				file = path + 'flat_field-'+str(ID)+'.ats'
+				print('starting'+file)
 
-			full_saved_file_dict = coleval.ats_to_dict(file)
-			np.savez_compressed(file[:-4],**full_saved_file_dict)
-			laser_dict = np.load(file[:-4]+'.npz')
-			laser_dict.allow_pickle=True
-			full_saved_file_dict = dict(laser_dict)
-			try:
-				settings_table = dict(full_saved_file_dict['settings_table'].all())
-			except:
-				continue
-			for Preset in settings_table.keys():
-				laser_dict = np.load(file[:-4]+'.npz')
-				laser_dict.allow_pickle=True
-				full_saved_file_dict = dict(laser_dict)
+				try:
+					full_saved_file_dict = coleval.ats_to_dict(file)
+					np.savez_compressed(file[:-4],**full_saved_file_dict)
+					laser_dict = np.load(file[:-4]+'.npz')
+					laser_dict.allow_pickle=True
+					full_saved_file_dict = dict(laser_dict)
+				except:
+					continue
 
-				full_saved_file_dict['data'] = full_saved_file_dict['data'][full_saved_file_dict['Preset']==int(Preset)]
-				full_saved_file_dict['digitizer_ID'] = full_saved_file_dict['digitizer_ID'][full_saved_file_dict['Preset']==int(Preset)]
-				full_saved_file_dict['time_of_measurement'] = full_saved_file_dict['time_of_measurement'][full_saved_file_dict['Preset']==int(Preset)]
-				full_saved_file_dict['SensorTemp_0'] = full_saved_file_dict['SensorTemp_0'][full_saved_file_dict['Preset']==int(Preset)]
-				full_saved_file_dict['SensorTemp_3'] = full_saved_file_dict['SensorTemp_3'][full_saved_file_dict['Preset']==int(Preset)]
-				full_saved_file_dict['DetectorTemp'] = full_saved_file_dict['DetectorTemp'][full_saved_file_dict['Preset']==int(Preset)]
-				full_saved_file_dict['frame_counter'] = full_saved_file_dict['frame_counter'][full_saved_file_dict['Preset']==int(Preset)]
 
-				data_per_digitizer,uniques_digitizer_ID = coleval.separate_data_with_digitizer(full_saved_file_dict)
-				full_saved_file_dict['data_time_avg_counts'] = np.array([(np.mean(data,axis=0)) for data in data_per_digitizer])
-				full_saved_file_dict['data_time_avg_counts_std'] = np.array([(np.std(data,axis=0)) for data in data_per_digitizer])
-				full_saved_file_dict['data_time_space_avg_counts'] = np.array([(np.mean(data,axis=(0,1,2))) for data in data_per_digitizer])
-				full_saved_file_dict['data_time_space_avg_counts_std'] = np.array([(np.std(data,axis=(0,1,2))) for data in data_per_digitizer])
+				try:
+					settings_table = dict(full_saved_file_dict['settings_table'].all())
+				except:
+					continue
+				for Preset in settings_table.keys():
+					laser_dict = np.load(file[:-4]+'.npz')
+					laser_dict.allow_pickle=True
+					full_saved_file_dict = dict(laser_dict)
 
-				full_saved_file_dict['Preset'] = full_saved_file_dict['Preset'][full_saved_file_dict['Preset']==int(Preset)]
+					full_saved_file_dict['data'] = full_saved_file_dict['data'][full_saved_file_dict['Preset']==int(Preset)]
+					data = full_saved_file_dict['data_median'] + full_saved_file_dict['data']
+					data_median,data_minus_median,data_type = coleval.reduce_file_format(data)
+					full_saved_file_dict['data_median'] = data_median
+					full_saved_file_dict['data'] = data_minus_median
+					full_saved_file_dict['data_type'] = data_type
+					full_saved_file_dict['digitizer_ID'] = full_saved_file_dict['digitizer_ID'][full_saved_file_dict['Preset']==int(Preset)]
+					full_saved_file_dict['time_of_measurement'] = full_saved_file_dict['time_of_measurement'][full_saved_file_dict['Preset']==int(Preset)]
+					full_saved_file_dict['SensorTemp_0'] = full_saved_file_dict['SensorTemp_0'][full_saved_file_dict['Preset']==int(Preset)]
+					full_saved_file_dict['SensorTemp_3'] = full_saved_file_dict['SensorTemp_3'][full_saved_file_dict['Preset']==int(Preset)]
+					full_saved_file_dict['DetectorTemp'] = full_saved_file_dict['DetectorTemp'][full_saved_file_dict['Preset']==int(Preset)]
+					full_saved_file_dict['frame_counter'] = full_saved_file_dict['frame_counter'][full_saved_file_dict['Preset']==int(Preset)]
 
-				full_saved_file_dict['IntegrationTime'] = settings_table[Preset]['IntegrationTime']
-				full_saved_file_dict['FrameRate'] = settings_table[Preset]['FrameRate']
+					data_per_digitizer,uniques_digitizer_ID = coleval.separate_data_with_digitizer(full_saved_file_dict)
+					full_saved_file_dict['data_time_avg_counts'] = np.array([(np.mean(data,axis=0)) for data in data_per_digitizer])
+					full_saved_file_dict['data_time_avg_counts_std'] = np.array([(np.std(data,axis=0)) for data in data_per_digitizer])
+					full_saved_file_dict['data_time_space_avg_counts'] = np.array([(np.mean(data,axis=(0,1,2))) for data in data_per_digitizer])
+					full_saved_file_dict['data_time_space_avg_counts_std'] = np.array([(np.std(data,axis=(0,1,2))) for data in data_per_digitizer])
 
-				np.savez_compressed(file[:-4]+'_int'+str(full_saved_file_dict['IntegrationTime'])+'_fr'+str(np.round(settings_table[str(Preset)]['FrameRate'])),**full_saved_file_dict)
-			os.remove(file[:-4]+'.npz')
+					full_saved_file_dict['Preset'] = full_saved_file_dict['Preset'][full_saved_file_dict['Preset']==int(Preset)]
+
+					full_saved_file_dict['IntegrationTime'] = settings_table[Preset]['IntegrationTime']
+					full_saved_file_dict['FrameRate'] = settings_table[Preset]['FrameRate']
+
+					np.savez_compressed(file[:-4]+'_int'+str(full_saved_file_dict['IntegrationTime'])+'_fr'+str(np.round(settings_table[str(Preset)]['FrameRate'])),**full_saved_file_dict)
+				os.remove(file[:-4]+'.npz')
+			exit()
+		else:
+			pass
+
+		if True:
+			description = 'HGH BB source with damaged window, FLIR X6980, geometry as per MU02, mean filter [7,30] applied to coeff2 to get rid of the effect of the horizontal stripes in the BB source a smoothing of [6.8,30] would have beed better, but I cannot do it in a simple manner'
+			fileshot = np.concatenate([files80a[:],files88a[:]])
+			how_to_split_window_offsett = [len(files80a[:])]
+			temperaturehot = np.concatenate([temperature80[:],temperature88[:]])
+			filescold = []
+			temperaturecold = []
+			temperature_window = temperaturehot.tolist()+temperaturecold
+			files_window = fileshot.tolist()+filescold
+			# inttime=0.9	# ms
+			inttime=float(files_window[0][files_window[0].find('int')+3:files_window[0].find('_fr')])
+			# framerate=1000.0	# Hz
+			framerate=float(files_window[0][files_window[0].find('_fr')+3:])
+			fileshot = []
+			temperaturehot = []
+			filescold = []
+			temperaturecold = []
+			temperature_no_window = temperaturehot+temperaturecold
+			files_no_window = fileshot+filescold
+			n=3
+			# pathparam='/home/ffederic/work/irvb/2022-12-07_multiple_search_for_parameters/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
+			pathparam='/home/ffederic/work/irvb/2024-10-28_FLIRX6980/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
+
+		elif True:	# same but using the camera after the repairs after breaking in 10/2024
+			description = 'HGH BB source with damaged window, FLIR X6980 after it was repaired after breaking in 10/2024, geometry as per MU02, mean filter [7,30] applied to coeff2 to get rid of the effect of the horizontal stripes in the BB source a smoothing of [6.8,30] would have beed better, but I cannot do it in a simple manner'
+			fileshot = np.concatenate([files100a[:],files103a[:]])
+			how_to_split_window_offsett = [len(files100a[:])]
+			temperaturehot = np.concatenate([temperature100[:],temperature103[:]])
+			filescold = []
+			temperaturecold = []
+			temperature_window = temperaturehot.tolist()+temperaturecold
+			files_window = fileshot.tolist()+filescold
+			# inttime=0.9	# ms
+			inttime=float(files_window[0][files_window[0].find('int')+3:files_window[0].find('_fr')])
+			# framerate=1000.0	# Hz
+			framerate=float(files_window[0][files_window[0].find('_fr')+3:])
+			fileshot = []
+			temperaturehot = []
+			filescold = []
+			temperaturecold = []
+			temperature_no_window = temperaturehot+temperaturecold
+			files_no_window = fileshot+filescold
+			n=3
+			upper_temperature_saturation_limit = np.inf
+			if files_window[0].find('int1.0')!=-1:
+				upper_temperature_saturation_limit = 55
+			elif files_window[0].find('int0.98')!=-1:
+				upper_temperature_saturation_limit = 55
+			elif files_window[0].find('int0.9_')!=-1:
+				upper_temperature_saturation_limit = 58
+
+			how_to_split_window_offsett[0] -= np.sum(np.array(temperature_window[:how_to_split_window_offsett[0]])>=upper_temperature_saturation_limit)
+			files_window = np.array(files_window)[np.array(temperature_window)<upper_temperature_saturation_limit]
+			temperature_window = np.array(temperature_window)[np.array(temperature_window)<upper_temperature_saturation_limit]
+
+			# pathparam='/home/ffederic/work/irvb/2022-12-07_multiple_search_for_parameters/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
+			pathparam='/home/ffederic/work/irvb/2025-04-27_FLIRX6980/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
+
+		if not os.path.exists(pathparam):
+			os.makedirs(pathparam)
+		coleval.build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5.1,wavelength_bottom=1.5,description=description,how_to_split_window_offsett=how_to_split_window_offsett)
+
+		# I need to smooth the result in order to cancel the influence of the horizontal stripes in the BB source
+		fullpathparams = os.path.join(pathparam,'coeff_polynomial_deg'+str(n-1)+'int_time'+str(inttime)+'ms.npz')
+		params_dict=np.load(fullpathparams)
+		params_dict.allow_pickle=True
+		params_dict = dict(params_dict)
+		params_BB = params_dict['coeff2']
+		params_BB[0,:,:,3] = generic_filter(params_BB[0,:,:,3],np.mean,size=[7,30])
+		params_BB[0,:,:,2] = generic_filter(params_BB[0,:,:,2],np.mean,size=[7,30])
+		params_dict['coeff2'] = params_BB
+		errparams_BB = params_dict['errcoeff2']
+		errparams_BB[0,:,:,2,2] = generic_filter(errparams_BB[0,:,:,2,2],np.mean,size=[7,30])
+		errparams_BB[0,:,:,3,3] = generic_filter(errparams_BB[0,:,:,3,3],np.mean,size=[7,30])
+		params_dict['errcoeff2'] = errparams_BB
+		np.savez(os.path.join(pathparam,'coeff_polynomial_deg'+str(n-1)+'int_time'+str(inttime)+'ms'),**params_dict)
+
+		coleval.make_plots_at_end_of_params_generation(pathparam,params_BB,description=description,digitizer_ID=0,addendum_to_filemane='smoothed')
+
+
 	else:
 		pass
 
 
-	if True:	# NUC plate data from Kevin W7X, no window inttime=4.911200 # ms
+	if False:	# NUC plate data from Kevin W7X, no window inttime=4.911200 # ms
 		description = 'NUC plate data from Kevin W7X, no window inttime=4.911200 # ms, PS0'
 		temperature=np.load('/home/ffederic/work/irvb/laser/Feb_2025/C-T_conversion/pixbypix_coeffs/0402_PS0_data/temp_list_PS0.npy')
 		meancounttot=np.load('/home/ffederic/work/irvb/laser/Feb_2025/C-T_conversion/pixbypix_coeffs/0402_PS0_data/counts_PS0.npy')
@@ -1050,7 +1150,7 @@ elif True:
 	else:
 		pass
 
-	if True:	# NUC plate data from Kevin W7X, no window inttime=1.848640 # ms
+	if False:	# NUC plate data from Kevin W7X, no window inttime=1.848640 # ms
 		description = 'NUC plate data from Kevin W7X, no window inttime=1.848640 # ms, PS1'
 		temperature=np.load('/home/ffederic/work/irvb/laser/Feb_2025/C-T_conversion/pixbypix_coeffs/0402_PS1_data/temp_list_PS1.npy')
 		meancounttot=np.load('/home/ffederic/work/irvb/laser/Feb_2025/C-T_conversion/pixbypix_coeffs/0402_PS1_data/counts_PS1.npy')

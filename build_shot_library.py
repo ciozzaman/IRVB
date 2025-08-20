@@ -134,7 +134,7 @@ if True:
 			shot_list = get_data(path+log_file_name)
 			for i in range(1,len(shot_list['Sheet1'])):
 				shot = int(np.array(shot_list['Sheet1'][i]) [np.array(shot_list['Sheet1'][0]) == 'shot number'])
-				if coleval.get_tend(shot)>0.4 and shot>45000:	# I filter out irrelevan shots
+				if coleval.get_tend(shot)>0.4 and shot>51600:	# I filter out irrelevan shots
 					try:
 						print(shot)
 						EFIT_path_default = '/common/uda-scratch/lkogan/efitpp_eshed'

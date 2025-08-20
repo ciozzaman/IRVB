@@ -2,14 +2,24 @@
 # in order to facilitate a proper binning and remotion of the oscillation only after that, here I will only:
 # do the initial adjustment of the ramp up, convert to temperature
 # print('starting ' + laser_to_analyse + '\n of \n' + str(shot_available[i_day]))
-print('starting ' + laser_to_analyse + '\n of \n' + str(to_do))
-
 
 
 try:
 	trash = cp.deepcopy(only_plot_brightness)
 except:
 	only_plot_brightness = False
+
+if os.path.exists(laser_to_analyse):	# I pick the right filename from the start
+	pass
+elif os.path.exists(laser_to_analyse[:-4]+'.ptw'):	# additional stage: change the file extension if found
+	laser_to_analyse = laser_to_analyse[:-4]+'.ptw'
+elif os.path.exists(laser_to_analyse[:-4]+'.ats'):	# additional stage: change the file extension if found
+	laser_to_analyse = laser_to_analyse[:-4]+'.ats'
+else:
+	print(laser_to_analyse+' source file missing.')
+
+print('starting ' + laser_to_analyse + '\n of \n' + str(to_do))
+
 
 try:
 	laser_dict = np.load(laser_to_analyse[:-4]+'.npz')
@@ -20,13 +30,13 @@ try:
 except:
 	print('missing '+laser_to_analyse[:-4]+'.npz'+' file.')
 	if os.path.exists(laser_to_analyse):
-		print(laser_to_analyse[:-4]+'.npz'+' file rigenerated')
+		print(laser_to_analyse[:-4]+'.npz'+' file will be generated')
 	elif os.path.exists(laser_to_analyse[:-4]+'.ptw'):	# additional stage: change the file extension if found
 		laser_to_analyse = laser_to_analyse[:-4]+'.ptw'
-		print(laser_to_analyse[:-4]+'.npz'+' file rigenerated')
+		print(laser_to_analyse[:-4]+'.npz'+' file will be generated')
 	elif os.path.exists(laser_to_analyse[:-4]+'.ats'):	# additional stage: change the file extension if found
 		laser_to_analyse = laser_to_analyse[:-4]+'.ats'
-		print(laser_to_analyse[:-4]+'.npz'+' file rigenerated')
+		print(laser_to_analyse[:-4]+'.npz'+' file will be generated')
 	else:
 		print(laser_to_analyse+' file missing, analysis halted.')
 		bla = sgna	# I want this to generate an error. te camera file is not present.
@@ -35,11 +45,19 @@ except:
 	else:
 		full_saved_file_dict = coleval.ptw_to_dict(laser_to_analyse,max_time_s = 30)
 	np.savez_compressed(laser_to_analyse[:-4],**full_saved_file_dict)
+	print(laser_to_analyse + 'created and saved')
 	laser_dict = np.load(laser_to_analyse[:-4]+'.npz')
 	laser_dict.allow_pickle=True
 full_saved_file_dict = dict(laser_dict)
 
-if laser_to_analyse[-9:-4] in list(MASTU_shots_timing.keys()):
+try:
+	os.remove(laser_to_analyse)
+	print('source file ' + laser_to_analyse + ' deleted to save Freia space')
+except:
+	pass
+
+
+if laser_to_analyse[-9:-4] in list(MASTU_shots_timing.keys()):	# manual exceptions at the beginning of IRVB life
 	start_time_of_pulse = MASTU_shots_timing[laser_to_analyse[-9:-4]]['pulse_start']	# s
 else:
 	start_time_of_pulse = 2.5	# s
@@ -82,7 +100,9 @@ try:
 			DetectorTemp = DetectorTemp[time_of_experiment_digitizer_ID[i][0] != time_of_experiment]
 			time_of_experiment_digitizer_ID[i] = time_of_experiment_digitizer_ID[i][1:]
 	# now I have to add the caveat that if there is a big gap between two section of data, that is the demarcation from internal and external clocks
-	if np.nanmax(np.diff(time_of_experiment_digitizer_ID))>np.nanmedian(np.diff(time_of_experiment_digitizer_ID))*3 and int(laser_to_analyse[-9:-4])>49476:	# 3 arbitrary limit
+	if np.nanmax(np.diff(time_of_experiment))>np.nanmedian(np.diff(time_of_experiment))*3 and \
+	((int(laser_to_analyse[-9:-4])>49476 and int(laser_to_analyse[-9:-4])<50646) or \
+	(int(laser_to_analyse[-9:-4])>51639 and int(laser_to_analyse[-9:-4])<np.inf)): 	# 3 arbitrary limit
 		# first I reduce the file size
 		last_good_frame = (np.diff(time_of_experiment_digitizer_ID) == np.nanmax(np.diff(time_of_experiment_digitizer_ID))).argmax()
 		time_of_experiment = time_of_experiment[:last_good_frame]
@@ -94,16 +114,28 @@ try:
 		laser_counts = [laser_counts[0][:last_good_frame]]
 		time_of_experiment_digitizer_ID = [time_of_experiment_digitizer_ID[0][:last_good_frame]]
 		exernal_time = coleval.import_external_time(laser_to_analyse[-9:-4])
-		if not len(exernal_time)==1:	# meaning reading successfull
+		if not len(exernal_time)==1 and np.nanmax(np.diff(time_of_experiment_digitizer_ID))<np.median(np.diff(time_of_experiment_digitizer_ID))*2:	# meaning reading successfull
 			time_of_experiment = exernal_time[-len(time_of_experiment):]*1e6
 			time_of_experiment_digitizer_ID = [exernal_time[-len(time_of_experiment):]*1e6]
 			frame_time_succesfully_rigidly_determined = True
-		else:	# if the reading fails I can still use the last pulse as marker, and the clock of the camera to determine the real framerate. this effectively ises the internal clock of the camera, but with an external final reference
+			print('proper new way of tining the frames achieved')
+		else:	# if the reading fails I can still use the last pulse as marker, and the clock of the camera to determine the real framerate. this effectively uses the internal clock of the camera, but with an external final reference
 			laser_framerate = 1e6/np.mean(np.sort(np.diff(time_of_experiment))[2:-2])
-			time_of_experiment = time_of_experiment-time_of_experiment[-1] - 2.5 + 7000*(1/laser_framerate)	# since the beginning I send 7000 pulses at 960Hz. this might be changed if I switch to 0.5ms 2kHz
-			time_of_experiment = time_of_experiment*1e6
-			time_of_experiment_digitizer_ID = [time_of_experiment*1e6]
-			frame_time_succesfully_rigidly_determined = False
+			# 2025/05/22 I still have no idea why this happens, but the hole is always 4 seconds long, showing up each ~24.5 minutes possibly
+			# if the hole is 4 seconds long i automatically everything is fine
+			# if int(laser_to_analyse[-9:-4]) in [51804,51807]:	# MANUAL CORRECTION the data seems fine, but there is a problem with the timestamp that I can't figure out
+			if (np.nanmax(np.diff(time_of_experiment_digitizer_ID)) > (4-2/laser_framerate)*1e6) and (np.nanmax(np.diff(time_of_experiment_digitizer_ID)) < (4+2/laser_framerate)*1e6):
+				time_of_experiment = np.arange(len(time_of_experiment))*(1/laser_framerate)*1e6
+			if not len(exernal_time)==1 and np.nanmax(np.diff(time_of_experiment))<np.median(np.diff(time_of_experiment))*2:	# meaning reading successfull
+				time_of_experiment = exernal_time[-len(time_of_experiment):]*1e6
+				time_of_experiment_digitizer_ID = [exernal_time[-len(time_of_experiment):]*1e6]
+				frame_time_succesfully_rigidly_determined = True
+			else:
+				time_of_experiment = time_of_experiment-time_of_experiment[-1] +(- 2.5 + 6038*(1/laser_framerate))*1e6	# since the beginning I send 7000 pulses at 960Hz. this might be changed if I switch to 0.5ms 2kHz. 2025/5/20 in reality the real start is about 1 second after the beginning of external clocks, at -1.5
+				frame_time_succesfully_rigidly_determined = False
+			# time_of_experiment = time_of_experiment*1e6
+			time_of_experiment_digitizer_ID = [time_of_experiment]
+			print('second best option for getting the frame times achieved\nI can still use the last pulse as marker, and the clock of the camera to determine the real framerate.\nthis effectively uses the internal clock of the camera, but with an external final reference')
 		frame_time_rigidly_determined = True
 		start_time_of_pulse = -np.min(time_of_experiment)*1e-6	# s
 	else:
@@ -111,7 +143,62 @@ try:
 		frame_time_rigidly_determined = False
 	time_of_experiment = np.sort(np.concatenate(time_of_experiment_digitizer_ID))
 	laser_framerate = 1e6/np.mean(np.sort(np.diff(time_of_experiment))[2:-2])
-	laser_int_time = full_saved_file_dict['IntegrationTime']
+	if full_saved_file_dict['IntegrationTime']<100:	# for some reason some files contain already int time in microseconds
+		laser_int_time = full_saved_file_dict['IntegrationTime']*1000	# microseconds
+	else:
+		laser_int_time = full_saved_file_dict['IntegrationTime']	# microseconds
+
+	# in the FLIR X6980 data i think i see a bunch of dynamically changing bad pixels i think due to neutrons, i eliminate them with a temporal median filter
+	# I don't see the issue to leave it in all cases
+	laser_counts_median_filter = [median_filter(value,size=[3,1,1]) for value in laser_counts]
+	neutron_caused_blips = [(np.abs(laser_counts_median_filter[i] - laser_counts[i])/laser_counts_median_filter[i])>0.025 for i in range(len(laser_counts))]	# 2.5% arbitrary threshold that seems to remove most badness
+	if True and int(laser_to_analyse[-9:-4])>52500:	# this bit it to detect badness in the camera image as found in the FLIR X6980 in summer 2025
+		window_for_bad_stripes = 400
+		laser_counts_median_filter_initial = [median_filter(value,size=[3,1,1]) for value in np.array(laser_counts)[:,:window_for_bad_stripes]]
+		neutron_caused_blips_initial = [(np.abs(laser_counts_median_filter_initial[i] - np.array(laser_counts)[i,:window_for_bad_stripes])/laser_counts_median_filter_initial[i])>0.025 for i in range(len(laser_counts))]	# 2.5% arbitrary threshold that seems to remove most badness
+		laser_counts_median_filter_end = [median_filter(value,size=[3,1,1]) for value in np.array(laser_counts)[:,-window_for_bad_stripes*2:]]
+		neutron_caused_blips_end = [(np.abs(laser_counts_median_filter_end[i] - np.array(laser_counts)[i,-window_for_bad_stripes*2:])/laser_counts_median_filter_end[i])>0.025 for i in range(len(laser_counts))]	# 2.5% arbitrary threshold that seems to remove most badness
+		neutron_caused_blips_initial = np.sum(neutron_caused_blips_initial,axis=(0,1))
+		neutron_caused_blips_end = np.sum(neutron_caused_blips_end,axis=(0,1))
+		plt.figure(figsize=(12, 8))
+		plt.title(day+'/'+name+'\nint time %.3gms, framerate %.3gHz' %(laser_int_time/1000,laser_framerate))
+		# plt.imshow(np.sum(neutron_caused_blips_initial,axis=(0,1))>0)
+		plt.imshow(neutron_caused_blips_end+neutron_caused_blips_initial,'rainbow')
+		plt.colorbar().set_label('over deviation from median detected [au]')
+		for i__ in np.arange(len(np.sum(neutron_caused_blips_end+neutron_caused_blips_initial>10,axis=0)>2))[np.sum(neutron_caused_blips_end+neutron_caused_blips_initial>10,axis=0)>2]:
+			plt.axvline(x=i__,color='k',linestyle=':',alpha=0.1)
+		plt.savefig(laser_to_analyse[:-4]+'_column_badness.eps')
+		plt.close('all')
+		# plt.figure()
+		# plt.plot(np.sum(neutron_caused_blips_end+neutron_caused_blips_initial>10,axis=0)>2)
+		temp = np.array(laser_counts).astype(np.float32)
+		temp[:,:,:,np.sum(neutron_caused_blips_end+neutron_caused_blips_initial>10,axis=0)>2] = np.nan
+		# temp_filtered = [median_filter(value[:100],size=[3,3,3]) for value in temp]
+		temp_filtered = [generic_filter(value,np.nanmean,size=[1,3,3]) for value in temp]
+		print('replaced columns '+str( np.arange(len(np.sum(neutron_caused_blips_end+neutron_caused_blips_initial>10,axis=0)>2))[np.sum(neutron_caused_blips_end+neutron_caused_blips_initial>10,axis=0)>2] ))
+		for i in range(len(laser_counts)):
+			laser_counts[i][:,:,np.sum(neutron_caused_blips_end+neutron_caused_blips_initial>10,axis=0)>2] = (temp_filtered[i]).astype(int)[:,:,np.sum(neutron_caused_blips_end+neutron_caused_blips_initial>10,axis=0)>2]
+	for i in range(len(laser_counts)):
+		laser_counts[i][neutron_caused_blips[i]] = laser_counts_median_filter[i][neutron_caused_blips[i]]
+	try:	# if the length of the data in the 2 digitizers is fdifferent this can collapse, and i don't want this to stop everything
+		fig, ax = plt.subplots( 2,1,figsize=(10, 18), squeeze=False)
+		fig.suptitle(day+'/'+name+'\nint time %.3gms, framerate %.3gHz\nneutron induced bad pixels ' %(laser_int_time/1000,laser_framerate))
+		im = ax[0,0].imshow(np.sum(neutron_caused_blips,axis=(0,1)))
+		fig.colorbar(im, ax=ax[0, 0]).set_label('number of times pixel affected [au]')
+		# im.colorbar().set_label('number of times pixel effected [au]')
+		ax[1,0].plot((np.mean(time_of_experiment_digitizer_ID,axis=0)-np.mean(time_of_experiment_digitizer_ID,axis=0).min())*1e-6,np.sum(neutron_caused_blips,axis=(0,2,3)))
+		ax[1,0].plot((np.mean(time_of_experiment_digitizer_ID,axis=0)-np.mean(time_of_experiment_digitizer_ID,axis=0).min())*1e-6,generic_filter(np.sum(neutron_caused_blips,axis=(0,2,3)).astype(float),np.nanmean,size=[max(1,int(0.050*(laser_framerate/len(laser_counts))))]),label='50ms smoothing')
+		ax[1,0].legend(loc='best', fontsize='x-small')
+		ax[1,0].set_xlim(left =1, right = 4)
+		ax[1,0].set_xlabel('time from start of recording [s]')
+		ax[1,0].set_ylabel('number of pixel affected [au]')
+		ax[1,0].grid()
+		# ax[plot_index,0].set_xlim(left=time_of_experiment_digitizer_ID_seconds[10]-10/(laser_framerate/len(laser_digitizer_ID))-start_time_of_pulse)
+		plt.savefig(laser_to_analyse[:-4]+'_neutron_induced_bad_pixels.eps')
+		plt.close('all')
+	except:
+		pass
+
 
 	if False:
 		# using the new startup of the camera I reach steady state way before the pulse, so I can use the first frames as reference without any correction
@@ -387,9 +474,9 @@ try:
 		real_start_time_of_pulse.append(fit[-1])
 		real_start_time_of_pulse_uncertainty.append(opt_info['grad'][-1])
 	# EXCLUDED 2024-11-04 it turns out the it is not necessary, the difference is of the order of a few ms for framerate = 383Hz	# 2024/11/15 not really, rectified now with proper quantification
-	if not frame_time_rigidly_determined:
+	if not (frame_time_rigidly_determined and frame_time_succesfully_rigidly_determined):
 		# start_time_of_pulse = np.mean(real_start_time_of_pulse)
-		start_time_of_pulse = (real_start_time_of_pulse[0]/np.abs(real_start_time_of_pulse_uncertainty[0])+real_start_time_of_pulse[1]/np.abs(real_start_time_of_pulse_uncertainty[1]))/(1/np.abs(real_start_time_of_pulse_uncertainty[0])+1/np.abs(real_start_time_of_pulse_uncertainty[1]))
+		start_time_of_pulse = np.sum(np.array(real_start_time_of_pulse)/np.abs(real_start_time_of_pulse_uncertainty))/np.sum(1/np.abs(real_start_time_of_pulse_uncertainty))
 		additional_correction_from_disruptions = -10*1e-3
 		time_uncertainty_down = 10*1e-3
 		time_uncertainty_up = 15*1e-3
@@ -405,16 +492,26 @@ try:
 			additional_correction_from_disruptions = -11*1e-3
 			time_uncertainty_down = 10*1e-3
 			time_uncertainty_up = 15*1e-3
+		print('time axis not successfully determined, so it is established with the start of the rise of the signal plus the additional correction factors coming from looking at disruptions')
 	else:
-		additional_correction_from_disruptions = 0*1e-3
-		time_uncertainty_down = 1*1e-3
-		time_uncertainty_up = 1*1e-3
+		if frame_time_succesfully_rigidly_determined:
+			additional_correction_from_disruptions = 0*1e-3
+			time_uncertainty_down = 1*1e-3
+			time_uncertainty_up = 1*1e-3
+		else:
+			additional_correction_from_disruptions = 0*1e-3
+			time_uncertainty_down = 3/laser_framerate
+			time_uncertainty_up = 3/laser_framerate
+		external_clock_marker = True
 	plt.axvline(x=start_time_of_pulse,color='k')
 	plt.axvline(x=start_time_of_pulse+additional_correction_from_disruptions,color='k',linestyle='--')
 	plt.xlim(left=start_time_of_pulse-2*add_time,right=start_time_of_pulse+2*add_time)
 	plt.ylim(bottom=temp[time_of_experiment_digitizer_ID_seconds<start_time_of_pulse+add_time].min()-3,top=temp[time_of_experiment_digitizer_ID_seconds<start_time_of_pulse+2*add_time].max()+3)
 	plt.grid()
-	plt.title(day+'/'+name+'\nint time %.3gms, framerate %.3gHz, oscill. found %.3gHz\nstart time = weigh mean([%.5gs+/-%.3gms,%.5gs+/-%.3gms])=%.5gs\nadditional correction from VDEs = %.3g/+%.3g-%.3gms, final start time=%.5g' %(laser_int_time/1000,laser_framerate,to_filter,real_start_time_of_pulse[0],real_start_time_of_pulse_uncertainty[0]*1000,real_start_time_of_pulse[1],real_start_time_of_pulse_uncertainty[1]*1000,start_time_of_pulse,additional_correction_from_disruptions*1e3,time_uncertainty_down*1e3,time_uncertainty_up*1e3,start_time_of_pulse+additional_correction_from_disruptions))
+	try:
+		plt.title(day+'/'+name+'\nint time %.3gms, framerate %.3gHz, oscill. found %.3gHz\nstart time = weigh mean([%.5gs+/-%.3gms,%.5gs+/-%.3gms])=%.5gs\nadditional correction from VDEs = %.3g/+%.3g-%.3gms, final start time=%.5g' %(laser_int_time/1000,laser_framerate,to_filter,real_start_time_of_pulse[0],real_start_time_of_pulse_uncertainty[0]*1000,real_start_time_of_pulse[1],real_start_time_of_pulse_uncertainty[1]*1000,start_time_of_pulse,additional_correction_from_disruptions*1e3,time_uncertainty_down*1e3,time_uncertainty_up*1e3,start_time_of_pulse+additional_correction_from_disruptions))
+	except:
+		plt.title(day+'/'+name+'\nint time %.3gms, framerate %.3gHz, oscill. found %.3gHz\nstart time = weigh mean([%.5gs+/-%.3gms])=%.5gs\nadditional correction from VDEs = %.3g/+%.3g-%.3gms, final start time=%.5g' %(laser_int_time/1000,laser_framerate,to_filter,real_start_time_of_pulse[0],real_start_time_of_pulse_uncertainty[0]*1000,start_time_of_pulse,additional_correction_from_disruptions*1e3,time_uncertainty_down*1e3,time_uncertainty_up*1e3,start_time_of_pulse+additional_correction_from_disruptions))
 	plt.savefig(laser_to_analyse[:-4]+'_1.eps', bbox_inches='tight')
 	plt.close()
 	start_time_of_pulse = start_time_of_pulse+additional_correction_from_disruptions
@@ -466,6 +563,27 @@ try:
 	# plt.ylabel('Vertical axis [pixles]')
 	# plt.pause(0.01)
 
+	if (int(laser_to_analyse[-9:-4])>49476 and int(laser_to_analyse[-9:-4])<50646):
+		parameters_available_int_time_BB = parameters_available_int_time_BB_X6980
+		parameters_available_framerate_BB = parameters_available_framerate_BB_X6980
+		parameters_available_BB = parameters_available_BB_X6980
+		pathparams_BB = pathparams_BB_X6980
+
+		parameters_available_int_time = parameters_available_int_time_BB_X6980
+		parameters_available_framerate = parameters_available_framerate_BB_X6980
+		parameters_available = parameters_available_BB_X6980
+		pathparams = pathparams_BB_X6980
+	elif (int(laser_to_analyse[-9:-4])>51639 and int(laser_to_analyse[-9:-4])<np.inf):
+		parameters_available_int_time_BB = parameters_available_int_time_BB_X6980_2
+		parameters_available_framerate_BB = parameters_available_framerate_BB_X6980_2
+		parameters_available_BB = parameters_available_BB_X6980_2
+		pathparams_BB = pathparams_BB_X6980_2
+
+		parameters_available_int_time = parameters_available_int_time_BB_X6980_2
+		parameters_available_framerate = parameters_available_framerate_BB_X6980_2
+		parameters_available = parameters_available_BB_X6980_2
+		pathparams = pathparams_BB_X6980_2
+
 	temp = np.abs(parameters_available_int_time-laser_int_time/1000)<0.1
 	framerate = np.array(parameters_available_framerate)[temp][np.abs(parameters_available_framerate[temp]-laser_framerate).argmin()]
 	int_time = np.array(parameters_available_int_time)[temp][np.abs(parameters_available_framerate[temp]-laser_framerate).argmin()]
@@ -488,8 +606,8 @@ try:
 		laser_counts[i] = laser_counts[i][time_of_experiment_digitizer_ID_seconds<14.5]
 		time_of_experiment_digitizer_ID[i] = time_of_experiment_digitizer_ID[i][time_of_experiment_digitizer_ID_seconds<14.5]
 		time_of_experiment_digitizer_ID_seconds = (time_of_experiment_digitizer_ID[i]-time_of_experiment[0])*1e-6-start_time_of_pulse
-		if external_clock_marker:
-			time_of_experiment_digitizer_ID_seconds = time_of_experiment_digitizer_ID_seconds-np.mean(aggregated_correction_coefficients[:,4])	# I use the mean of the coefficients because I want to avoid small unpredictable differences between the digitisers
+		# if external_clock_marker:	# commented 2025/5/20 because who know what was really this
+		# 	time_of_experiment_digitizer_ID_seconds = time_of_experiment_digitizer_ID_seconds-np.nanmean(aggregated_correction_coefficients[:,4])	# I use the mean of the coefficients because I want to avoid small unpredictable differences between the digitisers
 		time_partial.append(time_of_experiment_digitizer_ID_seconds)
 	time_full_int = np.sort(np.concatenate(time_partial))
 
@@ -529,7 +647,13 @@ try:
 	BB_proportional,BB_proportional_std,constant_offset,constant_offset_std,photon_dict = coleval.calc_BB_coefficients_multi_digitizer(params_BB,errparams_BB,laser_digitizer_ID,temp_ref_counts,temp_ref_counts_std,ref_temperature=ref_temperature,ref_temperature_std=ref_temperature_std,wavewlength_top=5.1,wavelength_bottom=1.5,inttime=laser_int_time/1000)
 	photon_flux_over_temperature_interpolator = photon_dict['photon_flux_over_temperature_interpolator']
 
-	if int(laser_to_analyse[-9:-4]) > 50714:	# MU04
+	if int(laser_to_analyse[-9:-4]) >= 51792:	# MU04 second time with FLIR X6980, FOV somehow moved
+		foil_position_dict = dict([('angle',0.4),('foilcenter',[167,143]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',297)])	# identified ~2023-08 after checking what is the actual result of the rotation
+	elif int(laser_to_analyse[-9:-4]) >= 51773:	# MU04 second time with FLIR X6980
+		foil_position_dict = dict([('angle',0.4),('foilcenter',[167,145]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',297)])	# identified ~2023-08 after checking what is the actual result of the rotation
+	elif int(laser_to_analyse[-9:-4]) >= 51639:	# MU04 second time with FLIR X6980
+		foil_position_dict = dict([('angle',0.4),('foilcenter',[170,147]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',297)])	# identified ~2023-08 after checking what is the actual result of the rotation
+	elif int(laser_to_analyse[-9:-4]) > 50714:	# MU04
 		foil_position_dict = dict([('angle',1),('foilcenter',[152,143]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',246)])	# identified ~2023-08 after checking what is the actual result of the rotation
 	elif int(laser_to_analyse[-9:-4]) > 47174:	# MU03
 		foil_position_dict = dict([('angle',1),('foilcenter',[155,137]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',246)])	# identified ~2023-08 after checking what is the actual result of the rotation
@@ -551,124 +675,181 @@ try:
 			bla=asgas #	I want an error to happen to override the FAST analysis
 		inverted_dict = full_saved_file_dict_FAST['first_pass'].all()['inverted_dict']
 		test = inverted_dict[str(2)]['regolarisation_coeff_all']
-		foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx = coleval.get_rotation_crop_parameters(temp_ref_counts[-1],foil_position_dict,laser_to_analyse,laser_counts_corrected[-1],time_of_experiment_digitizer_ID_seconds)
+		foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx = coleval.get_rotation_crop_parameters(temp_ref_counts[-1],foil_position_dict,laser_to_analyse,laser_counts_corrected[-1]-temp_ref_counts[-1],time_of_experiment_digitizer_ID_seconds)
 		print('FAST creation skipped')
 	except:
-		print('generating FAST')
+		print('generating FAST'+' '+str(datetime.today()))
 		try:
 			start = tm.time()
-			try:
-				test = full_saved_file_dict_FAST['second_pass']
-				test = full_saved_file_dict_FAST_covariance['second_pass']
+			try:	# I differenciate between first and second pass, so no need now to redo the first pass if the second is missing
+				test = full_saved_file_dict_FAST['first_pass']
+				test = full_saved_file_dict_FAST_covariance['first_pass']
 			except:
 				full_saved_file_dict_FAST = dict([])
 				full_saved_file_dict_FAST_covariance = dict([])
 			pass_number = 0
-			# foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,FAST_counts_minus_background_crop_time = coleval.MASTU_pulse_process_FAST(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,laser_dict['height'],laser_dict['width'],flag_use_of_first_frames_as_reference)
-			foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,time_binned,powernoback,brightness,binning_type,inverted_dict,covariance_dict,temperature_minus_background_crop_dt,temperature_minus_background_crop_dt_time \
-			= coleval.MASTU_pulse_process_FAST3_BB(
-			laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,
-			laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,laser_dict['height'],laser_dict['width'],
-			flag_use_of_first_frames_as_reference,params,errparams,params_BB,errparams_BB,photon_flux_over_temperature_interpolator,BB_proportional,BB_proportional_std,foil_position_dict,
-			pass_number = pass_number,disruption_check=True,x_point_region_radious=0.2,wavewlength_top=5.1,wavelength_bottom=1.5,only_plot_brightness = only_plot_brightness)
-			full_saved_file_dict_FAST['first_pass'] = dict([])
-			full_saved_file_dict_FAST['first_pass']['FAST_counts_minus_background_crop'] = np.float16(FAST_counts_minus_background_crop)
-			full_saved_file_dict_FAST['first_pass']['FAST_powernoback'] = np.float16(powernoback)
-			full_saved_file_dict_FAST['first_pass']['FAST_brightness'] = np.float32(brightness)
-			full_saved_file_dict_FAST['first_pass']['FAST_time_binned'] = time_binned
-			full_saved_file_dict_FAST['first_pass']['FAST_binning_type'] = binning_type
-			full_saved_file_dict_FAST['first_pass']['inverted_dict'] = inverted_dict
-			full_saved_file_dict_FAST['first_pass']['time_full_full'] = time_full_int
-			full_saved_file_dict_FAST['time_counts'] = time_full_int
-			full_saved_file_dict_FAST['first_pass']['temperature_minus_background_crop_dt'] = np.float16(temperature_minus_background_crop_dt)
-			full_saved_file_dict_FAST['first_pass']['temperature_minus_background_crop_dt_time'] = np.float16(temperature_minus_background_crop_dt_time)
-			full_saved_file_dict_FAST['first_pass']['processing_start_time'] = str(datetime.fromtimestamp(start))
-			full_saved_file_dict_FAST['first_pass']['processing_end_time'] = str(datetime.fromtimestamp(tm.time()))
-			full_saved_file_dict_FAST['first_pass']['time_uncertainty_down'] = time_uncertainty_down
-			full_saved_file_dict_FAST['first_pass']['time_uncertainty_up'] = time_uncertainty_up
-			# np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
-			coleval.savez_protocol4(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
 
-			full_saved_file_dict_FAST_covariance['first_pass'] = covariance_dict
-			coleval.savez_protocol4(laser_to_analyse[:-4]+'_FAST_covariance',**full_saved_file_dict_FAST_covariance)
+			try:
+				test = full_saved_file_dict_FAST['first_pass']
+				test = full_saved_file_dict_FAST_covariance['first_pass']
+				if override_first_pass:
+					sgans = dsjfd	# I want this path to fail to regenerate the first pass
+				try:
+					time_of_last_first_pass = full_saved_file_dict_FAST['first_pass']['processing_start_time']
+				except:
+					time_of_last_first_pass = full_saved_file_dict_FAST['first_pass'].all()['processing_start_time']
+				if datetime.strptime(time_of_last_first_pass,'%Y-%m-%d %H:%M:%S.%f') < datetime(2025,8,14):	# date threshold to deonstrate the validity of the inversion to be "new" enough
+					print('first pass redone as it is too old compared to the set threshold of ' + str(datetime(2025,8,14)))
+					sgans = dsjfd	# I want this path to fail to regenerate the first pass
+				print('last pass '+str(pass_number)+' done '+time_of_last_first_pass+' therefore inversion skipped\npost analysis only done instead')
+				exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_manual_plots.py").read())
+			except:
+				# foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,FAST_counts_minus_background_crop_time = coleval.MASTU_pulse_process_FAST(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,laser_dict['height'],laser_dict['width'],flag_use_of_first_frames_as_reference)
+				foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,time_binned,powernoback,brightness,binning_type,inverted_dict,covariance_dict,temperature_minus_background_crop_dt,temperature_minus_background_crop_dt_time \
+				= coleval.MASTU_pulse_process_FAST3_BB(
+				laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,
+				laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,laser_dict['height'],laser_dict['width'],
+				flag_use_of_first_frames_as_reference,params,errparams,params_BB,errparams_BB,photon_flux_over_temperature_interpolator,BB_proportional,BB_proportional_std,foil_position_dict,
+				pass_number = pass_number,disruption_check=True,x_point_region_radious=0.2,wavewlength_top=5.1,wavelength_bottom=1.5,only_plot_brightness = only_plot_brightness)
+				full_saved_file_dict_FAST['first_pass'] = dict([])
+				full_saved_file_dict_FAST['first_pass']['FAST_counts_minus_background_crop'] = np.float16(FAST_counts_minus_background_crop)
+				full_saved_file_dict_FAST['first_pass']['FAST_powernoback'] = np.float16(powernoback)
+				full_saved_file_dict_FAST['first_pass']['FAST_brightness'] = np.float32(brightness)
+				full_saved_file_dict_FAST['first_pass']['FAST_time_binned'] = time_binned
+				full_saved_file_dict_FAST['first_pass']['FAST_binning_type'] = binning_type
+				full_saved_file_dict_FAST['first_pass']['inverted_dict'] = inverted_dict
+				full_saved_file_dict_FAST['first_pass']['time_full_full'] = time_full_int
+				full_saved_file_dict_FAST['time_counts'] = time_full_int
+				full_saved_file_dict_FAST['first_pass']['temperature_minus_background_crop_dt'] = np.float16(temperature_minus_background_crop_dt)
+				full_saved_file_dict_FAST['first_pass']['temperature_minus_background_crop_dt_time'] = np.float16(temperature_minus_background_crop_dt_time)
+				full_saved_file_dict_FAST['first_pass']['processing_start_time'] = str(datetime.fromtimestamp(start))
+				full_saved_file_dict_FAST['first_pass']['processing_end_time'] = str(datetime.fromtimestamp(tm.time()))
+				full_saved_file_dict_FAST['first_pass']['time_uncertainty_down'] = time_uncertainty_down
+				full_saved_file_dict_FAST['first_pass']['time_uncertainty_up'] = time_uncertainty_up
+				try:
+					full_saved_file_dict_FAST['neutron_caused_blips'] = neutron_caused_blips
+				except:
+					pass
+				# np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
+				coleval.savez_protocol4(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
 
-			print('generated FAST first pass in %.3g min' %((tm.time()-start)/60))
-			exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_multi_instrument.py").read())
-			# np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
-			coleval.savez_protocol4(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
-			print('generated FAST first pass further analysis in %.3g min' %((tm.time()-start)/60))
-			if skip_second_pass:
-				print('temporary: second FAST pass skipped to do them quicker')
-				stra = second_fast_skipped	# just to cause an error
+				full_saved_file_dict_FAST_covariance['first_pass'] = covariance_dict
+				coleval.savez_protocol4(laser_to_analyse[:-4]+'_FAST_covariance',**full_saved_file_dict_FAST_covariance)
+
+				print('generated FAST first pass in %.3g min' %((tm.time()-start)/60)+' '+str(datetime.today()))
+				exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_multi_instrument.py").read())
+				# np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
+				coleval.savez_protocol4(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
+				print('generated FAST first pass further analysis in %.3g min' %((tm.time()-start)/60)+' '+str(datetime.today()))
+
 			start = tm.time()
 			pass_number = 1
+
+			if skip_second_pass:
+				print('temporary: second FAST pass skipped to do them quicker'+' '+str(datetime.today()))
+				# exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_manual_plots.py").read())
+				stra = second_fast_skipped	# just to cause an error
+
 			try:
 				test = full_saved_file_dict_FAST['second_pass']
 				test = full_saved_file_dict_FAST_covariance['second_pass']
-				override_second_pass_int = override_second_pass
+				if override_second_pass:
+					sgans = dsjfd	# I want this path to fail to regenerate the second pass
+				try:
+					time_of_last_second_pass = full_saved_file_dict_FAST['second_pass']['processing_start_time']
+				except:
+					time_of_last_second_pass = full_saved_file_dict_FAST['second_pass'].all()['processing_start_time']
+				if datetime.strptime(time_of_last_second_pass,'%Y-%m-%d %H:%M:%S.%f') < datetime(2025,8,14):	# date threshold to deonstrate the validity of the inversion to be "new" enough
+					print('second pass redone as it is too old compared to the set threshold of ' + str(datetime(2025,8,14)))
+					sgans = dsjfd	# I want this path to fail to regenerate the second pass
+				print('last pass '+str(pass_number)+' done '+time_of_last_first_pass+' therefore inversion skipped\npost analysis only done instead')
+				exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_manual_plots.py").read())
 			except:
-				override_second_pass_int = True
-			foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,time_binned,powernoback,brightness,binning_type,inverted_dict,covariance_dict = coleval.MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,laser_dict['height'],laser_dict['width'],flag_use_of_first_frames_as_reference,params,errparams,params_BB,errparams_BB,photon_flux_over_temperature_interpolator,BB_proportional,BB_proportional_std,foil_position_dict,pass_number = pass_number,x_point_region_radious=0.2,wavewlength_top=5.1,wavelength_bottom=1.5,override_second_pass=override_second_pass_int)
-			full_saved_file_dict_FAST['second_pass'] = dict([])
-			full_saved_file_dict_FAST['second_pass']['FAST_counts_minus_background_crop'] = np.float16(FAST_counts_minus_background_crop)
-			full_saved_file_dict_FAST['second_pass']['FAST_powernoback'] = np.float16(powernoback)
-			full_saved_file_dict_FAST['second_pass']['FAST_brightness'] = np.float32(brightness)
-			full_saved_file_dict_FAST['second_pass']['FAST_time_binned'] = time_binned
-			full_saved_file_dict_FAST['second_pass']['FAST_binning_type'] = binning_type
-			full_saved_file_dict_FAST['second_pass']['inverted_dict'] = inverted_dict
-			full_saved_file_dict_FAST['second_pass']['time_full_full'] = time_full_int
-			full_saved_file_dict_FAST['second_pass']['processing_start_time'] = str(datetime.fromtimestamp(start))
-			full_saved_file_dict_FAST['second_pass']['processing_end_time'] = str(datetime.fromtimestamp(tm.time()))
-			full_saved_file_dict_FAST['second_pass']['time_uncertainty_down'] = time_uncertainty_down
-			full_saved_file_dict_FAST['second_pass']['time_uncertainty_up'] = time_uncertainty_up
-			# np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
-			coleval.savez_protocol4(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
+				foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,time_binned,powernoback,brightness,binning_type,inverted_dict,covariance_dict = coleval.MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,laser_dict['height'],laser_dict['width'],flag_use_of_first_frames_as_reference,params,errparams,params_BB,errparams_BB,photon_flux_over_temperature_interpolator,BB_proportional,BB_proportional_std,foil_position_dict,pass_number = pass_number,x_point_region_radious=0.2,wavewlength_top=5.1,wavelength_bottom=1.5,override_second_pass=True)
+				full_saved_file_dict_FAST['second_pass'] = dict([])
+				full_saved_file_dict_FAST['second_pass']['FAST_counts_minus_background_crop'] = np.float16(FAST_counts_minus_background_crop)
+				full_saved_file_dict_FAST['second_pass']['FAST_powernoback'] = np.float16(powernoback)
+				full_saved_file_dict_FAST['second_pass']['FAST_brightness'] = np.float32(brightness)
+				full_saved_file_dict_FAST['second_pass']['FAST_time_binned'] = time_binned
+				full_saved_file_dict_FAST['second_pass']['FAST_binning_type'] = binning_type
+				full_saved_file_dict_FAST['second_pass']['inverted_dict'] = inverted_dict
+				full_saved_file_dict_FAST['second_pass']['time_full_full'] = time_full_int
+				full_saved_file_dict_FAST['second_pass']['processing_start_time'] = str(datetime.fromtimestamp(start))
+				full_saved_file_dict_FAST['second_pass']['processing_end_time'] = str(datetime.fromtimestamp(tm.time()))
+				full_saved_file_dict_FAST['second_pass']['time_uncertainty_down'] = time_uncertainty_down
+				full_saved_file_dict_FAST['second_pass']['time_uncertainty_up'] = time_uncertainty_up
+				# np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
+				coleval.savez_protocol4(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
 
-			full_saved_file_dict_FAST_covariance['second_pass'] = covariance_dict
-			coleval.savez_protocol4(laser_to_analyse[:-4]+'_FAST_covariance',**full_saved_file_dict_FAST_covariance)
+				full_saved_file_dict_FAST_covariance['second_pass'] = covariance_dict
+				coleval.savez_protocol4(laser_to_analyse[:-4]+'_FAST_covariance',**full_saved_file_dict_FAST_covariance)
 
-			print('generated FAST second pass in %.3g min' %((tm.time()-start)/60))
-			exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_multi_instrument.py").read())
-			# np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
-			coleval.savez_protocol4(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
-			print('generated FAST second pass further analysis in %.3g min' %((tm.time()-start)/60))
-			if skip_third_pass:
-				print('temporary: third FAST pass skipped to do them quicker')
-				stra = third_fast_skipped	# just to cause an error
+				print('generated FAST second pass in %.3g min' %((tm.time()-start)/60)+' '+str(datetime.today()))
+				exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_multi_instrument.py").read())
+				# np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
+				coleval.savez_protocol4(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
+				print('generated FAST second pass further analysis in %.3g min' %((tm.time()-start)/60)+' '+str(datetime.today()))
+
 			start = tm.time()
 			pass_number = 2
+
+			if skip_third_pass:
+				print('temporary: third FAST pass skipped to do them quicker')
+				# exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_manual_plots.py").read())
+				stra = third_fast_skipped	# just to cause an error
+
 			try:
 				test = full_saved_file_dict_FAST['third_pass']
 				test = full_saved_file_dict_FAST_covariance['third_pass']
-				override_third_pass_int = override_third_pass
+				if override_third_pass:
+					sgans = dsjfd	# I want this path to fail to regenerate the third pass
+				try:
+					time_of_last_third_pass = full_saved_file_dict_FAST['third_pass']['processing_start_time']
+				except:
+					time_of_last_third_pass = full_saved_file_dict_FAST['third_pass'].all()['processing_start_time']
+				if datetime.strptime(time_of_last_third_pass,'%Y-%m-%d %H:%M:%S.%f') < datetime(2025,7,4):	# date threshold to deonstrate the validity of the inversion to be "new" enough
+					print('third pass redone as it is too old compared to the set threshold of ' + str(datetime(2025,7,4)))
+					sgans = dsjfd	# I want this path to fail to regenerate the third pass
+
+				# given I don't do an inversion, it doesn't make sense to run any post processing
+				# exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_manual_plots.py").read())
 			except:
-				override_third_pass_int = True
-			foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,time_binned,powernoback,brightness,binning_type,inverted_dict,covariance_dict = coleval.MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,laser_dict['height'],laser_dict['width'],flag_use_of_first_frames_as_reference,params,errparams,params_BB,errparams_BB,photon_flux_over_temperature_interpolator,BB_proportional,BB_proportional_std,foil_position_dict,pass_number = pass_number,x_point_region_radious=0.1,wavewlength_top=5.1,wavelength_bottom=1.5,override_second_pass=override_second_pass_int,override_third_pass=override_third_pass_int)
-			full_saved_file_dict_FAST['third_pass'] = dict([])
-			full_saved_file_dict_FAST['third_pass']['FAST_counts_minus_background_crop'] = np.float16(FAST_counts_minus_background_crop)
-			full_saved_file_dict_FAST['third_pass']['FAST_powernoback'] = np.float16(powernoback)
-			full_saved_file_dict_FAST['third_pass']['FAST_brightness'] = np.float32(brightness)
-			full_saved_file_dict_FAST['third_pass']['FAST_time_binned'] = time_binned
-			full_saved_file_dict_FAST['third_pass']['FAST_binning_type'] = binning_type
-			full_saved_file_dict_FAST['third_pass']['inverted_dict'] = inverted_dict
-			full_saved_file_dict_FAST['third_pass']['time_full_full'] = time_full_int
-			full_saved_file_dict_FAST['third_pass']['processing_start_time'] = str(datetime.fromtimestamp(start))
-			full_saved_file_dict_FAST['third_pass']['processing_end_time'] = str(datetime.fromtimestamp(tm.time()))
-			# np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
-			coleval.savez_protocol4(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
+				foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,time_binned,powernoback,brightness,binning_type,inverted_dict,covariance_dict = coleval.MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,laser_dict['height'],laser_dict['width'],flag_use_of_first_frames_as_reference,params,errparams,params_BB,errparams_BB,photon_flux_over_temperature_interpolator,BB_proportional,BB_proportional_std,foil_position_dict,pass_number = pass_number,x_point_region_radious=0.2,wavewlength_top=5.1,wavelength_bottom=1.5,override_third_pass=True)
+				full_saved_file_dict_FAST['third_pass'] = dict([])
+				full_saved_file_dict_FAST['third_pass']['FAST_counts_minus_background_crop'] = np.float16(FAST_counts_minus_background_crop)
+				full_saved_file_dict_FAST['third_pass']['FAST_powernoback'] = np.float16(powernoback)
+				full_saved_file_dict_FAST['third_pass']['FAST_brightness'] = np.float32(brightness)
+				full_saved_file_dict_FAST['third_pass']['FAST_time_binned'] = time_binned
+				full_saved_file_dict_FAST['third_pass']['FAST_binning_type'] = binning_type
+				full_saved_file_dict_FAST['third_pass']['inverted_dict'] = inverted_dict
+				full_saved_file_dict_FAST['third_pass']['time_full_full'] = time_full_int
+				full_saved_file_dict_FAST['third_pass']['processing_start_time'] = str(datetime.fromtimestamp(start))
+				full_saved_file_dict_FAST['third_pass']['processing_end_time'] = str(datetime.fromtimestamp(tm.time()))
+				full_saved_file_dict_FAST['third_pass']['time_uncertainty_down'] = time_uncertainty_down
+				full_saved_file_dict_FAST['third_pass']['time_uncertainty_up'] = time_uncertainty_up
+				# np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
+				coleval.savez_protocol4(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
 
-			full_saved_file_dict_FAST_covariance['third_pass'] = covariance_dict
-			coleval.savez_protocol4(laser_to_analyse[:-4]+'_FAST_covariance',**full_saved_file_dict_FAST_covariance)
+				full_saved_file_dict_FAST_covariance['third_pass'] = covariance_dict
+				coleval.savez_protocol4(laser_to_analyse[:-4]+'_FAST_covariance',**full_saved_file_dict_FAST_covariance)
 
-			print('generated FAST third pass in %.3g min' %((tm.time()-start)/60))
-			exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_multi_instrument.py").read())
-			# np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
-			coleval.savez_protocol4(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
-			print('generated FAST third pass further analysis in %.3g min' %((tm.time()-start)/60))
+				print('generated FAST third pass in %.3g min' %((tm.time()-start)/60)+' '+str(datetime.today()))
+				exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_multi_instrument.py").read())
+				# np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
+				coleval.savez_protocol4(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
+				print('generated FAST third pass further analysis in %.3g min' %((tm.time()-start)/60)+' '+str(datetime.today()))
+
 		except Exception as e:
 			print('FAST FAILED ' + laser_to_analyse)
 			logging.exception('with error: ' + str(e))
 	# print('with error: ' + str(e))
+
+	try:
+		del full_saved_file_dict_FAST, full_saved_file_dict_FAST_covariance
+		print('full_saved_file_dict_FAST, full_saved_file_dict_FAST_covariance\ndeleted ahead of next shot analysis')
+	except:
+		pass
+
 	filter_overwritten = False
 	try:
 		if overwrite_oscillation_filter==True:
@@ -985,7 +1166,7 @@ try:
 			print('data filtering done')
 			exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_pulse_process3_BB.py").read())
 		else:
-			print('analysis halted to save memory')
+			print('analysis halted at FAST to save memory')
 
 	if continue_after_FAST == True or filter_overwritten:
 		if False:	# there is no reason to keep doing these

@@ -13,6 +13,9 @@ exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_import_pc.py").
 exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_indexing.py").read())
 number_cpu_available = 8
 
+# # I want to stop warnings to clog my error file
+# import warnings
+# warnings.filterwarnings("ignore")
 try:
 	import argparse
 	parser = argparse.ArgumentParser(
@@ -21,24 +24,32 @@ try:
 	epilog='Text at the bottom of help')
 	parser.add_argument('ext_sequencer',type=int)
 	parser.add_argument('MU_campaign',type=int)
+	parser.add_argument('ext_number_of_passes',type=int)
 	# parser.add_argument('--debug',action='store_true')
 
 	ext_sequencer = vars(parser.parse_args())['ext_sequencer']
 	MU_campaign = vars(parser.parse_args())['MU_campaign']
+	ext_number_of_passes = vars(parser.parse_args())['ext_number_of_passes']
 	# print(ext_sequencer)
 	print('running sequential shot number '+str(ext_sequencer))
 
 	# note
 	# to use these feature the typical command to launch is this
-	# qsub -V -cwd -o /home/ffederic/work/analysis_scripts/scripts/MASTU_prelim_data_examination3.out -e /home/ffederic/work/analysis_scripts/scripts/MASTU_prelim_data_examination3.err -N MASTU_prelim_data_examination3 ./command_single_core.sh 0 1000000 3
+	# qsub -V -cwd -o /home/ffederic/work/analysis_scripts/scripts/MASTU_prelim_data_examination3.out -e /home/ffederic/work/analysis_scripts/scripts/MASTU_prelim_data_examination3.err -N MASTU_prelim_data_examination3 ./command_single_core.sh 0 1000000 3 1
 except:
+	# print('error: ' + str(e))
 	print('no sequential ID provided')
 	ext_sequencer = None
 	MU_campaign = 0
+	ext_number_of_passes = 0
 # exit()
 
+print('ext_sequencer')
 print(ext_sequencer)
+print('MU_campaign')
 print(MU_campaign)
+print('ext_number_of_passes')
+print(ext_number_of_passes)
 
 # to show the line where it fails
 import sys, traceback, logging
@@ -67,7 +78,7 @@ parameters_available_int_time = np.array(parameters_available_int_time)
 parameters_available_framerate = np.array(parameters_available_framerate)
 # folder of the parameters path for BB correlation
 # pathparams_BB='/home/ffederic/work/irvb/2021-09-25_multiple_search_for_parameters'
-pathparams_BB='/home/ffederic/work/irvb/2022-12-07_multiple_search_for_parameters'	# original nuc measurements, calibration with wavewlength_top=5.1,wavelength_bottom=1.5
+pathparams_BB='/home/ffederic/work/irvb/2022-12-07_multiple_search_for_parameters'	# original NUC experiments, calibration with wavewlength_top=5.1,wavelength_bottom=1.5
 f = []
 for (dirpath, dirnames, filenames) in os.walk(pathparams_BB):
 	f.append(dirnames)
@@ -79,6 +90,32 @@ for path in parameters_available_BB:
 	parameters_available_framerate_BB.append(float(path[path.find('ms')+2:path.find('Hz')]))
 parameters_available_int_time_BB = np.array(parameters_available_int_time_BB)
 parameters_available_framerate_BB = np.array(parameters_available_framerate_BB)
+
+pathparams_BB_X6980='/home/ffederic/work/irvb/2024-10-28_FLIRX6980'	# new BB source before the camera broke, calibration with wavewlength_top=5.1,wavelength_bottom=1.5
+f = []
+for (dirpath, dirnames, filenames) in os.walk(pathparams_BB_X6980):
+	f.append(dirnames)
+parameters_available_BB_X6980 = f[0]
+parameters_available_int_time_BB_X6980 = []
+parameters_available_framerate_BB_X6980 = []
+for path in parameters_available_BB_X6980:
+	parameters_available_int_time_BB_X6980.append(float(path[:path.find('ms')]))
+	parameters_available_framerate_BB_X6980.append(float(path[path.find('ms')+2:path.find('Hz')]))
+parameters_available_int_time_BB_X6980 = np.array(parameters_available_int_time_BB_X6980)
+parameters_available_framerate_BB_X6980 = np.array(parameters_available_framerate_BB_X6980)
+
+pathparams_BB_X6980_2='/home/ffederic/work/irvb/2025-04-27_FLIRX6980'	# new BB source after the camera broke, calibration with wavewlength_top=5.1,wavelength_bottom=1.5
+f = []
+for (dirpath, dirnames, filenames) in os.walk(pathparams_BB_X6980_2):
+	f.append(dirnames)
+parameters_available_BB_X6980_2 = f[0]
+parameters_available_int_time_BB_X6980_2 = []
+parameters_available_framerate_BB_X6980_2 = []
+for path in parameters_available_BB_X6980_2:
+	parameters_available_int_time_BB_X6980_2.append(float(path[:path.find('ms')]))
+	parameters_available_framerate_BB_X6980_2.append(float(path[path.find('ms')+2:path.find('Hz')]))
+parameters_available_int_time_BB_X6980_2 = np.array(parameters_available_int_time_BB_X6980_2)
+parameters_available_framerate_BB_X6980_2 = np.array(parameters_available_framerate_BB_X6980_2)
 
 color = ['b', 'r', 'm', 'y', 'g', 'c', 'k', 'slategrey', 'darkorange', 'lime', 'pink', 'gainsboro', 'paleturquoise', 'teal', 'olive','blueviolet','tan','skyblue','brown','dimgray','hotpink']
 
@@ -99,10 +136,16 @@ elif MU_campaign==3:
 	# to save memory I won't analyse the senario developement and commissioning shots
 	to_do = ['2023-07-18','2023-07-19','2023-07-20','2023-07-21','2023-07-25','2023-07-26','2023-07-27','2023-07-28','2023-08-01','2023-08-02','2023-08-03','2023-08-04','2023-08-08','2023-08-09','2023-08-10','2023-08-11','2023-08-15','2023-08-16','2023-08-17','2023-08-18','2023-08-22','2023-08-23','2023-08-24','2023-09-13','2023-09-14','2023-09-15','2023-10-24','2023-10-25','2023-10-26','2023-10-27','2023-10-31','2023-11-01','2023-11-02','2023-11-03','2023-11-07','2023-11-08','2023-11-09','2023-11-10','2023-11-14','2023-11-15','2023-11-16','2023-11-17','2023-11-23','2023-11-24','2023-12-05','2023-12-06','2023-12-07','2023-12-08','2023-12-12','2023-12-13','2023-12-14','2023-12-15','2023-12-18','2023-12-19','2023-12-20','2024-01-09','2024-01-10','2024-01-11','2024-01-12','2024-01-15','2024-01-16','2024-01-17','2024-01-18','2024-01-19','2024-01-22','2024-01-23','2024-01-24','2024-01-25']
 	to_do = np.flip(to_do,axis=0)
+elif MU_campaign==4:
+	# # do all of them from MU04
+	# to_do = ['2024-06-18','2024-06-19','2024-06-20','2024-06-21','2024-06-24','2024-06-25','2024-06-26','2024-06-27','2024-07-01','2024-07-02','2024-07-03','2024-07-04','2024-07-08','2024-07-09','2024-07-10','2024-07-11','2024-07-12','2024-07-15','2024-07-16','2024-07-17','2024-07-22','2024-07-23','2024-07-24','2024-07-25','2024-07-26','2024-07-30','2024-07-31','2024-08-01','2024-08-02','2024-08-05','2024-08-06','2024-08-07','2024-08-08','2024-08-09','2024-08-13','2024-08-14','2024-08-15','2024-08-16','2024-08-20','2024-08-21','2024-08-22','2024-09-05','2024-09-06','2024-09-13','2024-09-19','2024-09-20','2024-09-23','2024-09-24','2024-09-25','2024-09-26','2024-09-27','2024-10-01','2024-10-02','2024-10-03','2024-10-04','2024-10-08','2024-10-10','2024-10-11','2024-10-14','2024-10-15','2024-10-16','2024-10-17','2024-10-18','2024-10-21','2024-10-22','2024-10-23','2024-10-24','2024-10-29','2024-10-30','2024-10-31','2024-11-01','2024-11-04','2024-11-05','2024-11-06','2024-11-07','2024-11-08','2024-11-12','2024-11-13','2024-11-14','2024-11-15','2024-11-18','2024-11-19','2024-11-20','2024-11-21','2024-11-22','2024-11-25','2024-11-26','2024-11-27','2024-11-28','2024-11-29','2024-12-03','2024-12-04','2024-12-05','2024-12-06','2024-12-10','2024-12-11','2024-12-12','2024-12-13','2024-12-16','2024-12-17','2025-01-09','2025-01-10','2025-01-15','2025-01-16','2025-01-17','2025-01-21','2025-01-22','2025-01-28','2025-01-31','2025-02-03','2025-02-04','2025-02-05','2025-02-06','2025-02-11','2025-02-12','2025-02-13','2025-03-10','2025-03-11','2025-03-13','2025-03-14','2025-03-18','2025-03-19','2025-03-21','2025-03-14','2025-03-25','2025-03-26','2025-03-27','2025-04-01','2025-04-03','2025-04-04','2025-04-08','2025-04-09','2025-04-10','2025-04-11','2025-04-14','2025-04-15','2025-04-16','2025-04-24','2025-04-29','2025-04-30','2025-05-01','2025-05-02','2025-05-07','2025-05-08','2025-05-09','2025-05-13','2025-05-14','2025-05-15','2025-05-16','2025-05-21','2025-05-23','2025-05-28','2025-05-29','2025-05-30','2025-06-03']
+	# to save memory I won't analyse the senario developement and commissioning shots
+	to_do = ['2024-10-16','2024-10-17','2024-10-18','2024-10-21','2024-10-22','2024-10-23','2024-10-24','2024-10-29','2024-10-30','2024-10-31','2024-11-01','2024-11-04','2024-11-05','2024-11-06','2024-11-07','2024-11-08','2024-11-12','2024-11-13','2024-11-14','2024-11-15','2024-11-18','2024-11-19','2024-11-20','2024-11-21','2024-11-22','2024-11-25','2024-11-26','2024-11-27','2024-11-28','2024-11-29','2024-12-03','2024-12-04','2024-12-05','2024-12-06','2024-12-10','2024-12-11','2024-12-12','2024-12-13','2024-12-16','2024-12-17','2025-01-09','2025-01-10','2025-01-15','2025-01-16','2025-01-17','2025-01-21','2025-01-22','2025-01-28','2025-01-31','2025-02-03','2025-02-04','2025-02-05','2025-02-06','2025-02-11','2025-02-12','2025-02-13','2025-03-10','2025-03-11','2025-03-13','2025-03-14','2025-03-18','2025-03-19','2025-03-21','2025-03-14','2025-03-25','2025-03-26','2025-03-27','2025-04-01','2025-04-03','2025-04-04','2025-04-08','2025-04-09','2025-04-10','2025-04-11','2025-04-14','2025-04-15','2025-04-16','2025-04-24','2025-04-29','2025-04-30','2025-05-01','2025-05-02','2025-05-07','2025-05-08','2025-05-09','2025-05-13','2025-05-14','2025-05-15','2025-05-16','2025-05-21','2025-05-23','2025-05-28','2025-05-29','2025-05-30','2025-06-03','2025-06-03','2025-06-04','2025-06-05','2025-06-06','2025-06-10','2025-06-11','2025-06-12','2025-06-13','2025-06-18','2025-06-19','2025-06-20','2025-06-23','2025-06-24','2025-06-25','2025-06-26','2025-06-27','2025-07-04','2025-07-10','2025-07-11','2025-07-14','2025-07-15','2025-07-16','2025-07-17','2025-07-18','2025-07-22','2025-07-23','2025-07-24','2025-07-25','2025-07-28','2025-07-29','2025-07-30','2025-07-31','2025-08-01','2025-08-05','2025-08-06','2025-08-07','2025-08-08','2025-08-12','2025-08-13','2025-08-14','2025-08-15','2025-08-18','2025-08-19','2025-08-20','2025-08-21']
+	to_do = np.flip(to_do,axis=0)
 elif MU_campaign==99:	# just an exeption to have manual runs
 	to_do = ['2024-01-19']
 else:
-	to_do = ['2024-11-12','2024-11-13','2024-11-27','2024-11-28','2024-11-29']
+	to_do = ['2025-07-22']
 # # for Lingyan
 # to_do = ['2021-10-27']
 # path = '/home/ffederic/work/irvb/MAST-U/preliminaly_shots/'
@@ -173,10 +216,12 @@ do_inversions = False
 every_pixel_independent = False
 overwrite_oscillation_filter = True
 overwrite_binning = True
-skip_second_pass = False
-override_second_pass = True
-skip_third_pass = True
+override_first_pass = False
+skip_second_pass = True
+override_second_pass = False
+skip_third_pass = False
 override_third_pass = False
+True_for_inversion_False_for_post_analysis_only = True
 
 if overwrite_oscillation_filter:
 	overwrite_binning = True
@@ -190,6 +235,19 @@ if False or MU_campaign>0:	# section to use when specifying the days
 	# # for i_day,day in enumerate(np.flip(to_do,axis=0)):
 	# 	shot_available[i_day] = np.flip(shot_available[i_day],axis=0)
 	# 	for name in shot_available[i_day]:
+	if ext_number_of_passes==1:
+		skip_second_pass = True
+		skip_third_pass = True
+	elif ext_number_of_passes==2:
+		skip_second_pass = False
+		skip_third_pass = True
+	elif ext_number_of_passes==3:
+		skip_second_pass = False
+		skip_third_pass = False
+	else:
+		skip_second_pass = False
+		skip_third_pass = False
+
 	if ext_sequencer!=None:
 		try:
 			to_do = [to_do[ext_sequencer]]
@@ -201,11 +259,17 @@ if False or MU_campaign>0:	# section to use when specifying the days
 		name = shot_available[i_day]
 		laser_to_analyse=path+day+'/'+name
 
-		if coleval.retrive_aborted(name[-9:-4]):	# skip the shot if it was aborted
+		try:
+			out = coleval.retrive_aborted(name[-9:-4])
+		except:
+			print('retrive_aborted failed')
+			out = False
+		if out:	# skip the shot if it was aborted
+			print('skipped '+name+ ' because the shot seems to be aborted')
 			continue
 
 		try:
-			if True:
+			if True_for_inversion_False_for_post_analysis_only:
 				exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_pulse_process2_BB.py").read())
 			else:
 				pass_number = 0
@@ -217,133 +281,169 @@ if False or MU_campaign>0:	# section to use when specifying the days
 			logging.exception('with error: ' + str(e))
 			pass
 
-elif False:	# section to use when specifying the shots
+elif True:	# section to use when specifying the shots
 
 	# simpler way of starting works
-	# to_do = ['IRVB-MASTU_shot-45468.ptw','IRVB-MASTU_shot-45469.ptw','IRVB-MASTU_shot-45470.ptw','IRVB-MASTU_shot-45473.ptw','IRVB-MASTU_shot-45401.ptw','IRVB-MASTU_shot-45399.ptw','IRVB-MASTU_shot-45371.ptw']#,'IRVB-MASTU_shot-45473.ptw']
-	# to_do = ['IRVB-MASTU_shot-45371.ptw','IRVB-MASTU_shot-45372.ptw','IRVB-MASTU_shot-45380.ptw','IRVB-MASTU_shot-45390.ptw','IRVB-MASTU_shot-45391.ptw','IRVB-MASTU_shot-45398.ptw','IRVB-MASTU_shot-45400.ptw','IRVB-MASTU_shot-45439.ptw','IRVB-MASTU_shot-45443.ptw','IRVB-MASTU_shot-45444.ptw','IRVB-MASTU_shot-45450.ptw','IRVB-MASTU_shot-45456.ptw','IRVB-MASTU_shot-45459.ptw','IRVB-MASTU_shot-45461.ptw','IRVB-MASTU_shot-45462.ptw','IRVB-MASTU_shot-45463.ptw','IRVB-MASTU_shot-45464.ptw','IRVB-MASTU_shot-45465.ptw']
-	# to_do = ['IRVB-MASTU_shot-45046.ptw','IRVB-MASTU_shot-45047.ptw','IRVB-MASTU_shot-45048.ptw','IRVB-MASTU_shot-45056.ptw','IRVB-MASTU_shot-45057.ptw','IRVB-MASTU_shot-45058.ptw','IRVB-MASTU_shot-45059.ptw','IRVB-MASTU_shot-45060.ptw','IRVB-MASTU_shot-45062.ptw','IRVB-MASTU_shot-45063.ptw','IRVB-MASTU_shot-45066.ptw','IRVB-MASTU_shot-45071.ptw','IRVB-MASTU_shot-45081.ptw','IRVB-MASTU_shot-45143.ptw','IRVB-MASTU_shot-45239.ptw','IRVB-MASTU_shot-45241.ptw','IRVB-MASTU_shot-45243.ptw','IRVB-MASTU_shot-45244.ptw','IRVB-MASTU_shot-45245.ptw','IRVB-MASTU_shot-45246.ptw','IRVB-MASTU_shot-45353.ptw']	# SXD fuelled from high field side
-	# to_do = ['IRVB-MASTU_shot-47036.ptw','IRVB-MASTU_shot-47143.ptw','IRVB-MASTU_shot-46823.ptw']
-	# to_do = ['IRVB-MASTU_shot-47036.ptw','IRVB-MASTU_shot-47036.ptw','IRVB-MASTU_shot-46884.ptw','IRVB-MASTU_shot-47020.ptw','IRVB-MASTU_shot-46776.ptw','IRVB-MASTU_shot-46792.ptw']
+	# to_do = ['45468','45469','45470','45473','45401','45399','45371']#,'45473']
+	# to_do = ['45371','45372','45380','45390','45391','45398','45400','45439','45443','45444','45450','45456','45459','45461','45462','45463','45464','45465']
+	# to_do = ['45046','45047','45048','45056','45057','45058','45059','45060','45062','45063','45066','45071','45081','45143','45239','45241','45243','45244','45245','45246','45353']	# SXD fuelled from high field side
+	# to_do = ['47036','47143','46823']
+	# to_do = ['47036','47036','46884','47020','46776','46792']
 
 	# # MU01-EXH-20
-	# to_do = ['IRVB-MASTU_shot-44816.ptw','IRVB-MASTU_shot-44817.ptw','IRVB-MASTU_shot-44818.ptw','IRVB-MASTU_shot-44819.ptw','IRVB-MASTU_shot-44820.ptw','IRVB-MASTU_shot-44821.ptw','IRVB-MASTU_shot-44822.ptw','IRVB-MASTU_shot-45391.ptw','IRVB-MASTU_shot-45397.ptw','IRVB-MASTU_shot-45398.ptw','IRVB-MASTU_shot-45399.ptw','IRVB-MASTU_shot-45400.ptw','IRVB-MASTU_shot-45401.ptw']
+	# to_do = ['44816','44817','44818','44819','44820','44821','44822','45391','45397','45398','45399','45400','45401']
 	# for the paper
-	# to_do = ['IRVB-MASTU_shot-44647.ptw','IRVB-MASTU_shot-45409.ptw','IRVB-MASTU_shot-45225.ptw','IRVB-MASTU_shot-45351.ptw']
-	# to_do = ['IRVB-MASTU_shot-45401.ptw','IRVB-MASTU_shot-44892.ptw']
-	# to_do = ['IRVB-MASTU_shot-45401.ptw']
+	# to_do = ['44647','45409','45225','45351']
+	# to_do = ['45401','44892']
+	# to_do = ['45401']
 	# shots for the RSI paper
-	# to_do = ['IRVB-MASTU_shot-44647.ptw','IRVB-MASTU_shot-45409.ptw','IRVB-MASTU_shot-45225.ptw','IRVB-MASTU_shot-45351.ptw','IRVB-MASTU_shot-45401.ptw','IRVB-MASTU_shot-44892.ptw','IRVB-MASTU_shot-45295.ptw','IRVB-MASTU_shot-45328.ptw','IRVB-MASTU_shot-45371.ptw']
+	# to_do = ['44647','45409','45225','45351','45401','44892','45295','45328','45371']
 
 	# shots for the science paper
-	# to_do = ['IRVB-MASTU_shot-45371.ptw']
+	# to_do = ['45371']
 	# shots for the CD radiator location comparison shots
-	# to_do = ['IRVB-MASTU_shot-45473.ptw','IRVB-MASTU_shot-45470.ptw','IRVB-MASTU_shot-45469.ptw','IRVB-MASTU_shot-45468.ptw','IRVB-MASTU_shot-45327.ptw','IRVB-MASTU_shot-45326.ptw','IRVB-MASTU_shot-45325.ptw','IRVB-MASTU_shot-45324.ptw','IRVB-MASTU_shot-45323.ptw','IRVB-MASTU_shot-45322.ptw','IRVB-MASTU_shot-45320.ptw','IRVB-MASTU_shot-45303.ptw','IRVB-MASTU_shot-45302.ptw','IRVB-MASTU_shot-45296.ptw','IRVB-MASTU_shot-45295.ptw','IRVB-MASTU_shot-45293.ptw','IRVB-MASTU_shot-45142.ptw','IRVB-MASTU_shot-45126.ptw','IRVB-MASTU_shot-45088.ptw','IRVB-MASTU_shot-45371.ptw']
+	# to_do = ['45473','45470','45469','45468','45327','45326','45325','45324','45323','45322','45320','45303','45302','45296','45295','45293','45142','45126','45088','45371']
 	# shots for the CD BEAMS shots for the cross comparison
-	# to_do = ['IRVB-MASTU_shot-45401.ptw','IRVB-MASTU_shot-45399.ptw','IRVB-MASTU_shot-45311.ptw','IRVB-MASTU_shot-45310.ptw','IRVB-MASTU_shot-45309.ptw','IRVB-MASTU_shot-45306.ptw','IRVB-MASTU_shot-45304.ptw','IRVB-MASTU_shot-45299.ptw','IRVB-MASTU_shot-45286.ptw','IRVB-MASTU_shot-45272.ptw','IRVB-MASTU_shot-45271.ptw','IRVB-MASTU_shot-45270.ptw','IRVB-MASTU_shot-45268.ptw','IRVB-MASTU_shot-45267.ptw','IRVB-MASTU_shot-45266.ptw','IRVB-MASTU_shot-45264.ptw','IRVB-MASTU_shot-45262.ptw','IRVB-MASTU_shot-45261.ptw','IRVB-MASTU_shot-45252.ptw','IRVB-MASTU_shot-45251.ptw','IRVB-MASTU_shot-45237.ptw','IRVB-MASTU_shot-45236.ptw','IRVB-MASTU_shot-45212.ptw','IRVB-MASTU_shot-45193.ptw','IRVB-MASTU_shot-45194.ptw','IRVB-MASTU_shot-45175.ptw','IRVB-MASTU_shot-45170.ptw','IRVB-MASTU_shot-45167.ptw','IRVB-MASTU_shot-45132.ptw','IRVB-MASTU_shot-45125.ptw','IRVB-MASTU_shot-45097.ptw','IRVB-MASTU_shot-45091.ptw','IRVB-MASTU_shot-45006.ptw','IRVB-MASTU_shot-44969.ptw','IRVB-MASTU_shot-44968.ptw','IRVB-MASTU_shot-44967.ptw','IRVB-MASTU_shot-44960.ptw']
+	# to_do = ['45401','45399','45311','45310','45309','45306','45304','45299','45286','45272','45271','45270','45268','45267','45266','45264','45262','45261','45252','45251','45237','45236','45212','45193','45194','45175','45170','45167','45132','45125','45097','45091','45006','44969','44968','44967','44960']
 	# shots for David's paper
-	# to_do = ['IRVB-MASTU_shot-45443.ptw','IRVB-MASTU_shot-45444.ptw','IRVB-MASTU_shot-45446.ptw','IRVB-MASTU_shot-45456.ptw','IRVB-MASTU_shot-45459.ptw','IRVB-MASTU_shot-45461.ptw','IRVB-MASTU_shot-45462.ptw','IRVB-MASTU_shot-45463.ptw','IRVB-MASTU_shot-45464.ptw','IRVB-MASTU_shot-45465.ptw','IRVB-MASTU_shot-45468.ptw','IRVB-MASTU_shot-45469.ptw','IRVB-MASTU_shot-45470.ptw','IRVB-MASTU_shot-45473.ptw']
+	# to_do = ['45443','45444','45446','45456','45459','45461','45462','45463','45464','45465','45468','45469','45470','45473']
 	# shots for Kevin's paper
-	# to_do = ['IRVB-MASTU_shot-46860.ptw','IRVB-MASTU_shot-47958.ptw','IRVB-MASTU_shot-46866.ptw','IRVB-MASTU_shot-47079.ptw','IRVB-MASTU_shot-46702.ptw']
-	# to_do = ['IRVB-MASTU_shot-49270.ptw','IRVB-MASTU_shot-49267.ptw','IRVB-MASTU_shot-49320.ptw','IRVB-MASTU_shot-49312.ptw']
-	# to_do = ['IRVB-MASTU_shot-46860.ptw','IRVB-MASTU_shot-47958.ptw','IRVB-MASTU_shot-46705.ptw','IRVB-MASTU_shot-48330.ptw']
+	# to_do = ['46860','47958','46866','47079','46702']
+	# to_do = ['49270','49267','49320','49312']
+	# to_do = ['46860','47958','46705','48330']
 	# Stuart THR01
-	# to_do = ['IRVB-MASTU_shot-49401.ptw']
-	# to_do = ['IRVB-MASTU_shot-49392.ptw','IRVB-MASTU_shot-49394.ptw','IRVB-MASTU_shot-49396.ptw','IRVB-MASTU_shot-49397.ptw','IRVB-MASTU_shot-49400.ptw','IRVB-MASTU_shot-49401.ptw','IRVB-MASTU_shot-49404.ptw','IRVB-MASTU_shot-49405.ptw']
+	# to_do = ['49401']
+	# to_do = ['49392','49394','49396','49397','49400','49401','49404','49405']
 
 	# # shots asked by Jack MU03-DIV-02
-	# to_do = ['IRVB-MASTU_shot-48590.ptw','IRVB-MASTU_shot-48592.ptw','IRVB-MASTU_shot-48596.ptw','IRVB-MASTU_shot-48597.ptw','IRVB-MASTU_shot-48599.ptw','IRVB-MASTU_shot-48690.ptw','IRVB-MASTU_shot-48692.ptw','IRVB-MASTU_shot-48696.ptw','IRVB-MASTU_shot-48765.ptw','IRVB-MASTU_shot-48766.ptw','IRVB-MASTU_shot-48767.ptw','IRVB-MASTU_shot-48768.ptw','IRVB-MASTU_shot-48769.ptw']
+	# to_do = ['48590','48592','48596','48597','48599','48690','48692','48696','48765','48766','48767','48768','48769']
 
 	# # MU03-WPTE-05 looking for a cd xpr with nitrogen seeding
-	# to_do = ['IRVB-MASTU_shot-48594.ptw','IRVB-MASTU_shot-48595.ptw','IRVB-MASTU_shot-48597.ptw','IRVB-MASTU_shot-48598.ptw','IRVB-MASTU_shot-48599.ptw','IRVB-MASTU_shot-48602.ptw','IRVB-MASTU_shot-48603.ptw','IRVB-MASTU_shot-48605.ptw','IRVB-MASTU_shot-48609.ptw','IRVB-MASTU_shot-48617.ptw','IRVB-MASTU_shot-48618.ptw','IRVB-MASTU_shot-48619.ptw','IRVB-MASTU_shot-48620.ptw']
+	# to_do = ['48594','48595','48597','48598','48599','48602','48603','48605','48609','48617','48618','48619','48620']
 
 
 
 	# # MU02 shots for Kevin
 	# to_do = []
-	# # sxd scans and repeats
-	# to_do = to_do + ['IRVB-MASTU_shot-46707.ptw','IRVB-MASTU_shot-46769.ptw','IRVB-MASTU_shot-46776.ptw','IRVB-MASTU_shot-46791.ptw','IRVB-MASTU_shot-46792.ptw','IRVB-MASTU_shot-46794.ptw','IRVB-MASTU_shot-46860.ptw','IRVB-MASTU_shot-46893.ptw','IRVB-MASTU_shot-46705.ptw','IRVB-MASTU_shot-46904.ptw','IRVB-MASTU_shot-46905.ptw']
-	# # elongated divertor scans and repeats
-	# to_do = to_do + ['IRVB-MASTU_shot-47079.ptw','IRVB-MASTU_shot-47082.ptw','IRVB-MASTU_shot-47115.ptw','IRVB-MASTU_shot-47118.ptw','IRVB-MASTU_shot-47085.ptw']
-	# # conventional divertor scans and repeats
-	# to_do = to_do + ['IRVB-MASTU_shot-46762.ptw','IRVB-MASTU_shot-46769.ptw','IRVB-MASTU_shot-46864.ptw','IRVB-MASTU_shot-46866.ptw','IRVB-MASTU_shot-46867.ptw','IRVB-MASTU_shot-46868.ptw','IRVB-MASTU_shot-46891.ptw','IRVB-MASTU_shot-46903.ptw','IRVB-MASTU_shot-46905.ptw','IRVB-MASTU_shot-46702.ptw','IRVB-MASTU_shot-46889.ptw']
-	# # shape scans
-	# to_do = to_do + ['IRVB-MASTU_shot-46889.ptw','IRVB-MASTU_shot-46895.ptw','IRVB-MASTU_shot-46890.ptw']
-	# to_do = to_do + ['IRVB-MASTU_shot-49312.ptw','IRVB-MASTU_shot-49320.ptw']
+	# # # # sxd scans and repeats
+	# # # to_do = to_do + ['46707','46769','46776','46791','46792','46794','46860','46893','46705','46904','46905']
+	# # # # elongated divertor scans and repeats
+	# # # to_do = to_do + ['47079','47082','47115','47118','47085']
+	# # # # conventional divertor scans and repeats
+	# # # to_do = to_do + ['46762','46769','46864','46866','46867','46868','46891','46903','46905','46702','46889']
+	# # # # shape scans
+	# # # to_do = to_do + ['46889','46895','46890']
+	# to_do = to_do + ['49312','49320']
 
 	# # MU03 shots for Kevin
 	# to_do = []
 	# conventional divertor scans and repeats L mode
-	# to_do = to_do + ['IRVB-MASTU_shot-47950.ptw','IRVB-MASTU_shot-47951.ptw','IRVB-MASTU_shot-47962.ptw','IRVB-MASTU_shot-48144.ptw','IRVB-MASTU_shot-48328.ptw','IRVB-MASTU_shot-48335.ptw','IRVB-MASTU_shot-48336.ptw','IRVB-MASTU_shot-49408.ptw','IRVB-MASTU_shot-49283.ptw']
+	# to_do = to_do + ['47950','47951','47962','48144','48328','48335','48336','49408','49283']
 	# conventional divertor scans and repeats H mode
-	# to_do = to_do + ['IRVB-MASTU_shot-49392.ptw','IRVB-MASTU_shot-48561.ptw','IRVB-MASTU_shot-49139.ptw']
+	# to_do = to_do + ['49392','48561','49139']
 
 	# shots for Ivan Paradela Perez
-	# to_do = to_do + ['IRVB-MASTU_shot-46864.ptw','IRVB-MASTU_shot-47079.ptw','IRVB-MASTU_shot-46860.ptw']
+	# to_do = to_do + ['46864','47079','46860']
 
 
 	# # Stuart shots MU03-DIV-03
 	# to_do = []
 	# # DDN
-	# to_do = to_do + ['IRVB-MASTU_shot-48361.ptw','IRVB-MASTU_shot-48363.ptw','IRVB-MASTU_shot-48366.ptw','IRVB-MASTU_shot-48367.ptw','IRVB-MASTU_shot-48648.ptw']	# 48370 data is missing
+	# to_do = to_do + ['48361','48363','48366','48367','48648']	# 48370 data is missing
 	# # LSN
-	# to_do = to_do + ['IRVB-MASTU_shot-48638.ptw','IRVB-MASTU_shot-48639.ptw','IRVB-MASTU_shot-48646.ptw','IRVB-MASTU_shot-48647.ptw','IRVB-MASTU_shot-48651.ptw','IRVB-MASTU_shot-48652.ptw']
+	# to_do = to_do + ['48638','48639','48646','48647','48651','48652']
 
 	# checking the effect of valve HFS_MID_L02
-	# to_do = ['IRVB-MASTU_shot-47218.ptw','IRVB-MASTU_shot-47228.ptw','IRVB-MASTU_shot-47401.ptw','IRVB-MASTU_shot-47402.ptw','IRVB-MASTU_shot-47448.ptw','IRVB-MASTU_shot-47570.ptw','IRVB-MASTU_shot-47580.ptw','IRVB-MASTU_shot-47826.ptw','IRVB-MASTU_shot-47869.ptw','IRVB-MASTU_shot-48063.ptw','IRVB-MASTU_shot-48239.ptw','IRVB-MASTU_shot-48290.ptw','IRVB-MASTU_shot-48325.ptw','IRVB-MASTU_shot-48376.ptw','IRVB-MASTU_shot-48377.ptw','IRVB-MASTU_shot-48378.ptw','IRVB-MASTU_shot-48381.ptw','IRVB-MASTU_shot-48382.ptw','IRVB-MASTU_shot-48576.ptw','IRVB-MASTU_shot-48583.ptw','IRVB-MASTU_shot-48629.ptw','IRVB-MASTU_shot-48633.ptw']
+	# to_do = ['47218','47228','47401','47402','47448','47570','47580','47826','47869','48063','48239','48290','48325','48376','48377','48378','48381','48382','48576','48583','48629','48633']
 
 	# # trophy shots from mu02
-	# to_do = ['IRVB-MASTU_shot-46976.ptw','IRVB-MASTU_shot-46977.ptw','IRVB-MASTU_shot-46978.ptw','IRVB-MASTU_shot-46979.ptw','IRVB-MASTU_shot-46823.ptw','IRVB-MASTU_shot-48561.ptw']
+	# to_do = ['46976','46977','46978','46979','46823','48561']
 
 	# # other H mode shots I'm finding
-	# to_do = ['IRVB-MASTU_shot-48594.ptw','IRVB-MASTU_shot-48595.ptw','IRVB-MASTU_shot-48596.ptw','IRVB-MASTU_shot-48564.ptw','IRVB-MASTU_shot-48763.ptw']
+	# to_do = ['48594','48595','48596','48564','48763']
 
 	# MU03 snowflake by Vlad Soukhanovskii
-	# to_do = ['IRVB-MASTU_shot-49463.ptw','IRVB-MASTU_shot-49464.ptw','IRVB-MASTU_shot-49465.ptw','IRVB-MASTU_shot-49466.ptw','IRVB-MASTU_shot-49467.ptw','IRVB-MASTU_shot-49468.ptw']
-	# to_do = ['IRVB-MASTU_shot-49465.ptw','IRVB-MASTU_shot-49467.ptw','IRVB-MASTU_shot-49468.ptw']
+	# to_do = ['49463','49464','49465','49466','49467','49468']
+	# to_do = ['49465','49467','49468']
 
 	# to_do = []
 	# # mu03 DIV-02 by Jack
-	# # to_do = to_do + ['IRVB-MASTU_shot-48692.ptw','IRVB-MASTU_shot-46363.ptw','IRVB-MASTU_shot-49373.ptw','IRVB-MASTU_shot-49374.ptw','IRVB-MASTU_shot-48766.ptw','IRVB-MASTU_shot-49464.ptw','IRVB-MASTU_shot-49465.ptw','IRVB-MASTU_shot-49466.ptw','IRVB-MASTU_shot-49467.ptw']
+	# # to_do = to_do + ['48692','46363','49373','49374','48766','49464','49465','49466','49467']
 	# # mu03 DIV-03 by Jack
-	# # to_do = to_do + ['IRVB-MASTU_shot-49213.ptw','IRVB-MASTU_shot-48651.ptw','IRVB-MASTU_shot-49220.ptw','IRVB-MASTU_shot-49259.ptw','IRVB-MASTU_shot-49262.ptw','IRVB-MASTU_shot-49404.ptw','IRVB-MASTU_shot-49198.ptw']
+	# # to_do = to_do + ['49213','48651','49220','49259','49262','49404','49198']
 	# # mu03 DIV-03 by Vlad Soukhanovskii
-	# to_do = to_do + ['IRVB-MASTU_shot-49463.ptw','IRVB-MASTU_shot-49464.ptw','IRVB-MASTU_shot-49465.ptw','IRVB-MASTU_shot-49466.ptw','IRVB-MASTU_shot-49467.ptw','IRVB-MASTU_shot-49468.ptw','IRVB-MASTU_shot-48690.ptw','IRVB-MASTU_shot-48692.ptw']
+	# to_do = to_do + ['49463','49464','49465','49466','49467','49468','48690','48692']
 
 
 	# data for psi2024 poster
 	# to_do = []
 	# # ohmic L-mode
-	# to_do = to_do + ['IRVB-MASTU_shot-45468.ptw','IRVB-MASTU_shot-45469.ptw','IRVB-MASTU_shot-45470.ptw','IRVB-MASTU_shot-45473.ptw']
-	# to_do = to_do + ['IRVB-MASTU_shot-47950.ptw','IRVB-MASTU_shot-47973.ptw','IRVB-MASTU_shot-48144.ptw','IRVB-MASTU_shot-48328.ptw','IRVB-MASTU_shot-48335.ptw']
+	# to_do = to_do + ['45468','45469','45470','45473']
+	# to_do = to_do + ['47950','47973','48144','48328','48335']
 	# # beam heated L-mode
-	# to_do = to_do + ['IRVB-MASTU_shot-46866.ptw','IRVB-MASTU_shot-46864.ptw','IRVB-MASTU_shot-46867.ptw','IRVB-MASTU_shot-46868.ptw','IRVB-MASTU_shot-46889.ptw','IRVB-MASTU_shot-46891.ptw','IRVB-MASTU_shot-46903.ptw','IRVB-MASTU_shot-48336.ptw','IRVB-MASTU_shot-49408.ptw','IRVB-MASTU_shot-49283.ptw']
+	# to_do = to_do + ['46866','46864','46867','46868','46889','46891','46903','48336','49408','49283']
 	# # H-mode
-	# to_do = to_do + ['IRVB-MASTU_shot-45401.ptw','IRVB-MASTU_shot-48596.ptw','IRVB-MASTU_shot-48597.ptw','IRVB-MASTU_shot-46977.ptw','IRVB-MASTU_shot-48599.ptw','IRVB-MASTU_shot-48561.ptw','IRVB-MASTU_shot-49139.ptw','IRVB-MASTU_shot-c.ptw','IRVB-MASTU_shot-49396.ptw','IRVB-MASTU_shot-49400.ptw','IRVB-MASTU_shot-49401.ptw']
+	# to_do = to_do + ['45401','48596','48597','46977','48599','48561','49139','c','49396','49400','49401']
 	# # mix
-	# to_do = to_do + ['IRVB-MASTU_shot-48690.ptw','IRVB-MASTU_shot-48692.ptw','IRVB-MASTU_shot-49463.ptw','IRVB-MASTU_shot-49464.ptw','IRVB-MASTU_shot-49465.ptw','IRVB-MASTU_shot-49466.ptw','IRVB-MASTU_shot-49467.ptw','IRVB-MASTU_shot-49468.ptw']
-	# IRVB science paper 2025
-	to_do = []
-	to_do = to_do + ['IRVB-MASTU_shot-45468.ptw','IRVB-MASTU_shot-45469.ptw','IRVB-MASTU_shot-45470.ptw','IRVB-MASTU_shot-45473.ptw']
-	to_do = to_do + ['IRVB-MASTU_shot-47950.ptw','IRVB-MASTU_shot-47973.ptw','IRVB-MASTU_shot-48144.ptw']
-	to_do = to_do + ['IRVB-MASTU_shot-46866.ptw','IRVB-MASTU_shot-46867.ptw','IRVB-MASTU_shot-46868.ptw','IRVB-MASTU_shot-46891.ptw','IRVB-MASTU_shot-48336.ptw','IRVB-MASTU_shot-49408.ptw']
+	# to_do = to_do + ['48690','48692','49463','49464','49465','49466','49467','49468']
+	# # IRVB science paper 2025
+	# to_do = []
+	# to_do = to_do + ['45468','45469','45470','45473']
+	# to_do = to_do + ['47950','47973','48144']
+	# to_do = to_do + ['46866','46867','46868','46891','48336','49408']
 
 	# # data for Yasmin Adnrew (female) about LH transition
 	# to_do = []
-	# # # to_do = to_do + ['IRVB-MASTU_shot-46631.ptw','IRVB-MASTU_shot-47012.ptw','IRVB-MASTU_shot-47078.ptw','IRVB-MASTU_shot-47094.ptw','IRVB-MASTU_shot-47889.ptw','IRVB-MASTU_shot-47909.ptw','IRVB-MASTU_shot-47916.ptw',
-	# # # 'IRVB-MASTU_shot-47918.ptw','IRVB-MASTU_shot-48004.ptw','IRVB-MASTU_shot-48172.ptw','IRVB-MASTU_shot-48174.ptw','IRVB-MASTU_shot-48175.ptw','IRVB-MASTU_shot-48176.ptw','IRVB-MASTU_shot-48177.ptw',
-	# # # 'IRVB-MASTU_shot-49091.ptw','IRVB-MASTU_shot-49094.ptw','IRVB-MASTU_shot-49095.ptw']
-	# to_do = to_do + ['IRVB-MASTU_shot-48004.ptw']
+	# # # to_do = to_do + ['46631','47012','47078','47094','47889','47909','47916',
+	# # # '47918','48004','48172','48174','48175','48176','48177',
+	# # # '49091','49094','49095']
+	# to_do = to_do + ['48004']
 
 	# data for Bob Kool nature 2024 paper
 	# to_do = []
-	# to_do = to_do + ['IRVB-MASTU_shot-47080.ptw','IRVB-MASTU_shot-47083.ptw','IRVB-MASTU_shot-47086.ptw','IRVB-MASTU_shot-47116.ptw','IRVB-MASTU_shot-47118.ptw','IRVB-MASTU_shot-47119.ptw','IRVB-MASTU_shot-49303.ptw',
-	# 'IRVB-MASTU_shot-48001.ptw','IRVB-MASTU_shot-47998.ptw','IRVB-MASTU_shot-49297.ptw','IRVB-MASTU_shot-49298.ptw']
+	# to_do = to_do + ['47080','47083','47086','47116','47118','47119','49303',
+	# '48001','47998','49297','49298']
 
-	# 2024/11/27 for kevin's experiment
+	# # 2024/11/27 for kevin's experiment
 	# to_do = []
-	# to_do = to_do + ['IRVB-MASTU_shot-50822.ptw','IRVB-MASTU_shot-50823.ptw','IRVB-MASTU_shot-50824.ptw','IRVB-MASTU_shot-50825.ptw','IRVB-MASTU_shot-50826.ptw','IRVB-MASTU_shot-50827.ptw','IRVB-MASTU_shot-50828.ptw',
-	# 'IRVB-MASTU_shot-50830.ptw','IRVB-MASTU_shot-50831.ptw','IRVB-MASTU_shot-50832.ptw','IRVB-MASTU_shot-50833.ptw']
+	# to_do = to_do + ['50822','50823','50824','50825','50826','50827','50828',
+	# '50830','50831','50832','50833']
+
+	# # 2025/06/05 Fabio Federici MU04-DIV02 experiments
+	# to_do = []
+	# to_do = to_do + ['51650','51651','51652','51653','51654','51655','51656']	# first session DN
+	# to_do = to_do + ['51877','51878','51879','51880','51883','51884','51885','51886','51887']	# second session LSN
+	# to_do = to_do + ['52349', '52355']	# first repeat DN cryo high ISP
+	# to_do = to_do + ['52420']	# second repeat DN cryo low ISP
+	# to_do = to_do + ['52493']	# third repeat DN cryo low ISP
+	# to_do = to_do + ['50833','50832']	# additional cases from Kevin with different position of inner leg
+	# to_do = to_do + ['50825']	# additional cases from Kevin with density decreasing rather than increasing
+
+	# 2025/06/05 Stuart XPR experiments
+	to_do = []
+	to_do = to_do + ['51796','51797','51798','51799','51800','51801','51802','51803','51804','51805','51806','51807','52296','52314','52284','52285','52286','52287','52288','52289','52290','52291','52292','52301']
+	to_do = to_do + ['52248','52250','52251','52252','52255','52266','52257','52258']
+
+	# 2025/05/14 Ling yang experiments
+	# to_do = []
+	# to_do = to_do + ['51782','51777']
+
+	# # 2025-08-18 Charlie's negative triangularity shots
+	# to_do = []
+	# to_do = to_do + ['50923','50924','51817','52384','52383']
+
+	# 2025/05/02 Bart EST-01 experiments
+	# to_do = []
+	# to_do = to_do + ['51685','51692','51691']
+
+	# # 2025/07/04 Rory and Nicola for transients
+	# to_do = []
+	# to_do = to_do + ['51375','51787','51789','51791','51788','51785','51786','52249','52250']
+	# to_do = to_do + ['52506']	# random Hmode added to see if ELMs are visible
+
+	# # 2025/08/14 Vlad's snowflake experiments
+	# to_do = []
+	# to_do = to_do + ['52434','52436','52437','52438','52439','524140','52441','52442']
 
 	# to_do = np.flip(to_do,axis=0)
 	if ext_sequencer!=None:
@@ -352,8 +452,8 @@ elif False:	# section to use when specifying the shots
 		except:
 			print('no shots left to process')
 			sys.exit(1)
-	# for name in to_do:
-	for name in np.flip(to_do,axis=0):
+	for name in to_do:
+	# for name in np.flip(to_do,axis=0):
 		# shot_list = get_data(path+'shot_list2.ods')
 		# temp1 = (np.array(shot_list['Sheet1'][0])=='shot number').argmax()
 		# for i in range(1,len(shot_list['Sheet1'])):
@@ -364,14 +464,25 @@ elif False:	# section to use when specifying the shots
 		# 	i_day,day = 0,str(date.date())
 		# except:
 		# 	i_day,day = 0,str(date)
-		if coleval.retrive_aborted(name[-9:-4]):	# skip the shot if it was aborted
+		if name[:4] == 'IRVB':	# I want to shorten the filenames in to_do
+			pass
+		else:
+			name = 'IRVB-MASTU_shot-' + name + '.ptw'
+
+		try:
+			out = coleval.retrive_aborted(name[-9:-4])
+		except:
+			print('retrive_aborted failed')
+			out = False
+		if out:	# skip the shot if it was aborted
+			print('skipped '+name+ ' because the shot seems to be aborted')
 			continue
 
 		i_day,day = 0,coleval.retrive_shot_date_and_time(name[-9:-4])[0]
 		laser_to_analyse=path+day+'/'+name
 
 		try:
-			if False:
+			if True_for_inversion_False_for_post_analysis_only:
 				exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_pulse_process2_BB.py").read())
 			else:
 				pass_number = 0
@@ -456,7 +567,13 @@ else:	# section to use when analysing only one shot
 	# name = 'IRVB-MASTU_shot-45463.ptw'	# large VDE: peak /XIM/DA/HL02/SXD 711.3ms; peak /XIM/DA/HE05/ISP/L and start decrease /XBM/CORE/F15/AMP 710.9ms; IRVB 3019 ms from recording start -2.5 = 519ms	NOTE framerate 50Hz, so starting point very wrong
 	# name = 'IRVB-MASTU_shot-47953.ptw'
 	# name = 'IRVB-MASTU_shot-45225.ptw'
-	name = 'IRVB-MASTU_shot-51422.ptw'
+	# name = 'IRVB-MASTU_shot-52493.ptw'
+	name = 'IRVB-MASTU_shot-50924.ptw'
+
+	if name[:4] == 'IRVB':	# I want to shorten the filenames in to_do
+		pass
+	else:
+		name = 'IRVB-MASTU_shot-' + name + '.ptw'
 
 	path = '/home/ffederic/work/irvb/MAST-U/'
 	# shot_list = get_data(path+'shot_list2.ods')
@@ -477,7 +594,7 @@ else:	# section to use when analysing only one shot
 
 	laser_to_analyse=path+day+'/'+name
 
-	if True:
+	if True_for_inversion_False_for_post_analysis_only:
 		exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_pulse_process2_BB.py").read())
 	else:
 		pass_number = 0

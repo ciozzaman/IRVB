@@ -394,6 +394,306 @@ files71 = ['/home/ffederic/work/irvb/flatfield/Jun20_2024/flat_field_00'+value f
 full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files71':files71}))
 
 
+# 27/10/2024 Temperature calibration done with the new BB source capable of filling the full FOV and the new FLIR X6980 camera. distance camera/BB source as per the current geometry with the 60mm stand-off
+# integration time and frequency variable based on table present in the file itself. the 1 file is then split based on all the combinations of settings used
+# view port damaged after the vacuum break after MU01, but with the coating facing the camera, heating ramp with new HGH BB source.
+# 2 point calibration through the FLIR software using 1 NUC plate from the fridge and the other at room temperature, done prior to the calibration
+# the FOV of the camera is slightly larger than the black body source, but the foil is much smaller than the full frame FOV, so it's ok
+# NUC APPLIED, windowed
+# temperature80 = np.array([50,48,46,43,40,37,34,32,30,28,27,26,25,24,23,22,21,20,18,16,14,12,10,8,7,6,5,4,3,2,1,25,30,35,40,45,50,30,25])
+temperature80 = np.array([50,48,46,43,40,37,34,32,30,28,27,26,25,24,23,22,21,20,18,16,14,12,10,8,7,6,5,4,3,2,1,40,45,50,30,25])
+# files80 = ['59','60','61','62','63','64','65','66','67','68','69','70','71','72','73','74','75','76','77','78','79','80','81','82','83','84','85','86','87','88','89','90','91','92','93','94','95','96','97']
+files80 = ['59','60','61','62','63','64','65','66','67','68','69','70','71','72','73','74','75','76','77','78','79','80','81','82','83','84','85','86','87','88','89','93','94','95','96','97']
+files80 = ['/home/ffederic/work/irvb/flatfield/Oct28_2024/Untitled-'+value for value in files80]
+files80a = [value+'_int1.0_fr960.0' for value in files80]
+files80b = [value+'_int0.5_fr1840.0' for value in files80]
+files80c = [value+'_int0.98_fr1000.0' for value in files80]
+files80d = [value+'_int0.9_fr1000.0' for value in files80]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files80a':files80a}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files80b':files80b}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files80c':files80c}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files80d':files80d}))
+
+# 27/10/2024 Temperature calibration done with the new BB source capable of filling the full FOV and the new FLIR X6980 camera. distance camera/BB source as per the current geometry with the 60mm stand-off
+# integration time and frequency variable based on table present in the file itself. the 1 file is then split based on all the combinations of settings used
+# view port damaged after the vacuum break after MU01, but with the coating facing the camera, heating ramp with new HGH BB source.
+# 2 point calibration through the FLIR software using 1 NUC plate from the fridge and the other at room temperature, done prior to the calibration
+# the FOV of the camera is slightly larger than the black body source, but the foil is much smaller than the full frame FOV, so it's ok
+# NUC NOT APPLIED, windowed
+temperature81 = np.array([50,48,46,43,40,36,33,30,28,27,26,25,24,23,22,21,20,18,17,16,14,12,10,8,7,6,5,4,3,2,1,25,30,35,40,45,50])
+files81 = ['98','99','100','101','102','103','104','105','106','107','108','109','110','111','112','113','114','115','116','117','118','119','121','122','123','124','125','126','127','128','129','130','131','132','133','134','135']
+files81 = ['/home/ffederic/work/irvb/flatfield/Oct28_2024/Untitled-'+value for value in files81]
+files81a = [value+'_int1.0_fr960.0' for value in files81]
+files81b = [value+'_int0.5_fr1840.0' for value in files81]
+files81c = [value+'_int0.98_fr1000.0' for value in files81]
+files81d = [value+'_int0.9_fr1000.0' for value in files81]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files81a':files81a}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files81b':files81b}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files81c':files81c}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files81d':files81d}))
+
+# 27/10/2024 Temperature calibration done with the new BB source capable of filling the full FOV and the new FLIR X6980 camera. distance camera/BB source as per the current geometry with the 60mm stand-off
+# integration time and frequency variable based on table present in the file itself. the 1 file is then split based on all the combinations of settings used
+# view port damaged after the vacuum break after MU01, but with the coating facing the camera, heating ramp with new HGH BB source.
+# 2 point calibration through the FLIR software using 1 NUC plate from the fridge and the other at room temperature, done prior to the calibration
+# the FOV of the camera is slightly larger than the black body source, but the foil is much smaller than the full frame FOV, so it's ok
+# NUC APPLIED, full frame
+temperature82 = np.array([50,48,46,43,40,36,33,30,28,27,26,25,24,23,22,21,20,18,16,14,12,10,8,7,6,5,4,3,2,1,25,30,35,40,45,50])
+files82 = ['137','138','141','142','145','146','149','150','153','154','157','158','161','162','165','166','169','170','173','174','177','178','181','182','185','186','189','190','193','194','197','198','201','202','205','206']
+files82 = ['/home/ffederic/work/irvb/flatfield/Oct28_2024/Untitled-'+value for value in files82]
+files82a = [value+'_int1.0_fr960.0' for value in files82]
+files82b = [value+'_int1.5_fr660.0' for value in files82]
+files82c = [value+'_int0.98_fr1000.0' for value in files82]
+files82d = [value+'_int0.9_fr1000.0' for value in files82]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files82a':files82a}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files82b':files82b}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files82c':files82c}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files82d':files82d}))
+
+# 27/10/2024 Temperature calibration done with the new BB source capable of filling the full FOV and the new FLIR X6980 camera. distance camera/BB source as per the current geometry with the 60mm stand-off
+# integration time and frequency variable based on table present in the file itself. the 1 file is then split based on all the combinations of settings used
+# view port damaged after the vacuum break after MU01, but with the coating facing the camera, heating ramp with new HGH BB source.
+# 2 point calibration through the FLIR software using 1 NUC plate from the fridge and the other at room temperature, done prior to the calibration
+# the FOV of the camera is slightly larger than the black body source, but the foil is much smaller than the full frame FOV, so it's ok
+# NUC NOT APPLIED, full frame
+temperature83 = np.array([48,46,43,40,36,33,30,28,27,26,25,24,23,22,21,20,18,16,14,12,10,8,7,6,5,4,3,2,1,25,30,35,40,45,50])
+files83 = ['139','140','143','144','147','148','151','152','155','156','159','160','163','164','167','168','171','172','175','176','179','180','183','184','187','188','191','192','195','196','199','200','203','204','207']
+files83 = ['/home/ffederic/work/irvb/flatfield/Oct28_2024/Untitled-'+value for value in files83]
+files83a = [value+'_int1.0_fr960.0' for value in files83]
+files83b = [value+'_int1.5_fr660.0' for value in files83]
+files83c = [value+'_int0.98_fr1000.0' for value in files83]
+files83d = [value+'_int0.9_fr1000.0' for value in files83]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files83a':files83a}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files83b':files83b}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files83c':files83c}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files83d':files83d}))
+
+# 27/10/2024 Temperature calibration done with the new BB source capable of filling the full FOV and the new FLIR X6980 camera. distance camera/BB source as per the current geometry with the 60mm stand-off
+# integration time 1ms, freme rate 960Hz
+# view port damaged after the vacuum break after MU01, but with the coating facing the camera, heating ramp with new HGH BB source.
+# 2 point calibration through the FLIR software using 1 NUC plate from the fridge and the other at room temperature, done prior to the calibration
+# the FOV of the camera is slightly larger than the black body source, but the foil is much smaller than the full frame FOV, so it's ok
+# NUC APPLIED, full frame
+temperature84 = np.array([50,45,40,35,30,25,20,15,10,5,1])
+files84 = ['209','210','213','214','217','218','221','222','225','226','229']
+files84 = ['/home/ffederic/work/irvb/flatfield/Oct28_2024/Untitled-'+value for value in files84]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files84':files84}))
+
+# 27/10/2024 Temperature calibration done with the new BB source capable of filling the full FOV and the new FLIR X6980 camera. distance camera/BB source as per the current geometry with the 60mm stand-off
+# integration time 1ms, freme rate 960Hz
+# view port damaged after the vacuum break after MU01, but with the coating facing the camera, heating ramp with new HGH BB source.
+# 2 point calibration through the FLIR software using 1 NUC plate from the fridge and the other at room temperature, done prior to the calibration
+# the FOV of the camera is slightly larger than the black body source, but the foil is much smaller than the full frame FOV, so it's ok
+# NUC NOT APPLIED, full frame
+temperature85 = np.array([50,45,40,35,30,25,20,15,10,5,1])
+files85 = ['208','211','212','215','216','219','220','223','224','227','228']
+files85 = ['/home/ffederic/work/irvb/flatfield/Oct28_2024/Untitled-'+value for value in files85]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files85':files85}))
+
+# 27/10/2024 Temperature calibration done with the new BB source capable of filling the full FOV and the new FLIR X6980 camera. distance camera/BB source as per the current geometry with the 60mm stand-off
+# integration time and frequency variable based on table present in the file itself. the 1 file is then split based on all the combinations of settings used
+# view port damaged after the vacuum break after MU01, but with the coating facing the camera, heating ramp with new HGH BB source.
+# 2 point calibration through the FLIR software using 1 NUC plate from the fridge and the other at room temperature, done prior to the calibration
+# the FOV of the camera is slightly larger than the black body source, but the foil is much smaller than the full frame FOV, so it's ok
+# NUC APPLIED, full frame
+# view verically flipped compared to files82 to eliminate the effect of the BB source stripes
+temperature86 = np.array([50,48,46,43,40,37,34,32,30,28,27,26,25,24,23,22,21,20,18,16,14,12,10,8,7,6,5,4,3,2,1,20,30,35,40,45,50])
+files86 = ['231','232','235','236','239','240','243','244','248','250','253','254','257','258','261','263','266','267','270','271','274','275','278','279','282','286','287','288','291','292','295','296','299','300','303','304','307']
+files86 = ['/home/ffederic/work/irvb/flatfield/Oct28_2024/Untitled-'+value for value in files86]
+files86a = [value+'_int1.0_fr960.0' for value in files86]
+files86b = [value+'_int1.5_fr660.0' for value in files86]
+files86c = [value+'_int0.98_fr1000.0' for value in files86]
+files86d = [value+'_int0.9_fr1000.0' for value in files86]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files86a':files86a}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files86b':files86b}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files86c':files86c}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files86d':files86d}))
+
+# 27/10/2024 Temperature calibration done with the new BB source capable of filling the full FOV and the new FLIR X6980 camera. distance camera/BB source as per the current geometry with the 60mm stand-off
+# integration time and frequency variable based on table present in the file itself. the 1 file is then split based on all the combinations of settings used
+# view port damaged after the vacuum break after MU01, but with the coating facing the camera, heating ramp with new HGH BB source.
+# 2 point calibration through the FLIR software using 1 NUC plate from the fridge and the other at room temperature, done prior to the calibration
+# the FOV of the camera is slightly larger than the black body source, but the foil is much smaller than the full frame FOV, so it's ok
+# NUC NOT APPLIED, full frame
+# view verically flipped compared to files83 to eliminate the effect of the BB source stripes
+temperature87 = np.array([50,48,46,43,40,37,34,32,30,28,27,26,25,24,23,22,21,20,18,16,14,12,10,8,7,6,5,4,3,2,1,20,30,35,40,45,50])
+files87 = ['230','233','234','237','238','241','242','245','246','251','252','255','256','259','260','264','265','268','269','272','273','276','277','280','281','285','286','289','290','293','294','297','298','301','302','305','306']
+files87 = ['/home/ffederic/work/irvb/flatfield/Oct28_2024/Untitled-'+value for value in files87]
+files87a = [value+'_int1.0_fr960.0' for value in files87]
+files87b = [value+'_int1.5_fr660.0' for value in files87]
+files87c = [value+'_int0.98_fr1000.0' for value in files87]
+files87d = [value+'_int0.9_fr1000.0' for value in files87]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files87a':files87a}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files87b':files87b}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files87c':files87c}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files87d':files87d}))
+
+# 27/10/2024 Temperature calibration done with the new BB source capable of filling the full FOV and the new FLIR X6980 camera. distance camera/BB source as per the current geometry with the 60mm stand-off
+# integration time and frequency variable based on table present in the file itself. the 1 file is then split based on all the combinations of settings used
+# view port damaged after the vacuum break after MU01, but with the coating facing the camera, heating ramp with new HGH BB source.
+# 2 point calibration through the FLIR software using 1 NUC plate from the fridge and the other at room temperature, done prior to the calibration
+# the FOV of the camera is slightly larger than the black body source, but the foil is much smaller than the full frame FOV, so it's ok
+# NUC APPLIED, windowed
+# view verically flipped compared to files80 to eliminate the effect of the BB source stripes
+temperature88 = np.array([48,46,43,40,37,34,32,30,28,27,26,25,24,23,22,21,20,18,16,14,12,10,8,7,6,5,4,3,2,1,25,30,35,40,45,50])
+files88 = ['311','312','315','316','319','320','323','324','327','328','331','332','335','336','339','340','343','344','347','348','351','352','355','356','359','360','363','364','367','368','371','383','380','379','385','386']
+files88 = ['/home/ffederic/work/irvb/flatfield/Oct28_2024/Untitled-'+value for value in files88]
+files88a = [value+'_int1.0_fr960.0' for value in files88]
+files88b = [value+'_int0.5_fr1840.0' for value in files88]
+files88c = [value+'_int0.98_fr1000.0' for value in files88]
+files88d = [value+'_int0.9_fr1000.0' for value in files88]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files88a':files88a}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files88b':files88b}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files88c':files88c}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files88d':files88d}))
+
+# 27/10/2024 Temperature calibration done with the new BB source capable of filling the full FOV and the new FLIR X6980 camera. distance camera/BB source as per the current geometry with the 60mm stand-off
+# integration time and frequency variable based on table present in the file itself. the 1 file is then split based on all the combinations of settings used
+# view port damaged after the vacuum break after MU01, but with the coating facing the camera, heating ramp with new HGH BB source.
+# 2 point calibration through the FLIR software using 1 NUC plate from the fridge and the other at room temperature, done prior to the calibration
+# the FOV of the camera is slightly larger than the black body source, but the foil is much smaller than the full frame FOV, so it's ok
+# NUC NOT APPLIED, windowed
+# view verically flipped compared to files81 to eliminate the effect of the BB source stripes
+temperature89 = np.array([50,48,46,43,40,37,34,32,20,28,27,26,25,24,23,22,21,20,18,16,14,12,10,8,7,6,5,4,3,2,1,25,30,35,40,45,50])
+files89 = ['309','310','313','314','317','318','321','322','325','326','329','330','333','334','337','338','341','342','345','346','349','350','353','354','357','358','361','362','365','366','369','370','382','381','378','384','387']
+files89 = ['/home/ffederic/work/irvb/flatfield/Oct28_2024/Untitled-'+value for value in files89]
+files89a = [value+'_int1.0_fr960.0' for value in files89]
+files89b = [value+'_int0.5_fr1840.0' for value in files89]
+files89c = [value+'_int0.98_fr1000.0' for value in files89]
+files89d = [value+'_int0.9_fr1000.0' for value in files89]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files89a':files89a}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files89b':files89b}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files89c':files89c}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files89d':files89d}))
+
+# 27/10/2024 Temperature calibration done with the new BB source capable of filling the full FOV and the new FLIR X6980 camera. distance camera/BB source as per the current geometry with the 60mm stand-off
+# integration time 1ms, freme rate 960Hz
+# view port damaged after the vacuum break after MU01, but with the coating facing the camera, heating ramp with new HGH BB source.
+# 2 point calibration through the FLIR software using 1 NUC plate from the fridge and the other at room temperature, done prior to the calibration
+# the FOV of the camera is slightly larger than the black body source, but the foil is much smaller than the full frame FOV, so it's ok
+# NUC APPLIED, full frame
+# view verically flipped compared to files84 to eliminate the effect of the BB source stripes
+temperature90 = np.array([50,45,40,30,25,20,10,5,1])
+files90 = ['389','390','393','394','397','398','401','402','405']
+files90 = ['/home/ffederic/work/irvb/flatfield/Oct28_2024/Untitled-'+value for value in files90]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files90':files90}))
+
+# 27/10/2024 Temperature calibration done with the new BB source capable of filling the full FOV and the new FLIR X6980 camera. distance camera/BB source as per the current geometry with the 60mm stand-off
+# integration time 1ms, freme rate 960Hz
+# view port damaged after the vacuum break after MU01, but with the coating facing the camera, heating ramp with new HGH BB source.
+# 2 point calibration through the FLIR software using 1 NUC plate from the fridge and the other at room temperature, done prior to the calibration
+# the FOV of the camera is slightly larger than the black body source, but the foil is much smaller than the full frame FOV, so it's ok
+# NUC NOT APPLIED, full frame
+# view verically flipped compared to files85 to eliminate the effect of the BB source stripes
+temperature91 = np.array([50,45,40,30,25,20,10,5,1])
+files91 = ['388','391','392','395','396','399','400','403','404']
+files91 = ['/home/ffederic/work/irvb/flatfield/Oct28_2024/Untitled-'+value for value in files91]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files91':files91}))
+
+# 27/10/2024 Temperature calibration done with the new BB source capable of filling the full FOV and the new FLIR X6980 camera. distance camera/BB source as per the current geometry with the 60mm stand-off
+# integration time 1ms, freme rate 960Hz
+# view port damaged after the vacuum break after MU01, but with the coating facing the camera, heating ramp with new HGH BB source.
+# 2 point calibration through the FLIR software using 1 NUC plate from the fridge and the other at room temperature, done prior to the calibration
+# the FOV of the camera is slightly larger than the black body source, but the foil is much smaller than the full frame FOV, so it's ok
+# NUC APPLIED, windowed
+temperature92 = np.array([1,5,10,15,20,25,30,35,40,45,50])
+files92 = ['407','410','411','414','415','418','419','422','423','426','427']
+files92 = ['/home/ffederic/work/irvb/flatfield/Oct28_2024/Untitled-'+value for value in files92]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files92':files92}))
+
+# 27/10/2024 Temperature calibration done with the new BB source capable of filling the full FOV and the new FLIR X6980 camera. distance camera/BB source as per the current geometry with the 60mm stand-off
+# integration time 1ms, freme rate 960Hz
+# view port damaged after the vacuum break after MU01, but with the coating facing the camera, heating ramp with new HGH BB source.
+# 2 point calibration through the FLIR software using 1 NUC plate from the fridge and the other at room temperature, done prior to the calibration
+# the FOV of the camera is slightly larger than the black body source, but the foil is much smaller than the full frame FOV, so it's ok
+# NUC NOT APPLIED, windowed
+temperature93 = np.array([1,5,10,15,20,25,30,35,40,45,50])
+files93 = ['408','409','412','413','416','417','420','421','424','425','428']
+files93 = ['/home/ffederic/work/irvb/flatfield/Oct28_2024/Untitled-'+value for value in files93]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files93':files93}))
+
+
+
+# 27/04/2025 Temperature calibration done with the new BB source capable of filling the full FOV and the new FLIR X6980 camera. distance camera/BB source as per the current geometry with the 60mm stand-off
+# integration time and frequency variable based on table present in the file itself. the 1 file is then split based on all the combinations of settings used
+# view port damaged after the vacuum break after MU01, but with the coating facing the camera, heating ramp with new HGH BB source.
+# 2 point calibration through the FLIR software using 1 NUC plate from the fridge and the other at room temperature, done prior to the calibration
+# the FOV of the camera is slightly larger than the black body source, but the foil is much smaller than the full frame FOV, so it's ok
+# NUC APPLIED, windowed
+# temperature100 = np.array([50,46,42,38,33,30,25,20,15,10,5,1,2,7,12,17,22,27,32,35,40,45,48,52,55,60])
+temperature100 = np.array([50,46,38,33,30,25,20,15,10,5,1,2,7,12,17,22,27,32,35,40,45,48,52,55,60])
+# files100 = ['199','200','201','205','206','207','208','209','211','212','214','215','216','217','218','219','220','221','222','224','226','227','228','230','233','234']
+files100 = ['199','200','205','206','207','208','209','211','212','214','215','216','217','218','219','220','221','222','224','226','227','228','230','233','234']
+files100 = ['/home/ffederic/work/irvb/flatfield/Apr27_2025/flat_field-'+value for value in files100]
+files100a = [value+'_int1.0_fr960.0' for value in files100]
+files100b = [value+'_int0.5_fr1840.0' for value in files100]
+files100c = [value+'_int0.98_fr1000.0' for value in files100]
+files100d = [value+'_int0.9_fr1000.0' for value in files100]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files100a':files100a}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files100b':files100b}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files100c':files100c}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files100d':files100d}))
+
+# 27/04/2025 Temperature calibration done with the new BB source capable of filling the full FOV and the new FLIR X6980 camera. distance camera/BB source as per the current geometry with the 60mm stand-off
+# integration time and frequency variable based on table present in the file itself. the 1 file is then split based on all the combinations of settings used
+# view port damaged after the vacuum break after MU01, but with the coating facing the camera, heating ramp with new HGH BB source.
+# 2 point calibration through the FLIR software using 1 NUC plate from the fridge and the other at room temperature, done prior to the calibration
+# the FOV of the camera is slightly larger than the black body source, but the foil is much smaller than the full frame FOV, so it's ok
+# NUC NOT APPLIED, windowed
+temperature101 = np.array([60,54,48,42,36,30,24,18,12,6,1,3,9,15,21,27,33,39,45,51,57,63])
+files101 = ['236','237','238','239','240','241','242','243','244','245','246','247','248','249','250','251','252','253','254','255','256','257']
+files101 = ['/home/ffederic/work/irvb/flatfield/Apr27_2025/flat_field-'+value for value in files101]
+files101a = [value+'_int1.0_fr960.0' for value in files101]
+files101b = [value+'_int0.5_fr1840.0' for value in files101]
+files101c = [value+'_int0.98_fr1000.0' for value in files101]
+files101d = [value+'_int0.9_fr1000.0' for value in files101]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files101a':files101a}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files101b':files101b}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files101c':files101c}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files101d':files101d}))
+
+# 27/04/2025 Temperature calibration done with the new BB source capable of filling the full FOV and the new FLIR X6980 camera. distance camera/BB source as per the current geometry with the 60mm stand-off
+# integration time and frequency variable based on table present in the file itself. the 1 file is then split based on all the combinations of settings used
+# view port damaged after the vacuum break after MU01, but with the coating facing the camera, heating ramp with new HGH BB source.
+# 2 point calibration through the FLIR software using 1 NUC plate from the fridge and the other at room temperature, done prior to the calibration
+# the FOV of the camera is slightly larger than the black body source, but the foil is much smaller than the full frame FOV, so it's ok
+# NUC NOT APPLIED, windowed
+# view verically flipped compared to files101 to eliminate the effect of the BB source stripes
+temperature102 = np.array([63,59,53,47,41,35,29,23,17,11,5,1,2,8,14,20,26,32,38,44,50,56,62,68])
+files102 = ['259','260','261','262','263','264','265','266','267','268','269','270','271','272','273','274','275','276','277','278','279','280','281','282']
+files102 = ['/home/ffederic/work/irvb/flatfield/Apr27_2025/flat_field-'+value for value in files102]
+files102a = [value+'_int1.0_fr960.0' for value in files102]
+files102b = [value+'_int0.5_fr1840.0' for value in files102]
+files102c = [value+'_int0.98_fr1000.0' for value in files102]
+files102d = [value+'_int0.9_fr1000.0' for value in files102]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files102a':files102a}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files102b':files102b}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files102c':files102c}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files102d':files102d}))
+
+# 27/04/2025 Temperature calibration done with the new BB source capable of filling the full FOV and the new FLIR X6980 camera. distance camera/BB source as per the current geometry with the 60mm stand-off
+# integration time and frequency variable based on table present in the file itself. the 1 file is then split based on all the combinations of settings used
+# view port damaged after the vacuum break after MU01, but with the coating facing the camera, heating ramp with new HGH BB source.
+# 2 point calibration through the FLIR software using 1 NUC plate from the fridge and the other at room temperature, done prior to the calibration
+# the FOV of the camera is slightly larger than the black body source, but the foil is much smaller than the full frame FOV, so it's ok
+# NUC APPLIED, windowed
+# view verically flipped compared to files100 to eliminate the effect of the BB source stripes
+# temperature103 = np.array([68,62,56,50,44,39,32,26,20,14,8,2,1,5,11,17,23,29,35,41,47,53,59,65])
+temperature103 = np.array([68,62,56,50,44,32,26,20,14,8,2,1,5,11,17,23,29,35,41,47,53,59,65])
+# files103 = ['285','286','287','288','289','291','293','294','295','296','297','298','299','300','301','302','303','304','305','306','307','308','309','310']
+files103 = ['285','286','287','288','289','293','294','295','296','297','298','299','300','301','302','303','304','305','306','307','308','309','310']
+files103 = ['/home/ffederic/work/irvb/flatfield/Apr27_2025/flat_field-'+value for value in files103]
+files103a = [value+'_int1.0_fr960.0' for value in files103]
+files103b = [value+'_int0.5_fr1840.0' for value in files103]
+files103c = [value+'_int0.98_fr1000.0' for value in files103]
+files103d = [value+'_int0.9_fr1000.0' for value in files103]
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files103a':files103a}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files103b':files103b}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files103c':files103c}))
+full_pathfile_index = full_pathfile_index.merge(xr.Dataset({'files103d':files103d}))
+
+
+
 
 
 
