@@ -315,7 +315,8 @@ params = [
 		{'name': 'Shot +', 'type': 'action'},
 		{'name': 'Shot -', 'type': 'action'},
 		{'name': 'Quantity', 'type': 'list', 'values': quantity_options, 'value': 'FAST_counts_minus_background_crop'},
-		{'name': 'Binning', 'type': 'list', 'values': {'bin1x1x1': 'bin1x1x1', 'bin1x3x3': 'bin1x3x3', 'bin1x5x5': 'bin1x5x5', "bin1x10x10": 'bin1x10x10', "bin2x1x1": 'bin2x1x1', "bin2x3x3": 'bin2x3x3', "bin2x5x5": 'bin2x5x5', "bin2x10x10": 'bin2x10x10', "bin3x1x1": 'bin3x1x1', "bin3x3x3": 'bin3x3x3', "bin3x5x5": 'bin3x5x5', "bin3x10x10": 'bin3x10x10', "bin5x1x1": 'bin5x1x1', "bin5x3x3": 'bin5x3x3', "bin5x5x5": 'bin5x5x5', "bin5x10x10": 'bin5x10x10'}, 'value': 1},
+		# {'name': 'Binning', 'type': 'list', 'values': {'bin1x1x1': 'bin1x1x1', 'bin1x3x3': 'bin1x3x3', 'bin1x5x5': 'bin1x5x5', "bin1x10x10": 'bin1x10x10', "bin2x1x1": 'bin2x1x1', "bin2x3x3": 'bin2x3x3', "bin2x5x5": 'bin2x5x5', "bin2x10x10": 'bin2x10x10', "bin3x1x1": 'bin3x1x1', "bin3x3x3": 'bin3x3x3', "bin3x5x5": 'bin3x5x5', "bin3x10x10": 'bin3x10x10', "bin5x1x1": 'bin5x1x1', "bin5x3x3": 'bin5x3x3', "bin5x5x5": 'bin5x5x5', "bin5x10x10": 'bin5x10x10'}, 'value': 1},
+		{'name': 'Binning', 'type': 'str', 'value': "bin1x1x1", 'tip': 'bintxsxs'},
 		{'name': 'Voxel res', 'type': 'list', 'values': {'2': '2', '4': '4'}, 'value': '2'},
 		{'name': 'Load data', 'type': 'action'},
 		{'name': 'Load EFIT', 'type': 'action'},
@@ -356,7 +357,7 @@ param_ext = Parameter.create(name='params', type='group', children=params)
 param_ext1 = Parameter.create(name='params', type='group', children=params1)
 
 def reload_geometry():
-	global fueling_point_location_on_foil,structure_point_location_on_foil,core_tangential_location_on_foil,core_poloidal_location_on_foil,divertor_poloidal_location_on_foil
+	global fueling_point_location_on_foil,structure_point_location_on_foil,core_tangential_location_on_foil,core_poloidal_location_on_foil,divertor_poloidal_location_on_foil,divertor_SXDL_wall_location_on_foil
 	if param_ext1['Shot number']!=None:
 		if int(param_ext1['Shot number']) > 45517:	# restricted to MU02
 			stand_off_length = 0.06	# m
@@ -372,9 +373,11 @@ def reload_geometry():
 	core_tangential_location_on_foil = coleval.return_core_tangential_location_on_foil(plane_equation=plane_equation,centre_of_foil=centre_of_foil)
 	core_poloidal_location_on_foil = coleval.return_core_poloidal_location_on_foil(plane_equation=plane_equation,centre_of_foil=centre_of_foil)
 	divertor_poloidal_location_on_foil = coleval.return_divertor_poloidal_location_on_foil(plane_equation=plane_equation,centre_of_foil=centre_of_foil)
+	divertor_SXDL_wall_location_on_foil = coleval.return_divertor_SXDL_wall_location_on_foil(plane_equation=plane_equation,centre_of_foil=centre_of_foil)
 structure_radial_profile = coleval.return_structure_radial_profile()
 core_poloidal = coleval.return_core_poloidal()
 divertor_poloidal = coleval.return_divertor_poloidal()
+divertor_SXDL_wall = coleval.return_divertor_SXDL_wall()
 reload_geometry()
 
 ## If anything changes in the tree, print a message
@@ -844,7 +847,7 @@ def Load_EFIT():
 
 update_plot_inhibit = False
 def Load():
-	global data,framerate,time_array,overlay_fueling_point,overlay_structure,overlay_x_point,overlay_mag_axis,overlay_strike_points_1,overlay_strike_points_2,overlay_separatrix,overlay_Core_Resistive_bol,overlay_Div_Resistive_bol,data_shape,etendue,update_plot_inhibit,flag_radial_profile,efit_reconstruction,inversion_R,inversion_Z,dr,dz,fueling_point_location_on_foil,structure_point_location_on_foil,core_tangential_location_on_foil,core_poloidal_location_on_foil,divertor_poloidal_location_on_foil
+	global data,framerate,time_array,overlay_fueling_point,overlay_structure,overlay_x_point,overlay_mag_axis,overlay_strike_points_1,overlay_strike_points_2,overlay_separatrix,overlay_Core_Resistive_bol,overlay_Div_Resistive_bol,data_shape,etendue,update_plot_inhibit,flag_radial_profile,efit_reconstruction,inversion_R,inversion_Z,dr,dz,fueling_point_location_on_foil,structure_point_location_on_foil,core_tangential_location_on_foil,core_poloidal_location_on_foil,divertor_poloidal_location_on_foil,divertor_SXDL_wall_location_on_foil
 	flag_radial_profile = False
 	update_plot_inhibit = True
 	print(param_ext1['File Path'])
@@ -1077,9 +1080,13 @@ def Load():
 	if  flag_radial_profile:
 		for i in range(len(divertor_poloidal)):
 			overlay_Div_Resistive_bol.append(p5.plot(divertor_poloidal[i][:,0],divertor_poloidal[i][:,1],pen='r'))
+		for i in range(len(divertor_SXDL_wall)):
+			overlay_Div_Resistive_bol.append(p5.plot(divertor_SXDL_wall[i][:,0],divertor_SXDL_wall[i][:,1],pen='r'))
 	else:
 		for i in range(len(divertor_poloidal_location_on_foil)):
 			overlay_Div_Resistive_bol.append(p5.plot(np.array(divertor_poloidal_location_on_foil[i][:,0])*(data_shape[1]-1)/foil_size[0],np.array(divertor_poloidal_location_on_foil[i][:,1])*(data_shape[2]-1)/foil_size[1],pen='r'))
+		for i in range(len(divertor_SXDL_wall_location_on_foil)):
+			overlay_Div_Resistive_bol.append(p5.plot(np.array(divertor_SXDL_wall_location_on_foil[i][:,0])*(data_shape[1]-1)/foil_size[0],np.array(divertor_SXDL_wall_location_on_foil[i][:,1])*(data_shape[2]-1)/foil_size[1],pen='r'))
 	initialise_plots_from_EFIT()
 	update_plot_inhibit = False
 	update_plot()

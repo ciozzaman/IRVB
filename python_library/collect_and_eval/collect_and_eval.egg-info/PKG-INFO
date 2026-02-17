@@ -1,4 +1,4 @@
-Metadata-Version: 2.1
+Metadata-Version: 1.0
 Name: collect-and-eval
 Version: 0.2.61
 Summary: Functions to work on IR files update 2018-03-28
@@ -6,3 +6,5 @@ Home-page: no url by now
 Author: Fabio Federici
 Author-email: ff645@york.ac.uk
 License: University of York
+Description: UNKNOWN
+Platform: UNKNOWN

@@ -994,10 +994,11 @@ elif True:
 			# ID_all = np.arange(101,134+1)
 			# ID_all = np.arange(137,207+1)
 			# ID_all = np.arange(230,387+1)
-			ID_all = np.arange(236,310+1)
-			path = '/home/ffederic/work/irvb/flatfield/Apr27_2025/'
-			for ID in ID_all:
-			# for ID in np.flip(ID_all,axis=0):
+			ID_all = np.arange(3,45+1)
+			# path = '/home/ffederic/work/irvb/flatfield/Apr27_2025/'
+			path = '/home/ffederic/work/irvb/flatfield/Jan25_2026/'
+			# for ID in ID_all:
+			for ID in np.flip(ID_all,axis=0):
 
 				file = path + 'flat_field-'+str(ID)+'.ats'
 				print('starting'+file)
@@ -1051,7 +1052,7 @@ elif True:
 		else:
 			pass
 
-		if True:
+		if False:
 			description = 'HGH BB source with damaged window, FLIR X6980, geometry as per MU02, mean filter [7,30] applied to coeff2 to get rid of the effect of the horizontal stripes in the BB source a smoothing of [6.8,30] would have beed better, but I cannot do it in a simple manner'
 			fileshot = np.concatenate([files80a[:],files88a[:]])
 			how_to_split_window_offsett = [len(files80a[:])]
@@ -1074,7 +1075,7 @@ elif True:
 			# pathparam='/home/ffederic/work/irvb/2022-12-07_multiple_search_for_parameters/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
 			pathparam='/home/ffederic/work/irvb/2024-10-28_FLIRX6980/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
 
-		elif True:	# same but using the camera after the repairs after breaking in 10/2024
+		elif False:	# same but using the camera after the repairs after breaking in 10/2024
 			description = 'HGH BB source with damaged window, FLIR X6980 after it was repaired after breaking in 10/2024, geometry as per MU02, mean filter [7,30] applied to coeff2 to get rid of the effect of the horizontal stripes in the BB source a smoothing of [6.8,30] would have beed better, but I cannot do it in a simple manner'
 			fileshot = np.concatenate([files100a[:],files103a[:]])
 			how_to_split_window_offsett = [len(files100a[:])]
@@ -1109,6 +1110,42 @@ elif True:
 			# pathparam='/home/ffederic/work/irvb/2022-12-07_multiple_search_for_parameters/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
 			pathparam='/home/ffederic/work/irvb/2025-04-27_FLIRX6980/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
 
+		elif True:	# same but using the camera after the second round of repairs after breaking in summer 2025
+			description = 'HGH BB source with damaged window, FLIR X6980 after it was repaired after breaking in 10/2024, geometry as per MU02, mean filter [7,1] applied to coeff2 to get rid of the effect of the horizontal stripes in the BB source a smoothing of [6.8,30] would have beed better, but I cannot do it in a simple manner'
+			fileshot = np.concatenate([files110a[:],files111a[:]])
+			how_to_split_window_offsett = [len(files110a[:])]
+			temperaturehot = np.concatenate([temperature110[:],temperature111[:]])
+			filescold = []
+			temperaturecold = []
+			temperature_window = temperaturehot.tolist()+temperaturecold
+			files_window = fileshot.tolist()+filescold
+			# inttime=0.9	# ms
+			inttime=float(files_window[0][files_window[0].find('int')+3:files_window[0].find('_fr')])
+			# framerate=1000.0	# Hz
+			framerate=float(files_window[0][files_window[0].find('_fr')+3:])
+			fileshot = []
+			temperaturehot = []
+			filescold = []
+			temperaturecold = []
+			temperature_no_window = temperaturehot+temperaturecold
+			files_no_window = fileshot+filescold
+			n=3
+			upper_temperature_saturation_limit = np.inf
+			if files_window[0].find('int1.0')!=-1:
+				upper_temperature_saturation_limit = 55
+			elif files_window[0].find('int0.98')!=-1:
+				upper_temperature_saturation_limit = 55
+			elif files_window[0].find('int0.9_')!=-1:
+				upper_temperature_saturation_limit = 58
+
+			how_to_split_window_offsett[0] -= np.sum(np.array(temperature_window[:how_to_split_window_offsett[0]])>=upper_temperature_saturation_limit)
+			files_window = np.array(files_window)[np.array(temperature_window)<upper_temperature_saturation_limit]
+			temperature_window = np.array(temperature_window)[np.array(temperature_window)<upper_temperature_saturation_limit]
+
+			# pathparam='/home/ffederic/work/irvb/2022-12-07_multiple_search_for_parameters/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
+			pathparam='/home/ffederic/work/irvb/2026-01-25_FLIRX6980/'+str(inttime)+'ms'+str(framerate)+'Hz'+'/'+'numcoeff'+str(n)
+
+
 		if not os.path.exists(pathparam):
 			os.makedirs(pathparam)
 		coleval.build_poly_coeff_multi_digitizer_with_no_window_reference(temperature_window,files_window,temperature_no_window,files_no_window,inttime,pathparam,n,wavewlength_top=5.1,wavelength_bottom=1.5,description=description,how_to_split_window_offsett=how_to_split_window_offsett)
@@ -1119,17 +1156,18 @@ elif True:
 		params_dict.allow_pickle=True
 		params_dict = dict(params_dict)
 		params_BB = params_dict['coeff2']
-		params_BB[0,:,:,3] = generic_filter(params_BB[0,:,:,3],np.mean,size=[7,30])
-		params_BB[0,:,:,2] = generic_filter(params_BB[0,:,:,2],np.mean,size=[7,30])
+		params_BB[0,:,:,3] = generic_filter(params_BB[0,:,:,3],np.mean,size=[7,1])
+		params_BB[0,:,:,2] = generic_filter(params_BB[0,:,:,2],np.mean,size=[7,1])
 		params_dict['coeff2'] = params_BB
 		errparams_BB = params_dict['errcoeff2']
-		errparams_BB[0,:,:,2,2] = generic_filter(errparams_BB[0,:,:,2,2],np.mean,size=[7,30])
-		errparams_BB[0,:,:,3,3] = generic_filter(errparams_BB[0,:,:,3,3],np.mean,size=[7,30])
+		errparams_BB[0,:,:,2,2] = generic_filter(errparams_BB[0,:,:,2,2],np.mean,size=[7,1])
+		errparams_BB[0,:,:,3,3] = generic_filter(errparams_BB[0,:,:,3,3],np.mean,size=[7,1])
 		params_dict['errcoeff2'] = errparams_BB
 		np.savez(os.path.join(pathparam,'coeff_polynomial_deg'+str(n-1)+'int_time'+str(inttime)+'ms'),**params_dict)
 
 		coleval.make_plots_at_end_of_params_generation(pathparam,params_BB,description=description,digitizer_ID=0,addendum_to_filemane='smoothed')
 
+		exit()
 
 	else:
 		pass

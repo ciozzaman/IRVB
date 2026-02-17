@@ -117,6 +117,19 @@ for path in parameters_available_BB_X6980_2:
 parameters_available_int_time_BB_X6980_2 = np.array(parameters_available_int_time_BB_X6980_2)
 parameters_available_framerate_BB_X6980_2 = np.array(parameters_available_framerate_BB_X6980_2)
 
+pathparams_BB_X6980_3='/home/ffederic/work/irvb/2026-01-25_FLIRX6980'	# new BB source after the camera broke, calibration with wavewlength_top=5.1,wavelength_bottom=1.5
+f = []
+for (dirpath, dirnames, filenames) in os.walk(pathparams_BB_X6980_3):
+	f.append(dirnames)
+parameters_available_BB_X6980_3 = f[0]
+parameters_available_int_time_BB_X6980_3 = []
+parameters_available_framerate_BB_X6980_3 = []
+for path in parameters_available_BB_X6980_3:
+	parameters_available_int_time_BB_X6980_3.append(float(path[:path.find('ms')]))
+	parameters_available_framerate_BB_X6980_3.append(float(path[path.find('ms')+2:path.find('Hz')]))
+parameters_available_int_time_BB_X6980_3 = np.array(parameters_available_int_time_BB_X6980_3)
+parameters_available_framerate_BB_X6980_3 = np.array(parameters_available_framerate_BB_X6980_3)
+
 color = ['b', 'r', 'm', 'y', 'g', 'c', 'k', 'slategrey', 'darkorange', 'lime', 'pink', 'gainsboro', 'paleturquoise', 'teal', 'olive','blueviolet','tan','skyblue','brown','dimgray','hotpink']
 
 path = '/home/ffederic/work/irvb/MAST-U/'
@@ -145,7 +158,7 @@ elif MU_campaign==4:
 elif MU_campaign==99:	# just an exeption to have manual runs
 	to_do = ['2024-01-19']
 else:
-	to_do = ['2025-07-22']
+	to_do = ['2026-02-12']
 # # for Lingyan
 # to_do = ['2021-10-27']
 # path = '/home/ffederic/work/irvb/MAST-U/preliminaly_shots/'
@@ -185,7 +198,7 @@ elif True:	# with this all the shots are in a single array
 		# shot_available.append([])
 		if len(f)>0:
 			for name in f[0]:
-				if name[-3:]=='ats' or name[-3:]=='ptw':
+				if name[-3:]=='ats' or name[-3:]=='ptw' or (name[-3:]=='npz' and not (name[-8:-4] in ['ance','FAST'])):
 					shot_available.append(name)
 					temp.append(day)
 	to_do = temp
@@ -216,10 +229,12 @@ do_inversions = False
 every_pixel_independent = False
 overwrite_oscillation_filter = True
 overwrite_binning = True
-override_first_pass = False
-skip_second_pass = True
+override_first_pass = True
+skip_second_pass = False
 override_second_pass = False
 skip_third_pass = False
+if skip_second_pass:
+	skip_third_pass = True
 override_third_pass = False
 True_for_inversion_False_for_post_analysis_only = True
 
@@ -230,7 +245,7 @@ only_plot_brightness = False
 
 if False or MU_campaign>0:	# section to use when specifying the days
 	# for i_day,day in enumerate(to_do):
-	# to_do = np.flip(to_do,axis=0)
+	to_do = np.flip(to_do,axis=0)
 	# shot_available = np.flip(shot_available,axis=0)
 	# # for i_day,day in enumerate(np.flip(to_do,axis=0)):
 	# 	shot_available[i_day] = np.flip(shot_available[i_day],axis=0)
@@ -242,9 +257,6 @@ if False or MU_campaign>0:	# section to use when specifying the days
 		skip_second_pass = False
 		skip_third_pass = True
 	elif ext_number_of_passes==3:
-		skip_second_pass = False
-		skip_third_pass = False
-	else:
 		skip_second_pass = False
 		skip_third_pass = False
 
@@ -269,7 +281,7 @@ if False or MU_campaign>0:	# section to use when specifying the days
 			continue
 
 		try:
-			if True_for_inversion_False_for_post_analysis_only:
+			if True:
 				exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_pulse_process2_BB.py").read())
 			else:
 				pass_number = 0
@@ -281,7 +293,7 @@ if False or MU_campaign>0:	# section to use when specifying the days
 			logging.exception('with error: ' + str(e))
 			pass
 
-elif True:	# section to use when specifying the shots
+elif False:	# section to use when specifying the shots
 
 	# simpler way of starting works
 	# to_do = ['45468','45469','45470','45473','45401','45399','45371']#,'45473']
@@ -299,21 +311,22 @@ elif True:	# section to use when specifying the shots
 	# shots for the RSI paper
 	# to_do = ['44647','45409','45225','45351','45401','44892','45295','45328','45371']
 
-	# shots for the science paper
-	# to_do = ['45371']
-	# shots for the CD radiator location comparison shots
-	# to_do = ['45473','45470','45469','45468','45327','45326','45325','45324','45323','45322','45320','45303','45302','45296','45295','45293','45142','45126','45088','45371']
-	# shots for the CD BEAMS shots for the cross comparison
-	# to_do = ['45401','45399','45311','45310','45309','45306','45304','45299','45286','45272','45271','45270','45268','45267','45266','45264','45262','45261','45252','45251','45237','45236','45212','45193','45194','45175','45170','45167','45132','45125','45097','45091','45006','44969','44968','44967','44960']
-	# shots for David's paper
-	# to_do = ['45443','45444','45446','45456','45459','45461','45462','45463','45464','45465','45468','45469','45470','45473']
-	# shots for Kevin's paper
-	# to_do = ['46860','47958','46866','47079','46702']
-	# to_do = ['49270','49267','49320','49312']
-	# to_do = ['46860','47958','46705','48330']
-	# Stuart THR01
-	# to_do = ['49401']
-	# to_do = ['49392','49394','49396','49397','49400','49401','49404','49405']
+	# # shots for the science paper
+	# to_do = []
+	# to_do = to_do + ['45371']
+	# # shots for the CD radiator location comparison shots
+	# to_do = to_do + ['45473','45470','45469','45468','45327','45326','45325','45324','45323','45322','45320','45303','45302','45296','45295','45293','45142','45126','45088','45371']
+	# # shots for the CD BEAMS shots for the cross comparison
+	# to_do = to_do + ['45401','45399','45311','45310','45309','45306','45304','45299','45286','45272','45271','45270','45268','45267','45266','45264','45262','45261','45252','45251','45237','45236','45212','45193','45194','45175','45170','45167','45132','45125','45097','45091','45006','44969','44968','44967','44960']
+	# # shots for David's paper
+	# to_do = to_do + ['45443','45444','45446','45456','45459','45461','45462','45463','45464','45465','45468','45469','45470','45473']
+	# # shots for Kevin's paper
+	# to_do = to_do + ['46860','47958','46866','47079','46702']
+	# to_do = to_do + ['49270','49267','49320','49312']
+	# to_do = to_do + ['46860','47958','46705','48330']
+	# # Stuart THR01
+	# to_do = to_do + ['49401']
+	# to_do = to_do + ['49392','49394','49396','49397','49400','49401','49404','49405']
 
 	# # shots asked by Jack MU03-DIV-02
 	# to_do = ['48590','48592','48596','48597','48599','48690','48692','48696','48765','48766','48767','48768','48769']
@@ -362,8 +375,8 @@ elif True:	# section to use when specifying the shots
 	# # other H mode shots I'm finding
 	# to_do = ['48594','48595','48596','48564','48763']
 
-	# MU03 snowflake by Vlad Soukhanovskii
-	# to_do = ['49463','49464','49465','49466','49467','49468']
+	# # MU03 snowflake by Vlad Soukhanovskii
+	# # to_do = ['49463','49464','49465','49466','49467','49468']
 	# to_do = ['49465','49467','49468']
 
 	# to_do = []
@@ -392,11 +405,12 @@ elif True:	# section to use when specifying the shots
 	# to_do = to_do + ['47950','47973','48144']
 	# to_do = to_do + ['46866','46867','46868','46891','48336','49408']
 
-	# # data for Yasmin Adnrew (female) about LH transition
+	# # # data for Yasmin Adnrew (female) about LH transition
 	# to_do = []
-	# # # to_do = to_do + ['46631','47012','47078','47094','47889','47909','47916',
-	# # # '47918','48004','48172','48174','48175','48176','48177',
-	# # # '49091','49094','49095']
+	# to_do = to_do + ['51704','51705','51706','51709','51710','51711','51712','51713','51761','51762','51763','52764','51765']
+	# to_do = to_do + ['46631','47012','47078','47094','47889','47909','47916',
+	# '47918','48004','48172','48174','48175','48176','48177',
+	# '49091','49094','49095']
 	# to_do = to_do + ['48004']
 
 	# data for Bob Kool nature 2024 paper
@@ -409,8 +423,8 @@ elif True:	# section to use when specifying the shots
 	# to_do = to_do + ['50822','50823','50824','50825','50826','50827','50828',
 	# '50830','50831','50832','50833']
 
-	# # 2025/06/05 Fabio Federici MU04-DIV02 experiments
-	# to_do = []
+	# 2025/06/05 Fabio Federici MU04-DIV02 experiments
+	to_do = []
 	# to_do = to_do + ['51650','51651','51652','51653','51654','51655','51656']	# first session DN
 	# to_do = to_do + ['51877','51878','51879','51880','51883','51884','51885','51886','51887']	# second session LSN
 	# to_do = to_do + ['52349', '52355']	# first repeat DN cryo high ISP
@@ -418,11 +432,16 @@ elif True:	# section to use when specifying the shots
 	# to_do = to_do + ['52493']	# third repeat DN cryo low ISP
 	# to_do = to_do + ['50833','50832']	# additional cases from Kevin with different position of inner leg
 	# to_do = to_do + ['50825']	# additional cases from Kevin with density decreasing rather than increasing
+	# to_do = to_do + ['52288','52285']	# case from stuart where the outer leg becomes vertical and I could see if that transition is sharp (from the angle of the OSP: open divertor 52288), together with closed divertor reference (52285)
+	# to_do = to_do + ['50923','50924','51817','52384','52383']	# Charlie's negative triangularity shots
+	# to_do = to_do + ['52612']	# Nocola's CD DN Lmode with N2 seeding
+	to_do = to_do + ['47116','49303','47080']	# Nocola's oscillating fueling. NOTE: the fueling of the valve that oscillate is NOT recorded
 
-	# 2025/06/05 Stuart XPR experiments
-	to_do = []
-	to_do = to_do + ['51796','51797','51798','51799','51800','51801','51802','51803','51804','51805','51806','51807','52296','52314','52284','52285','52286','52287','52288','52289','52290','52291','52292','52301']
-	to_do = to_do + ['52248','52250','52251','52252','52255','52266','52257','52258']
+	# # # 2025/06/05 Stuart XPR experiments
+	# to_do = []
+	# to_do = to_do + ['51796','51797','51798','51799','51800','51801','51802','51803','51804','51805','51806','51807','52296','52314','52284','52285','52286','52287','52288','52289','52290','52291','52292','52301']
+	# to_do = to_do + ['52248','52250','52251','52252','52255','52266','52257','52258']
+	# to_do = to_do + ['52356','52315','52354']	# can be interesting as the inner strike point goes from CC to T1, while the rest stays about the same
 
 	# 2025/05/14 Ling yang experiments
 	# to_do = []
@@ -432,20 +451,25 @@ elif True:	# section to use when specifying the shots
 	# to_do = []
 	# to_do = to_do + ['50923','50924','51817','52384','52383']
 
-	# 2025/05/02 Bart EST-01 experiments
+	# # 2025/05/02 Bart EST-01 experiments
 	# to_do = []
 	# to_do = to_do + ['51685','51692','51691']
 
 	# # 2025/07/04 Rory and Nicola for transients
 	# to_do = []
-	# to_do = to_do + ['51375','51787','51789','51791','51788','51785','51786','52249','52250']
+	# to_do = to_do + ['51375','51380','51381','51508','51511','51512','51514','51785','51786','51787','51788','51789','51791','52249','52250']
 	# to_do = to_do + ['52506']	# random Hmode added to see if ELMs are visible
+
+	# # 2025/05/02 Nicola for PSI 2026
+	# to_do = []
+	# to_do = to_do + ['49303','50838','50832','50639']
 
 	# # 2025/08/14 Vlad's snowflake experiments
 	# to_do = []
 	# to_do = to_do + ['52434','52436','52437','52438','52439','524140','52441','52442']
 
-	# to_do = np.flip(to_do,axis=0)
+	to_do = np.flip(to_do,axis=0)
+
 	if ext_sequencer!=None:
 		try:
 			to_do = [to_do[ext_sequencer]]
@@ -494,36 +518,8 @@ elif True:	# section to use when specifying the shots
 			logging.exception('with error: ' + str(e))
 			pass
 
-else:	# section to use when analysing only one shot
-	# i_day,day = 0,'2021-07-29'
-	# name='IRVB-MASTU_shot-44578.ptw'
-	# i_day,day = 0,'2021-08-25'
-	# name='IRVB-MASTU_shot-44797.ptw'
-	# i_day,day = 0,'2021-06-24'
-	# name='IRVB-MASTU_shot-44308.ptw'
-	# i_day,day = 0,'2021-08-05'
-	# name='IRVB-MASTU_shot-44607.ptw'
-	# i_day,day = 0,'2021-10-13'
-	# name='IRVB-MASTU_shot-45272.ptw'
-	# i_day,day = 0,'2021-10-27'
-	# name='IRVB-MASTU_shot-45460.ptw'
-	# i_day,day = 0,'2021-10-12'
-	# name='IRVB-MASTU_shot-47958.ptw'
-	# name='IRVB-MASTU_shot-46860.ptw'
-	name='IRVB-MASTU_shot-45473.ptw'
-	# name='IRVB-MASTU_shot-45371.ptw'
-	# name='IRVB-MASTU_shot-49312.ptw'
-	# name='IRVB-MASTU_shot-49213.ptw'
-	# name='IRVB-MASTU_shot-49312.ptw'
-	# name='IRVB-MASTU_shot-49385.ptw'
-	# name='IRVB-MASTU_shot-49196.ptw'
-	# i_day,day = 0,'2021-10-22'
-	# name='IRVB-MASTU_shot-45225.ptw'
-	# i_day,day = 0,'2021-10-21'
-	# name='IRVB-MASTU_shot-46895.ptw'
-	# name='IRVB-MASTU_shot-48324.ptw'
-	# name = 'IRVB-MASTU_shot-48636.ptw'
-	name = 'IRVB-MASTU_shot-48004.ptw'
+elif True:	# section to use when analysing only one shot
+
 	# MU03
 	name = 'IRVB-MASTU_shot-49445.ptw'	# large VDE: peak fast camera brightness 686ms; peak /XIM/DA/HL02/SXD 689.7ms; peak /XIM/DA/HE05/ISP/L and start decrease /XBM/CORE/F15/AMP 689.5ms; IRVB 3185 ms from recording start -2.5 = 685ms
 	name = 'IRVB-MASTU_shot-49372.ptw'	# large VDE: peak fast camera brightness 623ms; peak /XIM/DA/HL02/SXD 624.9ms; peak /XIM/DA/HE05/ISP/L and start decrease /XBM/CORE/F15/AMP 625.1ms; IRVB 3103 ms from recording start -2.5 = 601ms
@@ -566,9 +562,9 @@ else:	# section to use when analysing only one shot
 	name = 'IRVB-MASTU_shot-44804.ptw'	# large VDE: peak fast camera brightness MISSING; large VDE: peak /XIM/DA/HL02/SXD 417.9ms; peak /XIM/DA/HE05/ISP/L and start decrease /XBM/CORE/F15/AMP 417.3ms; IRVB 2922 ms from recording start -2.5 = 422ms
 	# name = 'IRVB-MASTU_shot-45463.ptw'	# large VDE: peak /XIM/DA/HL02/SXD 711.3ms; peak /XIM/DA/HE05/ISP/L and start decrease /XBM/CORE/F15/AMP 710.9ms; IRVB 3019 ms from recording start -2.5 = 519ms	NOTE framerate 50Hz, so starting point very wrong
 	# name = 'IRVB-MASTU_shot-47953.ptw'
-	# name = 'IRVB-MASTU_shot-45225.ptw'
 	# name = 'IRVB-MASTU_shot-52493.ptw'
-	name = 'IRVB-MASTU_shot-50924.ptw'
+	# name = 'IRVB-MASTU_shot-52355.ptw'
+	name = 'IRVB-MASTU_shot-53520.ptw'
 
 	if name[:4] == 'IRVB':	# I want to shorten the filenames in to_do
 		pass

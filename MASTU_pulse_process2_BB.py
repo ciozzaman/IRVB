@@ -38,23 +38,51 @@ except:
 		laser_to_analyse = laser_to_analyse[:-4]+'.ats'
 		print(laser_to_analyse[:-4]+'.npz'+' file will be generated')
 	else:
-		print(laser_to_analyse+' file missing, analysis halted.')
-		bla = sgna	# I want this to generate an error. te camera file is not present.
+		print('file missing, I try to look for it in the temp storage')
+
+		# 2025-12-18 I try to recover the file from the storage
+		try:
+			archive_path,name = coleval.find_shot_file_and_path_in_temp_storage(shotnumber)	# I over write name, so if the file type was wrong it can get fixed
+			# to copy the files
+			import shutil
+
+			if not os.path.exists(path+day):
+				os.mkdir(path+day)
+			if not os.path.isfile(path+day + '/' + name):
+				shutil.copyfile(archive_path + '/' + name, path+day + '/' + name)
+				print('copied from \n'+archive_path + '/' + name + '\nto\n' +path+day + '/' + name)
+				laser_to_analyse=path+day+'/'+name
+
+			if os.path.exists(laser_to_analyse):
+				print(laser_to_analyse[:-4]+'.npz'+' file will be generated')
+			elif os.path.exists(laser_to_analyse[:-4]+'.ptw'):	# additional stage: change the file extension if found
+				laser_to_analyse = laser_to_analyse[:-4]+'.ptw'
+				print(laser_to_analyse[:-4]+'.npz'+' file will be generated')
+			elif os.path.exists(laser_to_analyse[:-4]+'.ats'):	# additional stage: change the file extension if found
+				laser_to_analyse = laser_to_analyse[:-4]+'.ats'
+				print(laser_to_analyse[:-4]+'.npz'+' file will be generated')
+			# here we go back to the normal code
+
+		except:
+			print(laser_to_analyse+' file missing, analysis halted.')
+			bla = sgna	# I want this to generate an error. te camera file is not present.
+
 	if laser_to_analyse[-4:]=='.ats':
 		full_saved_file_dict = coleval.ats_to_dict(laser_to_analyse)
 	else:
 		full_saved_file_dict = coleval.ptw_to_dict(laser_to_analyse,max_time_s = 30)
 	np.savez_compressed(laser_to_analyse[:-4],**full_saved_file_dict)
-	print(laser_to_analyse + 'created and saved')
+	print(laser_to_analyse[:-4]+ '.npz' + ' created and saved')
 	laser_dict = np.load(laser_to_analyse[:-4]+'.npz')
 	laser_dict.allow_pickle=True
 full_saved_file_dict = dict(laser_dict)
 
-try:
-	os.remove(laser_to_analyse)
-	print('source file ' + laser_to_analyse + ' deleted to save Freia space')
-except:
-	pass
+if laser_to_analyse[-3:] != 'npz':
+	try:
+		os.remove(laser_to_analyse)
+		print('source file ' + laser_to_analyse + ' deleted to save Freia space')
+	except:
+		pass
 
 
 if laser_to_analyse[-9:-4] in list(MASTU_shots_timing.keys()):	# manual exceptions at the beginning of IRVB life
@@ -148,11 +176,7 @@ try:
 	else:
 		laser_int_time = full_saved_file_dict['IntegrationTime']	# microseconds
 
-	# in the FLIR X6980 data i think i see a bunch of dynamically changing bad pixels i think due to neutrons, i eliminate them with a temporal median filter
-	# I don't see the issue to leave it in all cases
-	laser_counts_median_filter = [median_filter(value,size=[3,1,1]) for value in laser_counts]
-	neutron_caused_blips = [(np.abs(laser_counts_median_filter[i] - laser_counts[i])/laser_counts_median_filter[i])>0.025 for i in range(len(laser_counts))]	# 2.5% arbitrary threshold that seems to remove most badness
-	if True and int(laser_to_analyse[-9:-4])>52500:	# this bit it to detect badness in the camera image as found in the FLIR X6980 in summer 2025
+	if True and (int(laser_to_analyse[-9:-4])>52500 or int(laser_to_analyse[-9:-4])==51653):	# this bit it to detect badness in the camera image as found in the FLIR X6980 in summer 2025	# introduced 51653 as test case to test effect of missing data
 		window_for_bad_stripes = 400
 		laser_counts_median_filter_initial = [median_filter(value,size=[3,1,1]) for value in np.array(laser_counts)[:,:window_for_bad_stripes]]
 		neutron_caused_blips_initial = [(np.abs(laser_counts_median_filter_initial[i] - np.array(laser_counts)[i,:window_for_bad_stripes])/laser_counts_median_filter_initial[i])>0.025 for i in range(len(laser_counts))]	# 2.5% arbitrary threshold that seems to remove most badness
@@ -161,23 +185,40 @@ try:
 		neutron_caused_blips_initial = np.sum(neutron_caused_blips_initial,axis=(0,1))
 		neutron_caused_blips_end = np.sum(neutron_caused_blips_end,axis=(0,1))
 		plt.figure(figsize=(12, 8))
-		plt.title(day+'/'+name+'\nint time %.3gms, framerate %.3gHz' %(laser_int_time/1000,laser_framerate))
 		# plt.imshow(np.sum(neutron_caused_blips_initial,axis=(0,1))>0)
 		plt.imshow(neutron_caused_blips_end+neutron_caused_blips_initial,'rainbow')
 		plt.colorbar().set_label('over deviation from median detected [au]')
-		for i__ in np.arange(len(np.sum(neutron_caused_blips_end+neutron_caused_blips_initial>10,axis=0)>2))[np.sum(neutron_caused_blips_end+neutron_caused_blips_initial>10,axis=0)>2]:
+		rows_to_replace = np.arange(len(np.sum(neutron_caused_blips_end+neutron_caused_blips_initial>10,axis=0)>2))[np.sum(neutron_caused_blips_end+neutron_caused_blips_initial>10,axis=0)>2]
+		if int(laser_to_analyse[-9:-4])==51653:	# modyfying dood data to see what is the effect of removing columns in groups of 2 as with the damaged FLIR X6980 camera
+			print('WARNING 51653 was manually modified to see if removing the column data would worsen the inversion')
+			rows_to_replace = np.array([  6 ,  7,  22,  23,  38,  39,  54,  55,  70,  71, 86, 87,102,103,118,119,134,135,150,151,166,167,182,183,198,199,214,215,230,231,246,247,262,263,278,279,294,295,310,311,326,327,342,343])
+		for i__ in rows_to_replace:
 			plt.axvline(x=i__,color='k',linestyle=':',alpha=0.1)
+		plt.title(day+'/'+name+'\nint time %.3gms, framerate %.3gHz' %(laser_int_time/1000,laser_framerate) +'\nreplaced columns '+str( rows_to_replace ))
 		plt.savefig(laser_to_analyse[:-4]+'_column_badness.eps')
 		plt.close('all')
 		# plt.figure()
 		# plt.plot(np.sum(neutron_caused_blips_end+neutron_caused_blips_initial>10,axis=0)>2)
-		temp = np.array(laser_counts).astype(np.float32)
+		temp = np.array(laser_counts).astype(np.float16)
 		temp[:,:,:,np.sum(neutron_caused_blips_end+neutron_caused_blips_initial>10,axis=0)>2] = np.nan
-		# temp_filtered = [median_filter(value[:100],size=[3,3,3]) for value in temp]
-		temp_filtered = [generic_filter(value,np.nanmean,size=[1,3,3]) for value in temp]
-		print('replaced columns '+str( np.arange(len(np.sum(neutron_caused_blips_end+neutron_caused_blips_initial>10,axis=0)>2))[np.sum(neutron_caused_blips_end+neutron_caused_blips_initial>10,axis=0)>2] ))
-		for i in range(len(laser_counts)):
-			laser_counts[i][:,:,np.sum(neutron_caused_blips_end+neutron_caused_blips_initial>10,axis=0)>2] = (temp_filtered[i]).astype(int)[:,:,np.sum(neutron_caused_blips_end+neutron_caused_blips_initial>10,axis=0)>2]
+		if int(laser_to_analyse[-9:-4])==51653:	# modyfying dood data to see what is the effect of removing columns in groups of 2 as with the damaged FLIR X6980 camera
+			for i_ in range(len(laser_counts)):
+				for i__ in rows_to_replace:
+					temp[i_][:,:,i__] = np.nan
+		if True:
+			for i_ in range(len(laser_counts)):
+				for i__ in rows_to_replace:
+					laser_counts[i_][:,:,i__] = np.nanmedian(temp[i_][:,:,i__-1:i__+2],axis=-1)
+		else:
+			# temp_filtered = [median_filter(value[:100],size=[3,3,3]) for value in temp]
+			temp_filtered = [generic_filter(value,np.nanmean,size=[1,3,3]) for value in temp]
+			for i in range(len(laser_counts)):
+				laser_counts[i][:,:,np.sum(neutron_caused_blips_end+neutron_caused_blips_initial>10,axis=0)>2] = (temp_filtered[i]).astype(int)[:,:,np.sum(neutron_caused_blips_end+neutron_caused_blips_initial>10,axis=0)>2]
+		print('replaced columns '+str( rows_to_replace ))
+	# in the FLIR X6980 data i think i see a bunch of dynamically changing bad pixels i think due to neutrons, i eliminate them with a temporal median filter
+	# I don't see the issue to leave it in all cases
+	laser_counts_median_filter = [median_filter(value,size=[3,1,1]) for value in laser_counts]
+	neutron_caused_blips = [(np.abs(laser_counts_median_filter[i] - laser_counts[i])/laser_counts_median_filter[i])>0.025 for i in range(len(laser_counts))]	# 2.5% arbitrary threshold that seems to remove most badness
 	for i in range(len(laser_counts)):
 		laser_counts[i][neutron_caused_blips[i]] = laser_counts_median_filter[i][neutron_caused_blips[i]]
 	try:	# if the length of the data in the 2 digitizers is fdifferent this can collapse, and i don't want this to stop everything
@@ -563,36 +604,58 @@ try:
 	# plt.ylabel('Vertical axis [pixles]')
 	# plt.pause(0.01)
 
+	# if none of these is activated the used parameters are the one from the old FLIR SC7500 camera
 	if (int(laser_to_analyse[-9:-4])>49476 and int(laser_to_analyse[-9:-4])<50646):
-		parameters_available_int_time_BB = parameters_available_int_time_BB_X6980
-		parameters_available_framerate_BB = parameters_available_framerate_BB_X6980
-		parameters_available_BB = parameters_available_BB_X6980
-		pathparams_BB = pathparams_BB_X6980
+		parameters_available_int_time_BB_int = parameters_available_int_time_BB_X6980
+		parameters_available_framerate_BB_int = parameters_available_framerate_BB_X6980
+		parameters_available_BB_int = parameters_available_BB_X6980
+		pathparams_BB_int = pathparams_BB_X6980
 
-		parameters_available_int_time = parameters_available_int_time_BB_X6980
-		parameters_available_framerate = parameters_available_framerate_BB_X6980
-		parameters_available = parameters_available_BB_X6980
-		pathparams = pathparams_BB_X6980
-	elif (int(laser_to_analyse[-9:-4])>51639 and int(laser_to_analyse[-9:-4])<np.inf):
-		parameters_available_int_time_BB = parameters_available_int_time_BB_X6980_2
-		parameters_available_framerate_BB = parameters_available_framerate_BB_X6980_2
-		parameters_available_BB = parameters_available_BB_X6980_2
-		pathparams_BB = pathparams_BB_X6980_2
+		parameters_available_int_time_int = parameters_available_int_time_BB_X6980
+		parameters_available_framerate_int = parameters_available_framerate_BB_X6980
+		parameters_available_int = parameters_available_BB_X6980
+		pathparams_int = pathparams_BB_X6980
+	elif (int(laser_to_analyse[-9:-4])>51639 and int(laser_to_analyse[-9:-4])<52778):
+		parameters_available_int_time_BB_int = parameters_available_int_time_BB_X6980_2
+		parameters_available_framerate_BB_int = parameters_available_framerate_BB_X6980_2
+		parameters_available_BB_int = parameters_available_BB_X6980_2
+		pathparams_BB_int = pathparams_BB_X6980_2
 
-		parameters_available_int_time = parameters_available_int_time_BB_X6980_2
-		parameters_available_framerate = parameters_available_framerate_BB_X6980_2
-		parameters_available = parameters_available_BB_X6980_2
-		pathparams = pathparams_BB_X6980_2
+		parameters_available_int_time_int = parameters_available_int_time_BB_X6980_2
+		parameters_available_framerate_int = parameters_available_framerate_BB_X6980_2
+		parameters_available_int = parameters_available_BB_X6980_2
+		pathparams_int = pathparams_BB_X6980_2
+	elif (int(laser_to_analyse[-9:-4])>53316 and int(laser_to_analyse[-9:-4])<99999):
+		parameters_available_int_time_BB_int = parameters_available_int_time_BB_X6980_3
+		parameters_available_framerate_BB_int = parameters_available_framerate_BB_X6980_3
+		parameters_available_BB_int = parameters_available_BB_X6980_3
+		pathparams_BB_int = pathparams_BB_X6980_3
 
-	temp = np.abs(parameters_available_int_time-laser_int_time/1000)<0.1
-	framerate = np.array(parameters_available_framerate)[temp][np.abs(parameters_available_framerate[temp]-laser_framerate).argmin()]
-	int_time = np.array(parameters_available_int_time)[temp][np.abs(parameters_available_framerate[temp]-laser_framerate).argmin()]
-	temp = np.array(parameters_available)[temp][np.abs(parameters_available_framerate[temp]-laser_framerate).argmin()]
+		parameters_available_int_time_int = parameters_available_int_time_BB_X6980_3
+		parameters_available_framerate_int = parameters_available_framerate_BB_X6980_3
+		parameters_available_int = parameters_available_BB_X6980_3
+		pathparams_int = pathparams_BB_X6980_3
+	else:
+		parameters_available_int_time_BB_int = parameters_available_int_time_BB
+		parameters_available_framerate_BB_int = parameters_available_framerate_BB
+		parameters_available_BB_int = parameters_available_BB
+		pathparams_BB_int = pathparams_BB
+
+		parameters_available_int_time_int = parameters_available_int_time
+		parameters_available_framerate_int = parameters_available_framerate
+		parameters_available_int = parameters_available
+		pathparams_int = pathparams
+
+
+	temp = np.abs(parameters_available_int_time_int-laser_int_time/1000)<0.1
+	framerate = np.array(parameters_available_framerate_int)[temp][np.abs(parameters_available_framerate_int[temp]-laser_framerate).argmin()]
+	int_time = np.array(parameters_available_int_time_int)[temp][np.abs(parameters_available_framerate_int[temp]-laser_framerate).argmin()]
+	temp = np.array(parameters_available_int)[temp][np.abs(parameters_available_framerate_int[temp]-laser_framerate).argmin()]
 	print('parameters selected '+temp)
 
 	# Load parameters
 	# temp = pathparams+'/'+temp+'/numcoeff'+str(n)+'/average'
-	temp = pathparams+'/'+temp+'/numcoeff'+str(n)
+	temp = pathparams_int+'/'+temp+'/numcoeff'+str(n)
 	fullpathparams=os.path.join(temp,'coeff_polynomial_deg'+str(n-1)+'int_time'+str(int_time)+'ms.npz')
 	params_dict=np.load(fullpathparams)
 	params_dict.allow_pickle=True
@@ -631,14 +694,14 @@ try:
 		ref_temperature_std = 1	# (np.sum(np.array(reference_background_temperature_std)**2)**0.5 / len(np.array(reference_background_temperature).flatten()))
 
 	# Load BB parameters
-	temp = np.abs(parameters_available_int_time_BB-laser_int_time/1000)<0.1
-	framerate = np.array(parameters_available_framerate_BB)[temp][np.abs(parameters_available_framerate_BB[temp]-laser_framerate).argmin()]
-	int_time = np.array(parameters_available_int_time_BB)[temp][np.abs(parameters_available_framerate_BB[temp]-laser_framerate).argmin()]
-	temp = np.array(parameters_available_BB)[temp][np.abs(parameters_available_framerate_BB[temp]-laser_framerate).argmin()]
+	temp = np.abs(parameters_available_int_time_BB_int-laser_int_time/1000)<0.1
+	framerate = np.array(parameters_available_framerate_BB_int)[temp][np.abs(parameters_available_framerate_BB_int[temp]-laser_framerate).argmin()]
+	int_time = np.array(parameters_available_int_time_BB_int)[temp][np.abs(parameters_available_framerate_BB_int[temp]-laser_framerate).argmin()]
+	temp = np.array(parameters_available_BB_int)[temp][np.abs(parameters_available_framerate_BB_int[temp]-laser_framerate).argmin()]
 	print('parameters selected '+temp)
 
 	# temp = pathparams+'/'+temp+'/numcoeff'+str(n)+'/average'
-	temp = pathparams_BB+'/'+temp+'/numcoeff'+str(n)
+	temp = pathparams_BB_int+'/'+temp+'/numcoeff'+str(n)
 	fullpathparams=os.path.join(temp,'coeff_polynomial_deg'+str(n-1)+'int_time'+str(int_time)+'ms.npz')
 	params_dict=np.load(fullpathparams)
 	params_dict.allow_pickle=True
@@ -647,7 +710,13 @@ try:
 	BB_proportional,BB_proportional_std,constant_offset,constant_offset_std,photon_dict = coleval.calc_BB_coefficients_multi_digitizer(params_BB,errparams_BB,laser_digitizer_ID,temp_ref_counts,temp_ref_counts_std,ref_temperature=ref_temperature,ref_temperature_std=ref_temperature_std,wavewlength_top=5.1,wavelength_bottom=1.5,inttime=laser_int_time/1000)
 	photon_flux_over_temperature_interpolator = photon_dict['photon_flux_over_temperature_interpolator']
 
-	if int(laser_to_analyse[-9:-4]) >= 51792:	# MU04 second time with FLIR X6980, FOV somehow moved
+	if int(laser_to_analyse[-9:-4]) >= 53317:	# MU05 third time with FLIR X6980
+		foil_position_dict = dict([('angle',0.4),('foilcenter',[197,129]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',297)])	# identified ~2023-08 after checking what is the actual result of the rotation
+	elif int(laser_to_analyse[-9:-4]) >= 52778:	# MU05 start with old FLIR SC7500 camera
+		foil_position_dict = dict([('angle',1),('foilcenter',[141,139]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',246)])
+	elif int(laser_to_analyse[-9:-4]) >= 52277:	# MU04 second time with FLIR X6980, FOV somehow moved
+		foil_position_dict = dict([('angle',0.4),('foilcenter',[167,142]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',297)])	# identified ~2023-08 after checking what is the actual result of the rotation
+	elif int(laser_to_analyse[-9:-4]) >= 51792:	# MU04 second time with FLIR X6980, FOV somehow moved
 		foil_position_dict = dict([('angle',0.4),('foilcenter',[167,143]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',297)])	# identified ~2023-08 after checking what is the actual result of the rotation
 	elif int(laser_to_analyse[-9:-4]) >= 51773:	# MU04 second time with FLIR X6980
 		foil_position_dict = dict([('angle',0.4),('foilcenter',[167,145]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',297)])	# identified ~2023-08 after checking what is the actual result of the rotation
@@ -698,8 +767,8 @@ try:
 					time_of_last_first_pass = full_saved_file_dict_FAST['first_pass']['processing_start_time']
 				except:
 					time_of_last_first_pass = full_saved_file_dict_FAST['first_pass'].all()['processing_start_time']
-				if datetime.strptime(time_of_last_first_pass,'%Y-%m-%d %H:%M:%S.%f') < datetime(2025,8,14):	# date threshold to deonstrate the validity of the inversion to be "new" enough
-					print('first pass redone as it is too old compared to the set threshold of ' + str(datetime(2025,8,14)))
+				if datetime.strptime(time_of_last_first_pass,'%Y-%m-%d %H:%M:%S.%f') < datetime(2025,10,18):	# date threshold to deonstrate the validity of the inversion to be "new" enough
+					print('first pass redone as '+str(datetime.strptime(time_of_last_first_pass,'%Y-%m-%d %H:%M:%S.%f'))+' is too old compared to the set threshold of ' + str(datetime(2025,10,18)))
 					sgans = dsjfd	# I want this path to fail to regenerate the first pass
 				print('last pass '+str(pass_number)+' done '+time_of_last_first_pass+' therefore inversion skipped\npost analysis only done instead')
 				exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_manual_plots.py").read())
@@ -759,10 +828,10 @@ try:
 					time_of_last_second_pass = full_saved_file_dict_FAST['second_pass']['processing_start_time']
 				except:
 					time_of_last_second_pass = full_saved_file_dict_FAST['second_pass'].all()['processing_start_time']
-				if datetime.strptime(time_of_last_second_pass,'%Y-%m-%d %H:%M:%S.%f') < datetime(2025,8,14):	# date threshold to deonstrate the validity of the inversion to be "new" enough
-					print('second pass redone as it is too old compared to the set threshold of ' + str(datetime(2025,8,14)))
+				if datetime.strptime(time_of_last_second_pass,'%Y-%m-%d %H:%M:%S.%f') < datetime(2025,10,18):	# date threshold to deonstrate the validity of the inversion to be "new" enough
+					print('second pass redone as '+str(datetime.strptime(time_of_last_second_pass,'%Y-%m-%d %H:%M:%S.%f'))+' is too old compared to the set threshold of ' + str(datetime(2025,10,18)))
 					sgans = dsjfd	# I want this path to fail to regenerate the second pass
-				print('last pass '+str(pass_number)+' done '+time_of_last_first_pass+' therefore inversion skipped\npost analysis only done instead')
+				print('last pass '+str(pass_number)+' done '+time_of_last_second_pass+' therefore inversion skipped\npost analysis only done instead')
 				exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_manual_plots.py").read())
 			except:
 				foilrotdeg,out_of_ROI_mask,foildw,foilup,foillx,foilrx,FAST_counts_minus_background_crop,time_binned,powernoback,brightness,binning_type,inverted_dict,covariance_dict = coleval.MASTU_pulse_process_FAST3_BB(laser_counts_corrected,time_of_experiment_digitizer_ID,time_of_experiment,external_clock_marker,aggregated_correction_coefficients,laser_framerate,laser_digitizer_ID,laser_int_time,seconds_for_reference_frame,start_time_of_pulse,laser_to_analyse,laser_dict['height'],laser_dict['width'],flag_use_of_first_frames_as_reference,params,errparams,params_BB,errparams_BB,photon_flux_over_temperature_interpolator,BB_proportional,BB_proportional_std,foil_position_dict,pass_number = pass_number,x_point_region_radious=0.2,wavewlength_top=5.1,wavelength_bottom=1.5,override_second_pass=True)
@@ -808,7 +877,7 @@ try:
 				except:
 					time_of_last_third_pass = full_saved_file_dict_FAST['third_pass'].all()['processing_start_time']
 				if datetime.strptime(time_of_last_third_pass,'%Y-%m-%d %H:%M:%S.%f') < datetime(2025,7,4):	# date threshold to deonstrate the validity of the inversion to be "new" enough
-					print('third pass redone as it is too old compared to the set threshold of ' + str(datetime(2025,7,4)))
+					print('third pass redone as '+str(datetime.strptime(time_of_last_third_pass,'%Y-%m-%d %H:%M:%S.%f'))+' is too old compared to the set threshold of ' + str(datetime(2025,7,4)))
 					sgans = dsjfd	# I want this path to fail to regenerate the third pass
 
 				# given I don't do an inversion, it doesn't make sense to run any post processing

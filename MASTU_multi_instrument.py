@@ -6,10 +6,21 @@ from esm.calculation import run_esm
 def temp_function(full_saved_file_dict_FAST):
 	try:
 		try:
-			# trash = full_saved_file_dict_FAST['multi_instrument']
-			full_saved_file_dict_FAST['multi_instrument'] = full_saved_file_dict_FAST['multi_instrument'].all()
+			multi_instrument_dict = full_saved_file_dict_FAST['multi_instrument'].all()
+			try:
+				test = multi_instrument_dict['pass_number_'+str(pass_number)]
+				try:	# maybe unnecessary, but I do it anyway just in case
+					multi_instrument_dict['pass_number_'+str(pass_number)] = multi_instrument_dict['pass_number_'+str(pass_number)].all()
+				except:
+					pass
+			except:
+				multi_instrument_dict['pass_number_'+str(pass_number)] = dict([])
 		except:
-			full_saved_file_dict_FAST['multi_instrument'] = dict([])
+			multi_instrument_dict = dict([])
+			multi_instrument_dict['pass_number_'+str(pass_number)] = dict([])
+		multi_instrument_dict_pass = multi_instrument_dict['pass_number_'+str(pass_number)]
+		multi_instrument_dict_pass['timestamp_start_process'] = str(datetime.fromtimestamp(tm.time()))
+
 		grid_resolution = 2	# cm
 
 		try:	# I do this first so I have all the memory I can
@@ -41,7 +52,7 @@ def temp_function(full_saved_file_dict_FAST):
 				del covariance_out_sing
 		except Exception as e:
 			print('inverted_data_covariance_log reading failed because of '+str(e))
-			logging.exception('with error: ' + str(e))
+			logging.exception('with error: (inverted_data_covariance_log reading)' + str(e))
 			try:
 				inverted_data_covariance_scaling_factor = inverted_dict[str(grid_resolution)]['inverted_data_covariance_scaling_factor']
 				inverted_data_covariance_scaled = inverted_dict[str(grid_resolution)]['inverted_data_covariance_scaled']
@@ -54,7 +65,7 @@ def temp_function(full_saved_file_dict_FAST):
 		binning_type = inverted_dict[str(grid_resolution)]['binning_type']
 		shotnumber = int(laser_to_analyse[-9:-4])
 
-		outer_leg_tot_rad_power_all = inverted_dict[str(grid_resolution)]['outer_leg_tot_rad_power_all']
+		outer_leg_tot_rad_power_all = inverted_dict[str(grid_resolution)]['outer_leg_tot_rad_power_all']	# this normally fails if there is no EFIT reconstruction for the shot
 		inner_leg_tot_rad_power_all = inverted_dict[str(grid_resolution)]['inner_leg_tot_rad_power_all']
 		core_tot_rad_power_all = inverted_dict[str(grid_resolution)]['core_tot_rad_power_all']
 		sxd_tot_rad_power_all = inverted_dict[str(grid_resolution)]['sxd_tot_rad_power_all']
@@ -93,18 +104,18 @@ def temp_function(full_saved_file_dict_FAST):
 			greenwald_density = np.interp(time_full_binned_crop,ne_bar_dict['t'],ne_bar_dict['greenwald_density'])
 			ne_bar = np.interp(time_full_binned_crop,ne_bar_dict['t'],ne_bar_dict['data'])	# this should be the line averaged density
 			density_data_missing = False
-			full_saved_file_dict_FAST['multi_instrument']['greenwald_density'] = greenwald_density
-			full_saved_file_dict_FAST['multi_instrument']['ne_bar'] = ne_bar
+			multi_instrument_dict_pass['greenwald_density'] = greenwald_density
+			multi_instrument_dict_pass['ne_bar'] = ne_bar
 			data = client.get('/ANE/DENSITY',shotnumber)
 			# core_density = np.array([data.data[np.abs(data.time.data-time).argmin()] for time in time_full_binned_crop])
 			core_density = np.interp(time_full_binned_crop,data.time.data,data.data)	# this is core line integrated density
-			full_saved_file_dict_FAST['multi_instrument']['line_integrated_density'] = core_density
+			multi_instrument_dict_pass['line_integrated_density'] = core_density
 		except:
 			density_data_missing = True
 		try:	# last ditch effort to see if the data was saved already
-			greenwald_density = full_saved_file_dict_FAST['multi_instrument']['greenwald_density']
-			ne_bar = full_saved_file_dict_FAST['multi_instrument']['ne_bar']
-			core_density = full_saved_file_dict_FAST['multi_instrument']['line_integrated_density']
+			greenwald_density = multi_instrument_dict_pass['greenwald_density']
+			ne_bar = multi_instrument_dict_pass['ne_bar']
+			core_density = multi_instrument_dict_pass['line_integrated_density']
 			if len(ne_bar)==len(time_full_binned_crop):
 				density_data_missing = False
 		except:
@@ -151,6 +162,7 @@ def temp_function(full_saved_file_dict_FAST):
 		# plt.savefig(filename_root+filename_root_add+'_temp.eps')
 		# plt.close()
 
+		print('starting baricentre_outer_separatrix_radiation')
 		outer_local_mean_emis_all,outer_local_power_all,outer_local_L_poloidal_all,outer_leg_length_interval_all,outer_leg_length_all,outer_data_length,outer_leg_resolution,outer_emissivity_baricentre_all,outer_emissivity_peak_all,outer_L_poloidal_baricentre_all,outer_L_poloidal_peak_all,outer_L_poloidal_peak_only_leg_all,outer_L_poloidal_baricentre_only_leg_all,trash,dr_sep_in,dr_sep_out,outer_L_poloidal_x_point_all,outer_L_poloidal_midplane_all,outer_leg_reliable_power_all,outer_leg_reliable_power_sigma_all,DMS_equivalent_all,DMS_equivalent_sigma_all,MWI_equivalent_all,MWI_equivalent_sigma_all,x_point_tot_rad_power_all,x_point_tot_rad_power_sigma_all,sxd_tot_rad_power_all,sxd_tot_rad_power_sigma_all,outer_half_peak_L_pol_all,outer_half_peak_divertor_L_pol_all,outer_sideways_leg_resolution = coleval.baricentre_outer_separatrix_radiation(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,covariance_out,grid_data_masked_crop,x_point_region_radious=x_point_region_radious)
 		inverted_dict[str(grid_resolution)]['outer_local_mean_emis_all'] = outer_local_mean_emis_all
 		inverted_dict[str(grid_resolution)]['outer_local_power_all'] = outer_local_power_all
@@ -168,9 +180,9 @@ def temp_function(full_saved_file_dict_FAST):
 		inverted_dict[str(grid_resolution)]['x_point_region_radious'] = x_point_region_radious
 		inverted_dict[str(grid_resolution)]['x_point_tot_rad_power_all'] = x_point_tot_rad_power_all
 		inverted_dict[str(grid_resolution)]['x_point_tot_rad_power_sigma_all'] = x_point_tot_rad_power_sigma_all
-		full_saved_file_dict_FAST['multi_instrument']['time_full_binned_crop'] = time_full_binned_crop
-		full_saved_file_dict_FAST['multi_instrument']['dr_sep_in'] = dr_sep_in
-		full_saved_file_dict_FAST['multi_instrument']['dr_sep_out'] = dr_sep_out
+		multi_instrument_dict_pass['time_full_binned_crop'] = time_full_binned_crop
+		multi_instrument_dict_pass['dr_sep_in'] = dr_sep_in
+		multi_instrument_dict_pass['dr_sep_out'] = dr_sep_out
 		inverted_dict[str(grid_resolution)]['outer_L_poloidal_x_point_all'] = outer_L_poloidal_x_point_all
 		inverted_dict[str(grid_resolution)]['outer_L_poloidal_midplane_all'] = outer_L_poloidal_midplane_all
 		inverted_dict[str(grid_resolution)]['outer_leg_reliable_power_all'] = outer_leg_reliable_power_all
@@ -182,7 +194,8 @@ def temp_function(full_saved_file_dict_FAST):
 		inverted_dict[str(grid_resolution)]['outer_half_peak_L_pol_all'] = outer_half_peak_L_pol_all
 		inverted_dict[str(grid_resolution)]['outer_half_peak_divertor_L_pol_all'] = outer_half_peak_divertor_L_pol_all
 		inverted_dict[str(grid_resolution)]['outer_sideways_leg_resolution'] = outer_sideways_leg_resolution
-		inner_local_mean_emis_all,inner_local_power_all,inner_local_L_poloidal_all,inner_leg_length_interval_all,inner_leg_length_all,inner_data_length,inner_leg_resolution,inner_emissivity_baricentre_all,inner_emissivity_peak_all,inner_L_poloidal_baricentre_all,inner_L_poloidal_peak_all,inner_L_poloidal_peak_only_leg_all,inner_L_poloidal_baricentre_only_leg_all,inner_L_poloidal_midplane_all,inner_leg_reliable_power_all,inner_leg_reliable_power_sigma_all,trash,dr_sep_in,dr_sep_out,inner_L_poloidal_x_point_all,inner_half_peak_L_pol_all,inner_half_peak_divertor_L_pol_all,inner_sideways_leg_resolution,inner_L_poloidal_gap_all,inner_L_par_gap_start_all,inner_L_par_gap_end_all,inner_L_par_Xpoint_all = coleval.baricentre_inner_separatrix_radiation(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,covariance_out,grid_data_masked_crop,x_point_region_radious=x_point_region_radious)
+		print('starting baricentre_inner_separatrix_radiation')
+		inner_local_mean_emis_all,inner_local_power_all,inner_local_L_poloidal_all,inner_leg_length_interval_all,inner_leg_length_all,inner_data_length,inner_leg_resolution,inner_emissivity_baricentre_all,inner_emissivity_peak_all,inner_L_poloidal_baricentre_all,inner_L_poloidal_peak_all,inner_L_poloidal_peak_only_leg_all,inner_L_poloidal_baricentre_only_leg_all,inner_L_poloidal_midplane_all,inner_leg_reliable_power_all,inner_leg_reliable_power_sigma_all,trash,dr_sep_in,dr_sep_out,inner_L_poloidal_x_point_all,inner_half_peak_L_pol_all,inner_half_peak_divertor_L_pol_all,inner_sideways_leg_resolution,inner_L_poloidal_gap_all,inner_gap_start_L_pol_all,inner_gap_end_L_pol_all,inner_L_par_pol_correlation = coleval.baricentre_inner_separatrix_radiation(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,covariance_out,grid_data_masked_crop,x_point_region_radious=x_point_region_radious)
 		inverted_dict[str(grid_resolution)]['inner_local_mean_emis_all'] = inner_local_mean_emis_all
 		inverted_dict[str(grid_resolution)]['inner_local_power_all'] = inner_local_power_all
 		inverted_dict[str(grid_resolution)]['inner_local_L_poloidal_all'] = inner_local_L_poloidal_all
@@ -203,15 +216,16 @@ def temp_function(full_saved_file_dict_FAST):
 		inverted_dict[str(grid_resolution)]['inner_half_peak_divertor_L_pol_all'] = inner_half_peak_divertor_L_pol_all
 		inverted_dict[str(grid_resolution)]['inner_sideways_leg_resolution'] = inner_sideways_leg_resolution
 		inverted_dict[str(grid_resolution)]['inner_L_poloidal_gap_all'] = inner_L_poloidal_gap_all
-		inverted_dict[str(grid_resolution)]['inner_L_par_gap_start_all'] = inner_L_par_gap_start_all
-		inverted_dict[str(grid_resolution)]['inner_L_par_gap_end_all'] = inner_L_par_gap_end_all
-		inverted_dict[str(grid_resolution)]['inner_L_par_Xpoint_all'] = inner_L_par_Xpoint_all
-		full_saved_file_dict_FAST['multi_instrument']['time_full_binned_crop'] = time_full_binned_crop
-		# full_saved_file_dict_FAST['multi_instrument']['greenwald_density'] = greenwald_density
-		full_saved_file_dict_FAST['multi_instrument']['dr_sep_in'] = dr_sep_in
-		full_saved_file_dict_FAST['multi_instrument']['dr_sep_out'] = dr_sep_out
+		inverted_dict[str(grid_resolution)]['inner_gap_start_L_pol_all'] = inner_gap_start_L_pol_all
+		inverted_dict[str(grid_resolution)]['inner_gap_end_L_pol_all'] = inner_gap_end_L_pol_all
+		inverted_dict[str(grid_resolution)]['inner_L_par_pol_correlation'] = inner_L_par_pol_correlation
+		multi_instrument_dict_pass['time_full_binned_crop'] = time_full_binned_crop
+		# multi_instrument_dict_pass['greenwald_density'] = greenwald_density
+		multi_instrument_dict_pass['dr_sep_in'] = dr_sep_in
+		multi_instrument_dict_pass['dr_sep_out'] = dr_sep_out
 		inverted_dict[str(grid_resolution)]['inner_L_poloidal_x_point_all'] = inner_L_poloidal_x_point_all
 
+		print('starting inside_vs_outside_separatrix_radiation')
 		real_core_radiation_all,real_core_radiation_sigma_all,real_non_core_radiation_all,real_non_core_radiation_sigma_all,out_VV_radiation_all,out_VV_radiation_sigma_all,real_inner_core_radiation_all,real_inner_core_radiation_sigma_all,real_outer_core_radiation_all,real_outer_core_radiation_sigma_all = coleval.inside_vs_outside_separatrix_radiation(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,covariance_out,grid_data_masked_crop,x_point_region_radious=x_point_region_radious)
 		inverted_dict[str(grid_resolution)]['real_core_radiation_all'] = real_core_radiation_all
 		inverted_dict[str(grid_resolution)]['real_core_radiation_sigma_all'] = real_core_radiation_sigma_all
@@ -240,6 +254,7 @@ def temp_function(full_saved_file_dict_FAST):
 		inverted_dict[str(grid_resolution)]['divertor_tot_rad_power_all'] = divertor_tot_rad_power_all
 		inverted_dict[str(grid_resolution)]['divertor_tot_rad_power_sigma_all'] = divertor_tot_rad_power_sigma_all
 
+		print('starting symplified_out_core_regions')
 		inner_SOL_leg_all,inner_SOL_leg_sigma_all,outer_SOL_leg_all,outer_SOL_leg_sigma_all,outer_SOL_all,outer_SOL_sigma_all,inner_SOL_all,inner_SOL_sigma_all,psiN_min_lower_baffle_all,psiN_min_lower_target_all,psiN_min_central_column_all,psiN_min_upper_target_all,psiN_min_upper_baffle_all = coleval.symplified_out_core_regions(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,covariance_out,grid_data_masked_crop,x_point_region_radious=x_point_region_radious)
 		inverted_dict[str(grid_resolution)]['inner_SOL_leg_all'] = inner_SOL_leg_all
 		inverted_dict[str(grid_resolution)]['inner_SOL_leg_sigma_all'] = inner_SOL_leg_sigma_all
@@ -256,6 +271,7 @@ def temp_function(full_saved_file_dict_FAST):
 		inverted_dict[str(grid_resolution)]['psiN_min_upper_target_all'] = psiN_min_upper_target_all
 		inverted_dict[str(grid_resolution)]['psiN_min_upper_baffle_all'] = psiN_min_upper_baffle_all
 
+		print('starting equivalent_res_bolo_view')
 		equivalent_res_bolo_view_all,equivalent_res_bolo_view_sigma_all,all_out_of_sxd_all,all_out_of_sxd_sigma_all = coleval.equivalent_res_bolo_view(inverted_data,inverted_data_sigma,inversion_R,inversion_Z,time_full_binned_crop,efit_reconstruction,covariance_out,grid_data_masked_crop)
 		inverted_dict[str(grid_resolution)]['equivalent_res_bolo_view_all'] = equivalent_res_bolo_view_all
 		inverted_dict[str(grid_resolution)]['equivalent_res_bolo_view_sigma_all'] = equivalent_res_bolo_view_sigma_all
@@ -309,15 +325,15 @@ def temp_function(full_saved_file_dict_FAST):
 				pass
 
 			pass
-		full_saved_file_dict_FAST['multi_instrument']['scenario'] = scenario
-		full_saved_file_dict_FAST['multi_instrument']['experiment'] = experiment
-		full_saved_file_dict_FAST['multi_instrument']['useful'] = useful
-		full_saved_file_dict_FAST['multi_instrument']['Preshot'] = Preshot
-		full_saved_file_dict_FAST['multi_instrument']['Postshot'] = Postshot
-		full_saved_file_dict_FAST['multi_instrument']['SC'] = SC
-		full_saved_file_dict_FAST['multi_instrument']['SL'] = SL
-		full_saved_file_dict_FAST['multi_instrument']['reference'] = reference
-		full_saved_file_dict_FAST['multi_instrument']['abort'] = abort
+		multi_instrument_dict['scenario'] = scenario
+		multi_instrument_dict['experiment'] = experiment
+		multi_instrument_dict['useful'] = useful
+		multi_instrument_dict['Preshot'] = Preshot
+		multi_instrument_dict['Postshot'] = Postshot
+		multi_instrument_dict['SC'] = SC
+		multi_instrument_dict['SL'] = SL
+		multi_instrument_dict['reference'] = reference
+		multi_instrument_dict['abort'] = abort
 
 		plt.figure(figsize=(30, 10))
 		# plt.errorbar(time_full_binned_crop,outer_leg_tot_rad_power_all/1e3,yerr=outer_leg_tot_rad_power_sigma_all/1e3,label='outer_leg\nwith x-point',capsize=5,elinewidth=1)
@@ -354,8 +370,9 @@ def temp_function(full_saved_file_dict_FAST):
 			peak_location,midpoint_location = coleval.plot_leg_radiation_tracking(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution,filename_root,filename_root_add,laser_to_analyse,scenario,which_leg='outer',x_point_L_pol=outer_L_poloidal_x_point_all)
 			inverted_dict[str(grid_resolution)]['outer_leg_only_peak_location'] = peak_location
 			inverted_dict[str(grid_resolution)]['outer_leg_only_midpoint_location'] = midpoint_location
+			print('done\n'+'/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_outer_leg_radiation_tracking.eps')
 		except Exception as e:
-			logging.exception('with error: ' + str(e))
+			logging.exception('with error (outer_leg_radiation_tracking): ' + str(e))
 			print('failed to print\n'+'/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_outer_leg_radiation_tracking.eps')
 		inverted_dict[str(grid_resolution)]['outer_leg_only_local_power'] = local_power_all
 		inverted_dict[str(grid_resolution)]['outer_leg_only_local_emissivity'] = local_mean_emis_all
@@ -367,8 +384,9 @@ def temp_function(full_saved_file_dict_FAST):
 			peak_location,midpoint_location = coleval.plot_leg_radiation_tracking(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution,filename_root,filename_root_add,laser_to_analyse,scenario,which_leg='inner',x_point_L_pol=inner_L_poloidal_x_point_all)
 			inverted_dict[str(grid_resolution)]['inner_leg_only_peak_location'] = peak_location
 			inverted_dict[str(grid_resolution)]['inner_leg_only_midpoint_location'] = midpoint_location
+			print('done\n'+'/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_inner_leg_radiation_tracking.eps')
 		except Exception as e:
-			logging.exception('with error: ' + str(e))
+			logging.exception('with error (inner_leg_radiation_tracking): ' + str(e))
 			print('failed to print\n'+'/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_inner_leg_radiation_tracking.eps')
 		inverted_dict[str(grid_resolution)]['inner_leg_only_local_power'] = local_power_all
 		inverted_dict[str(grid_resolution)]['inner_leg_only_local_emissivity'] = local_mean_emis_all
@@ -380,8 +398,8 @@ def temp_function(full_saved_file_dict_FAST):
 		try:
 			peak_location,midpoint_location = coleval.plot_leg_radiation_tracking(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution,filename_root,filename_root_add,laser_to_analyse,scenario,which_leg='outer',x_point_L_pol=outer_L_poloidal_x_point_all,which_part_of_separatrix='separatrix')
 		except Exception as e:
-			logging.exception('with error: ' + str(e))
-			print('failed to print\n'+'/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_outer_leg_radiation_tracking.eps')
+			logging.exception('with error (outer_leg_radiation_tracking): ' + str(e))
+			print('failed to print\n'+'/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_outer_separatrix_radiation_tracking.eps')
 		inverted_dict[str(grid_resolution)]['outer_separatrix_local_power'] = local_power_all
 		inverted_dict[str(grid_resolution)]['outer_separatrix_local_emissivity'] = local_mean_emis_all
 		inverted_dict[str(grid_resolution)]['outer_separatrix_length_all'] = leg_length_all
@@ -393,8 +411,8 @@ def temp_function(full_saved_file_dict_FAST):
 		try:
 			peak_location,midpoint_location = coleval.plot_leg_radiation_tracking(inverted_data,inversion_R,inversion_Z,time_full_binned_crop,local_mean_emis_all,local_power_all,leg_length_interval_all,leg_length_all,data_length,leg_resolution,filename_root,filename_root_add,laser_to_analyse,scenario,which_leg='inner',x_point_L_pol=inner_L_poloidal_x_point_all,which_part_of_separatrix='separatrix')
 		except Exception as e:
-			logging.exception('with error: ' + str(e))
-			print('failed to print\n'+'/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_inner_leg_radiation_tracking.eps')
+			logging.exception('with error (inner_leg_radiation_tracking): ' + str(e))
+			print('failed to print\n'+'/home/ffederic/work/irvb/MAST-U/FAST_results/'+os.path.split(laser_to_analyse[:-4])[1]+'_'+binning_type+'_gridres'+str(grid_resolution)+'cm_inner_separatrix_radiation_tracking.eps')
 		inverted_dict[str(grid_resolution)]['inner_separatrix_local_power'] = local_power_all
 		inverted_dict[str(grid_resolution)]['inner_separatrix_local_emissivity'] = local_mean_emis_all
 		inverted_dict[str(grid_resolution)]['inner_separatrix_length_all'] = leg_length_all
@@ -433,22 +451,25 @@ def temp_function(full_saved_file_dict_FAST):
 				gas_outer += valve['flux'][select]
 				gas_outer_valves.append(valve['valve'])
 
-		full_saved_file_dict_FAST['multi_instrument']['gas_time'] = gas_time
-		full_saved_file_dict_FAST['multi_instrument']['gas_all'] = gas_all
-		full_saved_file_dict_FAST['multi_instrument']['gas_all_valves'] = gas_all_valves
-		full_saved_file_dict_FAST['multi_instrument']['gas_core'] = gas_core
-		full_saved_file_dict_FAST['multi_instrument']['gas_core_valves'] = gas_core_valves
-		full_saved_file_dict_FAST['multi_instrument']['gas_inner'] = gas_inner
-		full_saved_file_dict_FAST['multi_instrument']['gas_inner_valves'] = gas_inner_valves
-		full_saved_file_dict_FAST['multi_instrument']['gas_outer'] = gas_outer
-		full_saved_file_dict_FAST['multi_instrument']['gas_outer_valves'] = gas_outer_valves
-		full_saved_file_dict_FAST['multi_instrument']['gas_div'] = gas_div
-		full_saved_file_dict_FAST['multi_instrument']['gas_div_valves'] = gas_div_valves
+		multi_instrument_dict_pass['gas_time'] = gas_time
+		multi_instrument_dict_pass['gas_all'] = gas_all
+		multi_instrument_dict_pass['gas_all_valves'] = gas_all_valves
+		multi_instrument_dict_pass['gas_core'] = gas_core
+		multi_instrument_dict_pass['gas_core_valves'] = gas_core_valves
+		multi_instrument_dict_pass['gas_inner'] = gas_inner
+		multi_instrument_dict_pass['gas_inner_valves'] = gas_inner_valves
+		multi_instrument_dict_pass['gas_outer'] = gas_outer
+		multi_instrument_dict_pass['gas_outer_valves'] = gas_outer_valves
+		multi_instrument_dict_pass['gas_div'] = gas_div
+		multi_instrument_dict_pass['gas_div_valves'] = gas_div_valves
 
 		print('marker pre LP')
 		# reading LP data
 		import pandas as pd
-		badLPs_V0 = np.array(pd.read_csv('/home/ffederic/work/analysis_scripts/scripts/from_Peter/30473_badLPs_V0.csv',index_col=0).index.tolist())
+		if shotnumber<46191:
+			badLPs_V0 = np.array(pd.read_csv('/home/ffederic/work/analysis_scripts/scripts/from_Peter/30473_badLPs_V0.csv',index_col=0).index.tolist())
+		else:	# 2025/10/24 after MU01 if a probe is bad then it is left in the data as blank, no need of an external file
+			badLPs_V0 = []
 		FF_LP_path = '/home/ffederic/work/irvb/from_pryan_LP'
 		path_alternate='/common/uda-scratch/pryan'
 
@@ -458,25 +479,26 @@ def temp_function(full_saved_file_dict_FAST):
 		# 2024/07/02 I have to modify this code, as it works only with python 3.7, and not 3.9.
 		# I tried to find a reasonable way to do it, but I couldn't really find it, so I simply skip this entirely if I'm in Python3.9
 		# Note: the code seems to run well also in Python 3.7
-		from mastu_exhaust_analysis.eich_gui import prepare_data_for_Eich_fit_fn_time,Eich_fit_fn_time
-		from mastu_exhaust_analysis.flux_expansion import calc_fpol
-		fpol=calc_fpol(shotnumber,max_s=20e-2,number_steps=30)
-		lambda_q_compression = (fpol['fpol_lower']/np.sin(fpol['poloidal_angle_lower']))[:,0]
-		lambda_q_compression_lower_interp = interp1d(fpol['time'],lambda_q_compression,fill_value="extrapolate",bounds_error=False)
-		lambda_q_compression = (fpol['fpol_upper']/np.sin(fpol['poloidal_angle_upper']))[:,0]
-		lambda_q_compression_upper_interp = interp1d(fpol['time'],lambda_q_compression,fill_value="extrapolate",bounds_error=False)
+		if False:	# I run this is in an external script runnint in Python 3.7		5/11/2025
+			from mastu_exhaust_analysis.eich_gui import prepare_data_for_Eich_fit_fn_time,Eich_fit_fn_time
+			from mastu_exhaust_analysis.flux_expansion import calc_fpol
+			fpol=calc_fpol(shotnumber,max_s=20e-2,number_steps=30)
+			lambda_q_compression = (fpol['fpol_lower']/np.sin(fpol['poloidal_angle_lower']))[:,0]
+			lambda_q_compression_lower_interp = interp1d(fpol['time'],lambda_q_compression,fill_value="extrapolate",bounds_error=False)
+			lambda_q_compression = (fpol['fpol_upper']/np.sin(fpol['poloidal_angle_upper']))[:,0]
+			lambda_q_compression_upper_interp = interp1d(fpol['time'],lambda_q_compression,fill_value="extrapolate",bounds_error=False)
 
-		# to go from wall coord to s
-		# client=pyuda.Client()
-		limiter=client.geometry("/limiter/efit",50000, no_cal=False)
-		limiter_r=limiter.data.R
-		limiter_z=limiter.data.Z
-		s_lookup=get_s_coords_tables_mastu(limiter_r, limiter_z, ds=1e-4, debug_plot=False)
-		# coleval.reset_connection(client)
-		# del client
+			# to go from wall coord to s
+			# client=pyuda.Client()
+			limiter=client.geometry("/limiter/efit",50000, no_cal=False)
+			limiter_r=limiter.data.R
+			limiter_z=limiter.data.Z
+			s_lookup=get_s_coords_tables_mastu(limiter_r, limiter_z, ds=1e-4, debug_plot=False)
+			# coleval.reset_connection(client)
+			# del client
 
 		found = False
-		for LP_file_type in ['alp0','elp0']:
+		for LP_file_type in ['elp0','alp0']:
 			for LP_file_path in [path_alternate,FF_LP_path]:
 				# print(str([LP_file_path,LP_file_type]))
 				if os.path.exists(LP_file_path + '/' + LP_file_type + str(shotnumber) + '.nc'):
@@ -498,7 +520,7 @@ def temp_function(full_saved_file_dict_FAST):
 				# Skip the root folder
 				if root == path_alternate:
 					continue
-				for LP_file_type_int in ['alp0','elp0']:
+				for LP_file_type_int in ['elp0','alp0']:
 					if LP_file_type_int + str(shotnumber) + '.nc' in files:
 						full_path = os.path.join(root, LP_file_type_int + str(shotnumber) + '.nc')
 						file_time = os.path.getmtime(full_path)
@@ -513,897 +535,1102 @@ def temp_function(full_saved_file_dict_FAST):
 				print('file not found, LP analysis will fail')
 				LP_file_path = cp.deepcopy(FF_LP_path)
 
-		try:
-			# I don't think is necessary, in reality.
-			# lp_data.contour_plot does not work in Python 3.9, but compare_shots works fine
-			# Eich_fit_fn_time works only in python 3.7 because of the function iminuit.Struct
-			if sys.version_info.major==3 and sys.version_info.minor==7:
-				lambda_q_determination = True
-			else:
-				print('LPs can be real properly only with Pithon 3.7, and it was not used here, so this step is skipped')
-				lambda_q_determination = False
-				# sblu=sgne	# I want an error to occour, as LPs can be real properly only with Pithon 3.7
-			# try:
-			# 	fdir = coleval.uda_transfer(shotnumber,'elp',extra_path='/0'+str(shotnumber)[:2])
-			# 	lp_data,output_contour1 = coleval.read_LP_data(shotnumber,path = os.path.split(fdir)[0])
-			# 	os.remove(fdir)
-			# except:
-			# 	lp_data,output_contour1 = coleval.read_LP_data(shotnumber,path=LP_file_path)
-			try:	# considering that Peter just (12/02/2025) renwed the analisys code and is saving the files locally, I look at that first now
-				lp_data,output_contour1 = coleval.read_LP_data(shotnumber,path=LP_file_path,LP_file_type=LP_file_type)
-			except:
-				fdir = coleval.uda_transfer(shotnumber,'elp',extra_path='/0'+str(shotnumber)[:2])
-				lp_data,output_contour1 = coleval.read_LP_data(shotnumber,path = os.path.split(fdir)[0])
-				os.remove(fdir)
-			if True:	# use ot Peter Ryan function to combine data within time slice and to filter when strike point is on a dead channel
-				temp = np.logical_and(time_full_binned_crop>output_contour1['time'][0][0].min(),time_full_binned_crop<output_contour1['time'][0][0].max())
-				trange = tuple(map(list, np.array([time_full_binned_crop[temp] - np.mean(np.diff(time_full_binned_crop))/2,time_full_binned_crop[temp] + np.mean(np.diff(time_full_binned_crop))/2]).T))
-				# LP_lambdaq_time = np.mean(trange,axis=1)
-				try:
-					output_contour1=lp_data.contour_plot(trange=[0,1.5],bad_probes=None,divertor='lower', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T1','T2','T3','T4','T5'],show=False)
-					temp = output_contour1['y'][0][0]
-					temp = generic_filter(temp,np.nanmean,size=(int(0.002/np.diff(output_contour1['time'][0][0]).mean()),1))	# this is a way to fix that there are sometimes 6 nans for each good data point. i smooth ver 2ms, just to make sure
-					temp[np.isnan(temp)] = 0
-					if shotnumber < 45514:	# 21/02/2025 Peter told me the the bad probes issue arises only in MU01 as most of it was dome in swept mode. from late MU01 onward he only did Isat mode, that does not have this issue
-						for i_,probe_name in enumerate(output_contour1['probe_name'][0][0]):
-							if probe_name in badLPs_V0:
-								temp[:,i_] = 0
-					# s10_lower_good_probes = np.nanmax(median_filter((temp>0.005),size=[5,1]),axis=0)	# threshold for broken probes
-					s10_lower_good_probes = np.nanmax(median_filter((temp>0.005),size=[int((0.015/(np.diff(output_contour1['time'][0][0]).mean()))//2*2+1),1]),axis=0)	# threshold for broken probes	# I change the median interval from 5 data point to the equivalent to 10ms, just to be sure that there is enough data
-					s10_lower_s = output_contour1['s'][0][0]
-					s10_lower_r = output_contour1['R'][0][0]
-					s10_lower_z = output_contour1['Z'][0][0]
-					output,Eich=compare_shots(filepath=LP_file_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=10, quantity = 'jsat_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False)
-					s10_lower_jsat = []
-					s10_lower_jsat_sigma = []
-					s10_lower_jsat_r = []
-					s10_lower_jsat_s = []
-					for i in range(len(output)):
-						s10_lower_jsat.append(output[i]['y'][0][0])	# here there are only standard probes
-						s10_lower_jsat_sigma.append(output[i]['y_error'][0][0])
-						s10_lower_jsat_r.append(output[i]['R'][0][0])	# here there are only standard probes
-						s10_lower_jsat_s.append(output[i]['s'][0][0])
-					if lambda_q_determination:	# section to calculate OMP lambda_q
-						output,Eich=compare_shots(filepath=LP_file_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=10, quantity = 'q_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
-						x_all_finite,y_all_finite,y_err_all_finite,time_all_finite = prepare_data_for_Eich_fit_fn_time(output)
-						fit_store,start_limits_store=Eich_fit_fn_time(x_all_finite,y_all_finite,y_err_all_finite,time_all_finite)
+		if found:
+			LPs_dict = dict([])
+			LPs_dict['shotnumber'] = shotnumber
+			LPs_dict['LP_file_path'] = LP_file_path
+			LPs_dict['LP_file_type'] = LP_file_type
+			LPs_dict['time_full_binned_crop'] = time_full_binned_crop
+			LPs_dict['badLPs_V0'] = badLPs_V0
+			LPs_dict['efit_reconstruction'] = efit_reconstruction
+			# LPs_dict['shotnumber'] = shotnumber
+			# LPs_dict['shotnumber'] = shotnumber
+			np.savez_compressed(laser_to_analyse[:-4]+'_temp_LPs_dict',**LPs_dict)
 
-						lambda_q_compression = lambda_q_compression_lower_interp(time_all_finite)
-						lambda_q_10_lower = fit_store['lambda_q']/lambda_q_compression
-						if not len(lambda_q_10_lower)==0:	# this means that there was no data to fit
-							lambda_q_10_lower = lambda_q_10_lower[fit_store['acceptable_fit'].astype(bool)]
-							lambda_q_10_lower_sigma = fit_store['lambda_q_err']/lambda_q_compression
-							lambda_q_10_lower_sigma = lambda_q_10_lower_sigma[fit_store['acceptable_fit'].astype(bool)]
-							time_all_finite = time_all_finite[fit_store['acceptable_fit'].astype(bool)]
-							lambda_q_10_lower = [lambda_q_10_lower[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
-							lambda_q_10_lower_sigma = [lambda_q_10_lower_sigma[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
-						else:
+			if False:	# I run this is in an external script runnint in Python 3.7		5/11/2025
+				try:
+					# I don't think is necessary, in reality.
+					# lp_data.contour_plot does not work in Python 3.9, but compare_shots works fine
+					# Eich_fit_fn_time works only in python 3.7 because of the function iminuit.Struct
+					if sys.version_info.major==3 and sys.version_info.minor==7:
+						lambda_q_determination = True
+					else:
+						print('LPs can be real properly only with Pithon 3.7, and it was not used here, so this step is skipped')
+						lambda_q_determination = False
+						# sblu=sgne	# I want an error to occour, as LPs can be real properly only with Pithon 3.7
+					# try:
+					# 	fdir = coleval.uda_transfer(shotnumber,'elp',extra_path='/0'+str(shotnumber)[:2])
+					# 	lp_data,output_contour1 = coleval.read_LP_data(shotnumber,path = os.path.split(fdir)[0])
+					# 	os.remove(fdir)
+					# except:
+					# 	lp_data,output_contour1 = coleval.read_LP_data(shotnumber,path=LP_file_path)
+					try:	# considering that Peter just (12/02/2025) renwed the analisys code and is saving the files locally, I look at that first now
+						lp_data,output_contour1 = coleval.read_LP_data(shotnumber,path=LP_file_path,LP_file_type=LP_file_type)
+					except:
+						fdir = coleval.uda_transfer(shotnumber,'elp',extra_path='/0'+str(shotnumber)[:2])
+						lp_data,output_contour1 = coleval.read_LP_data(shotnumber,path = os.path.split(fdir)[0])
+						os.remove(fdir)
+					if True:	# use ot Peter Ryan function to combine data within time slice and to filter when strike point is on a dead channel
+						temp = np.logical_and(time_full_binned_crop>output_contour1['time'][0][0].min(),time_full_binned_crop<output_contour1['time'][0][0].max())
+						trange = tuple(map(list, np.array([time_full_binned_crop[temp] - np.mean(np.diff(time_full_binned_crop))/2,time_full_binned_crop[temp] + np.mean(np.diff(time_full_binned_crop))/2]).T))
+						# LP_lambdaq_time = np.mean(trange,axis=1)
+						try:
+							output_contour1=lp_data.contour_plot(trange=[0,1.5],bad_probes=None,divertor='lower', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T1','T2','T3','T4','T5'],show=False)
+							temp = output_contour1['y'][0][0]
+							temp = generic_filter(temp,np.nanmean,size=(int(0.002/np.diff(output_contour1['time'][0][0]).mean()),1))	# this is a way to fix that there are sometimes 6 nans for each good data point. i smooth ver 2ms, just to make sure
+							temp[np.isnan(temp)] = 0
+							if shotnumber < 45514:	# 21/02/2025 Peter told me the the bad probes issue arises only in MU01 as most of it was dome in swept mode. from late MU01 onward he only did Isat mode, that does not have this issue
+								for i_,probe_name in enumerate(output_contour1['probe_name'][0][0]):
+									if probe_name in badLPs_V0:
+										temp[:,i_] = 0
+							# s10_lower_good_probes = np.nanmax(median_filter((temp>0.005),size=[5,1]),axis=0)	# threshold for broken probes
+							# s10_lower_good_probes = np.nanmax(median_filter((temp>0.005),size=[int((0.015/(np.diff(output_contour1['time'][0][0]).mean()))//2*2+1),1]),axis=0)	# threshold for broken probes	# I change the median interval from 5 data point to the equivalent to 10ms, just to be sure that there is enough data
+							if shotnumber<46191:
+								s10_lower_good_probes = np.nanmax(median_filter((temp>0.005),size=[int((0.015/(np.diff(output_contour1['time'][0][0]).mean()))//2*2+1),1]),axis=0)	# threshold for broken probes	# I change the median interval from 5 data point to the equivalent to 10ms, just to be sure that there is enough data
+							else:	# 2025/10/24 after MU01 if a probe is bad then it is left in the data as blank, no need of an external file
+								s10_lower_good_probes = np.ones((np.shape(temp)[1])).astype(bool)
+							s10_lower_s = output_contour1['s'][0][0]
+							s10_lower_r = output_contour1['R'][0][0]
+							s10_lower_z = output_contour1['Z'][0][0]
+							output,Eich=compare_shots(filepath=LP_file_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=10, quantity = 'jsat_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False)
+							s10_lower_jsat = []
+							s10_lower_jsat_sigma = []
+							s10_lower_jsat_r = []
+							s10_lower_jsat_s = []
+							for i in range(len(output)):
+								s10_lower_jsat.append(output[i]['y'][0][0])	# here there are only standard probes
+								s10_lower_jsat_sigma.append(output[i]['y_error'][0][0])
+								s10_lower_jsat_r.append(output[i]['R'][0][0])	# here there are only standard probes
+								s10_lower_jsat_s.append(output[i]['s'][0][0])
+							if lambda_q_determination:	# section to calculate OMP lambda_q
+								output,Eich=compare_shots(filepath=LP_file_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=10, quantity = 'q_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
+								x_all_finite,y_all_finite,y_err_all_finite,time_all_finite = prepare_data_for_Eich_fit_fn_time(output)
+								fit_store,start_limits_store=Eich_fit_fn_time(x_all_finite,y_all_finite,y_err_all_finite,time_all_finite)
+
+								lambda_q_compression = lambda_q_compression_lower_interp(time_all_finite)
+								lambda_q_10_lower = fit_store['lambda_q']/lambda_q_compression
+								if not len(lambda_q_10_lower)==0:	# this means that there was no data to fit
+									lambda_q_10_lower = lambda_q_10_lower[fit_store['acceptable_fit'].astype(bool)]
+									lambda_q_10_lower_sigma = fit_store['lambda_q_err']/lambda_q_compression
+									lambda_q_10_lower_sigma = lambda_q_10_lower_sigma[fit_store['acceptable_fit'].astype(bool)]
+									time_all_finite = time_all_finite[fit_store['acceptable_fit'].astype(bool)]
+									lambda_q_10_lower = [lambda_q_10_lower[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
+									lambda_q_10_lower_sigma = [lambda_q_10_lower_sigma[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
+								else:
+									lambda_q_10_lower = np.ones((len(time_full_binned_crop)))*np.nan
+									lambda_q_10_lower_sigma = np.ones((len(time_full_binned_crop)))*np.nan
+								if False:
+									# plt.figure()
+									# for i in range(len(Eich)):
+									# 	try:
+									# 		i = i*3
+									# 		gna, = plt.plot(Eich[i]['R'][0][0][0],Eich[i]['y'][0][0][0],'--',label=r'$\lambda_q =$ %.3gmm, time=%.3gms' %(Eich[i]['lambda_q'][0][0][0]*1000,np.nanmean(Eich[i]['time'][0][0][0])*1000))
+									# 		# plt.plot(output[i]['R'][0][0],output[i]['y'][0][0],'--',color=gna.get_color())
+									# 		plt.errorbar(output[i]['R'][0][0],output[i]['y'][0][0],yerr=output[i]['y_error'][0][0],color=gna.get_color())
+									# 	except:
+									# 		pass
+									# plt.legend()
+									from mastu_exhaust_analysis.eich_gui import prepare_data_for_Eich_fit_fn_time,Eich_fit_fn_time,Eich_fit_GUI
+									fit_store_edit, start_limits_store_edit=Eich_fit_GUI(time_all_finite,x_all_finite,y_all_finite,y_err_all_finite,fit_store,start_limits_store)
+						except:
+							print('s10_lower failed')
+							s10_lower_good_probes = np.zeros((10)).astype(bool)
+							s10_lower_s = np.zeros((10))
+							s10_lower_r = np.zeros((10))
+							s10_lower_jsat = np.zeros((len(trange),10))
+							s10_lower_jsat_sigma = np.zeros((len(trange),10))
+							s10_lower_jsat_r = np.zeros((len(trange),10))
+							s10_lower_jsat_s = np.zeros((len(trange),10))
 							lambda_q_10_lower = np.ones((len(time_full_binned_crop)))*np.nan
 							lambda_q_10_lower_sigma = np.ones((len(time_full_binned_crop)))*np.nan
-						if False:
-							# plt.figure()
-							# for i in range(len(Eich)):
-							# 	try:
-							# 		i = i*3
-							# 		gna, = plt.plot(Eich[i]['R'][0][0][0],Eich[i]['y'][0][0][0],'--',label=r'$\lambda_q =$ %.3gmm, time=%.3gms' %(Eich[i]['lambda_q'][0][0][0]*1000,np.nanmean(Eich[i]['time'][0][0][0])*1000))
-							# 		# plt.plot(output[i]['R'][0][0],output[i]['y'][0][0],'--',color=gna.get_color())
-							# 		plt.errorbar(output[i]['R'][0][0],output[i]['y'][0][0],yerr=output[i]['y_error'][0][0],color=gna.get_color())
-							# 	except:
-							# 		pass
-							# plt.legend()
-							from mastu_exhaust_analysis.eich_gui import prepare_data_for_Eich_fit_fn_time,Eich_fit_fn_time,Eich_fit_GUI
-							fit_store_edit, start_limits_store_edit=Eich_fit_GUI(time_all_finite,x_all_finite,y_all_finite,y_err_all_finite,fit_store,start_limits_store)
-				except:
-					s10_lower_good_probes = np.zeros((10)).astype(bool)
-					s10_lower_s = np.zeros((10))
-					s10_lower_r = np.zeros((10))
-					s10_lower_jsat = np.zeros((len(trange),10))
-					s10_lower_jsat_sigma = np.zeros((len(trange),10))
-					s10_lower_jsat_r = np.zeros((len(trange),10))
-					s10_lower_jsat_s = np.zeros((len(trange),10))
-					lambda_q_10_lower = np.ones((len(time_full_binned_crop)))*np.nan
-					lambda_q_10_lower_sigma = np.ones((len(time_full_binned_crop)))*np.nan
-				plt.close('all')
+						plt.close('all')
 
-				try:
-					output_contour1=lp_data.contour_plot(trange=[0,1.5],bad_probes=None,divertor='lower', sectors=4, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],show=False)
-					temp = output_contour1['y'][0][0]
-					temp = generic_filter(temp,np.nanmean,size=(int(0.002/np.diff(output_contour1['time'][0][0]).mean()),1))	# this is a way to fix that there are sometimes 6 nans for each good data point. i smooth ver 2ms, just to make sure
-					temp[np.isnan(temp)] = 0
-					if shotnumber < 45514:	# 21/02/2025 Peter told me the the bad probes issue arises only in MU01 as most of it was dome in swept mode. from late MU01 onward he only did Isat mode, that does not have this issue
-						for i_,probe_name in enumerate(output_contour1['probe_name'][0][0]):
-							if probe_name in badLPs_V0:
-								temp[:,i_] = 0
-					# s4_lower_good_probes = np.nanmax(median_filter((temp>0.005),size=[1,5]),axis=0)	# threshold for broken probes
-					s4_lower_good_probes = np.nanmax(median_filter((temp>0.005),size=[int((0.015/(np.diff(output_contour1['time'][0][0]).mean()))//2*2+1),1]),axis=0)	# threshold for broken probes	# I change the median interval from 5 data point to the equivalent to 10ms, just to be sure that there is enough data
-					s4_lower_s = output_contour1['s'][0][0]
-					s4_lower_r = output_contour1['R'][0][0]
-					s4_lower_z = output_contour1['Z'][0][0]
-					output,Eich=compare_shots(filepath=LP_file_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=4, quantity = 'jsat_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False)
-					s4_lower_jsat = []
-					s4_lower_jsat_sigma = []
-					s4_lower_jsat_r = []
-					s4_lower_jsat_s = []
-					for i in range(len(output)):
-						s4_lower_jsat.append(output[i]['y'][0][0])	# here there are only small probes
-						s4_lower_jsat_sigma.append(output[i]['y_error'][0][0])	# here there are only small probes
-						s4_lower_jsat_r.append(output[i]['R'][0][0])	# here there are only small probes
-						s4_lower_jsat_s.append(output[i]['s'][0][0])
-					if lambda_q_determination:	# section to calculate OMP lambda_q
-						output,Eich=compare_shots(filepath=LP_file_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=4, quantity = 'q_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
-						x_all_finite,y_all_finite,y_err_all_finite,time_all_finite = prepare_data_for_Eich_fit_fn_time(output)
-						fit_store,start_limits_store=Eich_fit_fn_time(x_all_finite,y_all_finite,y_err_all_finite,time_all_finite)
+						try:
+							output_contour1=lp_data.contour_plot(trange=[0,1.5],bad_probes=None,divertor='lower', sectors=4, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],show=False)
+							temp = output_contour1['y'][0][0]
+							temp = generic_filter(temp,np.nanmean,size=(int(0.002/np.diff(output_contour1['time'][0][0]).mean()),1))	# this is a way to fix that there are sometimes 6 nans for each good data point. i smooth ver 2ms, just to make sure
+							temp[np.isnan(temp)] = 0
+							if shotnumber < 45514:	# 21/02/2025 Peter told me the the bad probes issue arises only in MU01 as most of it was dome in swept mode. from late MU01 onward he only did Isat mode, that does not have this issue
+								for i_,probe_name in enumerate(output_contour1['probe_name'][0][0]):
+									if probe_name in badLPs_V0:
+										temp[:,i_] = 0
+							# s4_lower_good_probes = np.nanmax(median_filter((temp>0.005),size=[1,5]),axis=0)	# threshold for broken probes
+							# s4_lower_good_probes = np.nanmax(median_filter((temp>0.005),size=[int((0.015/(np.diff(output_contour1['time'][0][0]).mean()))//2*2+1),1]),axis=0)	# threshold for broken probes	# I change the median interval from 5 data point to the equivalent to 10ms, just to be sure that there is enough data
+							if shotnumber<46191:
+								s4_lower_good_probes = np.nanmax(median_filter((temp>0.005),size=[int((0.015/(np.diff(output_contour1['time'][0][0]).mean()))//2*2+1),1]),axis=0)	# threshold for broken probes	# I change the median interval from 5 data point to the equivalent to 10ms, just to be sure that there is enough data
+							else:	# 2025/10/24 after MU01 if a probe is bad then it is left in the data as blank, no need of an external file
+								s4_lower_good_probes = np.ones((np.shape(temp)[1])).astype(bool)
+							s4_lower_s = output_contour1['s'][0][0]
+							s4_lower_r = output_contour1['R'][0][0]
+							s4_lower_z = output_contour1['Z'][0][0]
+							output,Eich=compare_shots(filepath=LP_file_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=4, quantity = 'jsat_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False)
+							s4_lower_jsat = []
+							s4_lower_jsat_sigma = []
+							s4_lower_jsat_r = []
+							s4_lower_jsat_s = []
+							for i in range(len(output)):
+								s4_lower_jsat.append(output[i]['y'][0][0])	# here there are only small probes
+								s4_lower_jsat_sigma.append(output[i]['y_error'][0][0])	# here there are only small probes
+								s4_lower_jsat_r.append(output[i]['R'][0][0])	# here there are only small probes
+								s4_lower_jsat_s.append(output[i]['s'][0][0])
+							if lambda_q_determination:	# section to calculate OMP lambda_q
+								output,Eich=compare_shots(filepath=LP_file_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='lower', sectors=4, quantity = 'q_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
+								x_all_finite,y_all_finite,y_err_all_finite,time_all_finite = prepare_data_for_Eich_fit_fn_time(output)
+								fit_store,start_limits_store=Eich_fit_fn_time(x_all_finite,y_all_finite,y_err_all_finite,time_all_finite)
 
-						lambda_q_compression = lambda_q_compression_lower_interp(time_all_finite)
-						lambda_q_4_lower = fit_store['lambda_q']/lambda_q_compression
-						if not len(lambda_q_4_lower)==0:	# this means that there was no data to fit
-							lambda_q_4_lower = lambda_q_4_lower[fit_store['acceptable_fit'].astype(bool)]
-							lambda_q_4_lower_sigma = fit_store['lambda_q_err']/lambda_q_compression
-							lambda_q_4_lower_sigma = lambda_q_4_lower_sigma[fit_store['acceptable_fit'].astype(bool)]
-							time_all_finite = time_all_finite[fit_store['acceptable_fit'].astype(bool)]
-							lambda_q_4_lower = [lambda_q_4_lower[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
-							lambda_q_4_lower_sigma = [lambda_q_4_lower_sigma[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
-						else:
+								lambda_q_compression = lambda_q_compression_lower_interp(time_all_finite)
+								lambda_q_4_lower = fit_store['lambda_q']/lambda_q_compression
+								if not len(lambda_q_4_lower)==0:	# this means that there was no data to fit
+									lambda_q_4_lower = lambda_q_4_lower[fit_store['acceptable_fit'].astype(bool)]
+									lambda_q_4_lower_sigma = fit_store['lambda_q_err']/lambda_q_compression
+									lambda_q_4_lower_sigma = lambda_q_4_lower_sigma[fit_store['acceptable_fit'].astype(bool)]
+									time_all_finite = time_all_finite[fit_store['acceptable_fit'].astype(bool)]
+									lambda_q_4_lower = [lambda_q_4_lower[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
+									lambda_q_4_lower_sigma = [lambda_q_4_lower_sigma[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
+								else:
+									lambda_q_4_lower = np.ones((len(time_full_binned_crop)))*np.nan
+									lambda_q_4_lower_sigma = np.ones((len(time_full_binned_crop)))*np.nan
+						except:
+							print('s4_lower failed')
+							s4_lower_good_probes = np.zeros((10)).astype(bool)
+							s4_lower_s = np.zeros((10))
+							s4_lower_r = np.zeros((10))
+							s4_lower_z = np.zeros((10))
+							s4_lower_jsat = np.zeros((len(trange),10))
+							s4_lower_jsat_sigma = np.zeros((len(trange),10))
+							s4_lower_jsat_r = np.zeros((len(trange),10))
+							s4_lower_jsat_s = np.zeros((len(trange),10))
 							lambda_q_4_lower = np.ones((len(time_full_binned_crop)))*np.nan
 							lambda_q_4_lower_sigma = np.ones((len(time_full_binned_crop)))*np.nan
-				except:
-					s4_lower_good_probes = np.zeros((10)).astype(bool)
-					s4_lower_s = np.zeros((10))
-					s4_lower_r = np.zeros((10))
-					s4_lower_z = np.zeros((10))
-					s4_lower_jsat = np.zeros((len(trange),10))
-					s4_lower_jsat_sigma = np.zeros((len(trange),10))
-					s4_lower_jsat_r = np.zeros((len(trange),10))
-					s4_lower_jsat_s = np.zeros((len(trange),10))
-					lambda_q_4_lower = np.ones((len(time_full_binned_crop)))*np.nan
-					lambda_q_4_lower_sigma = np.ones((len(time_full_binned_crop)))*np.nan
-					plt.close('all')
+							plt.close('all')
 
-				try:
-					output_contour1=lp_data.contour_plot(trange=[0,1.5],bad_probes=None,divertor='upper', sectors=4, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],show=False)
-					temp = output_contour1['y'][0][0]
-					temp = generic_filter(temp,np.nanmean,size=(int(0.002/np.diff(output_contour1['time'][0][0]).mean()),1))	# this is a way to fix that there are sometimes 6 nans for each good data point. i smooth ver 2ms, just to make sure
-					temp[np.isnan(temp)] = 0
-					if shotnumber < 45514:	# 21/02/2025 Peter told me the the bad probes issue arises only in MU01 as most of it was dome in swept mode. from late MU01 onward he only did Isat mode, that does not have this issue
-						for i_,probe_name in enumerate(output_contour1['probe_name'][0][0]):
-							if probe_name in badLPs_V0:
-								temp[:,i_] = 0
-					# s4_upper_good_probes = np.nanmax(median_filter((temp>0.005),size=[1,5]),axis=0)	# threshold for broken probes
-					s4_upper_good_probes = np.nanmax(median_filter((temp>0.005),size=[int((0.015/(np.diff(output_contour1['time'][0][0]).mean()))//2*2+1),1]),axis=0)	# threshold for broken probes	# I change the median interval from 5 data point to the equivalent to 10ms, just to be sure that there is enough data
-					s4_upper_s = output_contour1['s'][0][0]
-					s4_upper_r = output_contour1['R'][0][0]
-					s4_upper_z = output_contour1['Z'][0][0]
-					output,Eich=compare_shots(filepath=LP_file_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=4, quantity = 'jsat_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False)
-					s4_upper_jsat = []
-					s4_upper_jsat_sigma = []
-					s4_upper_jsat_r = []
-					s4_upper_jsat_s = []
-					for i in range(len(output)):
-						s4_upper_jsat.append(output[i]['y'][0][0])	# here there are only standard probes
-						s4_upper_jsat_sigma.append(output[i]['y_error'][0][0])	# here there are only standard probes
-						s4_upper_jsat_r.append(output[i]['R'][0][0])	# here there are only standard probes
-						s4_upper_jsat_s.append(output[i]['s'][0][0])
-					if lambda_q_determination:	# section to calculate OMP lambda_q
-						output,Eich=compare_shots(filepath=LP_file_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=4, quantity = 'q_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
-						x_all_finite,y_all_finite,y_err_all_finite,time_all_finite = prepare_data_for_Eich_fit_fn_time(output)
-						fit_store,start_limits_store=Eich_fit_fn_time(x_all_finite,y_all_finite,y_err_all_finite,time_all_finite)
+						try:
+							output_contour1=lp_data.contour_plot(trange=[0,1.5],bad_probes=None,divertor='upper', sectors=4, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4','T5'],show=False)
+							temp = output_contour1['y'][0][0]
+							temp = generic_filter(temp,np.nanmean,size=(int(0.002/np.diff(output_contour1['time'][0][0]).mean()),1))	# this is a way to fix that there are sometimes 6 nans for each good data point. i smooth ver 2ms, just to make sure
+							temp[np.isnan(temp)] = 0
+							if shotnumber < 45514:	# 21/02/2025 Peter told me the the bad probes issue arises only in MU01 as most of it was dome in swept mode. from late MU01 onward he only did Isat mode, that does not have this issue
+								for i_,probe_name in enumerate(output_contour1['probe_name'][0][0]):
+									if probe_name in badLPs_V0:
+										temp[:,i_] = 0
+							# s4_upper_good_probes = np.nanmax(median_filter((temp>0.005),size=[1,5]),axis=0)	# threshold for broken probes
+							# s4_upper_good_probes = np.nanmax(median_filter((temp>0.005),size=[int((0.015/(np.diff(output_contour1['time'][0][0]).mean()))//2*2+1),1]),axis=0)	# threshold for broken probes	# I change the median interval from 5 data point to the equivalent to 10ms, just to be sure that there is enough data
+							if shotnumber<46191:
+								s4_upper_good_probes = np.nanmax(median_filter((temp>0.005),size=[int((0.015/(np.diff(output_contour1['time'][0][0]).mean()))//2*2+1),1]),axis=0)	# threshold for broken probes	# I change the median interval from 5 data point to the equivalent to 10ms, just to be sure that there is enough data
+							else:	# 2025/10/24 after MU01 if a probe is bad then it is left in the data as blank, no need of an external file
+								s4_upper_good_probes = np.ones((np.shape(temp)[1])).astype(bool)
+							s4_upper_s = output_contour1['s'][0][0]
+							s4_upper_r = output_contour1['R'][0][0]
+							s4_upper_z = output_contour1['Z'][0][0]
+							output,Eich=compare_shots(filepath=LP_file_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=4, quantity = 'jsat_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False)
+							s4_upper_jsat = []
+							s4_upper_jsat_sigma = []
+							s4_upper_jsat_r = []
+							s4_upper_jsat_s = []
+							for i in range(len(output)):
+								s4_upper_jsat.append(output[i]['y'][0][0])	# here there are only standard probes
+								s4_upper_jsat_sigma.append(output[i]['y_error'][0][0])	# here there are only standard probes
+								s4_upper_jsat_r.append(output[i]['R'][0][0])	# here there are only standard probes
+								s4_upper_jsat_s.append(output[i]['s'][0][0])
+							if lambda_q_determination:	# section to calculate OMP lambda_q
+								output,Eich=compare_shots(filepath=LP_file_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=4, quantity = 'q_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4','T5'],time_combine=True,show=False,Eich_fit=False)
+								x_all_finite,y_all_finite,y_err_all_finite,time_all_finite = prepare_data_for_Eich_fit_fn_time(output)
+								fit_store,start_limits_store=Eich_fit_fn_time(x_all_finite,y_all_finite,y_err_all_finite,time_all_finite)
 
-						lambda_q_compression = lambda_q_compression_upper_interp(time_all_finite)
-						lambda_q_4_upper = fit_store['lambda_q']/lambda_q_compression
-						if not len(lambda_q_4_upper)==0:	# this means that there was no data to fit
-							lambda_q_4_upper = lambda_q_4_upper[fit_store['acceptable_fit'].astype(bool)]
-							lambda_q_4_upper_sigma = fit_store['lambda_q_err']/lambda_q_compression
-							lambda_q_4_upper_sigma = lambda_q_4_upper_sigma[fit_store['acceptable_fit'].astype(bool)]
-							time_all_finite = time_all_finite[fit_store['acceptable_fit'].astype(bool)]
-							lambda_q_4_upper = [lambda_q_4_upper[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
-							lambda_q_4_upper_sigma = [lambda_q_4_upper_sigma[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
-						else:
+								lambda_q_compression = lambda_q_compression_upper_interp(time_all_finite)
+								lambda_q_4_upper = fit_store['lambda_q']/lambda_q_compression
+								if not len(lambda_q_4_upper)==0:	# this means that there was no data to fit
+									lambda_q_4_upper = lambda_q_4_upper[fit_store['acceptable_fit'].astype(bool)]
+									lambda_q_4_upper_sigma = fit_store['lambda_q_err']/lambda_q_compression
+									lambda_q_4_upper_sigma = lambda_q_4_upper_sigma[fit_store['acceptable_fit'].astype(bool)]
+									time_all_finite = time_all_finite[fit_store['acceptable_fit'].astype(bool)]
+									lambda_q_4_upper = [lambda_q_4_upper[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
+									lambda_q_4_upper_sigma = [lambda_q_4_upper_sigma[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
+								else:
+									lambda_q_4_upper = np.ones((len(time_full_binned_crop)))*np.nan
+									lambda_q_4_upper_sigma = np.ones((len(time_full_binned_crop)))*np.nan
+						except:
+							print('s4_upper failed')
+							s4_upper_good_probes = np.zeros((10)).astype(bool)
+							s4_upper_s = np.zeros((10))
+							s4_upper_r = np.zeros((10))
+							s4_upper_jsat = np.zeros((len(trange),10))
+							s4_upper_jsat_sigma = np.zeros((len(trange),10))
+							s4_upper_jsat_r = np.zeros((len(trange),10))
+							s4_upper_jsat_s = np.zeros((len(trange),10))
 							lambda_q_4_upper = np.ones((len(time_full_binned_crop)))*np.nan
 							lambda_q_4_upper_sigma = np.ones((len(time_full_binned_crop)))*np.nan
-				except:
-					s4_upper_good_probes = np.zeros((10)).astype(bool)
-					s4_upper_s = np.zeros((10))
-					s4_upper_r = np.zeros((10))
-					s4_upper_jsat = np.zeros((len(trange),10))
-					s4_upper_jsat_sigma = np.zeros((len(trange),10))
-					s4_upper_jsat_r = np.zeros((len(trange),10))
-					s4_upper_jsat_s = np.zeros((len(trange),10))
-					lambda_q_4_upper = np.ones((len(time_full_binned_crop)))*np.nan
-					lambda_q_4_upper_sigma = np.ones((len(time_full_binned_crop)))*np.nan
-				plt.close('all')
+						plt.close('all')
 
-				try:
-					output_contour1=lp_data.contour_plot(trange=[0,1.5],bad_probes=None,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4'],show=False)
-					temp = output_contour1['y'][0][0]
-					temp = generic_filter(temp,np.nanmean,size=(int(0.002/np.diff(output_contour1['time'][0][0]).mean()),1))	# this is a way to fix that there are sometimes 6 nans for each good data point. i smooth ver 2ms, just to make sure
-					temp[np.isnan(temp)] = 0
-					if shotnumber < 45514:	# 21/02/2025 Peter told me the the bad probes issue arises only in MU01 as most of it was dome in swept mode. from late MU01 onward he only did Isat mode, that does not have this issue
-						for i_,probe_name in enumerate(output_contour1['probe_name'][0][0]):
-							if probe_name in badLPs_V0:
-								temp[:,i_] = 0
-					# s10_upper_std_good_probes = np.nanmax(median_filter((temp>0.005),size=[1,5]),axis=0)	# threshold for broken probes
-					s10_upper_std_good_probes = np.nanmax(median_filter((temp>0.005),size=[int((0.015/(np.diff(output_contour1['time'][0][0]).mean()))//2*2+1),1]),axis=0)	# threshold for broken probes	# I change the median interval from 5 data point to the equivalent to 10ms, just to be sure that there is enough data
-					s10_upper_std_s = output_contour1['s'][0][0]
-					s10_upper_std_r = output_contour1['R'][0][0]
-					s10_upper_std_z = output_contour1['Z'][0][0]
-					output,Eich=compare_shots(filepath=LP_file_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-4,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4'],time_combine=True,show=False)
-					s10_upper_std_jsat = []
-					s10_upper_std_jsat_sigma = []
-					s10_upper_std_jsat_r = []
-					s10_upper_std_jsat_s = []
-					for i in range(len(output)):
-						s10_upper_std_jsat.append(output[i]['y'][0][0])	# here there are only standard probes
-						s10_upper_std_jsat_sigma.append(output[i]['y_error'][0][0])	# here there are only standard probes
-						s10_upper_std_jsat_r.append(output[i]['R'][0][0])	# here there are only standard probes
-						s10_upper_std_jsat_s.append(output[i]['s'][0][0])
-					if lambda_q_determination:	# section to calculate OMP lambda_q
-						output,Eich=compare_shots(filepath=LP_file_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'q_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4'],time_combine=True,show=False,Eich_fit=False)
-						x_all_finite,y_all_finite,y_err_all_finite,time_all_finite = prepare_data_for_Eich_fit_fn_time(output)
-						fit_store,start_limits_store=Eich_fit_fn_time(x_all_finite,y_all_finite,y_err_all_finite,time_all_finite)
+						try:
+							output_contour1=lp_data.contour_plot(trange=[0,1.5],bad_probes=None,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['C5','C6','T2','T3','T4'],show=False)
+							temp = output_contour1['y'][0][0]
+							temp = generic_filter(temp,np.nanmean,size=(int(0.002/np.diff(output_contour1['time'][0][0]).mean()),1))	# this is a way to fix that there are sometimes 6 nans for each good data point. i smooth ver 2ms, just to make sure
+							temp[np.isnan(temp)] = 0
+							if shotnumber < 45514:	# 21/02/2025 Peter told me the the bad probes issue arises only in MU01 as most of it was dome in swept mode. from late MU01 onward he only did Isat mode, that does not have this issue
+								for i_,probe_name in enumerate(output_contour1['probe_name'][0][0]):
+									if probe_name in badLPs_V0:
+										temp[:,i_] = 0
+							# s10_upper_std_good_probes = np.nanmax(median_filter((temp>0.005),size=[1,5]),axis=0)	# threshold for broken probes
+							# s10_upper_std_good_probes = np.nanmax(median_filter((temp>0.005),size=[int((0.015/(np.diff(output_contour1['time'][0][0]).mean()))//2*2+1),1]),axis=0)	# threshold for broken probes	# I change the median interval from 5 data point to the equivalent to 10ms, just to be sure that there is enough data
+							if shotnumber<46191:
+								s10_upper_std_good_probes = np.nanmax(median_filter((temp>0.005),size=[int((0.015/(np.diff(output_contour1['time'][0][0]).mean()))//2*2+1),1]),axis=0)	# threshold for broken probes	# I change the median interval from 5 data point to the equivalent to 10ms, just to be sure that there is enough data
+							else:	# 2025/10/24 after MU01 if a probe is bad then it is left in the data as blank, no need of an external file
+								s10_upper_std_good_probes = np.ones((np.shape(temp)[1])).astype(bool)
+							s10_upper_std_s = output_contour1['s'][0][0]
+							s10_upper_std_r = output_contour1['R'][0][0]
+							s10_upper_std_z = output_contour1['Z'][0][0]
+							output,Eich=compare_shots(filepath=LP_file_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-4,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4'],time_combine=True,show=False)
+							s10_upper_std_jsat = []
+							s10_upper_std_jsat_sigma = []
+							s10_upper_std_jsat_r = []
+							s10_upper_std_jsat_s = []
+							for i in range(len(output)):
+								s10_upper_std_jsat.append(output[i]['y'][0][0])	# here there are only standard probes
+								s10_upper_std_jsat_sigma.append(output[i]['y_error'][0][0])	# here there are only standard probes
+								s10_upper_std_jsat_r.append(output[i]['R'][0][0])	# here there are only standard probes
+								s10_upper_std_jsat_s.append(output[i]['s'][0][0])
+							if lambda_q_determination:	# section to calculate OMP lambda_q
+								output,Eich=compare_shots(filepath=LP_file_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'q_tile', coordinate='s',tiles=['C5','C6','T2','T3','T4'],time_combine=True,show=False,Eich_fit=False)
+								x_all_finite,y_all_finite,y_err_all_finite,time_all_finite = prepare_data_for_Eich_fit_fn_time(output)
+								fit_store,start_limits_store=Eich_fit_fn_time(x_all_finite,y_all_finite,y_err_all_finite,time_all_finite)
 
-						lambda_q_compression = lambda_q_compression_upper_interp(time_all_finite)
-						lambda_q_10_upper = fit_store['lambda_q']/lambda_q_compression
-						if not len(lambda_q_10_upper)==0:	# this means that there was no data to fit
-							lambda_q_10_upper = lambda_q_10_upper[fit_store['acceptable_fit'].astype(bool)]
-							lambda_q_10_upper_sigma = fit_store['lambda_q_err']/lambda_q_compression
-							lambda_q_10_upper_sigma = lambda_q_10_upper_sigma[fit_store['acceptable_fit'].astype(bool)]
-							time_all_finite = time_all_finite[fit_store['acceptable_fit'].astype(bool)]
-							lambda_q_10_upper = [lambda_q_10_upper[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
-							lambda_q_10_upper_sigma = [lambda_q_10_upper_sigma[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
-						else:
+								lambda_q_compression = lambda_q_compression_upper_interp(time_all_finite)
+								lambda_q_10_upper = fit_store['lambda_q']/lambda_q_compression
+								if not len(lambda_q_10_upper)==0:	# this means that there was no data to fit
+									lambda_q_10_upper = lambda_q_10_upper[fit_store['acceptable_fit'].astype(bool)]
+									lambda_q_10_upper_sigma = fit_store['lambda_q_err']/lambda_q_compression
+									lambda_q_10_upper_sigma = lambda_q_10_upper_sigma[fit_store['acceptable_fit'].astype(bool)]
+									time_all_finite = time_all_finite[fit_store['acceptable_fit'].astype(bool)]
+									lambda_q_10_upper = [lambda_q_10_upper[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
+									lambda_q_10_upper_sigma = [lambda_q_10_upper_sigma[np.abs(time_all_finite-time).argmin()] if np.nanmin(np.abs(time_all_finite-time))<np.diff(time_full_binned_crop).mean()/3 else np.nan for time in time_full_binned_crop]
+								else:
+									lambda_q_10_upper = np.ones((len(time_full_binned_crop)))*np.nan
+									lambda_q_10_upper_sigma = np.ones((len(time_full_binned_crop)))*np.nan
+						except:
+							print('s10_upper_std failed')
+							s10_upper_std_good_probes = np.zeros((10)).astype(bool)
+							s10_upper_std_s = np.zeros((10))
+							s10_upper_std_r =np.zeros((10))
+							s10_upper_std_jsat = np.zeros((len(trange),10))
+							s10_upper_std_jsat_sigma = np.zeros((len(trange),10))
+							s10_upper_std_jsat_r = np.zeros((len(trange),10))
+							s10_upper_std_jsat_s = np.zeros((len(trange),10))
 							lambda_q_10_upper = np.ones((len(time_full_binned_crop)))*np.nan
 							lambda_q_10_upper_sigma = np.ones((len(time_full_binned_crop)))*np.nan
-				except:
-					s10_upper_std_good_probes = np.zeros((10)).astype(bool)
-					s10_upper_std_s = np.zeros((10))
-					s10_upper_std_r =np.zeros((10))
-					s10_upper_std_jsat = np.zeros((len(trange),10))
-					s10_upper_std_jsat_sigma = np.zeros((len(trange),10))
-					s10_upper_std_jsat_r = np.zeros((len(trange),10))
-					s10_upper_std_jsat_s = np.zeros((len(trange),10))
-					lambda_q_10_upper = np.ones((len(time_full_binned_crop)))*np.nan
-					lambda_q_10_upper_sigma = np.ones((len(time_full_binned_crop)))*np.nan
-				plt.close('all')
+						plt.close('all')
+
+						try:
+							output_contour1=lp_data.contour_plot(trange=[0,1.5],bad_probes=None,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['T5'],show=False)
+							temp = output_contour1['y'][0][0]
+							temp = generic_filter(temp,np.nanmean,size=(int(0.002/np.diff(output_contour1['time'][0][0]).mean()),1))	# this is a way to fix that there are sometimes 6 nans for each good data point. i smooth ver 2ms, just to make sure
+							temp[np.isnan(temp)] = 0
+							if shotnumber < 45514:	# 21/02/2025 Peter told me the the bad probes issue arises only in MU01 as most of it was dome in swept mode. from late MU01 onward he only did Isat mode, that does not have this issue
+								for i_,probe_name in enumerate(output_contour1['probe_name'][0][0]):
+									if probe_name in badLPs_V0:
+										temp[:,i_] = 0
+							# s10_upper_large_good_probes = np.nanmax(median_filter((temp>0.005),size=[1,5]),axis=0)	# threshold for broken probes
+							# s10_upper_large_good_probes = np.nanmax(median_filter((temp>0.005),size=[int((0.015/(np.diff(output_contour1['time'][0][0]).mean()))//2*2+1),1]),axis=0)	# threshold for broken probes	# I change the median interval from 5 data point to the equivalent to 10ms, just to be sure that there is enough data
+							if shotnumber<46191:
+								s10_upper_large_good_probes = np.nanmax(median_filter((temp>0.005),size=[int((0.015/(np.diff(output_contour1['time'][0][0]).mean()))//2*2+1),1]),axis=0)	# threshold for broken probes	# I change the median interval from 5 data point to the equivalent to 10ms, just to be sure that there is enough data
+							else:	# 2025/10/24 after MU01 if a probe is bad then it is left in the data as blank, no need of an external file
+								s10_upper_large_good_probes = np.ones((np.shape(temp)[1])).astype(bool)
+							s10_upper_large_s = output_contour1['s'][0][0]
+							s10_upper_large_r = output_contour1['R'][0][0]
+							s10_upper_large_z = output_contour1['Z'][0][0]
+							output,Eich=compare_shots(filepath=LP_file_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='s',tiles=['T5'],time_combine=True,show=False)
+							s10_upper_large_jsat = []
+							s10_upper_large_jsat_sigma = []
+							s10_upper_large_jsat_r = []
+							s10_upper_large_jsat_s = []
+							for i in range(len(output)):
+								s10_upper_large_jsat.append(output[i]['y'][0][0])	# here there are only standard probes
+								s10_upper_large_jsat_sigma.append(output[i]['y_error'][0][0])	# here there are only standard probes
+								s10_upper_large_jsat_r.append(output[i]['R'][0][0])	# here there are only standard probes
+								s10_upper_large_jsat_s.append(output[i]['s'][0][0])
+						except:
+							print('s10_upper_large failed')
+							s10_upper_large_good_probes = np.zeros((10)).astype(bool)
+							s10_upper_large_s = np.zeros((10))
+							s10_upper_large_r = np.zeros((10))
+							s10_upper_large_jsat = np.zeros((len(trange),10))
+							s10_upper_large_jsat_sigma = np.zeros((len(trange),10))
+							s10_upper_large_jsat_r = np.zeros((len(trange),10))
+							s10_upper_large_jsat_s = np.zeros((len(trange),10))
+						plt.close('all')
+
+						closeness_limit_to_dead_channels = 0.01	# m
+						closeness_limit_for_good_channels = np.median(np.abs(np.diff(s10_lower_s).tolist()+np.diff(s4_lower_s).tolist()+np.diff(s4_upper_s).tolist()+np.diff(s10_upper_std_s).tolist()+np.diff(s10_upper_large_s).tolist()))*2	# *5
+						print('closeness_limit_for_good_channels '+str(closeness_limit_for_good_channels))
+						jsat_upper_inner_small_max = []
+						jsat_upper_outer_small_max = []
+						jsat_upper_inner_mid_max = []
+						jsat_upper_outer_mid_max = []
+						jsat_upper_inner_large_max = []	# T5
+						jsat_upper_outer_large_max = []	# T5
+						jsat_lower_inner_small_max = []	#central column
+						jsat_lower_outer_small_max = []	#central column
+						jsat_lower_inner_mid_max = []
+						jsat_lower_outer_mid_max = []
+						jsat_lower_inner_large_max = []
+						jsat_lower_outer_large_max = []
+
+						jsat_upper_inner_small_max_sigma = []
+						jsat_upper_outer_small_max_sigma = []
+						jsat_upper_inner_mid_max_sigma = []
+						jsat_upper_outer_mid_max_sigma = []
+						jsat_upper_inner_large_max_sigma = []	# T5
+						jsat_upper_outer_large_max_sigma = []	# T5
+						jsat_lower_inner_small_max_sigma = []	#central column
+						jsat_lower_outer_small_max_sigma = []	#central column
+						jsat_lower_inner_mid_max_sigma = []
+						jsat_lower_outer_mid_max_sigma = []
+						jsat_lower_inner_large_max_sigma = []
+						jsat_lower_outer_large_max_sigma = []
+
+						jsat_upper_inner_small_integrated = []
+						jsat_upper_outer_small_integrated = []
+						jsat_upper_inner_mid_integrated = []
+						jsat_upper_outer_mid_integrated = []
+						jsat_upper_inner_large_integrated = []	# T5
+						jsat_upper_outer_large_integrated = []	# T5
+						jsat_lower_inner_small_integrated = []	#central column
+						jsat_lower_outer_small_integrated = []	#central column
+						jsat_lower_inner_mid_integrated = []
+						jsat_lower_outer_mid_integrated = []
+						jsat_lower_inner_large_integrated = []
+						jsat_lower_outer_large_integrated = []
+
+						jsat_upper_inner_small_integrated_sigma = []
+						jsat_upper_outer_small_integrated_sigma = []
+						jsat_upper_inner_mid_integrated_sigma = []
+						jsat_upper_outer_mid_integrated_sigma = []
+						jsat_upper_inner_large_integrated_sigma = []	# T5
+						jsat_upper_outer_large_integrated_sigma = []	# T5
+						jsat_lower_inner_small_integrated_sigma = []	#central column
+						jsat_lower_outer_small_integrated_sigma = []	#central column
+						jsat_lower_inner_mid_integrated_sigma = []
+						jsat_lower_outer_mid_integrated_sigma = []
+						jsat_lower_inner_large_integrated_sigma = []
+						jsat_lower_outer_large_integrated_sigma = []
+
+						# presenecting only good probes
+						s10_lower_jsat = np.array(s10_lower_jsat)[:,s10_lower_good_probes]
+						s10_lower_jsat_sigma = np.array(s10_lower_jsat_sigma)[:,s10_lower_good_probes]
+						s10_lower_jsat_r = np.array(s10_lower_jsat_r)[:,s10_lower_good_probes]
+						s10_lower_jsat_s = np.array(s10_lower_jsat_s)[:,s10_lower_good_probes]
+						s4_lower_jsat = np.array(s4_lower_jsat)[:,s4_lower_good_probes]
+						s4_lower_jsat_sigma = np.array(s4_lower_jsat_sigma)[:,s4_lower_good_probes]
+						s4_lower_jsat_r = np.array(s4_lower_jsat_r)[:,s4_lower_good_probes]
+						s4_lower_jsat_s = np.array(s4_lower_jsat_s)[:,s4_lower_good_probes]
+						s4_upper_jsat = np.array(s4_upper_jsat)[:,s4_upper_good_probes]
+						s4_upper_jsat_sigma = np.array(s4_upper_jsat_sigma)[:,s4_upper_good_probes]
+						s4_upper_jsat_r = np.array(s4_upper_jsat_r)[:,s4_upper_good_probes]
+						s4_upper_jsat_s = np.array(s4_upper_jsat_s)[:,s4_upper_good_probes]
+						s10_upper_std_jsat = np.array(s10_upper_std_jsat)[:,s10_upper_std_good_probes]
+						s10_upper_std_jsat_sigma = np.array(s10_upper_std_jsat_sigma)[:,s10_upper_std_good_probes]
+						s10_upper_std_jsat_r = np.array(s10_upper_std_jsat_r)[:,s10_upper_std_good_probes]
+						s10_upper_std_jsat_s = np.array(s10_upper_std_jsat_s)[:,s10_upper_std_good_probes]
+						s10_upper_large_jsat = np.array(s10_upper_large_jsat)[:,s10_upper_large_good_probes]
+						s10_upper_large_jsat_sigma = np.array(s10_upper_large_jsat_sigma)[:,s10_upper_large_good_probes]
+						s10_upper_large_jsat_r = np.array(s10_upper_large_jsat_r)[:,s10_upper_large_good_probes]
+						s10_upper_large_jsat_s = np.array(s10_upper_large_jsat_s)[:,s10_upper_large_good_probes]
+
+						# skipped = 0
+						for time in time_full_binned_crop:
+							if time<np.min(output[0]['time']) or time>np.max(output[-1]['time']):
+								jsat_upper_inner_small_max.append(np.nan)
+								jsat_upper_outer_small_max.append(np.nan)
+								jsat_upper_inner_small_integrated.append(np.nan)
+								jsat_upper_outer_small_integrated.append(np.nan)
+								jsat_upper_inner_mid_max.append(np.nan)
+								jsat_upper_inner_mid_integrated.append(np.nan)
+								jsat_upper_outer_mid_max.append(np.nan)
+								jsat_upper_outer_mid_integrated.append(np.nan)
+								jsat_upper_inner_large_max.append(np.nan)
+								jsat_upper_inner_large_integrated.append(np.nan)
+								jsat_upper_outer_large_max.append(np.nan)
+								jsat_upper_outer_large_integrated.append(np.nan)
+								jsat_lower_inner_small_max.append(np.nan)
+								jsat_lower_inner_small_integrated.append(np.nan)
+								jsat_lower_outer_small_max.append(np.nan)
+								jsat_lower_outer_small_integrated.append(np.nan)
+								jsat_lower_inner_mid_max.append(np.nan)
+								jsat_lower_inner_mid_integrated.append(np.nan)
+								jsat_lower_outer_mid_max.append(np.nan)
+								jsat_lower_outer_mid_integrated.append(np.nan)
+								jsat_lower_inner_large_max.append(np.nan)
+								jsat_lower_outer_large_max.append(np.nan)
+								jsat_lower_inner_large_integrated.append(np.nan)
+								jsat_lower_outer_large_integrated.append(np.nan)
+
+								jsat_upper_inner_small_max_sigma.append(np.nan)
+								jsat_upper_outer_small_max_sigma.append(np.nan)
+								jsat_upper_inner_small_integrated_sigma.append(np.nan)
+								jsat_upper_outer_small_integrated_sigma.append(np.nan)
+								jsat_upper_inner_mid_max_sigma.append(np.nan)
+								jsat_upper_inner_mid_integrated_sigma.append(np.nan)
+								jsat_upper_outer_mid_max_sigma.append(np.nan)
+								jsat_upper_outer_mid_integrated_sigma.append(np.nan)
+								jsat_upper_inner_large_max_sigma.append(np.nan)
+								jsat_upper_inner_large_integrated_sigma.append(np.nan)
+								jsat_upper_outer_large_max_sigma.append(np.nan)
+								jsat_upper_outer_large_integrated_sigma.append(np.nan)
+								jsat_lower_inner_small_max_sigma.append(np.nan)
+								jsat_lower_inner_small_integrated_sigma.append(np.nan)
+								jsat_lower_outer_small_max_sigma.append(np.nan)
+								jsat_lower_outer_small_integrated_sigma.append(np.nan)
+								jsat_lower_inner_mid_max_sigma.append(np.nan)
+								jsat_lower_inner_mid_integrated_sigma.append(np.nan)
+								jsat_lower_outer_mid_max_sigma.append(np.nan)
+								jsat_lower_outer_mid_integrated_sigma.append(np.nan)
+								jsat_lower_inner_large_max_sigma.append(np.nan)
+								jsat_lower_outer_large_max_sigma.append(np.nan)
+								jsat_lower_inner_large_integrated_sigma.append(np.nan)
+								jsat_lower_outer_large_integrated_sigma.append(np.nan)
+								# skipped += 1
+								continue
+
+							i_time = np.abs(time-np.mean(trange,axis=1)).argmin()
+
+							i_efit_time = np.abs(efit_reconstruction.time-time).argmin()
+							inner_strike_point = [np.min(efit_reconstruction.strikepointR[i_efit_time][:2]),0,0]
+							inner_strike_point[1] = -efit_reconstruction.strikepointZ[i_efit_time][np.abs(efit_reconstruction.strikepointR[i_efit_time]-inner_strike_point[0]).argmin()]
+							temp = get_nearest_s_coordinates_mastu([inner_strike_point[0]],[inner_strike_point[1]],s_lookup, tol=5e-1)
+							inner_strike_point[2] = np.abs(temp[0][0])	# this is all info for the upper divertor [R,Z,s]
+							outer_strike_point = [np.max(efit_reconstruction.strikepointR[i_efit_time][:2]),0,0]
+							outer_strike_point[1] = -efit_reconstruction.strikepointZ[i_efit_time][np.abs(efit_reconstruction.strikepointR[i_efit_time]-outer_strike_point[0]).argmin()]
+							temp = get_nearest_s_coordinates_mastu([outer_strike_point[0]],[outer_strike_point[1]],s_lookup, tol=5e-1)
+							outer_strike_point[2] = np.abs(temp[0][0])	# this is all info for the upper divertor [R,Z,s]
+							mid_strike_point = [np.mean(efit_reconstruction.strikepointR[i_efit_time][:2]),-np.mean(efit_reconstruction.strikepointZ[i_efit_time][:2]),0]
+							temp = get_nearest_s_coordinates_mastu([mid_strike_point[0]],[mid_strike_point[1]],s_lookup, tol=5e-1)
+							mid_strike_point[2] = np.abs(temp[0][0])	# this is all info for the upper divertor [R,Z,s]
+
+							# upper divertor
+							# 19/02/2025 I split the second condition so that I need close good plobes on both sides of the strike point to be able to say anything
+							# inner SP
+							temp = s4_upper_s-inner_strike_point[2]
+							s4_upper_inner_test = np.sum(np.logical_not(s4_upper_good_probes)[np.abs(temp)<closeness_limit_to_dead_channels])==0 and np.sum(s4_upper_good_probes[np.logical_and(temp>0 , np.abs(temp)<closeness_limit_for_good_channels)])>0 and np.sum(s4_upper_good_probes[np.logical_and(temp<0 , np.abs(temp)<closeness_limit_for_good_channels)])>0
+							temp = s10_upper_std_s-inner_strike_point[2]
+							s10_upper_std_inner_test = np.sum(np.logical_not(s10_upper_std_good_probes)[np.abs(temp)<closeness_limit_to_dead_channels])==0 and np.sum(s10_upper_std_good_probes[np.logical_and(temp>0 , np.abs(temp)<closeness_limit_for_good_channels)])>0 and np.sum(s10_upper_std_good_probes[np.logical_and(temp<0 , np.abs(temp)<closeness_limit_for_good_channels)])>0
+							temp = s10_upper_large_s-inner_strike_point[2]
+							s10_upper_large_inner_test = np.sum(np.logical_not(s10_upper_large_good_probes)[np.abs(temp)<closeness_limit_to_dead_channels])==0 and np.sum(s10_upper_large_good_probes[np.logical_and(temp>0 , np.abs(temp)<closeness_limit_for_good_channels)])>0 and np.sum(s10_upper_large_good_probes[np.logical_and(temp<0 , np.abs(temp)<closeness_limit_for_good_channels)])>0
+							# outer SP
+							temp = s4_upper_s-outer_strike_point[2]
+							s4_upper_outer_test = np.sum(np.logical_not(s4_upper_good_probes)[np.abs(temp)<closeness_limit_to_dead_channels])==0 and np.sum(s4_upper_good_probes[np.logical_and(temp>0 , np.abs(temp)<closeness_limit_for_good_channels)])>0 and np.sum(s4_upper_good_probes[np.logical_and(temp<0 , np.abs(temp)<closeness_limit_for_good_channels)])>0
+							temp = s10_upper_std_s-outer_strike_point[2]
+							s10_upper_std_outer_test = np.sum(np.logical_not(s10_upper_std_good_probes)[np.abs(temp)<closeness_limit_to_dead_channels])==0 and np.sum(s10_upper_std_good_probes[np.logical_and(temp>0 , np.abs(temp)<closeness_limit_for_good_channels)])>0 and np.sum(s10_upper_std_good_probes[np.logical_and(temp<0 , np.abs(temp)<closeness_limit_for_good_channels)])>0
+							temp = s10_upper_large_s-outer_strike_point[2]
+							s10_upper_large_outer_test = np.sum(np.logical_not(s10_upper_large_good_probes)[np.abs(temp)<closeness_limit_to_dead_channels])==0 and np.sum(s10_upper_large_good_probes[np.logical_and(temp>0 , np.abs(temp)<closeness_limit_for_good_channels)])>0 and np.sum(s10_upper_large_good_probes[np.logical_and(temp<0 , np.abs(temp)<closeness_limit_for_good_channels)])>0
+
+							jsat_upper_inner_small_max.append(0)
+							jsat_upper_inner_small_max_sigma.append(0)
+							jsat_upper_outer_small_max.append(0)
+							jsat_upper_outer_small_max_sigma.append(0)
+							jsat_upper_inner_small_integrated.append(0)
+							jsat_upper_inner_small_integrated_sigma.append(0)
+							jsat_upper_outer_small_integrated.append(0)
+							jsat_upper_outer_small_integrated_sigma.append(0)
+
+							temp = [np.nan]
+							if s4_upper_inner_test:
+								temp = np.concatenate([[0],temp,s4_upper_jsat[i_time][s4_upper_jsat_r[i_time]<mid_strike_point[0]]])
+							if s10_upper_std_inner_test:	# I should consider them independently, but s10 upper has too many dead channes and it's not trustworthy on its own
+								temp = np.concatenate([[0],temp,s10_upper_std_jsat[i_time][s10_upper_std_jsat_r[i_time]<mid_strike_point[0]]])
+							temp_sigma = [np.nan]
+							if s4_upper_inner_test:
+								temp_sigma = np.concatenate([[0],temp_sigma,s4_upper_jsat_sigma[i_time][s4_upper_jsat_r[i_time]<mid_strike_point[0]]])
+							if s10_upper_std_inner_test:	# I should consider them independently, but s10 upper has too many dead channes and it's not trustworthy on its own
+								temp_sigma = np.concatenate([[0],temp_sigma,s10_upper_std_jsat_sigma[i_time][s10_upper_std_jsat_r[i_time]<mid_strike_point[0]]])
+							jsat_upper_inner_mid_max.append(np.nanmax(temp))
+							jsat_upper_inner_mid_max_sigma.append(temp_sigma[np.nanargmax(np.concatenate([temp,[-np.inf]]))])
+
+							temp = [np.nan]
+							temp_sigma_extra = 0
+							if s4_upper_inner_test:
+								temp.append( np.trapz(s4_upper_jsat[i_time][s4_upper_jsat_r[i_time]<mid_strike_point[0]]*2*np.pi*s4_upper_jsat_r[i_time][s4_upper_jsat_r[i_time]<mid_strike_point[0]],x=s4_upper_jsat_s[i_time][s4_upper_jsat_r[i_time]<mid_strike_point[0]]) )
+							if s10_upper_std_inner_test:	# I should consider them independently, but s10 upper has too many dead channes and it's not trustworthy on its own
+								temp.append( np.trapz(s10_upper_std_jsat[i_time][s10_upper_std_jsat_r[i_time]<mid_strike_point[0]]*2*np.pi*s10_upper_std_jsat_r[i_time][s10_upper_std_jsat_r[i_time]<mid_strike_point[0]],x=s10_upper_std_jsat_s[i_time][s10_upper_std_jsat_r[i_time]<mid_strike_point[0]]) )
+							if np.nanmax(temp) - np.nanmin(temp)<np.nanmean(temp)/2:	# step added to see if averaging among the 2 sectors rather than taking the max matters
+								temp_sigma_extra = np.nanmax(temp) - np.nanmin(temp)
+								temp =np.nanmean(temp)
+							else:
+								temp = np.nan
+							if not(s4_upper_inner_test) and not(s10_upper_std_inner_test):
+								temp = np.nan
+							temp_sigma = 0
+							if s4_upper_inner_test:
+								temp_sigma = np.nanmax([temp_sigma,coleval.np_trapz_error((s4_upper_jsat_sigma[i_time][s4_upper_jsat_r[i_time]<mid_strike_point[0]]*2*np.pi*s4_upper_jsat_r[i_time][s4_upper_jsat_r[i_time]<mid_strike_point[0]])**2,x=s4_upper_jsat_s[i_time][s4_upper_jsat_r[i_time]<mid_strike_point[0]])])
+							if s10_upper_std_inner_test:	# I should consider them independently, but s10 upper has too many dead channes and it's not trustworthy on its own
+								temp_sigma = np.nanmax([temp_sigma,coleval.np_trapz_error((s10_upper_std_jsat_sigma[i_time][s10_upper_std_jsat_r[i_time]<mid_strike_point[0]]*2*np.pi*s10_upper_std_jsat_r[i_time][s10_upper_std_jsat_r[i_time]<mid_strike_point[0]])**2,x=s10_upper_std_jsat_s[i_time][s10_upper_std_jsat_r[i_time]<mid_strike_point[0]])])
+							if not(s4_upper_inner_test) and not(s10_upper_std_inner_test):
+								temp_sigma = np.nan
+							jsat_upper_inner_mid_integrated.append(temp)
+							jsat_upper_inner_mid_integrated_sigma.append(max(temp_sigma**0.5,temp_sigma_extra))
+
+							temp = [np.nan]
+							if s4_upper_outer_test:
+								temp = np.concatenate([[0],temp,s4_upper_jsat[i_time][s4_upper_jsat_r[i_time]>mid_strike_point[0]]])
+							if s10_upper_std_outer_test:	# I should consider them independently, but s10 upper has too many dead channes and it's not trustworthy on its own
+								temp = np.concatenate([[0],temp,s10_upper_std_jsat[i_time][s10_upper_std_jsat_r[i_time]>mid_strike_point[0]]])
+							temp_sigma = [np.nan]
+							if s4_upper_outer_test:
+								temp_sigma = np.concatenate([[0],temp_sigma,s4_upper_jsat_sigma[i_time][s4_upper_jsat_r[i_time]>mid_strike_point[0]]])
+							if s10_upper_std_outer_test:	# I should consider them independently, but s10 upper has too many dead channes and it's not trustworthy on its own
+								temp_sigma = np.concatenate([[0],temp_sigma,s10_upper_std_jsat_sigma[i_time][s10_upper_std_jsat_r[i_time]>mid_strike_point[0]]])
+							jsat_upper_outer_mid_max.append(np.nanmax(temp))
+							jsat_upper_outer_mid_max_sigma.append(temp_sigma[np.nanargmax(np.concatenate([temp,[-np.inf]]))])
+
+							temp = [np.nan]
+							temp_sigma_extra = 0
+							if s4_upper_outer_test:
+								temp.append( np.trapz(s4_upper_jsat[i_time][s4_upper_jsat_r[i_time]>mid_strike_point[0]]*2*np.pi*s4_upper_jsat_r[i_time][s4_upper_jsat_r[i_time]>mid_strike_point[0]],x=s4_upper_jsat_s[i_time][s4_upper_jsat_r[i_time]>mid_strike_point[0]]) )
+							if s10_upper_std_outer_test:	# I should consider them independently, but s10 upper has too many dead channes and it's not trustworthy on its own
+								temp.append( np.trapz(s10_upper_std_jsat[i_time][s10_upper_std_jsat_r[i_time]>mid_strike_point[0]]*2*np.pi*s10_upper_std_jsat_r[i_time][s10_upper_std_jsat_r[i_time]>mid_strike_point[0]],x=s10_upper_std_jsat_s[i_time][s10_upper_std_jsat_r[i_time]>mid_strike_point[0]]) )
+							if np.nanmax(temp) - np.nanmin(temp)<np.nanmean(temp)/2:	# step added to see if averaging among the 2 sectors rather than taking the max matters
+								temp_sigma_extra = np.nanmax(temp) - np.nanmin(temp)
+								temp =np.nanmean(temp)
+							else:
+								temp = np.nan
+							if not(s4_upper_outer_test) and not(s10_upper_std_outer_test):
+								temp = np.nan
+							temp_sigma = 0
+							if s4_upper_outer_test:
+								temp_sigma = np.nanmax([temp_sigma,coleval.np_trapz_error((s4_upper_jsat_sigma[i_time][s4_upper_jsat_r[i_time]>mid_strike_point[0]]*2*np.pi*s4_upper_jsat_r[i_time][s4_upper_jsat_r[i_time]>mid_strike_point[0]])**2,x=s4_upper_jsat_s[i_time][s4_upper_jsat_r[i_time]>mid_strike_point[0]])])
+							if s10_upper_std_outer_test:	# I should consider them independently, but s10 upper has too many dead channes and it's not trustworthy on its own
+								temp_sigma = np.nanmax([temp_sigma,coleval.np_trapz_error((s10_upper_std_jsat_sigma[i_time][s10_upper_std_jsat_r[i_time]>mid_strike_point[0]]*2*np.pi*s10_upper_std_jsat_r[i_time][s10_upper_std_jsat_r[i_time]>mid_strike_point[0]])**2,x=s10_upper_std_jsat_s[i_time][s10_upper_std_jsat_r[i_time]>mid_strike_point[0]])])
+							if not(s4_upper_outer_test) and not(s10_upper_std_outer_test):
+								temp_sigma = np.nan
+							jsat_upper_outer_mid_integrated.append(temp)
+							jsat_upper_outer_mid_integrated_sigma.append(max(temp_sigma**0.5,temp_sigma_extra))
+
+							temp = [np.nan]
+							if s10_upper_large_inner_test:
+								temp = np.concatenate([[0],temp,s10_upper_large_jsat[i_time][s10_upper_large_jsat_r[i_time]<mid_strike_point[0]]])
+							temp_sigma = [np.nan]
+							if s10_upper_large_inner_test:
+								temp_sigma = np.concatenate([[0],temp_sigma,s10_upper_large_jsat_sigma[i_time][s10_upper_large_jsat_r[i_time]<mid_strike_point[0]]])
+							jsat_upper_inner_large_max.append(np.nanmax(temp))
+							jsat_upper_inner_large_max_sigma.append(temp_sigma[np.nanargmax(np.concatenate([temp,[-np.inf]]))])
+
+							temp = 0
+							if s10_upper_large_inner_test:
+								temp += np.trapz(s10_upper_large_jsat[i_time][s10_upper_large_jsat_r[i_time]<mid_strike_point[0]]*2*np.pi*s10_upper_large_jsat_r[i_time][s10_upper_large_jsat_r[i_time]<mid_strike_point[0]],x=s10_upper_large_jsat_s[i_time][s10_upper_large_jsat_r[i_time]<mid_strike_point[0]])
+							else:
+								temp = np.nan
+							temp_sigma = 0
+							if s10_upper_large_inner_test:
+								temp_sigma += coleval.np_trapz_error((s10_upper_large_jsat_sigma[i_time][s10_upper_large_jsat_r[i_time]<mid_strike_point[0]]*2*np.pi*s10_upper_large_jsat_r[i_time][s10_upper_large_jsat_r[i_time]<mid_strike_point[0]])**2,x=s10_upper_large_jsat_s[i_time][s10_upper_large_jsat_r[i_time]<mid_strike_point[0]])
+							else:
+								temp_sigma = np.nan
+							jsat_upper_inner_large_integrated.append(temp)
+							jsat_upper_inner_large_integrated_sigma.append(temp_sigma**0.5)
+
+							temp = [np.nan]
+							if s10_upper_large_outer_test:
+								temp = np.concatenate([[0],temp,s10_upper_large_jsat[i_time][s10_upper_large_jsat_r[i_time]>mid_strike_point[0]]])
+							temp_sigma = [np.nan]
+							if s10_upper_large_outer_test:
+								temp_sigma = np.concatenate([[0],temp_sigma,s10_upper_large_jsat_sigma[i_time][s10_upper_large_jsat_r[i_time]>mid_strike_point[0]]])
+							jsat_upper_outer_large_max.append(np.nanmax(temp))
+							jsat_upper_outer_large_max_sigma.append(temp_sigma[np.nanargmax(np.concatenate([temp,[-np.inf]]))])
+
+							temp = 0
+							if s10_upper_large_outer_test:
+								temp += np.trapz(s10_upper_large_jsat[i_time][s10_upper_large_jsat_r[i_time]>mid_strike_point[0]]*2*np.pi*s10_upper_large_jsat_r[i_time][s10_upper_large_jsat_r[i_time]>mid_strike_point[0]],x=s10_upper_large_jsat_s[i_time][s10_upper_large_jsat_r[i_time]>mid_strike_point[0]])
+							else:
+								temp = np.nan
+							temp_sigma = 0
+							if s10_upper_large_outer_test:
+								temp_sigma += coleval.np_trapz_error((s10_upper_large_jsat_sigma[i_time][s10_upper_large_jsat_r[i_time]>mid_strike_point[0]]*2*np.pi*s10_upper_large_jsat_r[i_time][s10_upper_large_jsat_r[i_time]>mid_strike_point[0]])**2,x=s10_upper_large_jsat_s[i_time][s10_upper_large_jsat_r[i_time]>mid_strike_point[0]])
+							else:
+								temp_sigma = np.nan
+							jsat_upper_outer_large_integrated.append(temp)
+							jsat_upper_outer_large_integrated_sigma.append(temp_sigma**0.5)
+
+
+							# lower divertor
+							# I add the second part to exluce the case there are NO good channel close to the strike point, diving a bit of slack allowing twice the normal distance between probes
+							# 19/02/2025 I split the second condition so that I need close good plobes on both sides of the strike point to be able to say anything
+							temp = s4_lower_s-(-inner_strike_point[2])
+							s4_lower_inner_test = np.sum(np.logical_not(s4_lower_good_probes)[np.abs(temp)<closeness_limit_to_dead_channels])==0 and np.sum(s4_lower_good_probes[np.logical_and(temp>0 , np.abs(temp)<closeness_limit_for_good_channels)])>0 and np.sum(s4_lower_good_probes[np.logical_and(temp<0 , np.abs(temp)<closeness_limit_for_good_channels)])>0
+							temp = s10_lower_s-(-inner_strike_point[2])
+							s10_lower_inner_test = np.sum(np.logical_not(s10_lower_good_probes)[np.abs(temp)<closeness_limit_to_dead_channels])==0 and np.sum(s10_lower_good_probes[np.logical_and(temp>0 , np.abs(temp)<closeness_limit_for_good_channels)])>0 and np.sum(s10_lower_good_probes[np.logical_and(temp<0 , np.abs(temp)<closeness_limit_for_good_channels)])>0
+							temp = s4_lower_s-(-outer_strike_point[2])
+							s4_lower_outer_test = np.sum(np.logical_not(s4_lower_good_probes)[np.abs(temp)<closeness_limit_to_dead_channels])==0 and np.sum(s4_lower_good_probes[np.logical_and(temp>0 , np.abs(temp)<closeness_limit_for_good_channels)])>0 and np.sum(s4_lower_good_probes[np.logical_and(temp<0 , np.abs(temp)<closeness_limit_for_good_channels)])>0
+							temp = s10_lower_s-(-outer_strike_point[2])
+							s10_lower_outer_test = np.sum(np.logical_not(s10_lower_good_probes)[np.abs(temp)<closeness_limit_to_dead_channels])==0 and np.sum(s10_lower_good_probes[np.logical_and(temp>0 , np.abs(temp)<closeness_limit_for_good_channels)])>0 and np.sum(s10_lower_good_probes[np.logical_and(temp<0 , np.abs(temp)<closeness_limit_for_good_channels)])>0
+
+							temp = [np.nan]
+							if s4_lower_inner_test:
+								temp = np.concatenate([[0],temp,s4_lower_jsat[i_time][s4_lower_jsat_r[i_time]<mid_strike_point[0]]])
+							temp_sigma = [np.nan]
+							if s4_lower_inner_test:
+								temp_sigma = np.concatenate([[0],temp_sigma,s4_lower_jsat_sigma[i_time][s4_lower_jsat_r[i_time]<mid_strike_point[0]]])
+							jsat_lower_inner_small_max.append(np.nanmax(temp))
+							jsat_lower_inner_small_max_sigma.append(temp_sigma[np.nanargmax(np.concatenate([temp,[-np.inf]]))])
+
+							temp = 0
+							if s4_lower_inner_test:
+								temp += np.trapz(s4_lower_jsat[i_time][s4_lower_jsat_r[i_time]<mid_strike_point[0]]*2*np.pi*s4_lower_jsat_r[i_time][s4_lower_jsat_r[i_time]<mid_strike_point[0]],x=s4_lower_jsat_s[i_time][s4_lower_jsat_r[i_time]<mid_strike_point[0]])
+							else:
+								temp = np.nan
+							temp_sigma = 0
+							if s4_lower_inner_test:
+								temp_sigma += coleval.np_trapz_error((s4_lower_jsat_sigma[i_time][s4_lower_jsat_r[i_time]<mid_strike_point[0]]*2*np.pi*s4_lower_jsat_r[i_time][s4_lower_jsat_r[i_time]<mid_strike_point[0]])**2,x=s4_lower_jsat_s[i_time][s4_lower_jsat_r[i_time]<mid_strike_point[0]])
+							else:
+								temp_sigma = np.nan
+							jsat_lower_inner_small_integrated.append(-temp)
+							jsat_lower_inner_small_integrated_sigma.append(temp_sigma**0.5)
+
+							temp = [np.nan]
+							if s4_lower_outer_test:
+								temp = np.concatenate([[0],temp,s4_lower_jsat[i_time][s4_lower_jsat_r[i_time]>mid_strike_point[0]]])
+							temp_sigma = [np.nan]
+							if s4_lower_outer_test:
+								temp_sigma = np.concatenate([[0],temp_sigma,s4_lower_jsat_sigma[i_time][s4_lower_jsat_r[i_time]>mid_strike_point[0]]])
+							jsat_lower_outer_small_max.append(np.nanmax(temp))
+							jsat_lower_outer_small_max_sigma.append(temp_sigma[np.nanargmax(np.concatenate([temp,[-np.inf]]))])
+
+							temp = 0
+							if s4_lower_outer_test:
+								temp += np.trapz(s4_lower_jsat[i_time][s4_lower_jsat_r[i_time]>mid_strike_point[0]]*2*np.pi*s4_lower_jsat_r[i_time][s4_lower_jsat_r[i_time]>mid_strike_point[0]],x=s4_lower_jsat_s[i_time][s4_lower_jsat_r[i_time]>mid_strike_point[0]])
+							else:
+								temp = np.nan
+							temp_sigma = 0
+							if s4_lower_outer_test:
+								temp_sigma += coleval.np_trapz_error((s4_lower_jsat_sigma[i_time][s4_lower_jsat_r[i_time]>mid_strike_point[0]]*2*np.pi*s4_lower_jsat_r[i_time][s4_lower_jsat_r[i_time]>mid_strike_point[0]])**2,x=s4_lower_jsat_s[i_time][s4_lower_jsat_r[i_time]>mid_strike_point[0]])
+							else:
+								temp_sigma = np.nan
+							jsat_lower_outer_small_integrated.append(-temp)
+							jsat_lower_outer_small_integrated_sigma.append(temp_sigma**0.5)
+
+							temp = [np.nan]
+							if s10_lower_inner_test:
+								temp = np.concatenate([[0],temp,s10_lower_jsat[i_time][s10_lower_jsat_r[i_time]<mid_strike_point[0]]])
+							temp_sigma = [np.nan]
+							if s10_lower_inner_test:
+								temp_sigma = np.concatenate([[0],temp_sigma,s10_lower_jsat_sigma[i_time][s10_lower_jsat_r[i_time]<mid_strike_point[0]]])
+							jsat_lower_inner_mid_max.append(np.nanmax(temp))
+							jsat_lower_inner_mid_max_sigma.append(temp_sigma[np.nanargmax(np.concatenate([temp,[-np.inf]]))])
+
+							temp = 0
+							if s10_lower_inner_test:
+								temp += np.trapz(s10_lower_jsat[i_time][s10_lower_jsat_r[i_time]<mid_strike_point[0]]*2*np.pi*s10_lower_jsat_r[i_time][s10_lower_jsat_r[i_time]<mid_strike_point[0]],x=s10_lower_jsat_s[i_time][s10_lower_jsat_r[i_time]<mid_strike_point[0]])
+							else:
+								temp = np.nan
+							temp_sigma = 0
+							if s10_lower_inner_test:
+								temp_sigma += coleval.np_trapz_error((s10_lower_jsat_sigma[i_time][s10_lower_jsat_r[i_time]<mid_strike_point[0]]*2*np.pi*s10_lower_jsat_r[i_time][s10_lower_jsat_r[i_time]<mid_strike_point[0]])**2,x=s10_lower_jsat_s[i_time][s10_lower_jsat_r[i_time]<mid_strike_point[0]])
+							else:
+								temp_sigma = np.nan
+							jsat_lower_inner_mid_integrated.append(-temp)
+							jsat_lower_inner_mid_integrated_sigma.append(temp_sigma**0.5)
+
+							temp = [np.nan]
+							if s10_lower_outer_test:
+								temp = np.concatenate([[0],temp,s10_lower_jsat[i_time][s10_lower_jsat_r[i_time]>mid_strike_point[0]]])
+							temp_sigma = [np.nan]
+							if s10_lower_outer_test:
+								temp_sigma = np.concatenate([[0],temp_sigma,s10_lower_jsat_sigma[i_time][s10_lower_jsat_r[i_time]>mid_strike_point[0]]])
+							jsat_lower_outer_mid_max.append(np.nanmax(temp))
+							jsat_lower_outer_mid_max_sigma.append(temp_sigma[np.nanargmax(np.concatenate([temp,[-np.inf]]))])
+
+							temp = 0
+							if s10_lower_outer_test:
+								temp += np.trapz(s10_lower_jsat[i_time][s10_lower_jsat_r[i_time]>mid_strike_point[0]]*2*np.pi*s10_lower_jsat_r[i_time][s10_lower_jsat_r[i_time]>mid_strike_point[0]],x=s10_lower_jsat_s[i_time][s10_lower_jsat_r[i_time]>mid_strike_point[0]])
+							else:
+								temp = np.nan
+							temp_sigma = 0
+							if s10_lower_outer_test:
+								temp_sigma += coleval.np_trapz_error((s10_lower_jsat_sigma[i_time][s10_lower_jsat_r[i_time]>mid_strike_point[0]]*2*np.pi*s10_lower_jsat_r[i_time][s10_lower_jsat_r[i_time]>mid_strike_point[0]])**2,x=s10_lower_jsat_s[i_time][s10_lower_jsat_r[i_time]>mid_strike_point[0]])
+							else:
+								temp_sigma = np.nan
+							jsat_lower_outer_mid_integrated.append(-temp)
+							jsat_lower_outer_mid_integrated_sigma.append(temp_sigma**0.5)
+
+							jsat_lower_inner_large_max.append(0)
+							jsat_lower_inner_large_max_sigma.append(0)
+							jsat_lower_outer_large_max.append(0)
+							jsat_lower_outer_large_max_sigma.append(0)
+							jsat_lower_inner_large_integrated.append(0)
+							jsat_lower_inner_large_integrated_sigma.append(0)
+							jsat_lower_outer_large_integrated.append(0)
+							jsat_lower_outer_large_integrated_sigma.append(0)
+
+						jsat_time = cp.deepcopy(time_full_binned_crop)
+						jsat_read = True
+
+						jsat_lower_inner_small_integrated = np.array(jsat_lower_inner_small_integrated)
+						multi_instrument_dict_pass['jsat_lower_inner_small_integrated'] = jsat_lower_inner_small_integrated
+						jsat_lower_outer_small_integrated = np.array(jsat_lower_outer_small_integrated)
+						multi_instrument_dict_pass['jsat_lower_outer_small_integrated'] = jsat_lower_outer_small_integrated
+						jsat_lower_inner_mid_integrated = np.array(jsat_lower_inner_mid_integrated)
+						multi_instrument_dict_pass['jsat_lower_inner_mid_integrated'] = jsat_lower_inner_mid_integrated
+						jsat_lower_outer_mid_integrated = np.array(jsat_lower_outer_mid_integrated)
+						multi_instrument_dict_pass['jsat_lower_outer_mid_integrated'] = jsat_lower_outer_mid_integrated
+						jsat_lower_inner_large_integrated = np.array(jsat_lower_inner_large_integrated)
+						multi_instrument_dict_pass['jsat_lower_inner_large_integrated'] = jsat_lower_inner_large_integrated
+						jsat_lower_outer_large_integrated = np.array(jsat_lower_outer_large_integrated)
+						multi_instrument_dict_pass['jsat_lower_outer_large_integrated'] = jsat_lower_outer_large_integrated
+						jsat_upper_inner_small_integrated = np.array(jsat_upper_inner_small_integrated)
+						multi_instrument_dict_pass['jsat_upper_inner_small_integrated'] = jsat_upper_inner_small_integrated
+						jsat_upper_outer_small_integrated = np.array(jsat_upper_outer_small_integrated)
+						multi_instrument_dict_pass['jsat_upper_outer_small_integrated'] = jsat_upper_outer_small_integrated
+						jsat_upper_inner_mid_integrated = np.array(jsat_upper_inner_mid_integrated)
+						multi_instrument_dict_pass['jsat_upper_inner_mid_integrated'] = jsat_upper_inner_mid_integrated
+						jsat_upper_outer_mid_integrated = np.array(jsat_upper_outer_mid_integrated)
+						multi_instrument_dict_pass['jsat_upper_outer_mid_integrated'] = jsat_upper_outer_mid_integrated
+						jsat_upper_inner_large_integrated = np.array(jsat_upper_inner_large_integrated)
+						multi_instrument_dict_pass['jsat_upper_inner_large_integrated'] = jsat_upper_inner_large_integrated
+						jsat_upper_outer_large_integrated = np.array(jsat_upper_outer_large_integrated)
+						multi_instrument_dict_pass['jsat_upper_outer_large_integrated'] = jsat_upper_outer_large_integrated
+
+						jsat_lower_inner_small_integrated_sigma = np.array(jsat_lower_inner_small_integrated_sigma)
+						multi_instrument_dict_pass['jsat_lower_inner_small_integrated_sigma'] = jsat_lower_inner_small_integrated_sigma
+						jsat_lower_outer_small_integrated_sigma = np.array(jsat_lower_outer_small_integrated_sigma)
+						multi_instrument_dict_pass['jsat_lower_outer_small_integrated_sigma'] = jsat_lower_outer_small_integrated_sigma
+						jsat_lower_inner_mid_integrated_sigma = np.array(jsat_lower_inner_mid_integrated_sigma)
+						multi_instrument_dict_pass['jsat_lower_inner_mid_integrated_sigma'] = jsat_lower_inner_mid_integrated_sigma
+						jsat_lower_outer_mid_integrated_sigma = np.array(jsat_lower_outer_mid_integrated_sigma)
+						multi_instrument_dict_pass['jsat_lower_outer_mid_integrated_sigma'] = jsat_lower_outer_mid_integrated_sigma
+						jsat_lower_inner_large_integrated_sigma = np.array(jsat_lower_inner_large_integrated_sigma)
+						multi_instrument_dict_pass['jsat_lower_inner_large_integrated_sigma'] = jsat_lower_inner_large_integrated_sigma
+						jsat_lower_outer_large_integrated_sigma = np.array(jsat_lower_outer_large_integrated_sigma)
+						multi_instrument_dict_pass['jsat_lower_outer_large_integrated_sigma'] = jsat_lower_outer_large_integrated_sigma
+						jsat_upper_inner_small_integrated_sigma = np.array(jsat_upper_inner_small_integrated_sigma)
+						multi_instrument_dict_pass['jsat_upper_inner_small_integrated_sigma'] = jsat_upper_inner_small_integrated_sigma
+						jsat_upper_outer_small_integrated_sigma = np.array(jsat_upper_outer_small_integrated_sigma)
+						multi_instrument_dict_pass['jsat_upper_outer_small_integrated_sigma'] = jsat_upper_outer_small_integrated_sigma
+						jsat_upper_inner_mid_integrated_sigma = np.array(jsat_upper_inner_mid_integrated_sigma)
+						multi_instrument_dict_pass['jsat_upper_inner_mid_integrated_sigma'] = jsat_upper_inner_mid_integrated_sigma
+						jsat_upper_outer_mid_integrated_sigma = np.array(jsat_upper_outer_mid_integrated_sigma)
+						multi_instrument_dict_pass['jsat_upper_outer_mid_integrated_sigma'] = jsat_upper_outer_mid_integrated_sigma
+						jsat_upper_inner_large_integrated_sigma = np.array(jsat_upper_inner_large_integrated_sigma)
+						multi_instrument_dict_pass['jsat_upper_inner_large_integrated_sigma'] = jsat_upper_inner_large_integrated_sigma
+						jsat_upper_outer_large_integrated_sigma = np.array(jsat_upper_outer_large_integrated_sigma)
+						multi_instrument_dict_pass['jsat_upper_outer_large_integrated_sigma'] = jsat_upper_outer_large_integrated_sigma
+
+						jsat_lower_inner_small_max_sigma = np.array(jsat_lower_inner_small_max_sigma)
+						multi_instrument_dict_pass['jsat_lower_inner_small_max_sigma'] = jsat_lower_inner_small_max_sigma
+						jsat_lower_outer_small_max_sigma = np.array(jsat_lower_outer_small_max_sigma)
+						multi_instrument_dict_pass['jsat_lower_outer_small_max_sigma'] = jsat_lower_outer_small_max_sigma
+						jsat_lower_inner_mid_max_sigma = np.array(jsat_lower_inner_mid_max_sigma)
+						multi_instrument_dict_pass['jsat_lower_inner_mid_max_sigma'] = jsat_lower_inner_mid_max_sigma
+						jsat_lower_outer_mid_max_sigma = np.array(jsat_lower_outer_mid_max_sigma)
+						multi_instrument_dict_pass['jsat_lower_outer_mid_max_sigma'] = jsat_lower_outer_mid_max_sigma
+						jsat_lower_inner_large_max_sigma = np.array(jsat_lower_inner_large_max_sigma)
+						multi_instrument_dict_pass['jsat_lower_inner_large_max_sigma'] = jsat_lower_inner_large_max_sigma
+						jsat_lower_outer_large_max_sigma = np.array(jsat_lower_outer_large_max_sigma)
+						multi_instrument_dict_pass['jsat_lower_outer_large_max_sigma'] = jsat_lower_outer_large_max_sigma
+						jsat_upper_inner_small_max_sigma = np.array(jsat_upper_inner_small_max_sigma)
+						multi_instrument_dict_pass['jsat_upper_inner_small_max_sigma'] = jsat_upper_inner_small_max_sigma
+						jsat_upper_outer_small_max_sigma = np.array(jsat_upper_outer_small_max_sigma)
+						multi_instrument_dict_pass['jsat_upper_outer_small_max_sigma'] = jsat_upper_outer_small_max_sigma
+						jsat_upper_inner_mid_max_sigma = np.array(jsat_upper_inner_mid_max_sigma)
+						multi_instrument_dict_pass['jsat_upper_inner_mid_max_sigma'] = jsat_upper_inner_mid_max_sigma
+						jsat_upper_outer_mid_max_sigma = np.array(jsat_upper_outer_mid_max_sigma)
+						multi_instrument_dict_pass['jsat_upper_outer_mid_max_sigma'] = jsat_upper_outer_mid_max_sigma
+						jsat_upper_inner_large_max_sigma = np.array(jsat_upper_inner_large_max_sigma)
+						multi_instrument_dict_pass['jsat_upper_inner_large_max_sigma'] = jsat_upper_inner_large_max_sigma
+						jsat_upper_outer_large_max_sigma = np.array(jsat_upper_outer_large_max_sigma)
+						multi_instrument_dict_pass['jsat_upper_outer_large_max_sigma'] = jsat_upper_outer_large_max_sigma
+					else:	# old method without Peter Ryan functions
+
+						for probe_size,probe_type in [[9.69975e-06,'small'],[1.35553e-05,'mid'],[4.56942e-05,'large']]:
+							try:
+								data_s10 = lp_data.s10_lower_data.jsat[:,lp_data.s10_lower_data.physical_area==probe_size]
+							except:
+								data_s10 = lp_data.s10_lower_data.jsat_tile[:,lp_data.s10_lower_data.physical_area==probe_size]
+							time_orig_s10 = lp_data.s10_lower_data.time
+							s_orig_s10 = lp_data.s10_lower_data.s[lp_data.s10_lower_data.physical_area==probe_size]
+							r_orig_s10 = lp_data.s10_lower_data.r[lp_data.s10_lower_data.physical_area==probe_size]
+							tiles_covered_s10 = lp_data.s10_lower_data.tiles_covered
+							try:
+								data_s4 = lp_data.s4_lower_data.jsat[:,lp_data.s4_lower_data.physical_area==probe_size]
+							except:
+								data_s4 = lp_data.s4_lower_data.jsat_tile[:,lp_data.s4_lower_data.physical_area==probe_size]
+							time_orig_s4 = lp_data.s4_lower_data.time
+							s_orig_s4 = lp_data.s4_lower_data.s[lp_data.s4_lower_data.physical_area==probe_size]
+							r_orig_s4 = lp_data.s4_lower_data.r[lp_data.s4_lower_data.physical_area==probe_size]
+							coordinate = np.concatenate([r_orig_s4,r_orig_s10])
+							jsat = np.concatenate([data_s4.T,data_s10.T]).T
+							tiles_covered_s4 = lp_data.s10_lower_data.tiles_covered
+							inner_max = []
+							outer_max = []
+							for i_time,time in enumerate(time_orig_s10):
+								i_efit_time = np.abs(efit_reconstruction.time-time).argmin()
+								mid_strike_point = np.mean(efit_reconstruction.strikepointR[i_efit_time][:2])
+								inner_max.append(np.nanmax(np.concatenate([[0],jsat[i_time][coordinate<=mid_strike_point]])))
+								outer_max.append(np.nanmax(np.concatenate([[0],jsat[i_time][coordinate>mid_strike_point]])))
+							if probe_type=='small':
+								jsat_lower_inner_small_max = np.array(inner_max)	#central column
+								jsat_lower_outer_small_max = np.array(outer_max)	#central column
+							elif probe_type=='mid':
+								jsat_lower_inner_mid_max = np.array(inner_max)
+								jsat_lower_outer_mid_max = np.array(outer_max)
+							elif probe_type=='large':
+								jsat_lower_inner_large_max = np.array(inner_max)
+								jsat_lower_outer_large_max = np.array(outer_max)
+
+
+						for probe_size,probe_type in [[9.69975e-06,'small'],[1.35553e-05,'mid'],[4.56942e-05,'large']]:
+							try:
+								data_s10 = lp_data.s10_upper_data.jsat[:,lp_data.s10_upper_data.physical_area==probe_size]
+							except:
+								data_s10 = lp_data.s10_upper_data.jsat_tile[:,lp_data.s10_upper_data.physical_area==probe_size]
+							time_orig_s10 = lp_data.s10_upper_data.time
+							s_orig_s10 = lp_data.s10_upper_data.s[lp_data.s10_upper_data.physical_area==probe_size]
+							r_orig_s10 = lp_data.s10_upper_data.r[lp_data.s10_upper_data.physical_area==probe_size]
+							tiles_covered_s10 = lp_data.s10_upper_data.tiles_covered
+							try:
+								data_s4 = lp_data.s4_upper_data.jsat[:,lp_data.s4_upper_data.physical_area==probe_size]
+							except:
+								data_s4 = lp_data.s4_upper_data.jsat_tile[:,lp_data.s4_upper_data.physical_area==probe_size]
+							time_orig_s4 = lp_data.s4_upper_data.time
+							s_orig_s4 = lp_data.s4_upper_data.s[lp_data.s4_upper_data.physical_area==probe_size]
+							r_orig_s4 = lp_data.s4_upper_data.r[lp_data.s4_upper_data.physical_area==probe_size]
+							coordinate = np.concatenate([r_orig_s4,r_orig_s10])
+							jsat = np.concatenate([data_s4.T,data_s10.T]).T
+							tiles_covered_s4 = lp_data.s10_upper_data.tiles_covered
+							inner_max = []
+							outer_max = []
+							for i_time,time in enumerate(time_orig_s10):
+								i_efit_time = np.abs(efit_reconstruction.time-time).argmin()
+								mid_strike_point = np.mean(efit_reconstruction.strikepointR[i_efit_time][:2])
+								inner_max.append(np.nanmax(np.concatenate([[0],jsat[i_time][coordinate<=mid_strike_point]])))
+								outer_max.append(np.nanmax(np.concatenate([[0],jsat[i_time][coordinate>mid_strike_point]])))
+							if probe_type=='small':
+								jsat_upper_inner_small_max = np.array(inner_max)
+								jsat_upper_outer_small_max = np.array(outer_max)
+							elif probe_type=='mid':
+								jsat_upper_inner_mid_max = np.array(inner_max)
+								jsat_upper_outer_mid_max = np.array(outer_max)
+							elif probe_type=='large':
+								jsat_upper_inner_large_max = np.array(inner_max)	# T5
+								jsat_upper_outer_large_max = np.array(outer_max)	# T5
+						# time,r = np.meshgrid(time_orig_s4,coordinate)
+						# plt.figure(figsize=(10,10))
+						# plt.pcolor(r,time,jsat.T,norm=LogNorm())#,vmin=np.nanmax(data)*1e-3)
+						# plt.colorbar().set_label('jsat')
+						# for __i in range(np.shape(efit_reconstruction.strikepointR)[1]):
+						# 	plt.plot(efit_reconstruction.strikepointR[:,__i],efit_reconstruction.time,'--r')
+						# plt.grid()
+						# plt.xlim(left=0.5)
+						# plt.ylabel('time [s]')
+						# plt.xlabel('R [m]')
+						# # plt.title(str(shot)+'\n'+str(tiles_covered))
+						# plt.pause(0.01)
+						jsat_time = cp.deepcopy(time_orig_s10)
+						jsat_read = True
+
+					multi_instrument_dict_pass['jsat_time'] = jsat_time
+					jsat_lower_inner_small_max = np.array(jsat_lower_inner_small_max)
+					multi_instrument_dict_pass['jsat_lower_inner_small_max'] = jsat_lower_inner_small_max
+					jsat_lower_outer_small_max = np.array(jsat_lower_outer_small_max)
+					multi_instrument_dict_pass['jsat_lower_outer_small_max'] = jsat_lower_outer_small_max
+					jsat_lower_inner_mid_max = np.array(jsat_lower_inner_mid_max)
+					multi_instrument_dict_pass['jsat_lower_inner_mid_max'] = jsat_lower_inner_mid_max
+					jsat_lower_outer_mid_max = np.array(jsat_lower_outer_mid_max)
+					multi_instrument_dict_pass['jsat_lower_outer_mid_max'] = jsat_lower_outer_mid_max
+					jsat_lower_inner_large_max = np.array(jsat_lower_inner_large_max)
+					multi_instrument_dict_pass['jsat_lower_inner_large_max'] = jsat_lower_inner_large_max
+					jsat_lower_outer_large_max = np.array(jsat_lower_outer_large_max)
+					multi_instrument_dict_pass['jsat_lower_outer_large_max'] = jsat_lower_outer_large_max
+					jsat_upper_inner_small_max = np.array(jsat_upper_inner_small_max)
+					multi_instrument_dict_pass['jsat_upper_inner_small_max'] = jsat_upper_inner_small_max
+					jsat_upper_outer_small_max = np.array(jsat_upper_outer_small_max)
+					multi_instrument_dict_pass['jsat_upper_outer_small_max'] = jsat_upper_outer_small_max
+					jsat_upper_inner_mid_max = np.array(jsat_upper_inner_mid_max)
+					multi_instrument_dict_pass['jsat_upper_inner_mid_max'] = jsat_upper_inner_mid_max
+					jsat_upper_outer_mid_max = np.array(jsat_upper_outer_mid_max)
+					multi_instrument_dict_pass['jsat_upper_outer_mid_max'] = jsat_upper_outer_mid_max
+					jsat_upper_inner_large_max = np.array(jsat_upper_inner_large_max)
+					multi_instrument_dict_pass['jsat_upper_inner_large_max'] = jsat_upper_inner_large_max
+					jsat_upper_outer_large_max = np.array(jsat_upper_outer_large_max)
+					multi_instrument_dict_pass['jsat_upper_outer_large_max'] = jsat_upper_outer_large_max
+					if lambda_q_determination:
+						# multi_instrument_dict_pass['LP_lambdaq_time'] = np.array(LP_lambdaq_time)
+						multi_instrument_dict_pass['lambda_q_10_lower'] = np.array(lambda_q_10_lower)
+						multi_instrument_dict_pass['lambda_q_10_lower_sigma'] = np.array(lambda_q_10_lower_sigma)
+						multi_instrument_dict_pass['lambda_q_4_lower'] = np.array(lambda_q_4_lower)
+						multi_instrument_dict_pass['lambda_q_4_lower_sigma'] = np.array(lambda_q_4_lower_sigma)
+						multi_instrument_dict_pass['lambda_q_4_upper'] = np.array(lambda_q_4_upper)
+						multi_instrument_dict_pass['lambda_q_4_upper_sigma'] = np.array(lambda_q_4_upper_sigma)
+						multi_instrument_dict_pass['lambda_q_10_upper'] = np.array(lambda_q_10_upper)
+						multi_instrument_dict_pass['lambda_q_10_upper_sigma'] = np.array(lambda_q_10_upper_sigma)
+					print('marker LP done')
+				except Exception as e:
+					logging.exception('with error (LP section): ' + str(e))
+					jsat_read = False
+					lambda_q_determination = False
+					print('LP skipped')
+
+			else:
+				# code from chatGPT 2025/11/9
+				# Command: swap modules, then run Python 3.7 script
+				# cmd = "module swap python/3.9 python/3.7 && python ~/work/analysis_scripts/scripts/LPs_read_python3_7.py {}".format(laser_to_analyse[:-4]+'_temp_LPs_dict')
+				cmd = "~/work/analysis_scripts/scripts/LPs_read_python3_7_launcher.sh {}".format(laser_to_analyse[:-4]+'_temp_LPs_dict')
+
+				proc = subprocess.Popen(
+				    cmd,
+				    stdout=subprocess.PIPE,
+				    stderr=subprocess.PIPE,
+				    text=True,
+				    shell=True  # important: runs via bash
+				)
+
+				# Capture output and errors
+				stdout, stderr = proc.communicate()
+
+				multi_instrument_dict_pass['process_stdout'] = stdout
+				multi_instrument_dict_pass['process_stderr'] = stderr
+
+				LPs_dict = np.load(laser_to_analyse[:-4]+'_temp_LPs_dict'+'.npz')
+				# LPs_dict.allow_pickle=True
+
+				print('stdout')
+				print(stdout)
+				print('stderr')
+				print(stderr)
 
 				try:
-					output_contour1=lp_data.contour_plot(trange=[0,1.5],bad_probes=None,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='R',tiles=['T5'],show=False)
-					temp = output_contour1['y'][0][0]
-					temp = generic_filter(temp,np.nanmean,size=(int(0.002/np.diff(output_contour1['time'][0][0]).mean()),1))	# this is a way to fix that there are sometimes 6 nans for each good data point. i smooth ver 2ms, just to make sure
-					temp[np.isnan(temp)] = 0
-					if shotnumber < 45514:	# 21/02/2025 Peter told me the the bad probes issue arises only in MU01 as most of it was dome in swept mode. from late MU01 onward he only did Isat mode, that does not have this issue
-						for i_,probe_name in enumerate(output_contour1['probe_name'][0][0]):
-							if probe_name in badLPs_V0:
-								temp[:,i_] = 0
-					# s10_upper_large_good_probes = np.nanmax(median_filter((temp>0.005),size=[1,5]),axis=0)	# threshold for broken probes
-					s10_upper_large_good_probes = np.nanmax(median_filter((temp>0.005),size=[int((0.015/(np.diff(output_contour1['time'][0][0]).mean()))//2*2+1),1]),axis=0)	# threshold for broken probes	# I change the median interval from 5 data point to the equivalent to 10ms, just to be sure that there is enough data
-					s10_upper_large_s = output_contour1['s'][0][0]
-					s10_upper_large_r = output_contour1['R'][0][0]
-					s10_upper_large_z = output_contour1['Z'][0][0]
-					output,Eich=compare_shots(filepath=LP_file_path+'/',shot=[shotnumber]*len(trange),bin_x_step=1e-3,bad_probes=None,trange=trange,divertor='upper', sectors=10, quantity = 'jsat_tile', coordinate='s',tiles=['T5'],time_combine=True,show=False)
-					s10_upper_large_jsat = []
-					s10_upper_large_jsat_sigma = []
-					s10_upper_large_jsat_r = []
-					s10_upper_large_jsat_s = []
-					for i in range(len(output)):
-						s10_upper_large_jsat.append(output[i]['y'][0][0])	# here there are only standard probes
-						s10_upper_large_jsat_sigma.append(output[i]['y_error'][0][0])	# here there are only standard probes
-						s10_upper_large_jsat_r.append(output[i]['R'][0][0])	# here there are only standard probes
-						s10_upper_large_jsat_s.append(output[i]['s'][0][0])
+					jsat_lower_inner_small_integrated = LPs_dict['jsat_lower_inner_small_integrated']
+					multi_instrument_dict_pass['jsat_lower_inner_small_integrated'] = LPs_dict['jsat_lower_inner_small_integrated']
+					jsat_lower_outer_small_integrated = LPs_dict['jsat_lower_outer_small_integrated']
+					multi_instrument_dict_pass['jsat_lower_outer_small_integrated'] = LPs_dict['jsat_lower_outer_small_integrated']
+					jsat_lower_inner_mid_integrated = LPs_dict['jsat_lower_inner_mid_integrated']
+					multi_instrument_dict_pass['jsat_lower_inner_mid_integrated'] = LPs_dict['jsat_lower_inner_mid_integrated']
+					jsat_lower_outer_mid_integrated = LPs_dict['jsat_lower_outer_mid_integrated']
+					multi_instrument_dict_pass['jsat_lower_outer_mid_integrated'] = LPs_dict['jsat_lower_outer_mid_integrated']
+					jsat_lower_inner_large_integrated = LPs_dict['jsat_lower_inner_large_integrated']
+					multi_instrument_dict_pass['jsat_lower_inner_large_integrated'] = LPs_dict['jsat_lower_inner_large_integrated']
+					jsat_lower_outer_large_integrated = LPs_dict['jsat_lower_outer_large_integrated']
+					multi_instrument_dict_pass['jsat_lower_outer_large_integrated'] = LPs_dict['jsat_lower_outer_large_integrated']
+					jsat_upper_inner_small_integrated = LPs_dict['jsat_upper_inner_small_integrated']
+					multi_instrument_dict_pass['jsat_upper_inner_small_integrated'] = LPs_dict['jsat_upper_inner_small_integrated']
+					jsat_upper_outer_small_integrated = LPs_dict['jsat_upper_outer_small_integrated']
+					multi_instrument_dict_pass['jsat_upper_outer_small_integrated'] = LPs_dict['jsat_upper_outer_small_integrated']
+					jsat_upper_inner_mid_integrated = LPs_dict['jsat_upper_inner_mid_integrated']
+					multi_instrument_dict_pass['jsat_upper_inner_mid_integrated'] = LPs_dict['jsat_upper_inner_mid_integrated']
+					jsat_upper_outer_mid_integrated = LPs_dict['jsat_upper_outer_mid_integrated']
+					multi_instrument_dict_pass['jsat_upper_outer_mid_integrated'] = LPs_dict['jsat_upper_outer_mid_integrated']
+					jsat_upper_inner_large_integrated = LPs_dict['jsat_upper_inner_large_integrated']
+					multi_instrument_dict_pass['jsat_upper_inner_large_integrated'] = LPs_dict['jsat_upper_inner_large_integrated']
+					jsat_upper_outer_large_integrated = LPs_dict['jsat_upper_outer_large_integrated']
+					multi_instrument_dict_pass['jsat_upper_outer_large_integrated'] = LPs_dict['jsat_upper_outer_large_integrated']
+
+					jsat_lower_inner_small_integrated_sigma = LPs_dict['jsat_lower_inner_small_integrated_sigma']
+					multi_instrument_dict_pass['jsat_lower_inner_small_integrated_sigma'] = LPs_dict['jsat_lower_inner_small_integrated_sigma']
+					jsat_lower_outer_small_integrated_sigma = LPs_dict['jsat_lower_outer_small_integrated_sigma']
+					multi_instrument_dict_pass['jsat_lower_outer_small_integrated_sigma'] = LPs_dict['jsat_lower_outer_small_integrated_sigma']
+					jsat_lower_inner_mid_integrated_sigma = LPs_dict['jsat_lower_inner_mid_integrated_sigma']
+					multi_instrument_dict_pass['jsat_lower_inner_mid_integrated_sigma'] = LPs_dict['jsat_lower_inner_mid_integrated_sigma']
+					jsat_lower_outer_mid_integrated_sigma = LPs_dict['jsat_lower_outer_mid_integrated_sigma']
+					multi_instrument_dict_pass['jsat_lower_outer_mid_integrated_sigma'] = LPs_dict['jsat_lower_outer_mid_integrated_sigma']
+					jsat_lower_inner_large_integrated_sigma = LPs_dict['jsat_lower_inner_large_integrated_sigma']
+					multi_instrument_dict_pass['jsat_lower_inner_large_integrated_sigma'] = LPs_dict['jsat_lower_inner_large_integrated_sigma']
+					jsat_lower_outer_large_integrated_sigma = LPs_dict['jsat_lower_outer_large_integrated_sigma']
+					multi_instrument_dict_pass['jsat_lower_outer_large_integrated_sigma'] = LPs_dict['jsat_lower_outer_large_integrated_sigma']
+					jsat_upper_inner_small_integrated_sigma = LPs_dict['jsat_upper_inner_small_integrated_sigma']
+					multi_instrument_dict_pass['jsat_upper_inner_small_integrated_sigma'] = LPs_dict['jsat_upper_inner_small_integrated_sigma']
+					jsat_upper_outer_small_integrated_sigma = LPs_dict['jsat_upper_outer_small_integrated_sigma']
+					multi_instrument_dict_pass['jsat_upper_outer_small_integrated_sigma'] = LPs_dict['jsat_upper_outer_small_integrated_sigma']
+					jsat_upper_inner_mid_integrated_sigma = LPs_dict['jsat_upper_inner_mid_integrated_sigma']
+					multi_instrument_dict_pass['jsat_upper_inner_mid_integrated_sigma'] = LPs_dict['jsat_upper_inner_mid_integrated_sigma']
+					jsat_upper_outer_mid_integrated_sigma = LPs_dict['jsat_upper_outer_mid_integrated_sigma']
+					multi_instrument_dict_pass['jsat_upper_outer_mid_integrated_sigma'] = LPs_dict['jsat_upper_outer_mid_integrated_sigma']
+					jsat_upper_inner_large_integrated_sigma = LPs_dict['jsat_upper_inner_large_integrated_sigma']
+					multi_instrument_dict_pass['jsat_upper_inner_large_integrated_sigma'] = LPs_dict['jsat_upper_inner_large_integrated_sigma']
+					jsat_upper_outer_large_integrated_sigma = LPs_dict['jsat_upper_outer_large_integrated_sigma']
+					multi_instrument_dict_pass['jsat_upper_outer_large_integrated_sigma'] = LPs_dict['jsat_upper_outer_large_integrated_sigma']
+
+					jsat_lower_inner_small_max_sigma = LPs_dict['jsat_lower_inner_small_max_sigma']
+					multi_instrument_dict_pass['jsat_lower_inner_small_max_sigma'] = LPs_dict['jsat_lower_inner_small_max_sigma']
+					jsat_lower_outer_small_max_sigma = LPs_dict['jsat_lower_outer_small_max_sigma']
+					multi_instrument_dict_pass['jsat_lower_outer_small_max_sigma'] = LPs_dict['jsat_lower_outer_small_max_sigma']
+					jsat_lower_inner_mid_max_sigma = LPs_dict['jsat_lower_inner_mid_max_sigma']
+					multi_instrument_dict_pass['jsat_lower_inner_mid_max_sigma'] = LPs_dict['jsat_lower_inner_mid_max_sigma']
+					jsat_lower_outer_mid_max_sigma = LPs_dict['jsat_lower_outer_mid_max_sigma']
+					multi_instrument_dict_pass['jsat_lower_outer_mid_max_sigma'] = LPs_dict['jsat_lower_outer_mid_max_sigma']
+					jsat_lower_inner_large_max_sigma = LPs_dict['jsat_lower_inner_large_max_sigma']
+					multi_instrument_dict_pass['jsat_lower_inner_large_max_sigma'] = LPs_dict['jsat_lower_inner_large_max_sigma']
+					jsat_lower_outer_large_max_sigma = LPs_dict['jsat_lower_outer_large_max_sigma']
+					multi_instrument_dict_pass['jsat_lower_outer_large_max_sigma'] = LPs_dict['jsat_lower_outer_large_max_sigma']
+					jsat_upper_inner_small_max_sigma = LPs_dict['jsat_upper_inner_small_max_sigma']
+					multi_instrument_dict_pass['jsat_upper_inner_small_max_sigma'] = LPs_dict['jsat_upper_inner_small_max_sigma']
+					jsat_upper_outer_small_max_sigma = LPs_dict['jsat_upper_outer_small_max_sigma']
+					multi_instrument_dict_pass['jsat_upper_outer_small_max_sigma'] = LPs_dict['jsat_upper_outer_small_max_sigma']
+					jsat_upper_inner_mid_max_sigma = LPs_dict['jsat_upper_inner_mid_max_sigma']
+					multi_instrument_dict_pass['jsat_upper_inner_mid_max_sigma'] = LPs_dict['jsat_upper_inner_mid_max_sigma']
+					jsat_upper_outer_mid_max_sigma = LPs_dict['jsat_upper_outer_mid_max_sigma']
+					multi_instrument_dict_pass['jsat_upper_outer_mid_max_sigma'] = LPs_dict['jsat_upper_outer_mid_max_sigma']
+					jsat_upper_inner_large_max_sigma = LPs_dict['jsat_upper_inner_large_max_sigma']
+					multi_instrument_dict_pass['jsat_upper_inner_large_max_sigma'] = LPs_dict['jsat_upper_inner_large_max_sigma']
+					jsat_upper_outer_large_max_sigma = LPs_dict['jsat_upper_outer_large_max_sigma']
+					multi_instrument_dict_pass['jsat_upper_outer_large_max_sigma'] = LPs_dict['jsat_upper_outer_large_max_sigma']
 				except:
-					s10_upper_large_good_probes = np.zeros((10)).astype(bool)
-					s10_upper_large_s = np.zeros((10))
-					s10_upper_large_r = np.zeros((10))
-					s10_upper_large_jsat = np.zeros((len(trange),10))
-					s10_upper_large_jsat_sigma = np.zeros((len(trange),10))
-					s10_upper_large_jsat_r = np.zeros((len(trange),10))
-					s10_upper_large_jsat_s = np.zeros((len(trange),10))
-				plt.close('all')
+					print('reading LP reworked data with Peter Ryan functions failed')
 
-				closeness_limit_to_dead_channels = 0.01	# m
-				closeness_limit_for_good_channels = np.median(np.abs(np.diff(s10_lower_s).tolist()+np.diff(s4_lower_s).tolist()+np.diff(s4_upper_s).tolist()+np.diff(s10_upper_std_s).tolist()+np.diff(s10_upper_large_s).tolist()))*2	# *5
-				jsat_upper_inner_small_max = []
-				jsat_upper_outer_small_max = []
-				jsat_upper_inner_mid_max = []
-				jsat_upper_outer_mid_max = []
-				jsat_upper_inner_large_max = []	# T5
-				jsat_upper_outer_large_max = []	# T5
-				jsat_lower_inner_small_max = []	#central column
-				jsat_lower_outer_small_max = []	#central column
-				jsat_lower_inner_mid_max = []
-				jsat_lower_outer_mid_max = []
-				jsat_lower_inner_large_max = []
-				jsat_lower_outer_large_max = []
+				jsat_read = LPs_dict['jsat_read']
+				multi_instrument_dict_pass['jsat_read'] = LPs_dict['jsat_read']
+				lambda_q_determination = LPs_dict['lambda_q_determination']
+				multi_instrument_dict_pass['lambda_q_determination'] = LPs_dict['lambda_q_determination']
 
-				jsat_upper_inner_small_max_sigma = []
-				jsat_upper_outer_small_max_sigma = []
-				jsat_upper_inner_mid_max_sigma = []
-				jsat_upper_outer_mid_max_sigma = []
-				jsat_upper_inner_large_max_sigma = []	# T5
-				jsat_upper_outer_large_max_sigma = []	# T5
-				jsat_lower_inner_small_max_sigma = []	#central column
-				jsat_lower_outer_small_max_sigma = []	#central column
-				jsat_lower_inner_mid_max_sigma = []
-				jsat_lower_outer_mid_max_sigma = []
-				jsat_lower_inner_large_max_sigma = []
-				jsat_lower_outer_large_max_sigma = []
+				jsat_time = LPs_dict['jsat_time']
+				multi_instrument_dict_pass['jsat_time'] = LPs_dict['jsat_time']
+				jsat_lower_inner_small_max = LPs_dict['jsat_lower_inner_small_max']
+				multi_instrument_dict_pass['jsat_lower_inner_small_max'] = LPs_dict['jsat_lower_inner_small_max']
+				jsat_lower_outer_small_max = LPs_dict['jsat_lower_outer_small_max']
+				multi_instrument_dict_pass['jsat_lower_outer_small_max'] = LPs_dict['jsat_lower_outer_small_max']
+				jsat_lower_inner_mid_max = LPs_dict['jsat_lower_inner_mid_max']
+				multi_instrument_dict_pass['jsat_lower_inner_mid_max'] = LPs_dict['jsat_lower_inner_mid_max']
+				jsat_lower_outer_mid_max = LPs_dict['jsat_lower_outer_mid_max']
+				multi_instrument_dict_pass['jsat_lower_outer_mid_max'] = LPs_dict['jsat_lower_outer_mid_max']
+				jsat_lower_inner_large_max = LPs_dict['jsat_lower_inner_large_max']
+				multi_instrument_dict_pass['jsat_lower_inner_large_max'] = LPs_dict['jsat_lower_inner_large_max']
+				jsat_lower_outer_large_max = LPs_dict['jsat_lower_outer_large_max']
+				multi_instrument_dict_pass['jsat_lower_outer_large_max'] = LPs_dict['jsat_lower_outer_large_max']
+				jsat_upper_inner_small_max = LPs_dict['jsat_upper_inner_small_max']
+				multi_instrument_dict_pass['jsat_upper_inner_small_max'] = LPs_dict['jsat_upper_inner_small_max']
+				jsat_upper_outer_small_max = LPs_dict['jsat_upper_outer_small_max']
+				multi_instrument_dict_pass['jsat_upper_outer_small_max'] = LPs_dict['jsat_upper_outer_small_max']
+				jsat_upper_inner_mid_max = LPs_dict['jsat_upper_inner_mid_max']
+				multi_instrument_dict_pass['jsat_upper_inner_mid_max'] = LPs_dict['jsat_upper_inner_mid_max']
+				jsat_upper_outer_mid_max = LPs_dict['jsat_upper_outer_mid_max']
+				multi_instrument_dict_pass['jsat_upper_outer_mid_max'] = LPs_dict['jsat_upper_outer_mid_max']
+				jsat_upper_inner_large_max = LPs_dict['jsat_upper_inner_large_max']
+				multi_instrument_dict_pass['jsat_upper_inner_large_max'] = LPs_dict['jsat_upper_inner_large_max']
+				jsat_upper_outer_large_max = LPs_dict['jsat_upper_outer_large_max']
+				multi_instrument_dict_pass['jsat_upper_outer_large_max'] = LPs_dict['jsat_upper_outer_large_max']
+				if lambda_q_determination:
+					# LPs_dict['LP_lambdaq_time'] = np.array(LP_lambdaq_time)
+					lambda_q_10_lower = LPs_dict['lambda_q_10_lower']
+					multi_instrument_dict_pass['lambda_q_10_lower'] = LPs_dict['lambda_q_10_lower']
+					lambda_q_10_lower_sigma = LPs_dict['lambda_q_10_lower_sigma']
+					multi_instrument_dict_pass['lambda_q_10_lower_sigma'] = LPs_dict['lambda_q_10_lower_sigma']
+					lambda_q_4_lower = LPs_dict['lambda_q_4_lower']
+					multi_instrument_dict_pass['lambda_q_4_lower'] = LPs_dict['lambda_q_4_lower']
+					lambda_q_4_lower_sigma = LPs_dict['lambda_q_4_lower_sigma']
+					multi_instrument_dict_pass['lambda_q_4_lower_sigma'] = LPs_dict['lambda_q_4_lower_sigma']
+					lambda_q_4_upper = LPs_dict['lambda_q_4_upper']
+					multi_instrument_dict_pass['lambda_q_4_upper'] = LPs_dict['lambda_q_4_upper']
+					lambda_q_4_upper_sigma = LPs_dict['lambda_q_4_upper_sigma']
+					multi_instrument_dict_pass['lambda_q_4_upper_sigma'] = LPs_dict['lambda_q_4_upper_sigma']
+					lambda_q_10_upper = LPs_dict['lambda_q_10_upper']
+					multi_instrument_dict_pass['lambda_q_10_upper'] = LPs_dict['lambda_q_10_upper']
+					lambda_q_10_upper_sigma = LPs_dict['lambda_q_10_upper_sigma']
+					multi_instrument_dict_pass['lambda_q_10_upper_sigma'] = LPs_dict['lambda_q_10_upper_sigma']
 
-				jsat_upper_inner_small_integrated = []
-				jsat_upper_outer_small_integrated = []
-				jsat_upper_inner_mid_integrated = []
-				jsat_upper_outer_mid_integrated = []
-				jsat_upper_inner_large_integrated = []	# T5
-				jsat_upper_outer_large_integrated = []	# T5
-				jsat_lower_inner_small_integrated = []	#central column
-				jsat_lower_outer_small_integrated = []	#central column
-				jsat_lower_inner_mid_integrated = []
-				jsat_lower_outer_mid_integrated = []
-				jsat_lower_inner_large_integrated = []
-				jsat_lower_outer_large_integrated = []
+				os.remove(laser_to_analyse[:-4]+'_temp_LPs_dict'+'.npz')
+				print('marker LP read')
 
-				jsat_upper_inner_small_integrated_sigma = []
-				jsat_upper_outer_small_integrated_sigma = []
-				jsat_upper_inner_mid_integrated_sigma = []
-				jsat_upper_outer_mid_integrated_sigma = []
-				jsat_upper_inner_large_integrated_sigma = []	# T5
-				jsat_upper_outer_large_integrated_sigma = []	# T5
-				jsat_lower_inner_small_integrated_sigma = []	#central column
-				jsat_lower_outer_small_integrated_sigma = []	#central column
-				jsat_lower_inner_mid_integrated_sigma = []
-				jsat_lower_outer_mid_integrated_sigma = []
-				jsat_lower_inner_large_integrated_sigma = []
-				jsat_lower_outer_large_integrated_sigma = []
-
-				# presenecting only good probes
-				s10_lower_jsat = np.array(s10_lower_jsat)[:,s10_lower_good_probes]
-				s10_lower_jsat_sigma = np.array(s10_lower_jsat_sigma)[:,s10_lower_good_probes]
-				s10_lower_jsat_r = np.array(s10_lower_jsat_r)[:,s10_lower_good_probes]
-				s10_lower_jsat_s = np.array(s10_lower_jsat_s)[:,s10_lower_good_probes]
-				s4_lower_jsat = np.array(s4_lower_jsat)[:,s4_lower_good_probes]
-				s4_lower_jsat_sigma = np.array(s4_lower_jsat_sigma)[:,s4_lower_good_probes]
-				s4_lower_jsat_r = np.array(s4_lower_jsat_r)[:,s4_lower_good_probes]
-				s4_lower_jsat_s = np.array(s4_lower_jsat_s)[:,s4_lower_good_probes]
-				s4_upper_jsat = np.array(s4_upper_jsat)[:,s4_upper_good_probes]
-				s4_upper_jsat_sigma = np.array(s4_upper_jsat_sigma)[:,s4_upper_good_probes]
-				s4_upper_jsat_r = np.array(s4_upper_jsat_r)[:,s4_upper_good_probes]
-				s4_upper_jsat_s = np.array(s4_upper_jsat_s)[:,s4_upper_good_probes]
-				s10_upper_std_jsat = np.array(s10_upper_std_jsat)[:,s10_upper_std_good_probes]
-				s10_upper_std_jsat_sigma = np.array(s10_upper_std_jsat_sigma)[:,s10_upper_std_good_probes]
-				s10_upper_std_jsat_r = np.array(s10_upper_std_jsat_r)[:,s10_upper_std_good_probes]
-				s10_upper_std_jsat_s = np.array(s10_upper_std_jsat_s)[:,s10_upper_std_good_probes]
-				s10_upper_large_jsat = np.array(s10_upper_large_jsat)[:,s10_upper_large_good_probes]
-				s10_upper_large_jsat_sigma = np.array(s10_upper_large_jsat_sigma)[:,s10_upper_large_good_probes]
-				s10_upper_large_jsat_r = np.array(s10_upper_large_jsat_r)[:,s10_upper_large_good_probes]
-				s10_upper_large_jsat_s = np.array(s10_upper_large_jsat_s)[:,s10_upper_large_good_probes]
-
-				# skipped = 0
-				for time in time_full_binned_crop:
-					if time<np.min(output[0]['time']) or time>np.max(output[-1]['time']):
-						jsat_upper_inner_small_max.append(np.nan)
-						jsat_upper_outer_small_max.append(np.nan)
-						jsat_upper_inner_small_integrated.append(np.nan)
-						jsat_upper_outer_small_integrated.append(np.nan)
-						jsat_upper_inner_mid_max.append(np.nan)
-						jsat_upper_inner_mid_integrated.append(np.nan)
-						jsat_upper_outer_mid_max.append(np.nan)
-						jsat_upper_outer_mid_integrated.append(np.nan)
-						jsat_upper_inner_large_max.append(np.nan)
-						jsat_upper_inner_large_integrated.append(np.nan)
-						jsat_upper_outer_large_max.append(np.nan)
-						jsat_upper_outer_large_integrated.append(np.nan)
-						jsat_lower_inner_small_max.append(np.nan)
-						jsat_lower_inner_small_integrated.append(np.nan)
-						jsat_lower_outer_small_max.append(np.nan)
-						jsat_lower_outer_small_integrated.append(np.nan)
-						jsat_lower_inner_mid_max.append(np.nan)
-						jsat_lower_inner_mid_integrated.append(np.nan)
-						jsat_lower_outer_mid_max.append(np.nan)
-						jsat_lower_outer_mid_integrated.append(np.nan)
-						jsat_lower_inner_large_max.append(np.nan)
-						jsat_lower_outer_large_max.append(np.nan)
-						jsat_lower_inner_large_integrated.append(np.nan)
-						jsat_lower_outer_large_integrated.append(np.nan)
-
-						jsat_upper_inner_small_max_sigma.append(np.nan)
-						jsat_upper_outer_small_max_sigma.append(np.nan)
-						jsat_upper_inner_small_integrated_sigma.append(np.nan)
-						jsat_upper_outer_small_integrated_sigma.append(np.nan)
-						jsat_upper_inner_mid_max_sigma.append(np.nan)
-						jsat_upper_inner_mid_integrated_sigma.append(np.nan)
-						jsat_upper_outer_mid_max_sigma.append(np.nan)
-						jsat_upper_outer_mid_integrated_sigma.append(np.nan)
-						jsat_upper_inner_large_max_sigma.append(np.nan)
-						jsat_upper_inner_large_integrated_sigma.append(np.nan)
-						jsat_upper_outer_large_max_sigma.append(np.nan)
-						jsat_upper_outer_large_integrated_sigma.append(np.nan)
-						jsat_lower_inner_small_max_sigma.append(np.nan)
-						jsat_lower_inner_small_integrated_sigma.append(np.nan)
-						jsat_lower_outer_small_max_sigma.append(np.nan)
-						jsat_lower_outer_small_integrated_sigma.append(np.nan)
-						jsat_lower_inner_mid_max_sigma.append(np.nan)
-						jsat_lower_inner_mid_integrated_sigma.append(np.nan)
-						jsat_lower_outer_mid_max_sigma.append(np.nan)
-						jsat_lower_outer_mid_integrated_sigma.append(np.nan)
-						jsat_lower_inner_large_max_sigma.append(np.nan)
-						jsat_lower_outer_large_max_sigma.append(np.nan)
-						jsat_lower_inner_large_integrated_sigma.append(np.nan)
-						jsat_lower_outer_large_integrated_sigma.append(np.nan)
-						# skipped += 1
-						continue
-
-					i_time = np.abs(time-np.mean(trange,axis=1)).argmin()
-
-					i_efit_time = np.abs(efit_reconstruction.time-time).argmin()
-					inner_strike_point = [np.min(efit_reconstruction.strikepointR[i_efit_time][:2]),0,0]
-					inner_strike_point[1] = -efit_reconstruction.strikepointZ[i_efit_time][np.abs(efit_reconstruction.strikepointR[i_efit_time]-inner_strike_point[0]).argmin()]
-					temp = get_nearest_s_coordinates_mastu([inner_strike_point[0]],[inner_strike_point[1]],s_lookup, tol=5e-1)
-					inner_strike_point[2] = np.abs(temp[0][0])	# this is all info for the upper divertor [R,Z,s]
-					outer_strike_point = [np.max(efit_reconstruction.strikepointR[i_efit_time][:2]),0,0]
-					outer_strike_point[1] = -efit_reconstruction.strikepointZ[i_efit_time][np.abs(efit_reconstruction.strikepointR[i_efit_time]-outer_strike_point[0]).argmin()]
-					temp = get_nearest_s_coordinates_mastu([outer_strike_point[0]],[outer_strike_point[1]],s_lookup, tol=5e-1)
-					outer_strike_point[2] = np.abs(temp[0][0])	# this is all info for the upper divertor [R,Z,s]
-					mid_strike_point = [np.mean(efit_reconstruction.strikepointR[i_efit_time][:2]),-np.mean(efit_reconstruction.strikepointZ[i_efit_time][:2]),0]
-					temp = get_nearest_s_coordinates_mastu([mid_strike_point[0]],[mid_strike_point[1]],s_lookup, tol=5e-1)
-					mid_strike_point[2] = np.abs(temp[0][0])	# this is all info for the upper divertor [R,Z,s]
-
-					# upper divertor
-					# 19/02/2025 I split the second condition so that I need close good plobes on both sides of the strike point to be able to say anything
-					# inner SP
-					temp = s4_upper_s-inner_strike_point[2]
-					s4_upper_inner_test = np.sum(np.logical_not(s4_upper_good_probes)[np.abs(temp)<closeness_limit_to_dead_channels])==0 and np.sum(s4_upper_good_probes[np.logical_and(temp>0 , np.abs(temp)<closeness_limit_for_good_channels)])>0 and np.sum(s4_upper_good_probes[np.logical_and(temp<0 , np.abs(temp)<closeness_limit_for_good_channels)])>0
-					temp = s10_upper_std_s-inner_strike_point[2]
-					s10_upper_std_inner_test = np.sum(np.logical_not(s10_upper_std_good_probes)[np.abs(temp)<closeness_limit_to_dead_channels])==0 and np.sum(s10_upper_std_good_probes[np.logical_and(temp>0 , np.abs(temp)<closeness_limit_for_good_channels)])>0 and np.sum(s10_upper_std_good_probes[np.logical_and(temp<0 , np.abs(temp)<closeness_limit_for_good_channels)])>0
-					temp = s10_upper_large_s-inner_strike_point[2]
-					s10_upper_large_inner_test = np.sum(np.logical_not(s10_upper_large_good_probes)[np.abs(temp)<closeness_limit_to_dead_channels])==0 and np.sum(s10_upper_large_good_probes[np.logical_and(temp>0 , np.abs(temp)<closeness_limit_for_good_channels)])>0 and np.sum(s10_upper_large_good_probes[np.logical_and(temp<0 , np.abs(temp)<closeness_limit_for_good_channels)])>0
-					# outer SP
-					temp = s4_upper_s-outer_strike_point[2]
-					s4_upper_outer_test = np.sum(np.logical_not(s4_upper_good_probes)[np.abs(temp)<closeness_limit_to_dead_channels])==0 and np.sum(s4_upper_good_probes[np.logical_and(temp>0 , np.abs(temp)<closeness_limit_for_good_channels)])>0 and np.sum(s4_upper_good_probes[np.logical_and(temp<0 , np.abs(temp)<closeness_limit_for_good_channels)])>0
-					temp = s10_upper_std_s-outer_strike_point[2]
-					s10_upper_std_outer_test = np.sum(np.logical_not(s10_upper_std_good_probes)[np.abs(temp)<closeness_limit_to_dead_channels])==0 and np.sum(s10_upper_std_good_probes[np.logical_and(temp>0 , np.abs(temp)<closeness_limit_for_good_channels)])>0 and np.sum(s10_upper_std_good_probes[np.logical_and(temp<0 , np.abs(temp)<closeness_limit_for_good_channels)])>0
-					temp = s10_upper_large_s-outer_strike_point[2]
-					s10_upper_large_outer_test = np.sum(np.logical_not(s10_upper_large_good_probes)[np.abs(temp)<closeness_limit_to_dead_channels])==0 and np.sum(s10_upper_large_good_probes[np.logical_and(temp>0 , np.abs(temp)<closeness_limit_for_good_channels)])>0 and np.sum(s10_upper_large_good_probes[np.logical_and(temp<0 , np.abs(temp)<closeness_limit_for_good_channels)])>0
-
-					jsat_upper_inner_small_max.append(0)
-					jsat_upper_inner_small_max_sigma.append(0)
-					jsat_upper_outer_small_max.append(0)
-					jsat_upper_outer_small_max_sigma.append(0)
-					jsat_upper_inner_small_integrated.append(0)
-					jsat_upper_inner_small_integrated_sigma.append(0)
-					jsat_upper_outer_small_integrated.append(0)
-					jsat_upper_outer_small_integrated_sigma.append(0)
-
-					temp = [np.nan]
-					if s4_upper_inner_test:
-						temp = np.concatenate([[0],temp,s4_upper_jsat[i_time][s4_upper_jsat_r[i_time]<mid_strike_point[0]]])
-					if s10_upper_std_inner_test:	# I should consider them independently, but s10 upper has too many dead channes and it's not trustworthy on its own
-						temp = np.concatenate([[0],temp,s10_upper_std_jsat[i_time][s10_upper_std_jsat_r[i_time]<mid_strike_point[0]]])
-					temp_sigma = [np.nan]
-					if s4_upper_inner_test:
-						temp_sigma = np.concatenate([[0],temp_sigma,s4_upper_jsat_sigma[i_time][s4_upper_jsat_r[i_time]<mid_strike_point[0]]])
-					if s10_upper_std_inner_test:	# I should consider them independently, but s10 upper has too many dead channes and it's not trustworthy on its own
-						temp_sigma = np.concatenate([[0],temp_sigma,s10_upper_std_jsat_sigma[i_time][s10_upper_std_jsat_r[i_time]<mid_strike_point[0]]])
-					jsat_upper_inner_mid_max.append(np.nanmax(temp))
-					jsat_upper_inner_mid_max_sigma.append(temp_sigma[np.nanargmax(np.concatenate([temp,[-np.inf]]))])
-
-					temp = [np.nan]
-					temp_sigma_extra = 0
-					if s4_upper_inner_test:
-						temp.append( np.trapz(s4_upper_jsat[i_time][s4_upper_jsat_r[i_time]<mid_strike_point[0]]*2*np.pi*s4_upper_jsat_r[i_time][s4_upper_jsat_r[i_time]<mid_strike_point[0]],x=s4_upper_jsat_s[i_time][s4_upper_jsat_r[i_time]<mid_strike_point[0]]) )
-					if s10_upper_std_inner_test:	# I should consider them independently, but s10 upper has too many dead channes and it's not trustworthy on its own
-						temp.append( np.trapz(s10_upper_std_jsat[i_time][s10_upper_std_jsat_r[i_time]<mid_strike_point[0]]*2*np.pi*s10_upper_std_jsat_r[i_time][s10_upper_std_jsat_r[i_time]<mid_strike_point[0]],x=s10_upper_std_jsat_s[i_time][s10_upper_std_jsat_r[i_time]<mid_strike_point[0]]) )
-					if np.nanmax(temp) - np.nanmin(temp)<np.nanmean(temp)/2:	# step added to see if averaging among the 2 sectors rather than taking the max matters
-						temp_sigma_extra = np.nanmax(temp) - np.nanmin(temp)
-						temp =np.nanmean(temp)
-					else:
-						temp = np.nan
-					if not(s4_upper_inner_test) and not(s10_upper_std_inner_test):
-						temp = np.nan
-					temp_sigma = 0
-					if s4_upper_inner_test:
-						temp_sigma = np.nanmax([temp_sigma,coleval.np_trapz_error((s4_upper_jsat_sigma[i_time][s4_upper_jsat_r[i_time]<mid_strike_point[0]]*2*np.pi*s4_upper_jsat_r[i_time][s4_upper_jsat_r[i_time]<mid_strike_point[0]])**2,x=s4_upper_jsat_s[i_time][s4_upper_jsat_r[i_time]<mid_strike_point[0]])])
-					if s10_upper_std_inner_test:	# I should consider them independently, but s10 upper has too many dead channes and it's not trustworthy on its own
-						temp_sigma = np.nanmax([temp_sigma,coleval.np_trapz_error((s10_upper_std_jsat_sigma[i_time][s10_upper_std_jsat_r[i_time]<mid_strike_point[0]]*2*np.pi*s10_upper_std_jsat_r[i_time][s10_upper_std_jsat_r[i_time]<mid_strike_point[0]])**2,x=s10_upper_std_jsat_s[i_time][s10_upper_std_jsat_r[i_time]<mid_strike_point[0]])])
-					if not(s4_upper_inner_test) and not(s10_upper_std_inner_test):
-						temp_sigma = np.nan
-					jsat_upper_inner_mid_integrated.append(temp)
-					jsat_upper_inner_mid_integrated_sigma.append(max(temp_sigma**0.5,temp_sigma_extra))
-
-					temp = [np.nan]
-					if s4_upper_outer_test:
-						temp = np.concatenate([[0],temp,s4_upper_jsat[i_time][s4_upper_jsat_r[i_time]>mid_strike_point[0]]])
-					if s10_upper_std_outer_test:	# I should consider them independently, but s10 upper has too many dead channes and it's not trustworthy on its own
-						temp = np.concatenate([[0],temp,s10_upper_std_jsat[i_time][s10_upper_std_jsat_r[i_time]>mid_strike_point[0]]])
-					temp_sigma = [np.nan]
-					if s4_upper_outer_test:
-						temp_sigma = np.concatenate([[0],temp_sigma,s4_upper_jsat_sigma[i_time][s4_upper_jsat_r[i_time]>mid_strike_point[0]]])
-					if s10_upper_std_outer_test:	# I should consider them independently, but s10 upper has too many dead channes and it's not trustworthy on its own
-						temp_sigma = np.concatenate([[0],temp_sigma,s10_upper_std_jsat_sigma[i_time][s10_upper_std_jsat_r[i_time]>mid_strike_point[0]]])
-					jsat_upper_outer_mid_max.append(np.nanmax(temp))
-					jsat_upper_outer_mid_max_sigma.append(temp_sigma[np.nanargmax(np.concatenate([temp,[-np.inf]]))])
-
-					temp = [np.nan]
-					temp_sigma_extra = 0
-					if s4_upper_outer_test:
-						temp.append( np.trapz(s4_upper_jsat[i_time][s4_upper_jsat_r[i_time]>mid_strike_point[0]]*2*np.pi*s4_upper_jsat_r[i_time][s4_upper_jsat_r[i_time]>mid_strike_point[0]],x=s4_upper_jsat_s[i_time][s4_upper_jsat_r[i_time]>mid_strike_point[0]]) )
-					if s10_upper_std_outer_test:	# I should consider them independently, but s10 upper has too many dead channes and it's not trustworthy on its own
-						temp.append( np.trapz(s10_upper_std_jsat[i_time][s10_upper_std_jsat_r[i_time]>mid_strike_point[0]]*2*np.pi*s10_upper_std_jsat_r[i_time][s10_upper_std_jsat_r[i_time]>mid_strike_point[0]],x=s10_upper_std_jsat_s[i_time][s10_upper_std_jsat_r[i_time]>mid_strike_point[0]]) )
-					if np.nanmax(temp) - np.nanmin(temp)<np.nanmean(temp)/2:	# step added to see if averaging among the 2 sectors rather than taking the max matters
-						temp_sigma_extra = np.nanmax(temp) - np.nanmin(temp)
-						temp =np.nanmean(temp)
-					else:
-						temp = np.nan
-					if not(s4_upper_outer_test) and not(s10_upper_std_outer_test):
-						temp = np.nan
-					temp_sigma = 0
-					if s4_upper_outer_test:
-						temp_sigma = np.nanmax([temp_sigma,coleval.np_trapz_error((s4_upper_jsat_sigma[i_time][s4_upper_jsat_r[i_time]>mid_strike_point[0]]*2*np.pi*s4_upper_jsat_r[i_time][s4_upper_jsat_r[i_time]>mid_strike_point[0]])**2,x=s4_upper_jsat_s[i_time][s4_upper_jsat_r[i_time]>mid_strike_point[0]])])
-					if s10_upper_std_outer_test:	# I should consider them independently, but s10 upper has too many dead channes and it's not trustworthy on its own
-						temp_sigma = np.nanmax([temp_sigma,coleval.np_trapz_error((s10_upper_std_jsat_sigma[i_time][s10_upper_std_jsat_r[i_time]>mid_strike_point[0]]*2*np.pi*s10_upper_std_jsat_r[i_time][s10_upper_std_jsat_r[i_time]>mid_strike_point[0]])**2,x=s10_upper_std_jsat_s[i_time][s10_upper_std_jsat_r[i_time]>mid_strike_point[0]])])
-					if not(s4_upper_outer_test) and not(s10_upper_std_outer_test):
-						temp_sigma = np.nan
-					jsat_upper_outer_mid_integrated.append(temp)
-					jsat_upper_outer_mid_integrated_sigma.append(max(temp_sigma**0.5,temp_sigma_extra))
-
-					temp = [np.nan]
-					if s10_upper_large_inner_test:
-						temp = np.concatenate([[0],temp,s10_upper_large_jsat[i_time][s10_upper_large_jsat_r[i_time]<mid_strike_point[0]]])
-					temp_sigma = [np.nan]
-					if s10_upper_large_inner_test:
-						temp_sigma = np.concatenate([[0],temp_sigma,s10_upper_large_jsat_sigma[i_time][s10_upper_large_jsat_r[i_time]<mid_strike_point[0]]])
-					jsat_upper_inner_large_max.append(np.nanmax(temp))
-					jsat_upper_inner_large_max_sigma.append(temp_sigma[np.nanargmax(np.concatenate([temp,[-np.inf]]))])
-
-					temp = 0
-					if s10_upper_large_inner_test:
-						temp += np.trapz(s10_upper_large_jsat[i_time][s10_upper_large_jsat_r[i_time]<mid_strike_point[0]]*2*np.pi*s10_upper_large_jsat_r[i_time][s10_upper_large_jsat_r[i_time]<mid_strike_point[0]],x=s10_upper_large_jsat_s[i_time][s10_upper_large_jsat_r[i_time]<mid_strike_point[0]])
-					else:
-						temp = np.nan
-					temp_sigma = 0
-					if s10_upper_large_inner_test:
-						temp_sigma += coleval.np_trapz_error((s10_upper_large_jsat_sigma[i_time][s10_upper_large_jsat_r[i_time]<mid_strike_point[0]]*2*np.pi*s10_upper_large_jsat_r[i_time][s10_upper_large_jsat_r[i_time]<mid_strike_point[0]])**2,x=s10_upper_large_jsat_s[i_time][s10_upper_large_jsat_r[i_time]<mid_strike_point[0]])
-					else:
-						temp_sigma = np.nan
-					jsat_upper_inner_large_integrated.append(temp)
-					jsat_upper_inner_large_integrated_sigma.append(temp_sigma**0.5)
-
-					temp = [np.nan]
-					if s10_upper_large_outer_test:
-						temp = np.concatenate([[0],temp,s10_upper_large_jsat[i_time][s10_upper_large_jsat_r[i_time]>mid_strike_point[0]]])
-					temp_sigma = [np.nan]
-					if s10_upper_large_outer_test:
-						temp_sigma = np.concatenate([[0],temp_sigma,s10_upper_large_jsat_sigma[i_time][s10_upper_large_jsat_r[i_time]>mid_strike_point[0]]])
-					jsat_upper_outer_large_max.append(np.nanmax(temp))
-					jsat_upper_outer_large_max_sigma.append(temp_sigma[np.nanargmax(np.concatenate([temp,[-np.inf]]))])
-
-					temp = 0
-					if s10_upper_large_outer_test:
-						temp += np.trapz(s10_upper_large_jsat[i_time][s10_upper_large_jsat_r[i_time]>mid_strike_point[0]]*2*np.pi*s10_upper_large_jsat_r[i_time][s10_upper_large_jsat_r[i_time]>mid_strike_point[0]],x=s10_upper_large_jsat_s[i_time][s10_upper_large_jsat_r[i_time]>mid_strike_point[0]])
-					else:
-						temp = np.nan
-					temp_sigma = 0
-					if s10_upper_large_outer_test:
-						temp_sigma += coleval.np_trapz_error((s10_upper_large_jsat_sigma[i_time][s10_upper_large_jsat_r[i_time]>mid_strike_point[0]]*2*np.pi*s10_upper_large_jsat_r[i_time][s10_upper_large_jsat_r[i_time]>mid_strike_point[0]])**2,x=s10_upper_large_jsat_s[i_time][s10_upper_large_jsat_r[i_time]>mid_strike_point[0]])
-					else:
-						temp_sigma = np.nan
-					jsat_upper_outer_large_integrated.append(temp)
-					jsat_upper_outer_large_integrated_sigma.append(temp_sigma**0.5)
-
-
-					# lower divertor
-					# I add the second part to exluce the case there are NO good channel close to the strike point, diving a bit of slack allowing twice the normal distance between probes
-					# 19/02/2025 I split the second condition so that I need close good plobes on both sides of the strike point to be able to say anything
-					temp = s4_lower_s-(-inner_strike_point[2])
-					s4_lower_inner_test = np.sum(np.logical_not(s4_lower_good_probes)[np.abs(temp)<closeness_limit_to_dead_channels])==0 and np.sum(s4_lower_good_probes[np.logical_and(temp>0 , np.abs(temp)<closeness_limit_for_good_channels)])>0 and np.sum(s4_lower_good_probes[np.logical_and(temp<0 , np.abs(temp)<closeness_limit_for_good_channels)])>0
-					temp = s10_lower_s-(-inner_strike_point[2])
-					s10_lower_inner_test = np.sum(np.logical_not(s10_lower_good_probes)[np.abs(temp)<closeness_limit_to_dead_channels])==0 and np.sum(s10_lower_good_probes[np.logical_and(temp>0 , np.abs(temp)<closeness_limit_for_good_channels)])>0 and np.sum(s10_lower_good_probes[np.logical_and(temp<0 , np.abs(temp)<closeness_limit_for_good_channels)])>0
-					temp = s4_lower_s-(-outer_strike_point[2])
-					s4_lower_outer_test = np.sum(np.logical_not(s4_lower_good_probes)[np.abs(temp)<closeness_limit_to_dead_channels])==0 and np.sum(s4_lower_good_probes[np.logical_and(temp>0 , np.abs(temp)<closeness_limit_for_good_channels)])>0 and np.sum(s4_lower_good_probes[np.logical_and(temp<0 , np.abs(temp)<closeness_limit_for_good_channels)])>0
-					temp = s10_lower_s-(-outer_strike_point[2])
-					s10_lower_outer_test = np.sum(np.logical_not(s10_lower_good_probes)[np.abs(temp)<closeness_limit_to_dead_channels])==0 and np.sum(s10_lower_good_probes[np.logical_and(temp>0 , np.abs(temp)<closeness_limit_for_good_channels)])>0 and np.sum(s10_lower_good_probes[np.logical_and(temp<0 , np.abs(temp)<closeness_limit_for_good_channels)])>0
-
-					temp = [np.nan]
-					if s4_lower_inner_test:
-						temp = np.concatenate([[0],temp,s4_lower_jsat[i_time][s4_lower_jsat_r[i_time]<mid_strike_point[0]]])
-					temp_sigma = [np.nan]
-					if s4_lower_inner_test:
-						temp_sigma = np.concatenate([[0],temp_sigma,s4_lower_jsat_sigma[i_time][s4_lower_jsat_r[i_time]<mid_strike_point[0]]])
-					jsat_lower_inner_small_max.append(np.nanmax(temp))
-					jsat_lower_inner_small_max_sigma.append(temp_sigma[np.nanargmax(np.concatenate([temp,[-np.inf]]))])
-
-					temp = 0
-					if s4_lower_inner_test:
-						temp += np.trapz(s4_lower_jsat[i_time][s4_lower_jsat_r[i_time]<mid_strike_point[0]]*2*np.pi*s4_lower_jsat_r[i_time][s4_lower_jsat_r[i_time]<mid_strike_point[0]],x=s4_lower_jsat_s[i_time][s4_lower_jsat_r[i_time]<mid_strike_point[0]])
-					else:
-						temp = np.nan
-					temp_sigma = 0
-					if s4_lower_inner_test:
-						temp_sigma += coleval.np_trapz_error((s4_lower_jsat_sigma[i_time][s4_lower_jsat_r[i_time]<mid_strike_point[0]]*2*np.pi*s4_lower_jsat_r[i_time][s4_lower_jsat_r[i_time]<mid_strike_point[0]])**2,x=s4_lower_jsat_s[i_time][s4_lower_jsat_r[i_time]<mid_strike_point[0]])
-					else:
-						temp_sigma = np.nan
-					jsat_lower_inner_small_integrated.append(-temp)
-					jsat_lower_inner_small_integrated_sigma.append(temp_sigma**0.5)
-
-					temp = [np.nan]
-					if s4_lower_outer_test:
-						temp = np.concatenate([[0],temp,s4_lower_jsat[i_time][s4_lower_jsat_r[i_time]>mid_strike_point[0]]])
-					temp_sigma = [np.nan]
-					if s4_lower_outer_test:
-						temp_sigma = np.concatenate([[0],temp_sigma,s4_lower_jsat_sigma[i_time][s4_lower_jsat_r[i_time]>mid_strike_point[0]]])
-					jsat_lower_outer_small_max.append(np.nanmax(temp))
-					jsat_lower_outer_small_max_sigma.append(temp_sigma[np.nanargmax(np.concatenate([temp,[-np.inf]]))])
-
-					temp = 0
-					if s4_lower_outer_test:
-						temp += np.trapz(s4_lower_jsat[i_time][s4_lower_jsat_r[i_time]>mid_strike_point[0]]*2*np.pi*s4_lower_jsat_r[i_time][s4_lower_jsat_r[i_time]>mid_strike_point[0]],x=s4_lower_jsat_s[i_time][s4_lower_jsat_r[i_time]>mid_strike_point[0]])
-					else:
-						temp = np.nan
-					temp_sigma = 0
-					if s4_lower_outer_test:
-						temp_sigma += coleval.np_trapz_error((s4_lower_jsat_sigma[i_time][s4_lower_jsat_r[i_time]>mid_strike_point[0]]*2*np.pi*s4_lower_jsat_r[i_time][s4_lower_jsat_r[i_time]>mid_strike_point[0]])**2,x=s4_lower_jsat_s[i_time][s4_lower_jsat_r[i_time]>mid_strike_point[0]])
-					else:
-						temp_sigma = np.nan
-					jsat_lower_outer_small_integrated.append(-temp)
-					jsat_lower_outer_small_integrated_sigma.append(temp_sigma**0.5)
-
-					temp = [np.nan]
-					if s10_lower_inner_test:
-						temp = np.concatenate([[0],temp,s10_lower_jsat[i_time][s10_lower_jsat_r[i_time]<mid_strike_point[0]]])
-					temp_sigma = [np.nan]
-					if s10_lower_inner_test:
-						temp_sigma = np.concatenate([[0],temp_sigma,s10_lower_jsat_sigma[i_time][s10_lower_jsat_r[i_time]<mid_strike_point[0]]])
-					jsat_lower_inner_mid_max.append(np.nanmax(temp))
-					jsat_lower_inner_mid_max_sigma.append(temp_sigma[np.nanargmax(np.concatenate([temp,[-np.inf]]))])
-
-					temp = 0
-					if s10_lower_inner_test:
-						temp += np.trapz(s10_lower_jsat[i_time][s10_lower_jsat_r[i_time]<mid_strike_point[0]]*2*np.pi*s10_lower_jsat_r[i_time][s10_lower_jsat_r[i_time]<mid_strike_point[0]],x=s10_lower_jsat_s[i_time][s10_lower_jsat_r[i_time]<mid_strike_point[0]])
-					else:
-						temp = np.nan
-					temp_sigma = 0
-					if s10_lower_inner_test:
-						temp_sigma += coleval.np_trapz_error((s10_lower_jsat_sigma[i_time][s10_lower_jsat_r[i_time]<mid_strike_point[0]]*2*np.pi*s10_lower_jsat_r[i_time][s10_lower_jsat_r[i_time]<mid_strike_point[0]])**2,x=s10_lower_jsat_s[i_time][s10_lower_jsat_r[i_time]<mid_strike_point[0]])
-					else:
-						temp_sigma = np.nan
-					jsat_lower_inner_mid_integrated.append(-temp)
-					jsat_lower_inner_mid_integrated_sigma.append(temp_sigma**0.5)
-
-					temp = [np.nan]
-					if s10_lower_outer_test:
-						temp = np.concatenate([[0],temp,s10_lower_jsat[i_time][s10_lower_jsat_r[i_time]>mid_strike_point[0]]])
-					temp_sigma = [np.nan]
-					if s10_lower_outer_test:
-						temp_sigma = np.concatenate([[0],temp_sigma,s10_lower_jsat_sigma[i_time][s10_lower_jsat_r[i_time]>mid_strike_point[0]]])
-					jsat_lower_outer_mid_max.append(np.nanmax(temp))
-					jsat_lower_outer_mid_max_sigma.append(temp_sigma[np.nanargmax(np.concatenate([temp,[-np.inf]]))])
-
-					temp = 0
-					if s10_lower_outer_test:
-						temp += np.trapz(s10_lower_jsat[i_time][s10_lower_jsat_r[i_time]>mid_strike_point[0]]*2*np.pi*s10_lower_jsat_r[i_time][s10_lower_jsat_r[i_time]>mid_strike_point[0]],x=s10_lower_jsat_s[i_time][s10_lower_jsat_r[i_time]>mid_strike_point[0]])
-					else:
-						temp = np.nan
-					temp_sigma = 0
-					if s10_lower_outer_test:
-						temp_sigma += coleval.np_trapz_error((s10_lower_jsat_sigma[i_time][s10_lower_jsat_r[i_time]>mid_strike_point[0]]*2*np.pi*s10_lower_jsat_r[i_time][s10_lower_jsat_r[i_time]>mid_strike_point[0]])**2,x=s10_lower_jsat_s[i_time][s10_lower_jsat_r[i_time]>mid_strike_point[0]])
-					else:
-						temp_sigma = np.nan
-					jsat_lower_outer_mid_integrated.append(-temp)
-					jsat_lower_outer_mid_integrated_sigma.append(temp_sigma**0.5)
-
-					jsat_lower_inner_large_max.append(0)
-					jsat_lower_inner_large_max_sigma.append(0)
-					jsat_lower_outer_large_max.append(0)
-					jsat_lower_outer_large_max_sigma.append(0)
-					jsat_lower_inner_large_integrated.append(0)
-					jsat_lower_inner_large_integrated_sigma.append(0)
-					jsat_lower_outer_large_integrated.append(0)
-					jsat_lower_outer_large_integrated_sigma.append(0)
-
-				jsat_time = cp.deepcopy(time_full_binned_crop)
-				jsat_read = True
-
-				jsat_lower_inner_small_integrated = np.array(jsat_lower_inner_small_integrated)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_lower_inner_small_integrated'] = jsat_lower_inner_small_integrated
-				jsat_lower_outer_small_integrated = np.array(jsat_lower_outer_small_integrated)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_lower_outer_small_integrated'] = jsat_lower_outer_small_integrated
-				jsat_lower_inner_mid_integrated = np.array(jsat_lower_inner_mid_integrated)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_lower_inner_mid_integrated'] = jsat_lower_inner_mid_integrated
-				jsat_lower_outer_mid_integrated = np.array(jsat_lower_outer_mid_integrated)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_lower_outer_mid_integrated'] = jsat_lower_outer_mid_integrated
-				jsat_lower_inner_large_integrated = np.array(jsat_lower_inner_large_integrated)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_lower_inner_large_integrated'] = jsat_lower_inner_large_integrated
-				jsat_lower_outer_large_integrated = np.array(jsat_lower_outer_large_integrated)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_lower_outer_large_integrated'] = jsat_lower_outer_large_integrated
-				jsat_upper_inner_small_integrated = np.array(jsat_upper_inner_small_integrated)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_upper_inner_small_integrated'] = jsat_upper_inner_small_integrated
-				jsat_upper_outer_small_integrated = np.array(jsat_upper_outer_small_integrated)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_upper_outer_small_integrated'] = jsat_upper_outer_small_integrated
-				jsat_upper_inner_mid_integrated = np.array(jsat_upper_inner_mid_integrated)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_upper_inner_mid_integrated'] = jsat_upper_inner_mid_integrated
-				jsat_upper_outer_mid_integrated = np.array(jsat_upper_outer_mid_integrated)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_upper_outer_mid_integrated'] = jsat_upper_outer_mid_integrated
-				jsat_upper_inner_large_integrated = np.array(jsat_upper_inner_large_integrated)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_upper_inner_large_integrated'] = jsat_upper_inner_large_integrated
-				jsat_upper_outer_large_integrated = np.array(jsat_upper_outer_large_integrated)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_upper_outer_large_integrated'] = jsat_upper_outer_large_integrated
-
-				jsat_lower_inner_small_integrated_sigma = np.array(jsat_lower_inner_small_integrated_sigma)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_lower_inner_small_integrated_sigma'] = jsat_lower_inner_small_integrated_sigma
-				jsat_lower_outer_small_integrated_sigma = np.array(jsat_lower_outer_small_integrated_sigma)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_lower_outer_small_integrated_sigma'] = jsat_lower_outer_small_integrated_sigma
-				jsat_lower_inner_mid_integrated_sigma = np.array(jsat_lower_inner_mid_integrated_sigma)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_lower_inner_mid_integrated_sigma'] = jsat_lower_inner_mid_integrated_sigma
-				jsat_lower_outer_mid_integrated_sigma = np.array(jsat_lower_outer_mid_integrated_sigma)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_lower_outer_mid_integrated_sigma'] = jsat_lower_outer_mid_integrated_sigma
-				jsat_lower_inner_large_integrated_sigma = np.array(jsat_lower_inner_large_integrated_sigma)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_lower_inner_large_integrated_sigma'] = jsat_lower_inner_large_integrated_sigma
-				jsat_lower_outer_large_integrated_sigma = np.array(jsat_lower_outer_large_integrated_sigma)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_lower_outer_large_integrated_sigma'] = jsat_lower_outer_large_integrated_sigma
-				jsat_upper_inner_small_integrated_sigma = np.array(jsat_upper_inner_small_integrated_sigma)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_upper_inner_small_integrated_sigma'] = jsat_upper_inner_small_integrated_sigma
-				jsat_upper_outer_small_integrated_sigma = np.array(jsat_upper_outer_small_integrated_sigma)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_upper_outer_small_integrated_sigma'] = jsat_upper_outer_small_integrated_sigma
-				jsat_upper_inner_mid_integrated_sigma = np.array(jsat_upper_inner_mid_integrated_sigma)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_upper_inner_mid_integrated_sigma'] = jsat_upper_inner_mid_integrated_sigma
-				jsat_upper_outer_mid_integrated_sigma = np.array(jsat_upper_outer_mid_integrated_sigma)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_upper_outer_mid_integrated_sigma'] = jsat_upper_outer_mid_integrated_sigma
-				jsat_upper_inner_large_integrated_sigma = np.array(jsat_upper_inner_large_integrated_sigma)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_upper_inner_large_integrated_sigma'] = jsat_upper_inner_large_integrated_sigma
-				jsat_upper_outer_large_integrated_sigma = np.array(jsat_upper_outer_large_integrated_sigma)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_upper_outer_large_integrated_sigma'] = jsat_upper_outer_large_integrated_sigma
-
-				jsat_lower_inner_small_max_sigma = np.array(jsat_lower_inner_small_max_sigma)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_lower_inner_small_max_sigma'] = jsat_lower_inner_small_max_sigma
-				jsat_lower_outer_small_max_sigma = np.array(jsat_lower_outer_small_max_sigma)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_lower_outer_small_max_sigma'] = jsat_lower_outer_small_max_sigma
-				jsat_lower_inner_mid_max_sigma = np.array(jsat_lower_inner_mid_max_sigma)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_lower_inner_mid_max_sigma'] = jsat_lower_inner_mid_max_sigma
-				jsat_lower_outer_mid_max_sigma = np.array(jsat_lower_outer_mid_max_sigma)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_lower_outer_mid_max_sigma'] = jsat_lower_outer_mid_max_sigma
-				jsat_lower_inner_large_max_sigma = np.array(jsat_lower_inner_large_max_sigma)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_lower_inner_large_max_sigma'] = jsat_lower_inner_large_max_sigma
-				jsat_lower_outer_large_max_sigma = np.array(jsat_lower_outer_large_max_sigma)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_lower_outer_large_max_sigma'] = jsat_lower_outer_large_max_sigma
-				jsat_upper_inner_small_max_sigma = np.array(jsat_upper_inner_small_max_sigma)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_upper_inner_small_max_sigma'] = jsat_upper_inner_small_max_sigma
-				jsat_upper_outer_small_max_sigma = np.array(jsat_upper_outer_small_max_sigma)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_upper_outer_small_max_sigma'] = jsat_upper_outer_small_max_sigma
-				jsat_upper_inner_mid_max_sigma = np.array(jsat_upper_inner_mid_max_sigma)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_upper_inner_mid_max_sigma'] = jsat_upper_inner_mid_max_sigma
-				jsat_upper_outer_mid_max_sigma = np.array(jsat_upper_outer_mid_max_sigma)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_upper_outer_mid_max_sigma'] = jsat_upper_outer_mid_max_sigma
-				jsat_upper_inner_large_max_sigma = np.array(jsat_upper_inner_large_max_sigma)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_upper_inner_large_max_sigma'] = jsat_upper_inner_large_max_sigma
-				jsat_upper_outer_large_max_sigma = np.array(jsat_upper_outer_large_max_sigma)
-				full_saved_file_dict_FAST['multi_instrument']['jsat_upper_outer_large_max_sigma'] = jsat_upper_outer_large_max_sigma
-			else:	# old method without Peter Ryan functions
-
-				for probe_size,probe_type in [[9.69975e-06,'small'],[1.35553e-05,'mid'],[4.56942e-05,'large']]:
-					try:
-						data_s10 = lp_data.s10_lower_data.jsat[:,lp_data.s10_lower_data.physical_area==probe_size]
-					except:
-						data_s10 = lp_data.s10_lower_data.jsat_tile[:,lp_data.s10_lower_data.physical_area==probe_size]
-					time_orig_s10 = lp_data.s10_lower_data.time
-					s_orig_s10 = lp_data.s10_lower_data.s[lp_data.s10_lower_data.physical_area==probe_size]
-					r_orig_s10 = lp_data.s10_lower_data.r[lp_data.s10_lower_data.physical_area==probe_size]
-					tiles_covered_s10 = lp_data.s10_lower_data.tiles_covered
-					try:
-						data_s4 = lp_data.s4_lower_data.jsat[:,lp_data.s4_lower_data.physical_area==probe_size]
-					except:
-						data_s4 = lp_data.s4_lower_data.jsat_tile[:,lp_data.s4_lower_data.physical_area==probe_size]
-					time_orig_s4 = lp_data.s4_lower_data.time
-					s_orig_s4 = lp_data.s4_lower_data.s[lp_data.s4_lower_data.physical_area==probe_size]
-					r_orig_s4 = lp_data.s4_lower_data.r[lp_data.s4_lower_data.physical_area==probe_size]
-					coordinate = np.concatenate([r_orig_s4,r_orig_s10])
-					jsat = np.concatenate([data_s4.T,data_s10.T]).T
-					tiles_covered_s4 = lp_data.s10_lower_data.tiles_covered
-					inner_max = []
-					outer_max = []
-					for i_time,time in enumerate(time_orig_s10):
-						i_efit_time = np.abs(efit_reconstruction.time-time).argmin()
-						mid_strike_point = np.mean(efit_reconstruction.strikepointR[i_efit_time][:2])
-						inner_max.append(np.nanmax(np.concatenate([[0],jsat[i_time][coordinate<=mid_strike_point]])))
-						outer_max.append(np.nanmax(np.concatenate([[0],jsat[i_time][coordinate>mid_strike_point]])))
-					if probe_type=='small':
-						jsat_lower_inner_small_max = np.array(inner_max)	#central column
-						jsat_lower_outer_small_max = np.array(outer_max)	#central column
-					elif probe_type=='mid':
-						jsat_lower_inner_mid_max = np.array(inner_max)
-						jsat_lower_outer_mid_max = np.array(outer_max)
-					elif probe_type=='large':
-						jsat_lower_inner_large_max = np.array(inner_max)
-						jsat_lower_outer_large_max = np.array(outer_max)
-
-
-				for probe_size,probe_type in [[9.69975e-06,'small'],[1.35553e-05,'mid'],[4.56942e-05,'large']]:
-					try:
-						data_s10 = lp_data.s10_upper_data.jsat[:,lp_data.s10_upper_data.physical_area==probe_size]
-					except:
-						data_s10 = lp_data.s10_upper_data.jsat_tile[:,lp_data.s10_upper_data.physical_area==probe_size]
-					time_orig_s10 = lp_data.s10_upper_data.time
-					s_orig_s10 = lp_data.s10_upper_data.s[lp_data.s10_upper_data.physical_area==probe_size]
-					r_orig_s10 = lp_data.s10_upper_data.r[lp_data.s10_upper_data.physical_area==probe_size]
-					tiles_covered_s10 = lp_data.s10_upper_data.tiles_covered
-					try:
-						data_s4 = lp_data.s4_upper_data.jsat[:,lp_data.s4_upper_data.physical_area==probe_size]
-					except:
-						data_s4 = lp_data.s4_upper_data.jsat_tile[:,lp_data.s4_upper_data.physical_area==probe_size]
-					time_orig_s4 = lp_data.s4_upper_data.time
-					s_orig_s4 = lp_data.s4_upper_data.s[lp_data.s4_upper_data.physical_area==probe_size]
-					r_orig_s4 = lp_data.s4_upper_data.r[lp_data.s4_upper_data.physical_area==probe_size]
-					coordinate = np.concatenate([r_orig_s4,r_orig_s10])
-					jsat = np.concatenate([data_s4.T,data_s10.T]).T
-					tiles_covered_s4 = lp_data.s10_upper_data.tiles_covered
-					inner_max = []
-					outer_max = []
-					for i_time,time in enumerate(time_orig_s10):
-						i_efit_time = np.abs(efit_reconstruction.time-time).argmin()
-						mid_strike_point = np.mean(efit_reconstruction.strikepointR[i_efit_time][:2])
-						inner_max.append(np.nanmax(np.concatenate([[0],jsat[i_time][coordinate<=mid_strike_point]])))
-						outer_max.append(np.nanmax(np.concatenate([[0],jsat[i_time][coordinate>mid_strike_point]])))
-					if probe_type=='small':
-						jsat_upper_inner_small_max = np.array(inner_max)
-						jsat_upper_outer_small_max = np.array(outer_max)
-					elif probe_type=='mid':
-						jsat_upper_inner_mid_max = np.array(inner_max)
-						jsat_upper_outer_mid_max = np.array(outer_max)
-					elif probe_type=='large':
-						jsat_upper_inner_large_max = np.array(inner_max)	# T5
-						jsat_upper_outer_large_max = np.array(outer_max)	# T5
-				# time,r = np.meshgrid(time_orig_s4,coordinate)
-				# plt.figure(figsize=(10,10))
-				# plt.pcolor(r,time,jsat.T,norm=LogNorm())#,vmin=np.nanmax(data)*1e-3)
-				# plt.colorbar().set_label('jsat')
-				# for __i in range(np.shape(efit_reconstruction.strikepointR)[1]):
-				# 	plt.plot(efit_reconstruction.strikepointR[:,__i],efit_reconstruction.time,'--r')
-				# plt.grid()
-				# plt.xlim(left=0.5)
-				# plt.ylabel('time [s]')
-				# plt.xlabel('R [m]')
-				# # plt.title(str(shot)+'\n'+str(tiles_covered))
-				# plt.pause(0.01)
-				jsat_time = cp.deepcopy(time_orig_s10)
-				jsat_read = True
-
-			full_saved_file_dict_FAST['multi_instrument']['jsat_time'] = jsat_time
-			jsat_lower_inner_small_max = np.array(jsat_lower_inner_small_max)
-			full_saved_file_dict_FAST['multi_instrument']['jsat_lower_inner_small_max'] = jsat_lower_inner_small_max
-			jsat_lower_outer_small_max = np.array(jsat_lower_outer_small_max)
-			full_saved_file_dict_FAST['multi_instrument']['jsat_lower_outer_small_max'] = jsat_lower_outer_small_max
-			jsat_lower_inner_mid_max = np.array(jsat_lower_inner_mid_max)
-			full_saved_file_dict_FAST['multi_instrument']['jsat_lower_inner_mid_max'] = jsat_lower_inner_mid_max
-			jsat_lower_outer_mid_max = np.array(jsat_lower_outer_mid_max)
-			full_saved_file_dict_FAST['multi_instrument']['jsat_lower_outer_mid_max'] = jsat_lower_outer_mid_max
-			jsat_lower_inner_large_max = np.array(jsat_lower_inner_large_max)
-			full_saved_file_dict_FAST['multi_instrument']['jsat_lower_inner_large_max'] = jsat_lower_inner_large_max
-			jsat_lower_outer_large_max = np.array(jsat_lower_outer_large_max)
-			full_saved_file_dict_FAST['multi_instrument']['jsat_lower_outer_large_max'] = jsat_lower_outer_large_max
-			jsat_upper_inner_small_max = np.array(jsat_upper_inner_small_max)
-			full_saved_file_dict_FAST['multi_instrument']['jsat_upper_inner_small_max'] = jsat_upper_inner_small_max
-			jsat_upper_outer_small_max = np.array(jsat_upper_outer_small_max)
-			full_saved_file_dict_FAST['multi_instrument']['jsat_upper_outer_small_max'] = jsat_upper_outer_small_max
-			jsat_upper_inner_mid_max = np.array(jsat_upper_inner_mid_max)
-			full_saved_file_dict_FAST['multi_instrument']['jsat_upper_inner_mid_max'] = jsat_upper_inner_mid_max
-			jsat_upper_outer_mid_max = np.array(jsat_upper_outer_mid_max)
-			full_saved_file_dict_FAST['multi_instrument']['jsat_upper_outer_mid_max'] = jsat_upper_outer_mid_max
-			jsat_upper_inner_large_max = np.array(jsat_upper_inner_large_max)
-			full_saved_file_dict_FAST['multi_instrument']['jsat_upper_inner_large_max'] = jsat_upper_inner_large_max
-			jsat_upper_outer_large_max = np.array(jsat_upper_outer_large_max)
-			full_saved_file_dict_FAST['multi_instrument']['jsat_upper_outer_large_max'] = jsat_upper_outer_large_max
-			if lambda_q_determination:
-				# full_saved_file_dict_FAST['multi_instrument']['LP_lambdaq_time'] = np.array(LP_lambdaq_time)
-				full_saved_file_dict_FAST['multi_instrument']['lambda_q_10_lower'] = np.array(lambda_q_10_lower)
-				full_saved_file_dict_FAST['multi_instrument']['lambda_q_10_lower_sigma'] = np.array(lambda_q_10_lower_sigma)
-				full_saved_file_dict_FAST['multi_instrument']['lambda_q_4_lower'] = np.array(lambda_q_4_lower)
-				full_saved_file_dict_FAST['multi_instrument']['lambda_q_4_lower_sigma'] = np.array(lambda_q_4_lower_sigma)
-				full_saved_file_dict_FAST['multi_instrument']['lambda_q_4_upper'] = np.array(lambda_q_4_upper)
-				full_saved_file_dict_FAST['multi_instrument']['lambda_q_4_upper_sigma'] = np.array(lambda_q_4_upper_sigma)
-				full_saved_file_dict_FAST['multi_instrument']['lambda_q_10_upper'] = np.array(lambda_q_10_upper)
-				full_saved_file_dict_FAST['multi_instrument']['lambda_q_10_upper_sigma'] = np.array(lambda_q_10_upper_sigma)
-			print('marker LP done')
-		except Exception as e:
-			logging.exception('with error: ' + str(e))
+		else:
 			jsat_read = False
 			lambda_q_determination = False
 			print('LP skipped')
+
+
 
 		from mastu_exhaust_analysis.read_efit import read_epm
 		fdir = coleval.uda_transfer(shotnumber,'epm')
@@ -1458,31 +1685,31 @@ def temp_function(full_saved_file_dict_FAST):
 		P_loss_transp = P_heat_transp-dWdt
 		energy_confinement_time_transp = stored_energy/P_loss_transp	# s
 		energy_confinement_time_transp[energy_confinement_time_transp<0] = np.nan
-		full_saved_file_dict_FAST['multi_instrument']['BEAMPOWER_time'] = time_full_binned_crop
-		full_saved_file_dict_FAST['multi_instrument']['SW_BEAMPOWER'] = SW_BEAMPOWER
-		full_saved_file_dict_FAST['multi_instrument']['SS_BEAMPOWER'] = SS_BEAMPOWER
-		full_saved_file_dict_FAST['multi_instrument']['ss_absorption'] = ss_absorption
-		full_saved_file_dict_FAST['multi_instrument']['sw_absorption'] = sw_absorption
-		full_saved_file_dict_FAST['multi_instrument']['stored_energy'] = stored_energy
-		full_saved_file_dict_FAST['multi_instrument']['power_balance_pohm'] = output_pohm
-		full_saved_file_dict_FAST['multi_instrument']['power_balance_pdw_dt'] = dWdt
-		full_saved_file_dict_FAST['multi_instrument']['P_heat'] = P_heat
-		full_saved_file_dict_FAST['multi_instrument']['P_loss'] = P_loss
-		full_saved_file_dict_FAST['multi_instrument']['energy_confinement_time'] = energy_confinement_time
-		full_saved_file_dict_FAST['multi_instrument']['energy_confinement_time_transp'] = energy_confinement_time_transp
+		multi_instrument_dict_pass['BEAMPOWER_time'] = time_full_binned_crop
+		multi_instrument_dict_pass['SW_BEAMPOWER'] = SW_BEAMPOWER
+		multi_instrument_dict_pass['SS_BEAMPOWER'] = SS_BEAMPOWER
+		multi_instrument_dict_pass['ss_absorption'] = ss_absorption
+		multi_instrument_dict_pass['sw_absorption'] = sw_absorption
+		multi_instrument_dict_pass['stored_energy'] = stored_energy
+		multi_instrument_dict_pass['power_balance_pohm'] = output_pohm
+		multi_instrument_dict_pass['power_balance_pdw_dt'] = dWdt
+		multi_instrument_dict_pass['P_heat'] = P_heat
+		multi_instrument_dict_pass['P_loss'] = P_loss
+		multi_instrument_dict_pass['energy_confinement_time'] = energy_confinement_time
+		multi_instrument_dict_pass['energy_confinement_time_transp'] = energy_confinement_time_transp
 		kappa = efit_data['kappa']
 		kappa = scipy.signal.savgol_filter(kappa, window_size, poly_order)
 		kappa = np.interp(time_full_binned_crop,efit_data['t'],kappa,right=0.,left=0.)
-		full_saved_file_dict_FAST['multi_instrument']['kappa'] = kappa
+		multi_instrument_dict_pass['kappa'] = kappa
 		major_R = efit_reconstruction.mag_axis_r
 		major_R = np.interp(time_full_binned_crop,efit_reconstruction.time,major_R,right=0.,left=0.)	# m
-		full_saved_file_dict_FAST['multi_instrument']['major_R'] = major_R
+		multi_instrument_dict_pass['major_R'] = major_R
 		minor_radius = efit_data['minor_radius']
 		minor_radius = scipy.signal.savgol_filter(minor_radius, window_size, poly_order)
 		minor_radius = np.interp(time_full_binned_crop,efit_data['t'],minor_radius,right=0.,left=0.)	# m
-		full_saved_file_dict_FAST['multi_instrument']['minor_radius'] = minor_radius
+		multi_instrument_dict_pass['minor_radius'] = minor_radius
 		plasma_current = np.interp(time_full_binned_crop,efit_reconstruction.time,efit_reconstruction.cpasma)	# A
-		full_saved_file_dict_FAST['multi_instrument']['plasma_current'] = plasma_current
+		multi_instrument_dict_pass['plasma_current'] = plasma_current
 		try:
 			data = client.get('/EPM/OUTPUT/GLOBALPARAMETERS/BPHIRMAG',laser_to_analyse[-9:-4])	# Toroidal magnetic field at magnetic axis
 			toroidal_field_good = True
@@ -1495,32 +1722,32 @@ def temp_function(full_saved_file_dict_FAST):
 		toroidal_field = -np.interp(efit_data['t'],data.time.data,data.data,right=0.,left=0.)	# T
 		toroidal_field = scipy.signal.savgol_filter(toroidal_field, window_size, poly_order)
 		toroidal_field = np.interp(time_full_binned_crop,efit_data['t'],toroidal_field,right=0.,left=0.)
-		full_saved_file_dict_FAST['multi_instrument']['toroidal_field'] = toroidal_field
-		full_saved_file_dict_FAST['multi_instrument']['toroidal_field_good'] = toroidal_field_good
+		multi_instrument_dict_pass['toroidal_field'] = toroidal_field
+		multi_instrument_dict_pass['toroidal_field_good'] = toroidal_field_good
 
 		vert_displacement = np.interp(time_full_binned_crop,efit_reconstruction.time,efit_reconstruction.mag_axis_z,right=0.,left=0.)
-		full_saved_file_dict_FAST['multi_instrument']['vert_displacement'] = vert_displacement
+		multi_instrument_dict_pass['vert_displacement'] = vert_displacement
 		radius_outer_separatrix = np.interp(time_full_binned_crop,efit_data['t'],efit_data['rmidplaneOut'],right=0.,left=0.)
-		full_saved_file_dict_FAST['multi_instrument']['radius_outer_separatrix'] = radius_outer_separatrix
+		multi_instrument_dict_pass['radius_outer_separatrix'] = radius_outer_separatrix
 		radius_inner_separatrix = np.interp(time_full_binned_crop,efit_data['t'],efit_data['rmidplaneIn'],right=0.,left=0.)
-		full_saved_file_dict_FAST['multi_instrument']['radius_inner_separatrix'] = radius_inner_separatrix
+		multi_instrument_dict_pass['radius_inner_separatrix'] = radius_inner_separatrix
 
 		if not density_data_missing:
 			energy_confinement_time_98y2 = 0.0562 * ((plasma_current*1e-6)**0.93) * ((toroidal_field*1)**0.15) * ((ne_bar*1e-19)**0.41) * ((P_loss*1e-6)**-0.69) * ((major_R*1e0)**1.97) * (((minor_radius/major_R)*1e0)**0.58)  * ((kappa*1e0)**0.78) * ((2*1e0)**0.19)
-			full_saved_file_dict_FAST['multi_instrument']['energy_confinement_time_98y2'] = energy_confinement_time_98y2
+			multi_instrument_dict_pass['energy_confinement_time_98y2'] = energy_confinement_time_98y2
 			energy_confinement_time_97P = 0.037 * ((plasma_current*1e-6)**0.74) * ((toroidal_field*1)**0.2) * ((ne_bar*1e-19)**0.24) * ((P_loss*1e-6)**-0.75) * ((major_R*1e0)**1.69) * (((minor_radius/major_R)*1e0)**0.31)  * ((kappa*1e0)**0.67) * ((2*1e0)**0.26)
-			full_saved_file_dict_FAST['multi_instrument']['energy_confinement_time_97P'] = energy_confinement_time_97P
+			multi_instrument_dict_pass['energy_confinement_time_97P'] = energy_confinement_time_97P
 			energy_confinement_time_HST = 0.066 * ((plasma_current*1e-6)**0.53) * ((toroidal_field*1)**1.05) * ((ne_bar*1e-19)**0.65) * ((P_heat*1e-6)**-0.58) * ((major_R*1e0)**2.66) * ((kappa*1e0)**0.78)
-			full_saved_file_dict_FAST['multi_instrument']['energy_confinement_time_HST'] = energy_confinement_time_HST
+			multi_instrument_dict_pass['energy_confinement_time_HST'] = energy_confinement_time_HST
 			energy_confinement_time_LST = 0.153 * ((plasma_current*1e-6)**1.01) * ((toroidal_field*1)**0.7) * ((ne_bar*1e-19)**-0.07) * ((P_loss*1e-6)**-0.37)
-			full_saved_file_dict_FAST['multi_instrument']['energy_confinement_time_LST'] = energy_confinement_time_LST
+			multi_instrument_dict_pass['energy_confinement_time_LST'] = energy_confinement_time_LST
 
 
 		data = client.get('/XIM/DA/HM10/T',laser_to_analyse[-9:-4])
 		Dalpha = data.data
 		Dalpha_time = data.time.data
-		full_saved_file_dict_FAST['multi_instrument']['Dalpha'] = Dalpha
-		full_saved_file_dict_FAST['multi_instrument']['Dalpha_time'] = Dalpha_time
+		multi_instrument_dict_pass['Dalpha'] = Dalpha
+		multi_instrument_dict_pass['Dalpha_time'] = Dalpha_time
 
 		from mastu_exhaust_analysis.read_efit import read_epm
 		fdir = coleval.uda_transfer(shotnumber,'epm')
@@ -1748,31 +1975,31 @@ def temp_function(full_saved_file_dict_FAST):
 			nu_EFIT_spatial_uncertainty = np.array(nu_EFIT_spatial_uncertainty)
 			tu_EFIT_smoothing_spatial_uncertainty = np.array(tu_EFIT_smoothing_spatial_uncertainty)
 			nu_EFIT_smoothing_spatial_uncertainty = np.array(nu_EFIT_smoothing_spatial_uncertainty)
-			full_saved_file_dict_FAST['multi_instrument']['tu_cowley'] = tu_cowley
-			full_saved_file_dict_FAST['multi_instrument']['tu_labombard'] = tu_labombard
-			full_saved_file_dict_FAST['multi_instrument']['tu_stangeby'] = tu_stangeby
-			full_saved_file_dict_FAST['multi_instrument']['nu_cowley'] = nu_cowley
-			full_saved_file_dict_FAST['multi_instrument']['nu_labombard'] = nu_labombard
-			full_saved_file_dict_FAST['multi_instrument']['nu_stangeby'] = nu_stangeby
-			full_saved_file_dict_FAST['multi_instrument']['nu_mean'] = nu_mean
-			full_saved_file_dict_FAST['multi_instrument']['tu_EFIT'] = tu_EFIT
-			full_saved_file_dict_FAST['multi_instrument']['nu_EFIT'] = nu_EFIT
-			full_saved_file_dict_FAST['multi_instrument']['tu_EFIT_smoothing'] = tu_EFIT_smoothing
-			full_saved_file_dict_FAST['multi_instrument']['nu_EFIT_smoothing'] = nu_EFIT_smoothing
-			full_saved_file_dict_FAST['multi_instrument']['tu_EFIT_spatial_uncertainty'] = tu_EFIT_spatial_uncertainty
-			full_saved_file_dict_FAST['multi_instrument']['nu_EFIT_spatial_uncertainty'] = nu_EFIT_spatial_uncertainty
-			full_saved_file_dict_FAST['multi_instrument']['tu_EFIT_smoothing_spatial_uncertainty'] = tu_EFIT_smoothing_spatial_uncertainty
-			full_saved_file_dict_FAST['multi_instrument']['nu_EFIT_smoothing_spatial_uncertainty'] = nu_EFIT_smoothing_spatial_uncertainty
+			multi_instrument_dict_pass['tu_cowley'] = tu_cowley
+			multi_instrument_dict_pass['tu_labombard'] = tu_labombard
+			multi_instrument_dict_pass['tu_stangeby'] = tu_stangeby
+			multi_instrument_dict_pass['nu_cowley'] = nu_cowley
+			multi_instrument_dict_pass['nu_labombard'] = nu_labombard
+			multi_instrument_dict_pass['nu_stangeby'] = nu_stangeby
+			multi_instrument_dict_pass['nu_mean'] = nu_mean
+			multi_instrument_dict_pass['tu_EFIT'] = tu_EFIT
+			multi_instrument_dict_pass['nu_EFIT'] = nu_EFIT
+			multi_instrument_dict_pass['tu_EFIT_smoothing'] = tu_EFIT_smoothing
+			multi_instrument_dict_pass['nu_EFIT_smoothing'] = nu_EFIT_smoothing
+			multi_instrument_dict_pass['tu_EFIT_spatial_uncertainty'] = tu_EFIT_spatial_uncertainty
+			multi_instrument_dict_pass['nu_EFIT_spatial_uncertainty'] = nu_EFIT_spatial_uncertainty
+			multi_instrument_dict_pass['tu_EFIT_smoothing_spatial_uncertainty'] = tu_EFIT_smoothing_spatial_uncertainty
+			multi_instrument_dict_pass['nu_EFIT_smoothing_spatial_uncertainty'] = nu_EFIT_smoothing_spatial_uncertainty
 			pu_cowley = nu_cowley*tu_cowley*11604*1.380649E-23
-			full_saved_file_dict_FAST['multi_instrument']['pu_cowley'] = pu_cowley
+			multi_instrument_dict_pass['pu_cowley'] = pu_cowley
 			pu_labombard = nu_labombard*tu_labombard*11604*1.380649E-23
-			full_saved_file_dict_FAST['multi_instrument']['pu_labombard'] = pu_labombard
+			multi_instrument_dict_pass['pu_labombard'] = pu_labombard
 			pu_stangeby = nu_stangeby*tu_stangeby*11604*1.380649E-23
-			full_saved_file_dict_FAST['multi_instrument']['pu_stangeby'] = pu_stangeby
+			multi_instrument_dict_pass['pu_stangeby'] = pu_stangeby
 			pu_EFIT_smoothing = nu_EFIT_smoothing*tu_EFIT_smoothing*11604*1.380649E-23
-			full_saved_file_dict_FAST['multi_instrument']['pu_EFIT'] = pu_EFIT_smoothing
+			multi_instrument_dict_pass['pu_EFIT'] = pu_EFIT_smoothing
 			pu_EFIT = nu_EFIT*tu_EFIT*11604*1.380649E-23
-			full_saved_file_dict_FAST['multi_instrument']['pu_EFIT'] = pu_EFIT
+			multi_instrument_dict_pass['pu_EFIT'] = pu_EFIT
 
 			try:
 				time_uncertainty_down = full_saved_file_dict_FAST['first_pass']['time_uncertainty_down']
@@ -1792,15 +2019,15 @@ def temp_function(full_saved_file_dict_FAST):
 			nu_EFIT_time_uncertainty = calc_time_related_uncertainty(time_full_binned_crop,nu_EFIT,time_uncertainty_down,time_uncertainty_up)
 			tu_EFIT_smoothing_time_uncertainty = calc_time_related_uncertainty(time_full_binned_crop,tu_EFIT_smoothing,time_uncertainty_down,time_uncertainty_up)
 			nu_EFIT_smoothing_time_uncertainty = calc_time_related_uncertainty(time_full_binned_crop,nu_EFIT_smoothing,time_uncertainty_down,time_uncertainty_up)
-			full_saved_file_dict_FAST['multi_instrument']['tu_EFIT_time_uncertainty'] = tu_EFIT_time_uncertainty
-			full_saved_file_dict_FAST['multi_instrument']['nu_EFIT_time_uncertainty'] = nu_EFIT_time_uncertainty
-			full_saved_file_dict_FAST['multi_instrument']['tu_EFIT_smoothing_time_uncertainty'] = tu_EFIT_smoothing_time_uncertainty
-			full_saved_file_dict_FAST['multi_instrument']['nu_EFIT_smoothing_time_uncertainty'] = nu_EFIT_smoothing_time_uncertainty
+			multi_instrument_dict_pass['tu_EFIT_time_uncertainty'] = tu_EFIT_time_uncertainty
+			multi_instrument_dict_pass['nu_EFIT_time_uncertainty'] = nu_EFIT_time_uncertainty
+			multi_instrument_dict_pass['tu_EFIT_smoothing_time_uncertainty'] = tu_EFIT_smoothing_time_uncertainty
+			multi_instrument_dict_pass['nu_EFIT_smoothing_time_uncertainty'] = nu_EFIT_smoothing_time_uncertainty
 			TS_reading_success = True
 
 		except Exception as e:
 			print('TS reading failed')
-			logging.exception('with error: ' + str(e))
+			logging.exception('with error (TS section): ' + str(e))
 			TS_reading_success = False
 
 		# plt.figure()
@@ -1879,15 +2106,15 @@ def temp_function(full_saved_file_dict_FAST):
 						plt.xlim(left=0,right=1)
 						plt.grid()
 				except Exception as e:
-					logging.exception('with error: ' + str(e))
+					logging.exception('with error (MARFE ID section): ' + str(e))
 					new_MARFE_marker = np.ones_like(gna26.time.data)
 				new_MARFE_marker_time = gna26.time.data
 			except:
 				new_MARFE_marker = np.zeros_like(time_full_binned_crop)
 				new_MARFE_marker_time = time_full_binned_crop
 				pass
-			full_saved_file_dict_FAST['multi_instrument']['new_MARFE_marker'] = new_MARFE_marker
-			full_saved_file_dict_FAST['multi_instrument']['new_MARFE_marker_time'] = new_MARFE_marker_time
+			multi_instrument_dict_pass['new_MARFE_marker'] = new_MARFE_marker
+			multi_instrument_dict_pass['new_MARFE_marker_time'] = new_MARFE_marker_time
 
 
 			def peak_prominences_as_area(data,peaks):
@@ -2020,18 +2247,18 @@ def temp_function(full_saved_file_dict_FAST):
 				fit_bolo = [1,0,np.inf]
 				time_start_MARFE = np.inf
 
-			full_saved_file_dict_FAST['multi_instrument']['time_res_bolo'] = time_res_bolo
-			full_saved_file_dict_FAST['multi_instrument']['CH25'] = CH25
-			full_saved_file_dict_FAST['multi_instrument']['CH26'] = CH26
-			full_saved_file_dict_FAST['multi_instrument']['CH27'] = CH27
-			full_saved_file_dict_FAST['multi_instrument']['CH27_angle'] = CH27_angle
-			full_saved_file_dict_FAST['multi_instrument']['CH27_start_of_raise'] = CH27_start_of_raise
-			full_saved_file_dict_FAST['multi_instrument']['CH27_end_of_raise'] = CH27_end_of_raise
-			full_saved_file_dict_FAST['multi_instrument']['CH8_9'] = CH8_9
-			full_saved_file_dict_FAST['multi_instrument']['CH8_9_angle'] = CH8_9_angle
-			full_saved_file_dict_FAST['multi_instrument']['CH8_9_start_of_raise'] = CH8_9_start_of_raise
-			full_saved_file_dict_FAST['multi_instrument']['CH8_9_end_of_raise'] = CH8_9_end_of_raise
-			full_saved_file_dict_FAST['multi_instrument']['CH27_26'] = CH27_26
+			multi_instrument_dict_pass['time_res_bolo'] = time_res_bolo
+			multi_instrument_dict_pass['CH25'] = CH25
+			multi_instrument_dict_pass['CH26'] = CH26
+			multi_instrument_dict_pass['CH27'] = CH27
+			multi_instrument_dict_pass['CH27_angle'] = CH27_angle
+			multi_instrument_dict_pass['CH27_start_of_raise'] = CH27_start_of_raise
+			multi_instrument_dict_pass['CH27_end_of_raise'] = CH27_end_of_raise
+			multi_instrument_dict_pass['CH8_9'] = CH8_9
+			multi_instrument_dict_pass['CH8_9_angle'] = CH8_9_angle
+			multi_instrument_dict_pass['CH8_9_start_of_raise'] = CH8_9_start_of_raise
+			multi_instrument_dict_pass['CH8_9_end_of_raise'] = CH8_9_end_of_raise
+			multi_instrument_dict_pass['CH27_26'] = CH27_26
 
 
 			# plt.figure()
@@ -2067,8 +2294,8 @@ def temp_function(full_saved_file_dict_FAST):
 		except:
 			time_start_MARFE = None
 			time_active_MARFE = None
-		full_saved_file_dict_FAST['multi_instrument']['time_start_MARFE'] = time_start_MARFE
-		full_saved_file_dict_FAST['multi_instrument']['time_active_MARFE'] = time_active_MARFE
+		multi_instrument_dict_pass['time_start_MARFE'] = time_start_MARFE
+		multi_instrument_dict_pass['time_active_MARFE'] = time_active_MARFE
 
 		# I add the triangularity and other measures
 		client=pyuda.Client()
@@ -2081,7 +2308,7 @@ def temp_function(full_saved_file_dict_FAST):
 			temp = client.get('/epm/output/separatrixgeometry/lowertriangularity', shotnumber)
 			if len(np.shape(temp.data))!=1 and pass_number>0:
 				try:
-					lowertriangularity = full_saved_file_dict_FAST['multi_instrument']['lowertriangularity']
+					lowertriangularity = multi_instrument_dict_pass['lowertriangularity']
 				except:
 					lowertriangularity = np.ones_like(betan.time.data)*np.nan
 			else:
@@ -2089,17 +2316,17 @@ def temp_function(full_saved_file_dict_FAST):
 			temp = client.get('/epm/output/separatrixgeometry/uppertriangularity', shotnumber)
 			if len(np.shape(temp.data))!=1 and pass_number>0:	# I have to do this stupid thing because sometimes a txnmxn array is read instead of a t one
 				try:
-					uppertriangularity = full_saved_file_dict_FAST['multi_instrument']['uppertriangularity']
+					uppertriangularity = multi_instrument_dict_pass['uppertriangularity']
 				except:
 					uppertriangularity = np.ones_like(betan.time.data)*np.nan
 			else:
 				uppertriangularity = cp.deepcopy(temp.data)
 			adimensional_quantities_ok = True
-			full_saved_file_dict_FAST['multi_instrument']['lowertriangularity'] = lowertriangularity
-			full_saved_file_dict_FAST['multi_instrument']['uppertriangularity'] = uppertriangularity
-			full_saved_file_dict_FAST['multi_instrument']['elongation'] = elongation
-			full_saved_file_dict_FAST['multi_instrument']['betan'] = betan
-			full_saved_file_dict_FAST['multi_instrument']['betan_time'] = betan_time
+			multi_instrument_dict_pass['lowertriangularity'] = lowertriangularity
+			multi_instrument_dict_pass['uppertriangularity'] = uppertriangularity
+			multi_instrument_dict_pass['elongation'] = elongation
+			multi_instrument_dict_pass['betan'] = betan
+			multi_instrument_dict_pass['betan_time'] = betan_time
 		except:
 			adimensional_quantities_ok = False
 			pass
@@ -2130,18 +2357,18 @@ def temp_function(full_saved_file_dict_FAST):
 		cos_poloidal_angle_ISP = cos_poloidal_angle_vertical_interp(np.array([cos_poloidal_angle_vertical_time,ISP_s]).T)
 		poloidal_angle_ISP = np.degrees(np.arccos(cos_poloidal_angle_ISP))
 
-		full_saved_file_dict_FAST['multi_instrument']['full_leg_angle'] = full_leg_angle
-		full_saved_file_dict_FAST['multi_instrument']['cos_poloidal_angle_ISP'] = cos_poloidal_angle_ISP
-		full_saved_file_dict_FAST['multi_instrument']['poloidal_angle_ISP'] = poloidal_angle_ISP
+		multi_instrument_dict_pass['full_leg_angle'] = full_leg_angle
+		multi_instrument_dict_pass['cos_poloidal_angle_ISP'] = cos_poloidal_angle_ISP
+		multi_instrument_dict_pass['poloidal_angle_ISP'] = poloidal_angle_ISP
 
 		print('start plotting 1')
 		fig, ax = plt.subplots( 2,1,figsize=(12, 12), squeeze=False,sharex=True)
 		if pass_number ==0:
-			fig.suptitle('shot '+str(shotnumber)+', '+scenario+' , '+experiment+'\nfirst pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
+			fig.suptitle('shot '+str(shotnumber)+', '+scenario+' , '+experiment+'\nfirst pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm' +'\n'+day)
 		elif pass_number ==1:
-			fig.suptitle('shot '+str(shotnumber)+', '+scenario+' , '+experiment+'\nsecond pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
+			fig.suptitle('shot '+str(shotnumber)+', '+scenario+' , '+experiment+'\nsecond pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm' +'\n'+day)
 		elif pass_number ==2:
-			fig.suptitle('shot '+str(shotnumber)+', '+scenario+' , '+experiment+'\nthird pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
+			fig.suptitle('shot '+str(shotnumber)+', '+scenario+' , '+experiment+'\nthird pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm' +'\n'+day)
 		for i in [0,1]:
 			ax[i,0].plot(time_full_binned_crop,inner_L_poloidal_peak_all/inner_L_poloidal_x_point_all,'r-',label='inner_L_poloidal_peak/x-point')
 			ax[i,0].plot(time_full_binned_crop,inner_L_poloidal_baricentre_all/inner_L_poloidal_x_point_all,'r--',label='inner_L_poloidal_baricentre/x-point')
@@ -2181,12 +2408,12 @@ def temp_function(full_saved_file_dict_FAST):
 				# P_heat = output_pohm + SS_BEAMPOWER + SW_BEAMPOWER
 				# P_loss = P_heat-dWdt
 				# energy_confinement_time = stored_energy/P_loss	# s
-				# full_saved_file_dict_FAST['multi_instrument']['SW_BEAMPOWER'] = SW_BEAMPOWER
-				# full_saved_file_dict_FAST['multi_instrument']['SS_BEAMPOWER'] = SS_BEAMPOWER
-				# full_saved_file_dict_FAST['multi_instrument']['stored_energy'] = stored_energy
-				# full_saved_file_dict_FAST['multi_instrument']['P_heat'] = P_heat
-				# full_saved_file_dict_FAST['multi_instrument']['P_loss'] = P_loss
-				# full_saved_file_dict_FAST['multi_instrument']['energy_confinement_time'] = energy_confinement_time
+				# multi_instrument_dict_pass['SW_BEAMPOWER'] = SW_BEAMPOWER
+				# multi_instrument_dict_pass['SS_BEAMPOWER'] = SS_BEAMPOWER
+				# multi_instrument_dict_pass['stored_energy'] = stored_energy
+				# multi_instrument_dict_pass['P_heat'] = P_heat
+				# multi_instrument_dict_pass['P_loss'] = P_loss
+				# multi_instrument_dict_pass['energy_confinement_time'] = energy_confinement_time
 
 				ax[i,0].plot(power_balance['t'],(output_pohm + SW_BEAMPOWER + SS_BEAMPOWER-dWdt)/np.nanmax(output_pohm + SW_BEAMPOWER + SS_BEAMPOWER-dWdt),label='relative input power (ohm+beams-dW/dt)',color=color[5])
 				ax[i,0].plot(power_balance['t'],(output_pohm-dWdt)/np.nanmax(output_pohm + SW_BEAMPOWER + SS_BEAMPOWER-dWdt),'--',label='relative ohmic input power (ohm-dW/dt)',color=color[5])
@@ -2195,10 +2422,10 @@ def temp_function(full_saved_file_dict_FAST):
 				temp = np.nansum(np.nansum(temp,axis=-1)*inversion_R*(np.mean(np.diff(inversion_R))**2)*2*np.pi,axis=1)
 				# plt.plot(time_full_binned_crop,temp/np.nanmax(temp),label='relative total power')
 				ax[i,0].plot(time_full_binned_crop,2*temp/input_power,label='total IRVB power (Z<0 x2)/input power',color=color[2])
-				full_saved_file_dict_FAST['multi_instrument']['power_balance_t'] = power_balance['t']
-				full_saved_file_dict_FAST['multi_instrument']['power_balance_pohm'] = output_pohm
-				full_saved_file_dict_FAST['multi_instrument']['power_balance_pdw_dt'] = dWdt
-				full_saved_file_dict_FAST['multi_instrument']['power_balance_prad_core'] = power_balance['prad_core']
+				multi_instrument_dict_pass['power_balance_t'] = power_balance['t']
+				multi_instrument_dict_pass['power_balance_pohm'] = output_pohm
+				multi_instrument_dict_pass['power_balance_pdw_dt'] = dWdt
+				multi_instrument_dict_pass['power_balance_prad_core'] = power_balance['prad_core']
 			except:
 				input_power = output_pohm + SW_BEAMPOWER + SS_BEAMPOWER-dWdt
 
@@ -2239,11 +2466,11 @@ def temp_function(full_saved_file_dict_FAST):
 		# plot of absolute quantities
 		fig, ax = plt.subplots( 14,1,figsize=(12, 50), squeeze=False,sharex=True)
 		if pass_number ==0:
-			fig.suptitle('shot '+str(shotnumber)+', '+scenario+' , '+experiment+'\nfirst pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
+			fig.suptitle('shot '+str(shotnumber)+', '+scenario+' , '+experiment+'\nfirst pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm' +'\n'+day)
 		elif pass_number ==1:
-			fig.suptitle('shot '+str(shotnumber)+', '+scenario+' , '+experiment+'\nsecond pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
+			fig.suptitle('shot '+str(shotnumber)+', '+scenario+' , '+experiment+'\nsecond pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm' +'\n'+day)
 		elif pass_number ==2:
-			fig.suptitle('shot '+str(shotnumber)+', '+scenario+' , '+experiment+'\nthird pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm')
+			fig.suptitle('shot '+str(shotnumber)+', '+scenario+' , '+experiment+'\nthird pass, '+binning_type+', grid resolution '+str(grid_resolution)+'cm' +'\n'+day)
 		ax[0,0].axhline(y=1,color='k',linestyle='--')
 		ax[0,0].plot(time_full_binned_crop,inner_L_poloidal_midplane_all/inner_L_poloidal_x_point_all,'m--')
 		ax[0,0].plot(time_full_binned_crop,inner_L_poloidal_peak_all/inner_L_poloidal_x_point_all,'r-',label=r'$IN_{peak}$')
@@ -2410,8 +2637,8 @@ def temp_function(full_saved_file_dict_FAST):
 				Psol = np.interp(time_full_binned_crop,power_balance['t'],1e-6*power_balance['psol'])
 				lambda_q_Lmode_scaling = 0.012 * Psol**0.14 * (1e-6*plasma_current)**-0.36 * (1e-19*nu_EFIT_smoothing)**0.65 * bpol**-0.09
 				lambda_q_Hmode_scaling = 0.0045 * Psol**0.11 * (1e-6*plasma_current)**-1.05 * (1e-19*nu_EFIT_smoothing)**0.76 * bpol**-0.07
-				full_saved_file_dict_FAST['multi_instrument']['lambda_q_Lmode_scaling'] = np.array(lambda_q_Lmode_scaling)
-				full_saved_file_dict_FAST['multi_instrument']['lambda_q_Hmode_scaling'] = np.array(lambda_q_Hmode_scaling)
+				multi_instrument_dict_pass['lambda_q_Lmode_scaling'] = np.array(lambda_q_Lmode_scaling)
+				multi_instrument_dict_pass['lambda_q_Hmode_scaling'] = np.array(lambda_q_Hmode_scaling)
 				handles, labels = ax2.get_legend_handles_labels()
 				handles1, labels1 = ax[2,0].get_legend_handles_labels()
 				handles = handles +handles1
@@ -2730,10 +2957,12 @@ def temp_function(full_saved_file_dict_FAST):
 			exec(open("/home/ffederic/work/analysis_scripts/scripts/get_thermography.py").read())
 		except Exception as e:
 			print('reading thermography FAILED ' + laser_to_analyse+' pass '+str(pass_number))
-			logging.exception('with error: ' + str(e))
+			logging.exception('with error (thermography section): ' + str(e))
 
 
-		full_saved_file_dict_FAST['multi_instrument']['timestamp_end_process'] = str(datetime.fromtimestamp(tm.time()))
+		multi_instrument_dict_pass['timestamp_end_process'] = str(datetime.fromtimestamp(tm.time()))
+		multi_instrument_dict['pass_number_'+str(pass_number)] = multi_instrument_dict_pass
+		full_saved_file_dict_FAST['multi_instrument'] = multi_instrument_dict
 
 
 		if pass_number ==0:
@@ -2744,11 +2973,11 @@ def temp_function(full_saved_file_dict_FAST):
 			full_saved_file_dict_FAST['third_pass']['inverted_dict'] = inverted_dict
 		# np.savez_compressed(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
 		coleval.savez_protocol4(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
-		print('DONE '+laser_to_analyse)
+		print('DONE '+laser_to_analyse+' pass '+str(pass_number))
 
 	except Exception as e:
 		print('FAILED ' + laser_to_analyse)
-		logging.exception('with error: ' + str(e))
+		logging.exception('with error (whole post analysis): ' + str(e))
 	return full_saved_file_dict_FAST
 
 full_saved_file_dict_FAST = temp_function(full_saved_file_dict_FAST)

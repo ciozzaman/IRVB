@@ -1,5 +1,8 @@
 # 2025/07-31 code to read the IR data and plot / safe relevant data
 
+
+ISP_range = 0.05	# m
+OSP_range = 0.2	# m
 import netCDF4
 try:
 	additional_file = netCDF4.Dataset('/common/uda-scratch/ssilburn/ris_for_fabio/ais0'+str(shotnumber)+'.nc')
@@ -21,6 +24,7 @@ if additional_file!= None:
 		except:
 			temp_add = additional_file['ais'][surface]['heatflux'][:].data
 			temp_add_s = additional_file['ais'][surface]['s_global'][:].data
+		print(surface+' read')
 		temp_add_surfaces.append(surface)
 		time_additional_file =additional_file['ais'][surface]['t'][:].data
 
@@ -157,17 +161,17 @@ gs = gridspec.GridSpec(5, 1, height_ratios=[2, 1, 1, 1, 1], hspace=0.4)
 ax1 = fig.add_subplot(gs[0:2, 0], sharex=None)
 pcm = ax1.pcolormesh(X, Y, temp, shading='auto', cmap='rainbow',norm=LogNorm(vmax =np.nanmax(temp)/2, vmin=np.nanmax(temp)*1e-4))
 ax1.plot(time_normal,LISP_s,'--k',alpha=0.2)
-ax1.plot(time_normal,LISP_s+0.1,'--k',alpha=0.1)
-ax1.plot(time_normal,LISP_s-0.1,'--k',alpha=0.1)
+ax1.plot(time_normal,LISP_s+ISP_range,'--k',alpha=0.1)
+ax1.plot(time_normal,LISP_s-ISP_range,'--k',alpha=0.1)
 ax1.plot(time_normal,UISP_s,'--k',alpha=0.2)
-ax1.plot(time_normal,UISP_s+0.1,'--k',alpha=0.1)
-ax1.plot(time_normal,UISP_s-0.1,'--k',alpha=0.1)
+ax1.plot(time_normal,UISP_s+ISP_range,'--k',alpha=0.1)
+ax1.plot(time_normal,UISP_s-ISP_range,'--k',alpha=0.1)
 ax1.plot(time_normal,LOSP_s,'--k',alpha=0.2)
-ax1.plot(time_normal,LOSP_s+0.15,'--k',alpha=0.1)
-ax1.plot(time_normal,LOSP_s-0.15,'--k',alpha=0.1)
+ax1.plot(time_normal,LOSP_s+OSP_range,'--k',alpha=0.1)
+ax1.plot(time_normal,LOSP_s-OSP_range,'--k',alpha=0.1)
 ax1.plot(time_normal,UOSP_s,'--k',alpha=0.2)
-ax1.plot(time_normal,UOSP_s+0.15,'--k',alpha=0.1)
-ax1.plot(time_normal,UOSP_s-0.15,'--k',alpha=0.1)
+ax1.plot(time_normal,UOSP_s+OSP_range,'--k',alpha=0.1)
+ax1.plot(time_normal,UOSP_s-OSP_range,'--k',alpha=0.1)
 fig.colorbar(pcm,ax=ax1,label='heat flux [MW/m2]')
 # ax1.set_xlabel('time [s]')
 ax1.set_ylabel('s coord [m]')
@@ -185,23 +189,23 @@ for i in range(len(time_normal)):
 		heatflux_LOSP.append(0)
 		heatflux_UOSP.append(0)
 	else:
-		select=np.abs(temp_s-LISP_s[i])<0.1
+		select=np.abs(temp_s-LISP_s[i])<ISP_range
 		# heatflux_LISP.append(np.trapz(temp[i][select]-np.interp(temp_s[select],temp_s[select][[0,-1]],temp[i][select][[0,-1]]),x=temp_s[select]))
 		try:
 			heatflux_LISP.append(np.trapz(temp[i][select]-np.interp(temp_s[select],temp_s[select][[0,-1]], [np.median(temp[i][np.abs(temp_s-(temp_s[select][0]-0.02))<0.03]),np.median(temp[i][np.abs(temp_s-(temp_s[select][-1]+0.02))<0.03])]),x=temp_s[select]))
 		except:
 			heatflux_LISP.append(0)
-		select=np.abs(temp_s-UISP_s[i])<0.1
+		select=np.abs(temp_s-UISP_s[i])<ISP_range
 		try:
 			heatflux_UISP.append(np.trapz(temp[i][select]-np.interp(temp_s[select],temp_s[select][[0,-1]], [np.median(temp[i][np.abs(temp_s-(temp_s[select][0]-0.02))<0.03]),np.median(temp[i][np.abs(temp_s-(temp_s[select][-1]+0.02))<0.03])]),x=temp_s[select]))
 		except:
 			heatflux_UISP.append(0)
-		select=np.abs(temp_s-LOSP_s[i])<0.2
+		select=np.abs(temp_s-LOSP_s[i])<OSP_range
 		try:
 			heatflux_LOSP.append(np.trapz(temp[i][select]-np.interp(temp_s[select],temp_s[select][[0,-1]], [np.median(temp[i][np.abs(temp_s-(temp_s[select][0]-0.02))<0.03]),np.median(temp[i][np.abs(temp_s-(temp_s[select][-1]+0.02))<0.03])]),x=temp_s[select]))
 		except:
 			heatflux_LOSP.append(0)
-		select=np.abs(temp_s-UOSP_s[i])<0.2
+		select=np.abs(temp_s-UOSP_s[i])<OSP_range
 		try:
 			heatflux_UOSP.append(np.trapz(temp[i][select]-np.interp(temp_s[select],temp_s[select][[0,-1]], [np.median(temp[i][np.abs(temp_s-(temp_s[select][0]-0.02))<0.03]),np.median(temp[i][np.abs(temp_s-(temp_s[select][-1]+0.02))<0.03])]),x=temp_s[select]))
 		except:
@@ -213,18 +217,18 @@ heatflux_LOSP = np.array(heatflux_LOSP)
 heatflux_UOSP = np.array(heatflux_UOSP)
 
 ax2 = fig.add_subplot(gs[2, 0], sharex=None)
-ax2.plot(time_normal,heatflux_LISP,label='LISP(+/-10cm)')
-ax2.plot(time_normal,heatflux_UISP,label='UISP(+/-10cm)')
+ax2.plot(time_normal,heatflux_LISP,label='LISP(+/-'+str(ISP_range*100)+'cm)')
+ax2.plot(time_normal,heatflux_UISP,label='UISP(+/-'+str(ISP_range*100)+'cm)')
 ax2.legend(loc='best', fontsize='xx-small')
 ax2.grid()
 ax2.set_ylim(top = max(median_filter(heatflux_LISP,size=[20]).max(),median_filter(heatflux_UISP,size=[20]).max()),bottom=min(median_filter(heatflux_LISP,size=[20]).min(),median_filter(heatflux_UISP,size=[20]).min()))
 ax2.tick_params(labelbottom=False)  # Hide x labels
 ax2.set_ylabel('heat flux [MW]', fontsize='xx-small')
-
+ax2.set_ylim([None, 0.01])
 
 ax3 = fig.add_subplot(gs[3, 0], sharex=ax2)
-ax3.plot(time_normal,heatflux_LOSP,label='LOSP(+/-20cm)')
-ax3.plot(time_normal,heatflux_UOSP,label='UOSP(+/-20cm)')
+ax3.plot(time_normal,heatflux_LOSP,label='LOSP(+/-'+str(OSP_range*100)+'cm)')
+ax3.plot(time_normal,heatflux_UOSP,label='UOSP(+/-'+str(OSP_range*100)+'cm)')
 ax3.legend(loc='best', fontsize='xx-small')
 ax3.grid()
 ax3.set_ylim(top = max(median_filter(heatflux_LOSP,size=[20]).max(),median_filter(heatflux_UOSP,size=[20]).max()),bottom=min(median_filter(heatflux_LOSP,size=[20]).min(),median_filter(heatflux_UOSP,size=[20]).min()))
@@ -244,14 +248,14 @@ plt.savefig(filename_root+filename_root_add+'_IR_data.png')
 plt.close()
 
 
-full_saved_file_dict_FAST['multi_instrument']['thermography'] = dict([])
-full_saved_file_dict_FAST['multi_instrument']['thermography']['raw data'] = temp
-full_saved_file_dict_FAST['multi_instrument']['thermography']['global s'] = temp_s
-full_saved_file_dict_FAST['multi_instrument']['thermography']['time'] = time_normal
-full_saved_file_dict_FAST['multi_instrument']['thermography']['heat flux LISP'] = heatflux_LISP
-full_saved_file_dict_FAST['multi_instrument']['thermography']['heat flux UISP'] = heatflux_UISP
-full_saved_file_dict_FAST['multi_instrument']['thermography']['heat flux LOSP'] = heatflux_LOSP
-full_saved_file_dict_FAST['multi_instrument']['thermography']['heat flux UOSP'] = heatflux_UOSP
+multi_instrument_dict['thermography'] = dict([])
+multi_instrument_dict['thermography']['raw data'] = temp
+multi_instrument_dict['thermography']['global s'] = temp_s
+multi_instrument_dict['thermography']['time'] = time_normal
+multi_instrument_dict['thermography']['heat flux LISP'] = heatflux_LISP
+multi_instrument_dict['thermography']['heat flux UISP'] = heatflux_UISP
+multi_instrument_dict['thermography']['heat flux LOSP'] = heatflux_LOSP
+multi_instrument_dict['thermography']['heat flux UOSP'] = heatflux_UOSP
 print('thermography analysis done')
 
 ###

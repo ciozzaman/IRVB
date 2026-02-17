@@ -271,21 +271,40 @@ divertor_poloidal_arrival = []
 divertor_poloidal_arrival.append([1.32,-2.066,90])
 divertor_poloidal_arrival.append([1.27,-2.066,90])
 divertor_poloidal_arrival.append([1.213,-2.066,90])
-divertor_poloidal_arrival.append([1.115,-2.066,90])
-divertor_poloidal_arrival.append([1.09,-2.066,90])
+divertor_poloidal_arrival.append([1.15,-2.066,90])
+divertor_poloidal_arrival.append([1.08,-2.06,90])
 divertor_poloidal_arrival.append([1.05,-2.03,90])
 divertor_poloidal_arrival.append([1.02,-2,90])
 divertor_poloidal_arrival.append([0.985,-1.965,90])
 divertor_poloidal_arrival.append([0.95,-1.93,90])
-divertor_poloidal_arrival.append([0.92,-1.9,90])
+divertor_poloidal_arrival.append([0.915,-1.9,90])
 divertor_poloidal_arrival.append([0.88,-1.86,90])
-divertor_poloidal_arrival.append([0.855,-1.82,90])
+divertor_poloidal_arrival.append([0.845,-1.825,90])
 divertor_poloidal_arrival.append([0.8,-1.78,90])
 divertor_poloidal_arrival.append([0.76,-1.74,90])
-divertor_poloidal_arrival.append([0.715,-1.69,90])
+divertor_poloidal_arrival.append([0.715,-1.695,90])
 divertor_poloidal_arrival.append([0.665,-1.645,90])
 divertor_poloidal_arrival = np.array(divertor_poloidal_arrival)
 
+divertor_SXDL_wall_common_point = [1.112,-1.571,90]	# r,z,teta	01 to 16
+divertor_SXDL_wall_arrival = []
+divertor_SXDL_wall_arrival.append([1.685,-1.725,90])	# CH1
+divertor_SXDL_wall_arrival.append([1.625,-1.785,90])
+divertor_SXDL_wall_arrival.append([1.57,-1.845,90])
+divertor_SXDL_wall_arrival.append([1.515,-1.895,90])
+divertor_SXDL_wall_arrival.append([1.455,-1.96,90])
+divertor_SXDL_wall_arrival.append([1.4,-2.01,90])
+divertor_SXDL_wall_arrival.append([1.345,-2.066,90])
+divertor_SXDL_wall_arrival.append([1.27,-2.066,90])
+divertor_SXDL_wall_arrival.append([1.175,-2.066,90])
+divertor_SXDL_wall_arrival.append([1.11,-2.066,90])
+divertor_SXDL_wall_arrival.append([1.045,-2.025,90])
+divertor_SXDL_wall_arrival.append([0.995,-1.975,90])
+divertor_SXDL_wall_arrival.append([0.94,-1.92,90])
+divertor_SXDL_wall_arrival.append([0.9,-1.88,90])
+divertor_SXDL_wall_arrival.append([0.865,-1.845,90])
+divertor_SXDL_wall_arrival.append([0.83,-1.81,90])	# CH16
+divertor_SXDL_wall_arrival = np.array(divertor_SXDL_wall_arrival)
 
 # Points to show the silouette of the inner surfaces
 
@@ -474,7 +493,10 @@ def interpolate_points(coords, max_distance):
 
 # 20/02/2025 I use this methid now that uses a standardized way of getting the geometry
 from mast.geom.geomTileSurfaceUtils import get_nearest_s_coordinates_mastu,get_s_coords_tables_mastu	# added 19/02/2025
+client=pyuda.Client()
 limiter=client.geometry("/limiter/efit",50000, no_cal=False)
+# reset_connection(client)
+del client
 limiter_r=limiter.data.R
 limiter_z=limiter.data.Z
 s_lookup=get_s_coords_tables_mastu(limiter_r, limiter_z, ds=1e-4, debug_plot=False)

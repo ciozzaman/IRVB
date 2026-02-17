@@ -86,7 +86,7 @@ if True:
 	else:
 		pass
 
-	if False:
+	if True:
 		shot_list = get_data(path+log_file_name)
 		beams_prefix = '/XNB/'
 		beams_affix = '/BEAMPOWER'
@@ -106,6 +106,8 @@ if True:
 						if np.nanmax(np.abs(data.data))>0:
 							shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'SW beam').argmax()] = 'Y'
 							print(shot+'SW')
+						else:
+							shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'SW beam').argmax()] = 'N'
 					except:
 						pass
 					try:
@@ -114,6 +116,8 @@ if True:
 						if np.nanmax(np.abs(data.data))>0:
 							shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'SS beam').argmax()] = 'Y'
 							print(shot+'SS')
+						else:
+							shot_list['Sheet1'][i][(np.array(shot_list['Sheet1'][0]) == 'SS beam').argmax()] = 'N'
 					except:
 						pass
 				except:
@@ -129,7 +133,7 @@ if True:
 		pass
 
 	# what is the largest inner leg angle we did before?
-	if True:
+	if False:
 		try:
 			shot_list = get_data(path+log_file_name)
 			for i in range(1,len(shot_list['Sheet1'])):

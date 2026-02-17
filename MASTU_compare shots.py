@@ -133,10 +133,10 @@ if False:	# plot for the papers
 			pass
 
 
-	if True:
+	if False:
 		# to_do = ['46866','46769','46702']	# CD plot for PSI 2024
 		to_do = ['45468','45469','45470','45473']	# CD plot for thesis
-	if True:
+	if False:
 		to_do = []
 		to_do.extend(['47950','47973','48144'])#,'48328'])	# CD MU01/02/03
 		# to_do = ['47950','47973','48144','48328','48335']	# CD MU02/03
@@ -146,7 +146,7 @@ if False:	# plot for the papers
 		# to_do = ['46866','46864','46867','46868','46889','46891'\
 		# ,'46903','48336','49408','49283']	# beam heated L-modes MU02/03
 		# to_do = ['46864','46866','46867','46868','46891','48336']	# beam heated L-modes MU02/03
-	if False:
+	if True:
 		to_do = ['46866','46867','46868','46891','48336','49408']	# beam heated L-modes MU02/03
 		type = 'beamLmode'
 	if False:
@@ -1959,7 +1959,6 @@ if False:	# 14/03/2025 code to read MWI inversions and plot it for the IRVB scie
 
 	import numpy as np
 	# from mwi_dp.cam.multi_cam import multi_cam
-	import numpy as np
 	import os
 	import matplotlib.pyplot as plt
 	#from MWI_inversions_reader import MWI_inversions_reader
@@ -1971,14 +1970,33 @@ if False:	# 14/03/2025 code to read MWI inversions and plot it for the IRVB scie
 	plot_time = 0.8
 	# shot = 49408
 	# shot = 48336
-	shot = 48144
-	atomic_line = "Fulcher"
+	# shot = 48144
+	shot = 52493
+	# shot = 52355
+	# shot = 50825
+	if False:
+		atomic_line = "Fulcher"
+		atomic_line_ID = "3"
+	else:
+		atomic_line = "Dalpha"
+		atomic_line_ID = "1"
+
 	save_dir = "/home/xg0421/Desktop/Work/For/Fabio/"
 
-	file_name = save_dir+"eps_sh" + str(shot) + "_multicam_" + atomic_line + "_grid_grid_MAST-U_MU03_lower_10mm_SART_v1_MC_10mm.npz"
-	grid_file = save_dir+"grid_MAST-U_MU03_lower_10mm.mat"
+	if shot > 50714:	# MU04
+		try:
+			file_name = save_dir+'MU04/'+str(shot)+'/'+"eps_sh" + str(shot) + "_cam" + atomic_line_ID + "_GM_GM_XPI_MU04_calcam_10mm_lower_half_cam" + atomic_line_ID + "_SART_v5_10mm.npz"
+			data_stored = np.load(file_name,allow_pickle=True)
+		except:
+			file_name = save_dir+'MU04/'+str(shot)+'/'+"eps_sh" + str(shot) + "_cam" + atomic_line_ID + "_GM_GM_XPI_MU04_calcam_10mm_lower_half_cam" + atomic_line_ID + "_SART_v1_10mm.npz"
+			data_stored = np.load(file_name,allow_pickle=True)
+		grid_file = save_dir+'MU04/'+"grid_MAST-U_MU04_lower_10mm.mat"
+	else:
+		file_name = save_dir+"eps_sh" + str(shot) + "_multicam_" + atomic_line + "_grid_grid_MAST-U_MU03_lower_10mm_SART_v1_MC_10mm.npz"
+		grid_file = save_dir+"grid_MAST-U_MU03_lower_10mm.mat"
+		data_stored = np.load(file_name,allow_pickle=True)
 
-	data_stored = np.load(file_name,allow_pickle=True)
+	# data_stored = np.load(file_name,allow_pickle=True)
 	eps = data_stored['eps']
 	time_eps = data_stored['time_eps']
 
@@ -2090,9 +2108,9 @@ if False:	# 14/03/2025 code to read MWI inversions and plot it for the IRVB scie
 			if np.nanmin((R_cells-inversion_R[i])**2 + (Z_cells-inversion_Z[j])**2 > resolution*1.1):
 				selection[j,i] = np.nan
 
-	client=pyuda.Client()
+	# client=pyuda.Client()
 	exec(open("/home/ffederic/work/analysis_scripts/scripts/python_library/collect_and_eval/collect_and_eval/MASTU_structure.py").read())
-	del client
+	# del client
 	from shapely.geometry.polygon import Polygon
 	polygon = Polygon(FULL_MASTU_CORE_GRID_POLYGON)
 	select_good_voxels = coleval.select_cells_inside_polygon(polygon,[inversion_R,inversion_Z]).T
@@ -2111,46 +2129,424 @@ if False:	# 14/03/2025 code to read MWI inversions and plot it for the IRVB scie
 	# additional_each_frame_label_description = ['reg coeff=']*len(inverted_data)
 	# additional_each_frame_label_number = np.array(regolarisation_coeff_all)
 	ani,trash = coleval.movie_from_data_radial_profile(np.array([np.flip(np.transpose(np.log(normal_emissivity_array),(0,2,1)),axis=2)]), 1/(np.mean(np.diff(time_eps))), extent = extent, image_extent=image_extent,timesteps=time_eps,integration=1,barlabel='Log Emissivity [ph/m3 sec s]',xlabel='R [m]', ylabel='Z [m]', prelude='shot ' + laser_to_analyse[-9:-4]+' '+scenario+'\n'+file_name[-8:-4] + '_MWI_' + file_name[-60:-53] +'\n' ,overlay_structure=True,include_EFIT=True,EFIT_output_requested=True,efit_reconstruction=efit_reconstruction,pulse_ID=laser_to_analyse[-9:-4],overlay_x_point=True,overlay_mag_axis=True,overlay_strike_points=True,overlay_separatrix=True,extvmin=np.nanmax(np.log(normal_emissivity_array),axis=(1,2))-8)#,extvmax=4e4)
-	ani.save(filename_root[:filename_root.find('pass')]+'Fulcher'+'_FAST_reconstruct_emissivity_bayesian'+'.mp4', fps=5*(1/(np.mean(np.diff(time_eps))))/383, writer='ffmpeg',codec='mpeg4')
+	ani.save(filename_root[:filename_root.find('pass')]+atomic_line+'_FAST_reconstruct_emissivity_bayesian'+'.mp4', fps=5*(1/(np.mean(np.diff(time_eps))))/383, writer='ffmpeg',codec='mpeg4')
 	plt.close()
 
 
 	normal_emissivity_array_no_artefact = cp.deepcopy(normal_emissivity_array)
 	normal_emissivity_array_no_artefact[:,:,inversion_Z>-0.7] = np.nan
 	outer_separatrix_local_emissivity,outer_separatrix_local_power,outer_separatrix_length_interval_all,outer_separatrix_length_all,data_length,leg_resolution = coleval.track_outer_leg_radiation(normal_emissivity_array_no_artefact,inversion_R,inversion_Z,time_eps,efit_reconstruction,type='separatrix',leg_resolution=0.05)
-	outer_separatrix_peak_location,outer_separatrix_midpoint_location = coleval.plot_leg_radiation_tracking(normal_emissivity_array_no_artefact,inversion_R,inversion_Z,time_eps,outer_separatrix_local_emissivity,outer_separatrix_local_power,outer_separatrix_length_interval_all,outer_separatrix_length_all,data_length,leg_resolution,filename_root[:filename_root.find('pass')]+'Fulcher','',laser_to_analyse,scenario,which_leg='outer',x_point_L_pol=np.interp(time_eps,time_full_binned_crop,outer_L_poloidal_x_point_all),which_part_of_separatrix='separatrix')
+	outer_separatrix_peak_location,outer_separatrix_midpoint_location = coleval.plot_leg_radiation_tracking(normal_emissivity_array_no_artefact,inversion_R,inversion_Z,time_eps,outer_separatrix_local_emissivity,outer_separatrix_local_power,outer_separatrix_length_interval_all,outer_separatrix_length_all,data_length,leg_resolution,filename_root[:filename_root.find('pass')]+atomic_line,'',laser_to_analyse,scenario,which_leg='outer',x_point_L_pol=np.interp(time_eps,time_full_binned_crop,outer_L_poloidal_x_point_all),which_part_of_separatrix='separatrix')
 
 	inner_separatrix_local_emissivity,inner_separatrix_local_power,inner_separatrix_length_interval_all,inner_separatrix_length_all,data_length,leg_resolution = coleval.track_inner_leg_radiation(normal_emissivity_array_no_artefact,inversion_R,inversion_Z,time_eps,efit_reconstruction,type='separatrix',leg_resolution=0.05)
-	inner_separatrix_peak_location,inner_separatrix_midpoint_location = coleval.plot_leg_radiation_tracking(normal_emissivity_array_no_artefact,inversion_R,inversion_Z,time_eps,inner_separatrix_local_emissivity,inner_separatrix_local_power,inner_separatrix_length_interval_all,inner_separatrix_length_all,data_length,leg_resolution,filename_root[:filename_root.find('pass')]+'Fulcher','',laser_to_analyse,scenario,which_leg='inner',x_point_L_pol=np.interp(time_eps,time_full_binned_crop,inner_L_poloidal_x_point_all),which_part_of_separatrix='separatrix')
+	inner_separatrix_peak_location,inner_separatrix_midpoint_location = coleval.plot_leg_radiation_tracking(normal_emissivity_array_no_artefact,inversion_R,inversion_Z,time_eps,inner_separatrix_local_emissivity,inner_separatrix_local_power,inner_separatrix_length_interval_all,inner_separatrix_length_all,data_length,leg_resolution,filename_root[:filename_root.find('pass')]+atomic_line,'',laser_to_analyse,scenario,which_leg='inner',x_point_L_pol=np.interp(time_eps,time_full_binned_crop,inner_L_poloidal_x_point_all),which_part_of_separatrix='separatrix')
 
 
 	full_saved_file_dict_FAST = np.load(laser_to_analyse[:-4]+'_FAST'+'.npz')
 	full_saved_file_dict_FAST.allow_pickle=True
 	full_saved_file_dict_FAST = dict(full_saved_file_dict_FAST)
 	full_saved_file_dict_FAST['multi_instrument'] = full_saved_file_dict_FAST['multi_instrument'].all()
-	full_saved_file_dict_FAST['multi_instrument']['MWI'] = dict([])
-	full_saved_file_dict_FAST['multi_instrument']['MWI']['file_name'] = file_name
-	full_saved_file_dict_FAST['multi_instrument']['MWI']['grid_file'] = grid_file
-	full_saved_file_dict_FAST['multi_instrument']['MWI']['time_eps'] = time_eps
-	full_saved_file_dict_FAST['multi_instrument']['MWI']['inversion_R'] = inversion_R
-	full_saved_file_dict_FAST['multi_instrument']['MWI']['inversion_Z'] = inversion_Z
-	full_saved_file_dict_FAST['multi_instrument']['MWI']['normal_emissivity_array'] = normal_emissivity_array
+	dict_label='MWI_'+atomic_line
+	full_saved_file_dict_FAST['multi_instrument'][dict_label] = dict([])
+	full_saved_file_dict_FAST['multi_instrument'][dict_label]['file_name'] = file_name
+	full_saved_file_dict_FAST['multi_instrument'][dict_label]['grid_file'] = grid_file
+	full_saved_file_dict_FAST['multi_instrument'][dict_label]['time_eps'] = time_eps
+	full_saved_file_dict_FAST['multi_instrument'][dict_label]['inversion_R'] = inversion_R
+	full_saved_file_dict_FAST['multi_instrument'][dict_label]['inversion_Z'] = inversion_Z
+	full_saved_file_dict_FAST['multi_instrument'][dict_label]['normal_emissivity_array'] = normal_emissivity_array
 
-	full_saved_file_dict_FAST['multi_instrument']['MWI']['outer_separatrix_local_power'] = outer_separatrix_local_power
-	full_saved_file_dict_FAST['multi_instrument']['MWI']['outer_separatrix_local_emissivity'] = outer_separatrix_local_emissivity
-	full_saved_file_dict_FAST['multi_instrument']['MWI']['outer_separatrix_length_all'] = outer_separatrix_length_all
-	full_saved_file_dict_FAST['multi_instrument']['MWI']['outer_separatrix_length_interval_all'] = outer_separatrix_length_interval_all
-	full_saved_file_dict_FAST['multi_instrument']['MWI']['outer_separatrix_peak_location'] = outer_separatrix_peak_location
-	full_saved_file_dict_FAST['multi_instrument']['MWI']['outer_separatrix_midpoint_location'] = outer_separatrix_midpoint_location
+	full_saved_file_dict_FAST['multi_instrument'][dict_label]['outer_separatrix_local_power'] = outer_separatrix_local_power
+	full_saved_file_dict_FAST['multi_instrument'][dict_label]['outer_separatrix_local_emissivity'] = outer_separatrix_local_emissivity
+	full_saved_file_dict_FAST['multi_instrument'][dict_label]['outer_separatrix_length_all'] = outer_separatrix_length_all
+	full_saved_file_dict_FAST['multi_instrument'][dict_label]['outer_separatrix_length_interval_all'] = outer_separatrix_length_interval_all
+	full_saved_file_dict_FAST['multi_instrument'][dict_label]['outer_separatrix_peak_location'] = outer_separatrix_peak_location
+	full_saved_file_dict_FAST['multi_instrument'][dict_label]['outer_separatrix_midpoint_location'] = outer_separatrix_midpoint_location
 
-	full_saved_file_dict_FAST['multi_instrument']['MWI']['inner_separatrix_local_power'] = inner_separatrix_local_power
-	full_saved_file_dict_FAST['multi_instrument']['MWI']['inner_separatrix_local_emissivity'] = inner_separatrix_local_emissivity
-	full_saved_file_dict_FAST['multi_instrument']['MWI']['inner_separatrix_length_all'] = inner_separatrix_length_all
-	full_saved_file_dict_FAST['multi_instrument']['MWI']['inner_separatrix_length_interval_all'] = inner_separatrix_length_interval_all
-	full_saved_file_dict_FAST['multi_instrument']['MWI']['inner_separatrix_peak_location'] = inner_separatrix_peak_location
-	full_saved_file_dict_FAST['multi_instrument']['MWI']['inner_separatrix_midpoint_location'] = inner_separatrix_midpoint_location
+	full_saved_file_dict_FAST['multi_instrument'][dict_label]['inner_separatrix_local_power'] = inner_separatrix_local_power
+	full_saved_file_dict_FAST['multi_instrument'][dict_label]['inner_separatrix_local_emissivity'] = inner_separatrix_local_emissivity
+	full_saved_file_dict_FAST['multi_instrument'][dict_label]['inner_separatrix_length_all'] = inner_separatrix_length_all
+	full_saved_file_dict_FAST['multi_instrument'][dict_label]['inner_separatrix_length_interval_all'] = inner_separatrix_length_interval_all
+	full_saved_file_dict_FAST['multi_instrument'][dict_label]['inner_separatrix_peak_location'] = inner_separatrix_peak_location
+	full_saved_file_dict_FAST['multi_instrument'][dict_label]['inner_separatrix_midpoint_location'] = inner_separatrix_midpoint_location
 	coleval.savez_protocol4(laser_to_analyse[:-4]+'_FAST',**full_saved_file_dict_FAST)
 
+###
 
 
-	###
+
+# this bit is to plot different DLS stability situations
+if False:
+	from mastu_exhaust_analysis.read_efit import read_geqdsk
+	plot_1,plot_2 = 3,4
+
+	fig, (ax1, ax2) = plt.subplots(1,2, figsize=(10, 4), constrained_layout=True)  # 2 rows, 1 column
+	plt.subplots_adjust(bottom=0.2)
+
+	lpol, dls_lpol,b_xpoint,r_coord_smooth,z_coord_smooth,pol_to_par_interpolator=coleval.full_get_dls_param(52384,0.55)
+	ax1.plot(lpol,dls_lpol,label='52384')
+	ax2.plot(pol_to_par_interpolator(lpol), dls_lpol,label='52384')
+	plt.figure(plot_2)
+	plt.plot(r_coord_smooth,z_coord_smooth,label='52384')
+
+
+	for type_ in ['ISP_higher_R2','ISP_higher_R_low_espansion3','ISP_higher_R_high_espansion3']:
+		filename='/home/ffederic/work/MASTU_experiments/tedeqdsk_52384_550ms_'+type_+'.eqdsk'
+		efit_data_geqdsk = read_geqdsk(filename)
+		lpol, dls_lpol,b_xpoint,r_coord_smooth,z_coord_smooth,pol_to_par_interpolator=coleval.full_get_dls_param(5222222,0,efit_data=efit_data_geqdsk)
+		ax1.plot(lpol,dls_lpol,label=type_)
+		ax2.plot(pol_to_par_interpolator(lpol), dls_lpol,label=type_)
+		plt.figure(plot_2)
+		plt.plot(r_coord_smooth,z_coord_smooth,label=type_)
+
+	ax1.grid()
+	ax2.grid()
+	ax1.legend(loc='best', fontsize='x-small')
+	ax2.legend(loc='best', fontsize='x-small')
+	ax1.set_ylabel(r'$C_1$')
+	ax2.set_ylabel(r'$C_1$')
+	ax1.set_xlabel(r'$\hat{L_f} [m]$')
+	ax2.set_xlabel(r'$L_{//}$ [m]')
+	plt.figure(plot_2)
+	plt.grid()
+	plt.legend(loc='best', fontsize='small')
+
+
+
+
+
+	plot_1,plot_2 = 7,6
+
+	fig, (ax1, ax2) = plt.subplots(1,2, figsize=(10, 4), constrained_layout=True)  # 2 rows, 1 column
+	plt.subplots_adjust(bottom=0.2)
+
+	# for SN in [52355,52493,50923,52384]:
+	for SN in [[52355,'high ISP'],[52493,'low ISP'],[50924,'low low ISP'],[52384,'vert ISP']]:
+	# for SN in [[52355,'high ISP'],[52493,'low ISP']]:
+		lpol, dls_lpol,b_xpoint,r_coord_smooth,z_coord_smooth,pol_to_par_interpolator=coleval.full_get_dls_param(SN[0],0.55)
+		ax1.plot(lpol,dls_lpol,label=str(SN[0])+' '+SN[1])
+		ax2.plot(pol_to_par_interpolator(lpol), dls_lpol,label=str(SN[0])+' '+SN[1])
+		# print(np.max(lpol))
+		# print(pol_to_par_interpolator(np.max(lpol)))
+		# print(pol_to_par_interpolator(np.max(lpol)*0.8))
+		plt.figure(plot_2)
+		plt.plot(r_coord_smooth,z_coord_smooth,label=str(SN[0])+' '+SN[1])
+
+	ax1.grid()
+	ax2.grid()
+	ax1.legend(loc='best', fontsize='small')
+	ax2.legend(loc='best', fontsize='small')
+	ax1.set_ylabel(r'$C_1$')
+	ax2.set_ylabel(r'$C_1$')
+	ax1.set_xlabel(r'$\hat{L_f} [m]$')
+	ax2.set_xlabel(r'$L_{//}$ [m]')
+	plt.figure(plot_2)
+	plt.grid()
+
+
+
+	# name = 'IRVB-MASTU_shot-52355.ptw'
+	name = 'IRVB-MASTU_shot-52493.ptw'
+	path = '/home/ffederic/work/irvb/MAST-U/'
+	i_day,day = 0,coleval.retrive_shot_date_and_time(name[-9:-4])[0]
+	print(name)
+	print(path+day)
+
+	laser_to_analyse=path+day+'/'+name
+	pass_number = 1
+
+	full_saved_file_dict_FAST = np.load(laser_to_analyse[:-4]+'_FAST'+'.npz')
+	full_saved_file_dict_FAST.allow_pickle=True
+	full_saved_file_dict_FAST = dict(full_saved_file_dict_FAST)
+	try:
+		full_saved_file_dict_FAST['multi_instrument'] = full_saved_file_dict_FAST['multi_instrument'].all()
+	except:
+		pass
+	try:
+		full_saved_file_dict_FAST['first_pass'] = full_saved_file_dict_FAST['first_pass'].all()
+	except:
+		pass
+	try:
+		full_saved_file_dict_FAST['second_pass'] = full_saved_file_dict_FAST['second_pass'].all()
+	except:
+		pass
+	grid_resolution = 2	# cm
+	inverted_dict = full_saved_file_dict_FAST['second_pass']['inverted_dict']
+	inverted_dict_fast = full_saved_file_dict_FAST['second_pass']['inverted_dict']
+	powernoback = full_saved_file_dict_FAST['first_pass']['FAST_powernoback']
+	# time_binned = full_saved_file_dict_FAST['first_pass']['FAST_time_binned']
+	time_full_binned_crop = inverted_dict[str(grid_resolution)]['time_full_binned_crop']
+	time_full_binned_crop_fast = inverted_dict_fast[str(grid_resolution)]['time_full_binned_crop']
+	multi_instrument_dict_pass = full_saved_file_dict_FAST['multi_instrument']['pass_number_'+str(pass_number)]
+	nu_EFIT_smoothing = multi_instrument_dict_pass['nu_EFIT_smoothing']
+	nu_EFIT_smoothing_spatial_uncertainty = multi_instrument_dict_pass['nu_EFIT_smoothing_spatial_uncertainty']
+	peak_location = inverted_dict[str(grid_resolution)]['inner_leg_only_peak_location']
+	midpoint_location = inverted_dict[str(grid_resolution)]['inner_leg_only_midpoint_location']
+	inner_L_poloidal_x_point_all = inverted_dict[str(grid_resolution)]['inner_L_poloidal_x_point_all']
+	energy_confinement_time = multi_instrument_dict_pass['energy_confinement_time']
+	divertor_tot_rad_power_all = inverted_dict[str(grid_resolution)]['divertor_tot_rad_power_all']
+	divertor_tot_rad_power_sigma_all = inverted_dict[str(grid_resolution)]['divertor_tot_rad_power_sigma_all']
+	outer_leg_reliable_power_all = inverted_dict[str(grid_resolution)]['outer_leg_reliable_power_all']
+	inner_leg_reliable_power_all = inverted_dict[str(grid_resolution)]['inner_leg_reliable_power_all']
+	sxd_tot_rad_power_all = inverted_dict[str(grid_resolution)]['sxd_tot_rad_power_all']
+	x_point_tot_rad_power_all = inverted_dict[str(grid_resolution)]['x_point_tot_rad_power_all']
+
+	dict_label='MWI_'+'Dalpha'
+	time_eps = full_saved_file_dict_FAST['multi_instrument'][dict_label]['time_eps']
+	MWI_outer_separatrix_peak_location = full_saved_file_dict_FAST['multi_instrument'][dict_label]['outer_separatrix_peak_location']
+	MWI_outer_separatrix_midpoint_location = full_saved_file_dict_FAST['multi_instrument'][dict_label]['outer_separatrix_midpoint_location']
+	MWI_inner_separatrix_peak_location = full_saved_file_dict_FAST['multi_instrument'][dict_label]['inner_separatrix_peak_location']
+	MWI_inner_separatrix_midpoint_location = full_saved_file_dict_FAST['multi_instrument'][dict_label]['inner_separatrix_midpoint_location']
+
+	jsat_lower_outer_mid_integrated = multi_instrument_dict_pass['jsat_lower_outer_mid_integrated']
+	jsat_upper_outer_mid_integrated = multi_instrument_dict_pass['jsat_upper_outer_mid_integrated']
+	jsat_lower_outer_mid_integrated_sigma = multi_instrument_dict_pass['jsat_lower_outer_mid_integrated_sigma']
+	jsat_upper_outer_mid_integrated_sigma = multi_instrument_dict_pass['jsat_upper_outer_mid_integrated_sigma']
+	jsat_lower_inner_mid_integrated = multi_instrument_dict_pass['jsat_lower_inner_mid_integrated']
+	jsat_upper_inner_mid_integrated = multi_instrument_dict_pass['jsat_upper_inner_mid_integrated']
+	jsat_lower_inner_mid_integrated_sigma = multi_instrument_dict_pass['jsat_lower_inner_mid_integrated_sigma']
+	jsat_upper_inner_mid_integrated_sigma = multi_instrument_dict_pass['jsat_upper_inner_mid_integrated_sigma']
+
+	time_thermography = full_saved_file_dict_FAST['multi_instrument']['thermography']['time']
+	heatflux_LISP = full_saved_file_dict_FAST['multi_instrument']['thermography']['heat flux LISP']
+	heatflux_UISP = full_saved_file_dict_FAST['multi_instrument']['thermography']['heat flux UISP']
+	heatflux_LOSP = full_saved_file_dict_FAST['multi_instrument']['thermography']['heat flux LOSP']
+	heatflux_UOSP = full_saved_file_dict_FAST['multi_instrument']['thermography']['heat flux UOSP']
+
+	# select=np.logical_and(time_full_binned_crop<0.85,time_full_binned_crop>0.5)	# 52355
+	select=np.logical_and(time_full_binned_crop<0.78,time_full_binned_crop>0.5)	# 52493	# more than 0.78 becomes H mode
+
+	fig1, ax1 = plt.subplots( 1,2,figsize=(22, 25), squeeze=False,sharey=True)
+	# plt.figure(1)
+	ax1[0,0].plot(np.interp(time_full_binned_crop,time_full_binned_crop,nu_EFIT_smoothing)[select]*1e-19,(np.array(peak_location)/inner_L_poloidal_x_point_all)[select],'+k',alpha=1,label='peak')
+	ax1[0,0].plot(np.interp(time_full_binned_crop,time_full_binned_crop,nu_EFIT_smoothing)[select]*1e-19,(np.array(midpoint_location)[:,-1]/inner_L_poloidal_x_point_all)[select],'+b',alpha=1,label='peakx0.7')
+	ax1[0,0].plot(np.interp(time_full_binned_crop,time_full_binned_crop,nu_EFIT_smoothing)[select]*1e-19,(np.array(midpoint_location)[:,-2]/inner_L_poloidal_x_point_all)[select],'+y',alpha=1,label='peakx0.5')
+	ax1[0,0].plot(np.interp(time_full_binned_crop,time_full_binned_crop,nu_EFIT_smoothing)[select]*1e-19,(np.array(midpoint_location)[:,-3]/inner_L_poloidal_x_point_all)[select],'+r',alpha=1,label='peakx0.3')
+
+
+	select=np.logical_and(time_full_binned_crop<0.78,time_full_binned_crop>0.5)	# 52493	# more than 0.78 becomes H mode
+	plt.figure(3)
+	plt.plot(nu_EFIT_smoothing[select],jsat_lower_outer_mid_integrated[select],'+k',alpha=1,label='lower')
+	plt.plot(nu_EFIT_smoothing[select],jsat_upper_outer_mid_integrated[select],'+b',alpha=1,label='upper')
+
+
+	select=np.logical_and(time_eps<0.78,time_eps>0.5)	# 52493	# more than 0.78 becomes H mode
+	# plt.figure(2)
+	ax1[0,1].plot(np.interp(time_eps,time_full_binned_crop,nu_EFIT_smoothing)[select]*1e-19,(np.array(MWI_inner_separatrix_peak_location)/(np.interp(time_eps,time_full_binned_crop,inner_L_poloidal_x_point_all)))[select],'+k',alpha=1,label='peak')
+	ax1[0,1].plot(np.interp(time_eps,time_full_binned_crop,nu_EFIT_smoothing)[select]*1e-19,(np.array(MWI_inner_separatrix_midpoint_location)[:,-1]/(np.interp(time_eps,time_full_binned_crop,inner_L_poloidal_x_point_all)))[select],'+b',alpha=1,label='peakx0.7')
+	ax1[0,1].plot(np.interp(time_eps,time_full_binned_crop,nu_EFIT_smoothing)[select]*1e-19,(np.array(MWI_inner_separatrix_midpoint_location)[:,-2]/(np.interp(time_eps,time_full_binned_crop,inner_L_poloidal_x_point_all)))[select],'+y',alpha=1,label='peakx0.5')
+	ax1[0,1].plot(np.interp(time_eps,time_full_binned_crop,nu_EFIT_smoothing)[select]*1e-19,(np.array(MWI_inner_separatrix_midpoint_location)[:,-3]/(np.interp(time_eps,time_full_binned_crop,inner_L_poloidal_x_point_all)))[select],'+r',alpha=1,label='peakx0.3')
+	plt.subplots_adjust(wspace=0.1, hspace=0.1)
+
+
+	select=np.logical_and(time_full_binned_crop<0.78,time_full_binned_crop>0.5)	# 52493	# more than 0.78 becomes H mode
+	plt.figure(4)
+	plt.plot(np.interp(time_full_binned_crop,time_full_binned_crop,nu_EFIT_smoothing)[select]*1e-19,energy_confinement_time[select]*1e3,'+k',alpha=1,label='peak')
+
+	select=np.logical_and(time_thermography<0.78,time_thermography>0.5)	# 52493	# more than 0.78 becomes H mode
+	plt.figure(5)
+	plt.plot(np.interp(time_thermography,time_full_binned_crop,nu_EFIT_smoothing)[select]*1e-19,heatflux_LISP[select]*1e3,'+k',alpha=1,label='LISP')
+	plt.plot(np.interp(time_thermography,time_full_binned_crop,nu_EFIT_smoothing)[select]*1e-19,heatflux_UISP[select]*1e3,'+b',alpha=1,label='UISP')
+	plt.figure(6)
+	plt.plot(np.interp(time_thermography,time_full_binned_crop,nu_EFIT_smoothing)[select]*1e-19,heatflux_LOSP[select]*1e3,'+k',alpha=1,label='LOSP')
+	plt.plot(np.interp(time_thermography,time_full_binned_crop,nu_EFIT_smoothing)[select]*1e-19,heatflux_UOSP[select]*1e3,'+b',alpha=1,label='UOSP')
+
+	select=np.logical_and(time_full_binned_crop<0.78,time_full_binned_crop>0.5)	# 52493	# more than 0.78 becomes H mode
+	plt.figure(7)
+	plt.plot(nu_EFIT_smoothing[select]*1e-19,divertor_tot_rad_power_all[select]*1e-3,'+k')
+	plt.figure(8)
+	plt.plot(nu_EFIT_smoothing[select]*1e-19,(outer_leg_reliable_power_all+	sxd_tot_rad_power_all)[select]*1e-3,'+k')
+	plt.figure(9)
+	plt.plot(nu_EFIT_smoothing[select]*1e-19,inner_leg_reliable_power_all[select]*1e-3,'+k')
+	plt.figure(10)
+	plt.plot(nu_EFIT_smoothing[select]*1e-19,x_point_tot_rad_power_all[select]*1e-3,'+k')
+
+
+
+
+
+
+
+
+	# inner_L_poloidal_gap_all = inverted_dict[str(grid_resolution)]['inner_L_poloidal_gap_all']
+	# inner_L_par_pol_correlation = inverted_dict[str(grid_resolution)]['inner_L_par_pol_correlation']
+	# inner_L_par_pol_correlation_interpolator =
+	# plt.figure(3)
+	# plt.plot(np.interp(time_full_binned_crop,time_full_binned_crop_fast,nu_EFIT_smoothing)[select],(np.array(peak_location)/inner_L_poloidal_x_point_all)[select],'+k',alpha=1,label='peak')
+	# plt.plot(np.interp(time_full_binned_crop,time_full_binned_crop_fast,nu_EFIT_smoothing)[select],(np.array(midpoint_location)[:,-1]/inner_L_poloidal_x_point_all)[select],'+b',alpha=1,label='peakx0.7')
+	# plt.plot(np.interp(time_full_binned_crop,time_full_binned_crop_fast,nu_EFIT_smoothing)[select],(np.array(midpoint_location)[:,-2]/inner_L_poloidal_x_point_all)[select],'+y',alpha=1,label='peakx0.5')
+	# plt.plot(np.interp(time_full_binned_crop,time_full_binned_crop_fast,nu_EFIT_smoothing)[select],(np.array(midpoint_location)[:,-3]/inner_L_poloidal_x_point_all)[select],'+r',alpha=1,label='peakx0.3')
+
+	# time_normal = full_saved_file_dict_FAST['multi_instrument']['thermography']['time']
+	# heatflux_LISP = full_saved_file_dict_FAST['multi_instrument']['thermography']['heat flux LISP']
+	# heatflux_UISP = full_saved_file_dict_FAST['multi_instrument']['thermography']['heat flux UISP']
+	# heatflux_LOSP = full_saved_file_dict_FAST['multi_instrument']['thermography']['heat flux LOSP']
+	# heatflux_UOSP = full_saved_file_dict_FAST['multi_instrument']['thermography']['heat flux UOSP']
+	# select=np.logical_and(time_normal<0.8,time_normal>0.5)	# 52493
+	#
+	# plt.figure(2)
+	# plt.plot(time_normal[select],heatflux_LISP,'+k',alpha=1,label='LISP')
+	# plt.plot(time_normal[select],heatflux_LOSP,'+r',alpha=1,label='LOSP')
+
+
+	name = 'IRVB-MASTU_shot-52355.ptw'
+	path = '/home/ffederic/work/irvb/MAST-U/'
+	i_day,day = 0,coleval.retrive_shot_date_and_time(name[-9:-4])[0]
+	print(name)
+	print(path+day)
+
+	laser_to_analyse=path+day+'/'+name
+	pass_number = 1
+
+	full_saved_file_dict_FAST = np.load(laser_to_analyse[:-4]+'_FAST'+'.npz')
+	full_saved_file_dict_FAST.allow_pickle=True
+	full_saved_file_dict_FAST = dict(full_saved_file_dict_FAST)
+	try:
+		full_saved_file_dict_FAST['multi_instrument'] = full_saved_file_dict_FAST['multi_instrument'].all()
+	except:
+		pass
+	try:
+		full_saved_file_dict_FAST['first_pass'] = full_saved_file_dict_FAST['first_pass'].all()
+	except:
+		pass
+	try:
+		full_saved_file_dict_FAST['second_pass'] = full_saved_file_dict_FAST['second_pass'].all()
+	except:
+		pass
+	grid_resolution = 2	# cm
+	inverted_dict = full_saved_file_dict_FAST['second_pass']['inverted_dict']
+	inverted_dict_fast = full_saved_file_dict_FAST['second_pass']['inverted_dict']
+	powernoback = full_saved_file_dict_FAST['first_pass']['FAST_powernoback']
+	# time_binned = full_saved_file_dict_FAST['first_pass']['FAST_time_binned']
+	time_full_binned_crop = inverted_dict[str(grid_resolution)]['time_full_binned_crop']
+	time_full_binned_crop_fast = inverted_dict_fast[str(grid_resolution)]['time_full_binned_crop']
+	multi_instrument_dict_pass = full_saved_file_dict_FAST['multi_instrument']['pass_number_'+str(pass_number)]
+	nu_EFIT_smoothing = multi_instrument_dict_pass['nu_EFIT_smoothing']
+	nu_EFIT_smoothing_spatial_uncertainty = multi_instrument_dict_pass['nu_EFIT_smoothing_spatial_uncertainty']
+	peak_location = inverted_dict[str(grid_resolution)]['inner_leg_only_peak_location']
+	midpoint_location = inverted_dict[str(grid_resolution)]['inner_leg_only_midpoint_location']
+	inner_L_poloidal_x_point_all = inverted_dict[str(grid_resolution)]['inner_L_poloidal_x_point_all']
+	energy_confinement_time = multi_instrument_dict_pass['energy_confinement_time']
+	divertor_tot_rad_power_all = inverted_dict[str(grid_resolution)]['divertor_tot_rad_power_all']
+	divertor_tot_rad_power_sigma_all = inverted_dict[str(grid_resolution)]['divertor_tot_rad_power_sigma_all']
+	outer_leg_reliable_power_all = inverted_dict[str(grid_resolution)]['outer_leg_reliable_power_all']
+	inner_leg_reliable_power_all = inverted_dict[str(grid_resolution)]['inner_leg_reliable_power_all']
+	sxd_tot_rad_power_all = inverted_dict[str(grid_resolution)]['sxd_tot_rad_power_all']
+	x_point_tot_rad_power_all = inverted_dict[str(grid_resolution)]['x_point_tot_rad_power_all']
+
+	dict_label='MWI_'+'Dalpha'
+	time_eps = full_saved_file_dict_FAST['multi_instrument'][dict_label]['time_eps']
+	MWI_outer_separatrix_peak_location = full_saved_file_dict_FAST['multi_instrument'][dict_label]['outer_separatrix_peak_location']
+	MWI_outer_separatrix_midpoint_location = full_saved_file_dict_FAST['multi_instrument'][dict_label]['outer_separatrix_midpoint_location']
+	MWI_inner_separatrix_peak_location = full_saved_file_dict_FAST['multi_instrument'][dict_label]['inner_separatrix_peak_location']
+	MWI_inner_separatrix_midpoint_location = full_saved_file_dict_FAST['multi_instrument'][dict_label]['inner_separatrix_midpoint_location']
+
+	jsat_lower_outer_mid_integrated = multi_instrument_dict_pass['jsat_lower_outer_mid_integrated']
+	jsat_upper_outer_mid_integrated = multi_instrument_dict_pass['jsat_upper_outer_mid_integrated']
+	jsat_lower_outer_mid_integrated_sigma = multi_instrument_dict_pass['jsat_lower_outer_mid_integrated_sigma']
+	jsat_upper_outer_mid_integrated_sigma = multi_instrument_dict_pass['jsat_upper_outer_mid_integrated_sigma']
+	jsat_lower_inner_mid_integrated = multi_instrument_dict_pass['jsat_lower_inner_mid_integrated']
+	jsat_upper_inner_mid_integrated = multi_instrument_dict_pass['jsat_upper_inner_mid_integrated']
+	jsat_lower_inner_mid_integrated_sigma = multi_instrument_dict_pass['jsat_lower_inner_mid_integrated_sigma']
+	jsat_upper_inner_mid_integrated_sigma = multi_instrument_dict_pass['jsat_upper_inner_mid_integrated_sigma']
+
+	time_thermography = full_saved_file_dict_FAST['multi_instrument']['thermography']['time']
+	heatflux_LISP = full_saved_file_dict_FAST['multi_instrument']['thermography']['heat flux LISP']
+	heatflux_UISP = full_saved_file_dict_FAST['multi_instrument']['thermography']['heat flux UISP']
+	heatflux_LOSP = full_saved_file_dict_FAST['multi_instrument']['thermography']['heat flux LOSP']
+	heatflux_UOSP = full_saved_file_dict_FAST['multi_instrument']['thermography']['heat flux UOSP']
+
+
+	select=np.logical_and(time_full_binned_crop_fast<0.85,time_full_binned_crop_fast>0.5)	# 52355
+
+	# plt.figure(1)
+	ax1[0,0].plot(np.interp(time_full_binned_crop_fast,time_full_binned_crop,nu_EFIT_smoothing)[select]*1e-19,(np.array(peak_location)/inner_L_poloidal_x_point_all)[select],'xk',alpha=1,label='peak')
+	ax1[0,0].plot(np.interp(time_full_binned_crop_fast,time_full_binned_crop,nu_EFIT_smoothing)[select]*1e-19,(np.array(midpoint_location)[:,-1]/inner_L_poloidal_x_point_all)[select],'xb',alpha=1,label='peakx0.7')
+	ax1[0,0].plot(np.interp(time_full_binned_crop_fast,time_full_binned_crop,nu_EFIT_smoothing)[select]*1e-19,(np.array(midpoint_location)[:,-2]/inner_L_poloidal_x_point_all)[select],'xy',alpha=1,label='peakx0.5')
+	ax1[0,0].plot(np.interp(time_full_binned_crop_fast,time_full_binned_crop,nu_EFIT_smoothing)[select]*1e-19,(np.array(midpoint_location)[:,-3]/inner_L_poloidal_x_point_all)[select],'xr',alpha=1,label='peakx0.3')
+	ax1[0,0].grid()
+	ax1[0,0].set_xlabel(r'$n_{e,up} [10^{19}\#/m^3]$')
+	ax1[0,0].set_ylabel('L poloidal/L poloidal x-point [au]')
+
+
+
+
+	select=np.logical_and(time_full_binned_crop<0.85,time_full_binned_crop>0.5)	# 52355
+	plt.figure(3)
+	plt.plot(nu_EFIT_smoothing[select],jsat_lower_outer_mid_integrated[select],'xk',alpha=1,label='lower')
+	plt.plot(nu_EFIT_smoothing[select],jsat_upper_outer_mid_integrated[select],'xb',alpha=1,label='upper')
+	plt.grid()
+	plt.ylabel('outer target\n'+r'particle flux [$10^{22}\#/s$]')
+	plt.xlabel(r'$n_{e,up} [10^{19}\#/m^3]$')
+
+
+	select=np.logical_and(time_eps<0.85,time_eps>0.5)	# 52355
+	# plt.figure(2)
+	plt.title('Dalpha')
+	ax1[0,1].plot(np.interp(time_eps,time_full_binned_crop,nu_EFIT_smoothing)[select]*1e-19,(np.array(MWI_inner_separatrix_peak_location)/(np.interp(time_eps,time_full_binned_crop_fast,inner_L_poloidal_x_point_all)))[select],'xk',alpha=1,label='peak')
+	ax1[0,1].plot(np.interp(time_eps,time_full_binned_crop,nu_EFIT_smoothing)[select]*1e-19,(np.array(MWI_inner_separatrix_midpoint_location)[:,-1]/(np.interp(time_eps,time_full_binned_crop_fast,inner_L_poloidal_x_point_all)))[select],'xb',alpha=1,label='peakx0.7')
+	ax1[0,1].plot(np.interp(time_eps,time_full_binned_crop,nu_EFIT_smoothing)[select]*1e-19,(np.array(MWI_inner_separatrix_midpoint_location)[:,-2]/(np.interp(time_eps,time_full_binned_crop_fast,inner_L_poloidal_x_point_all)))[select],'xy',alpha=1,label='peakx0.5')
+	ax1[0,1].plot(np.interp(time_eps,time_full_binned_crop,nu_EFIT_smoothing)[select]*1e-19,(np.array(MWI_inner_separatrix_midpoint_location)[:,-3]/(np.interp(time_eps,time_full_binned_crop_fast,inner_L_poloidal_x_point_all)))[select],'xr',alpha=1,label='peakx0.3')
+	ax1[0,1].grid()
+	ax1[0,1].set_xlabel(r'$n_{e,up} [10^{19}\#/m^3]$')
+	# plt.ylabel('L poloidal/L poloidal x-point [au]')
+	ax1[0,0].set_ylim(top=1.2,bottom=-0.1)
+	ax1[0,1].set_ylim(top=1.2,bottom=-0.1)
+
+
+	# time_normal = full_saved_file_dict_FAST['multi_instrument']['thermography']['time']
+	# heatflux_LISP = full_saved_file_dict_FAST['multi_instrument']['thermography']['heat flux LISP']
+	# heatflux_UISP = full_saved_file_dict_FAST['multi_instrument']['thermography']['heat flux UISP']
+	# heatflux_LOSP = full_saved_file_dict_FAST['multi_instrument']['thermography']['heat flux LOSP']
+	# heatflux_UOSP = full_saved_file_dict_FAST['multi_instrument']['thermography']['heat flux UOSP']
+	# select=np.logical_and(time_normal<0.85,time_normal>0.5)	# 52355
+	#
+	# plt.figure(2)
+	# plt.plot(time_normal[select],heatflux_LISP,'xk',alpha=1,label='LISP')
+	# plt.plot(time_normal[select],heatflux_LOSP,'xr',alpha=1,label='LOSP')
+
+	select=np.logical_and(time_full_binned_crop<0.85,time_full_binned_crop>0.5)	# 52355
+	plt.figure(4)
+	plt.plot(np.interp(time_full_binned_crop,time_full_binned_crop,nu_EFIT_smoothing)[select]*1e-19,energy_confinement_time[select]*1e3,'xy',alpha=1,label='peak')
+	plt.grid()
+	plt.xlabel(r'$n_{e,up} [10^{19}\#/m^3]$')
+	plt.ylabel('Energy confinement time [ms]')
+
+	select=np.logical_and(time_thermography<0.85,time_thermography>0.5)	# 52355
+	plt.figure(5)
+	plt.plot(np.interp(time_thermography,time_full_binned_crop,nu_EFIT_smoothing)[select]*1e-19,heatflux_LISP[select]*1e3,'xy',alpha=1,label='LISP')
+	plt.plot(np.interp(time_thermography,time_full_binned_crop,nu_EFIT_smoothing)[select]*1e-19,heatflux_UISP[select]*1e3,'xr',alpha=1,label='UISP')
+	plt.grid()
+	plt.xlabel(r'$n_{e,up} [10^{19}\#/m^3]$')
+	plt.ylabel('ISP heat flux [kW]')
+	plt.figure(6)
+	plt.plot(np.interp(time_thermography,time_full_binned_crop,nu_EFIT_smoothing)[select]*1e-19,heatflux_LOSP[select]*1e3,'xy',alpha=1,label='LOSP')
+	plt.plot(np.interp(time_thermography,time_full_binned_crop,nu_EFIT_smoothing)[select]*1e-19,heatflux_UOSP[select]*1e3,'xr',alpha=1,label='UOSP')
+	plt.grid()
+	plt.xlabel(r'$n_{e,up} [10^{19}\#/m^3]$')
+	plt.ylabel('OSP heat flux [kW]')
+
+	select=np.logical_and(time_full_binned_crop<0.85,time_full_binned_crop>0.5)	# 52355
+	plt.figure(7)
+	# plt.errorbar(nu_EFIT_smoothing[select]*1e-19,divertor_tot_rad_power_all[select]*1e-6,yerr=divertor_tot_rad_power_sigma_all[select]*1e-6,marker='x',color='y')
+	plt.plot(nu_EFIT_smoothing[select]*1e-19,divertor_tot_rad_power_all[select]*1e-3,'xy')
+	plt.grid()
+	plt.xlabel(r'$n_{e,up} [10^{19}\#/m^3]$')
+	plt.ylabel('divertor_tot_rad_power_all [kW]')
+	plt.figure(8)
+	plt.plot(nu_EFIT_smoothing[select]*1e-19,(outer_leg_reliable_power_all+	sxd_tot_rad_power_all)[select]*1e-3,'xy')
+	plt.grid()
+	plt.xlabel(r'$n_{e,up} [10^{19}\#/m^3]$')
+	plt.ylabel('outer_leg_reliable_power_all+sxd_tot_rad_power_all [kW]')
+	plt.figure(9)
+	plt.plot(nu_EFIT_smoothing[select]*1e-19,inner_leg_reliable_power_all[select]*1e-3,'xy')
+	plt.grid()
+	plt.xlabel(r'$n_{e,up} [10^{19}\#/m^3]$')
+	plt.ylabel('inner_leg_reliable_power_all [kW]')
+	plt.figure(10)
+	plt.plot(nu_EFIT_smoothing[select]*1e-19,x_point_tot_rad_power_all[select]*1e-3,'xy')
+	plt.grid()
+	plt.xlabel(r'$n_{e,up} [10^{19}\#/m^3]$')
+	plt.ylabel('x_point_tot_rad_power_all [kW]')
+
+
+####
