@@ -13,6 +13,8 @@ exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_import_pc.py").
 exec(open("/home/ffederic/work/analysis_scripts/scripts/preamble_indexing.py").read())
 number_cpu_available = 8
 
+start_MASTU_prelim_data_examination = tm.time()
+
 # # I want to stop warnings to clog my error file
 # import warnings
 # warnings.filterwarnings("ignore")
@@ -564,7 +566,7 @@ elif True:	# section to use when analysing only one shot
 	# name = 'IRVB-MASTU_shot-47953.ptw'
 	# name = 'IRVB-MASTU_shot-52493.ptw'
 	# name = 'IRVB-MASTU_shot-52355.ptw'
-	name = 'IRVB-MASTU_shot-53520.ptw'
+	name = 'IRVB-MASTU_shot-53544.ptw'
 
 	if name[:4] == 'IRVB':	# I want to shorten the filenames in to_do
 		pass
@@ -589,6 +591,8 @@ elif True:	# section to use when analysing only one shot
 	print(path+day)
 
 	laser_to_analyse=path+day+'/'+name
+
+	print('MASTU_prelim_data_examination completed in ' + ' %.3gmins' %((tm.time()-start_MASTU_prelim_data_examination)/60) + ' ' + tm.strftime('%Y-%m-%d %H:%M:%S'))
 
 	if True_for_inversion_False_for_post_analysis_only:
 		exec(open("/home/ffederic/work/analysis_scripts/scripts/MASTU_pulse_process2_BB.py").read())

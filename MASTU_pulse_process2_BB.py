@@ -2,6 +2,7 @@
 # in order to facilitate a proper binning and remotion of the oscillation only after that, here I will only:
 # do the initial adjustment of the ramp up, convert to temperature
 # print('starting ' + laser_to_analyse + '\n of \n' + str(shot_available[i_day]))
+start_MASTU_pulse_process2_BB = tm.time()
 
 
 try:
@@ -28,7 +29,8 @@ try:
 	if laser_to_analyse[-4:]=='.ptw':
 		test = laser_dict['discarded_frames']
 except:
-	print('missing '+laser_to_analyse[:-4]+'.npz'+' file.')
+	# print('missing '+laser_to_analyse[:-4]+'.npz'+' file.')
+	print('missing '+laser_to_analyse[:-4]+'.npz'+' file.' + ' %.3gmins into MASTU_pulse_process2_BB' %((tm.time()-start_MASTU_pulse_process2_BB)/60) + ' ' + tm.strftime('%Y-%m-%d %H:%M:%S'))
 	if os.path.exists(laser_to_analyse):
 		print(laser_to_analyse[:-4]+'.npz'+' file will be generated')
 	elif os.path.exists(laser_to_analyse[:-4]+'.ptw'):	# additional stage: change the file extension if found
@@ -72,7 +74,7 @@ except:
 	else:
 		full_saved_file_dict = coleval.ptw_to_dict(laser_to_analyse,max_time_s = 30)
 	np.savez_compressed(laser_to_analyse[:-4],**full_saved_file_dict)
-	print(laser_to_analyse[:-4]+ '.npz' + ' created and saved')
+	print(laser_to_analyse[:-4]+ '.npz' + ' created and saved in %.3gmins' %((tm.time()-start_MASTU_pulse_process2_BB)/60) + ' ' + tm.strftime('%Y-%m-%d %H:%M:%S'))
 	laser_dict = np.load(laser_to_analyse[:-4]+'.npz')
 	laser_dict.allow_pickle=True
 full_saved_file_dict = dict(laser_dict)
@@ -146,7 +148,7 @@ try:
 			time_of_experiment = exernal_time[-len(time_of_experiment):]*1e6
 			time_of_experiment_digitizer_ID = [exernal_time[-len(time_of_experiment):]*1e6]
 			frame_time_succesfully_rigidly_determined = True
-			print('proper new way of tining the frames achieved')
+			print('proper new way of timing the frames achieved')
 		else:	# if the reading fails I can still use the last pulse as marker, and the clock of the camera to determine the real framerate. this effectively uses the internal clock of the camera, but with an external final reference
 			laser_framerate = 1e6/np.mean(np.sort(np.diff(time_of_experiment))[2:-2])
 			# 2025/05/22 I still have no idea why this happens, but the hole is always 4 seconds long, showing up each ~24.5 minutes possibly
@@ -729,9 +731,11 @@ try:
 	elif int(laser_to_analyse[-9:-4]) > 45517:	# MU02
 		foil_position_dict = dict([('angle',1),('foilcenter',[159,137]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',246)])	# identified ~2023-08 after checking what is the actual result of the rotation
 		# foil_position_dict = dict([('angle',1),('foilcenter',[158,136]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',246)])	# identified 2022-11-08 for MU02
-	else:
+	else:	# MU01
 		# foil_position_dict = dict([('angle',0.7),('foilcenter',[157,136]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',240)])	# modified 2021/09/21 to match sensitivity matrix
 		foil_position_dict = dict([('angle',0.6),('foilcenter',[158,136]),('foilhorizw',0.09),('foilvertw',0.07),('foilhorizwpixel',242)])	# identified ~2023-08 after checking what is the actual result of the rotation
+
+	print('ready to start FAST processing in %.3gmins' %((tm.time()-start_MASTU_pulse_process2_BB)/60))
 
 	try:
 		full_saved_file_dict_FAST = np.load(laser_to_analyse[:-4]+'_FAST.npz')
